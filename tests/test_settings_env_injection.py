@@ -217,11 +217,12 @@ def test_partial_failure_rolls_back_only_the_failed_key(env_file, monkeypatch):
     assert os.environ["LLM_MODEL"] == "qwen3.8-flash"   # 第二个键回滚
 
 
-def test_bom_is_deliberately_stripped_not_dotenv_compatible(tmp_path):
-    """有意偏离 python-dotenv：它把 BOM 留在键名里，那个键等于废键。
+def test_bom_is_stripped_whatever_dotenv_version_does(tmp_path):
+    """BOM 一律去掉，但不断言 python-dotenv 某一版的具体行为。
 
-    代价写在 services/env_sync.py 的注释里：带 BOM 的文件在 import 阶段第一行不生效，
-    第一个请求的 sync_env 会补上。设置页永远写不出 BOM，只有手工编辑会遇到。
+    旧版 dotenv（1.0.x）把 BOM 留在键名里，那个键等于废键；新版自己会去掉。
+    requirements 里是 python-dotenv>=1.0.1，没有上界，所以这里只断言
+    「我们一定拿到可用的键」，dotenv 给出哪一种形态都算它自己那版的事。
     """
     text = '\ufeffLLM_API_KEY="sk-bom"\nLLM_MODEL="qwen3.8-flash"\n'
     path = tmp_path / "t.env"
@@ -230,4 +231,11 @@ def test_bom_is_deliberately_stripped_not_dotenv_compatible(tmp_path):
     ours = env_sync._parse(text)
     theirs = dotenv_values(path)
     assert ours["LLM_API_KEY"] == "sk-bom"
-    assert "\ufeffLLM_API_KEY" in theirs and "LLM_API_KEY" not in theirs
+    assert ours["LLM_MODEL"] == "qwen3.8-flash"
+    # 两种版本行为都允许，但不能出现第三种（比如把 BOM 留在值里）
+    assert set(theirs) in (
+        {"LLM_API_KEY", "LLM_MODEL"},
+        {"\ufeffLLM_API_KEY", "LLM_MODEL"},
+    ), dict(theirs)
+    if "LLM_API_KEY" in theirs:
+        assert theirs["LLM_API_KEY"] == "sk-bom"

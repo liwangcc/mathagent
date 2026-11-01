@@ -95,8 +95,9 @@ def _parse(text: str) -> dict[str, str]:
     只有 \\n 才分行。str.splitlines() 还会在 \\x0b \\x0c \\x85 U+2028 上分行，
     与写盘端「一行一个键」的假设不一致，等于给设置页留了注入通道。
     """
-    # BOM 是刻意的例外：python-dotenv 会把 BOM 留在键名里（\ufeffLLM_API_KEY），
-    # 那个键谁都读不到。这里去掉 BOM，键才能被应用；代价是带 BOM 的文件在 import 阶段
+    # BOM 是刻意的例外：旧版 python-dotenv 会把 BOM 留在键名里（\ufeffLLM_API_KEY），
+    # 那个键谁都读不到；新版自己会去 BOM，行为随版本变，而 requirements 里没有上界。
+    # 这里一律去掉 BOM，键才能被应用；代价是带 BOM 的文件在 import 阶段
     # 由 dotenv 读出的第一行不生效，要到第一个请求的 sync_env 才补上。设置页自己写不出
     # BOM，所以只有手工编辑才会遇到。
     if text.startswith("\ufeff"):
