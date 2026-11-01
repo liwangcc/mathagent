@@ -192,6 +192,11 @@ docker compose up -d --build
 ## 验证
 
 ```bash
+# 一次性装好开发依赖（含 pytest 与 pytest-asyncio）
+python -m venv venv_local
+venv_local/Scripts/pip install -r requirements-dev.txt   # Windows
+venv_local/bin/pip install -r requirements-dev.txt       # Linux / macOS
+
 # 仓库根目录
 env -u PYTHONPATH ./venv_local/Scripts/python.exe -m pytest -q
 

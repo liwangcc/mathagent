@@ -1,0 +1,15 @@
+# 开发与测试依赖。要跑全量后端测试，装这个文件，而不是只装 requirements.txt。
+#
+#   python -m venv venv_local
+#   venv_local/Scripts/pip install -r requirements-dev.txt      # Windows
+#   venv_local/bin/pip install -r requirements-dev.txt          # Linux/macOS
+#   venv_local/Scripts/python -m pytest -q
+#
+# 为什么单独放：pytest-asyncio 之前没有声明在 requirements.txt 里，
+# 于是新克隆的仓库跑全量测试时，23 个 async 用例会报
+# "async def functions are not natively supported" —— 看起来像代码坏了，
+# 实际只是少装了一个测试插件。
+-r requirements.txt
+
+pytest>=8.3
+pytest-asyncio>=0.23
