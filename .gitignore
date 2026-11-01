@@ -25,6 +25,15 @@ env/
 # 本机部署目标（服务器地址与密钥路径）
 .deploy.local
 
+# 私钥与证书私钥：任何情况下都不入库（测试用的密钥在运行时生成，不提交）
+*.pem
+*.key
+*.p12
+*.pfx
+*.ppk
+id_rsa*
+id_ed25519*
+
 # Database
 *.db
 *.sqlite
