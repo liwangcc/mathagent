@@ -120,3 +120,114 @@ def test_exotic_separators_do_not_split_lines():
     parsed = env_sync._parse('LLM_MODEL="qwen\x0bLLM_BASE_URL=evil"\n')
     assert "LLM_BASE_URL" not in parsed
     assert parsed["LLM_MODEL"] == "qwen\x0bLLM_BASE_URL=evil"
+
+
+@pytest.mark.parametrize("sep", SEPARATORS[2:])
+def test_legacy_poisoned_file_is_not_materialised_on_next_save(env_file, sep, monkeypatch):
+    """旧版写进去的单行注入值，不能在下一次保存时被拆成真正的多行。
+
+    写盘端用 str.splitlines()、解析端只按 \n 切行时，第一次正常保存就会把注入的那段
+    「扶正」成独立的一行，于是注入重新生效（第 4 轮 finding 1 的升级迁移路径）。
+    """
+    monkeypatch.setenv("LLM_BASE_URL", "https://good.example/v1")
+    poisoned = 'LLM_MODEL="qwen3.8-flash' + sep + "LLM_BASE_URL=https://evil.example/v1" + sep + '#"\n'
+    env_file.write_text(poisoned, encoding="utf-8")
+    env_sync.reset_cache()
+    # 注入的键在读取阶段就不该出现
+    assert "LLM_BASE_URL" not in env_sync._parse(env_file.read_text(encoding="utf-8"))
+
+    S._update_config_file("LLM_MODEL", "qwen3.8-max")
+
+    text = env_file.read_text(encoding="utf-8")
+    parsed = env_sync._parse(text)
+    assert "LLM_BASE_URL" not in parsed, text
+    assert parsed["LLM_MODEL"] == "qwen3.8-max"
+    assert "evil.example" not in text
+    assert os.environ["LLM_BASE_URL"] == "https://good.example/v1"
+
+
+def test_unterminated_quote_is_dropped_like_dotenv(tmp_path):
+    """引号没闭合时 python-dotenv 整行丢弃；截断成半个值就会与启动态不一致。"""
+    text = 'LLM_API_KEY=k\nLLM_MODEL="abc\n'
+    path = tmp_path / "t.env"
+    path.write_text(text, encoding="utf-8")
+
+    ours = env_sync._parse(text)
+    theirs = dotenv_values(path)
+    assert "LLM_MODEL" not in ours
+    assert ours == {k: v for k, v in theirs.items()}
+
+
+def test_multiline_quoted_value_is_not_truncated(tmp_path):
+    """dotenv 支持跨行引号值；这里不支持，但必须「不设置」而不是「设置半个」。"""
+    text = 'LLM_MODEL="line1\nline2"\nLLM_API_KEY=k\n'
+    path = tmp_path / "t.env"
+    path.write_text(text, encoding="utf-8")
+
+    ours = env_sync._parse(text)
+    theirs = dict(dotenv_values(path))
+    assert theirs["LLM_MODEL"] == "line1\nline2"
+    assert "LLM_MODEL" not in ours, "半个值会覆盖启动时由 dotenv 读到的正确值"
+    assert ours["LLM_API_KEY"] == "k"
+
+
+def test_write_failure_is_not_reported_as_success(env_file, monkeypatch):
+    """写盘失败必须报错并回滚内存值。
+
+    以前这里是 `except Exception: logger.warning(...)`，接口照样返回 ok：
+    管理员以为存上了，重启后又变回旧配置。Windows 上另一个 worker 正打开
+    .env 时最容易撞上（os.replace 抛 PermissionError）。
+    """
+    monkeypatch.setenv("LLM_MODEL", "qwen3.8-flash")
+
+    def boom(key, value):
+        raise PermissionError("simulated: file is open by another worker")
+
+    monkeypatch.setattr(S, "_update_config_file", boom)
+
+    with pytest.raises(HTTPException) as exc:
+        S.save_settings(S.SettingsSaveRequest(model="qwen3.8-max"), user=None)
+
+    assert exc.value.status_code == 500
+    assert os.environ["LLM_MODEL"] == "qwen3.8-flash"   # 回滚
+    assert not env_file.exists()
+
+
+def test_partial_failure_rolls_back_only_the_failed_key(env_file, monkeypatch):
+    """前一个键写成功、后一个失败时，只回滚失败的那个。"""
+    monkeypatch.setenv("LLM_MODEL", "qwen3.8-flash")
+    monkeypatch.setenv("LLM_API_KEY", "sk-old")
+
+    real = S._update_config_file
+    calls = {"n": 0}
+
+    def flaky(key, value):
+        calls["n"] += 1
+        if calls["n"] == 2:
+            raise OSError("disk full")
+        return real(key, value)
+
+    monkeypatch.setattr(S, "_update_config_file", flaky)
+
+    with pytest.raises(HTTPException) as exc:
+        S.save_settings(S.SettingsSaveRequest(api_key="sk-new", model="qwen3.8-max"), user=None)
+
+    assert exc.value.status_code == 500
+    assert os.environ["LLM_API_KEY"] == "sk-new"        # 第一个键已落盘，保留
+    assert os.environ["LLM_MODEL"] == "qwen3.8-flash"   # 第二个键回滚
+
+
+def test_bom_is_deliberately_stripped_not_dotenv_compatible(tmp_path):
+    """有意偏离 python-dotenv：它把 BOM 留在键名里，那个键等于废键。
+
+    代价写在 services/env_sync.py 的注释里：带 BOM 的文件在 import 阶段第一行不生效，
+    第一个请求的 sync_env 会补上。设置页永远写不出 BOM，只有手工编辑会遇到。
+    """
+    text = '\ufeffLLM_API_KEY="sk-bom"\nLLM_MODEL="qwen3.8-flash"\n'
+    path = tmp_path / "t.env"
+    path.write_text(text, encoding="utf-8")
+
+    ours = env_sync._parse(text)
+    theirs = dotenv_values(path)
+    assert ours["LLM_API_KEY"] == "sk-bom"
+    assert "\ufeffLLM_API_KEY" in theirs and "LLM_API_KEY" not in theirs

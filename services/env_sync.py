@@ -32,18 +32,39 @@ def env_path() -> Path:
     return Path(__file__).resolve().parent.parent / ".env"
 
 
-def _unquote(raw: str) -> str:
-    """按 dotenv 的规则取一个值：单引号原样、双引号反转义、无引号去行尾注释。"""
+def split_lines(text: str) -> list[str]:
+    """按 python-dotenv 的规则切行：只有 \n 结束一行。
+
+    写盘端与解析端必须共用这一个函数。str.splitlines() 还会在
+    \x0b \x0c \x1c \x1d \x1e \x85 U+2028 U+2029 上分行；两边规则一旦不同，
+    「写进去一行」就会「读回来两行」，等于多出一个键（第 4 轮 finding 1）。
+    """
+    normalised = text.replace("\r\n", "\n").replace("\r", "\n")
+    lines = normalised.split("\n")
+    # 末尾那个换行不单独算一行，行为与 splitlines() 一致
+    if lines and lines[-1] == "":
+        lines.pop()
+    return lines
+
+
+def _unquote(raw: str) -> str | None:
+    """按 dotenv 的规则取一个值：单引号原样、双引号反转义、无引号去行尾注释。
+
+    引号没有闭合时返回 None —— python-dotenv 会整行丢弃，这里也必须丢弃，
+    否则同一份文件在启动时（dotenv）和同步时（这里）得到不同的值。
+    """
     raw = raw.strip()
     if raw[:1] == "'":
         end = raw.find("'", 1)
-        return raw[1:end] if end != -1 else raw[1:]
+        return raw[1:end] if end != -1 else None
     if raw[:1] == '"':
         out = []
         i = 1
+        closed = False
         while i < len(raw):
             ch = raw[i]
             if ch == '"':
+                closed = True
                 break
             if ch == "\\" and i + 1 < len(raw):
                 nxt = raw[i + 1]
@@ -59,7 +80,7 @@ def _unquote(raw: str) -> str:
                 continue
             out.append(ch)
             i += 1
-        return "".join(out)
+        return "".join(out) if closed else None
     # 未加引号：dotenv 把空白后的 # 当注释起点
     for marker in (" #", "\t#"):
         idx = raw.find(marker)
@@ -74,12 +95,15 @@ def _parse(text: str) -> dict[str, str]:
     只有 \\n 才分行。str.splitlines() 还会在 \\x0b \\x0c \\x85 U+2028 上分行，
     与写盘端「一行一个键」的假设不一致，等于给设置页留了注入通道。
     """
+    # BOM 是刻意的例外：python-dotenv 会把 BOM 留在键名里（\ufeffLLM_API_KEY），
+    # 那个键谁都读不到。这里去掉 BOM，键才能被应用；代价是带 BOM 的文件在 import 阶段
+    # 由 dotenv 读出的第一行不生效，要到第一个请求的 sync_env 才补上。设置页自己写不出
+    # BOM，所以只有手工编辑才会遇到。
     if text.startswith("\ufeff"):
         text = text[1:]
-    text = text.replace("\r\n", "\n").replace("\r", "\n")
 
     out: dict[str, str] = {}
-    for raw in text.split("\n"):
+    for raw in split_lines(text):
         line = raw.strip()
         if not line or line.startswith("#"):
             continue
@@ -91,7 +115,11 @@ def _parse(text: str) -> dict[str, str]:
         key = key.strip()
         if not key or not key.replace("_", "").isalnum():
             continue
-        out[key] = _unquote(rest)
+        value = _unquote(rest)
+        if value is None:
+            # 引号没闭合：dotenv 丢掉这一行，这里也丢掉，os.environ 保持启动时的值
+            continue
+        out[key] = value
     return out
 
 

@@ -2,7 +2,7 @@
 #
 # 为什么单独放：hermes-agent 把 certifi 钉死在 2026.5.20（新版仍如此），
 # 而核心依赖要求 certifi>=2026.10.23（emSign G3 根证书被移除，旧信任库会握手失败）
-# 于是和本文件的 certifi>=2026.10.23 互斥，放在同一个 requirements.txt 里 pip 会直接解析失败。
+# 于是和 requirements.txt 里的 certifi>=2026.10.23 互斥，两者放进同一个文件 pip 会直接解析失败。
 #
 # 装机顺序：
 #   pip install -r requirements.txt

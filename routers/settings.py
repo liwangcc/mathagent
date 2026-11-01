@@ -9,7 +9,11 @@ import time
 from pathlib import Path
 from urllib.parse import urlparse
 
-from services.env_sync import env_path as _env_path, sync_env as _sync_env
+from services.env_sync import (
+    env_path as _env_path,
+    split_lines as _split_env_lines,
+    sync_env as _sync_env,
+)
 
 import httpx
 from fastapi import APIRouter, Depends, HTTPException
@@ -271,13 +275,27 @@ def save_settings(data: SettingsSaveRequest, user: User = Depends(_require_admin
 
     changed = []
 
-    if api_key and api_key != "***":
-        os.environ["LLM_API_KEY"] = api_key
+    def _persist(key: str, value: str) -> None:
+        """写 .env；写不进去就回滚内存里的值并让请求失败。
+
+        以前这里只记一条 warning 就继续，接口照样回 ok：管理员以为存上了，
+        重启后配置又变回旧的。宁可报错，也不要假成功。
+        """
+        previous = os.environ.get(key)
+        os.environ[key] = value
         try:
-            _update_config_file("LLM_API_KEY", api_key)
-            changed.append("LLM_API_KEY")
+            _update_config_file(key, value)
         except Exception as e:
+            if previous is None:
+                os.environ.pop(key, None)
+            else:
+                os.environ[key] = previous
             logger.warning("Failed to write config file: %s", e)
+            raise HTTPException(500, f"配置写入失败（{key}）：{e}") from e
+        changed.append(key)
+
+    if api_key and api_key != "***":
+        _persist("LLM_API_KEY", api_key)
 
     if base_url:
         # 关键：只改地址、不带新密钥，等于把服务器上已存的密钥发往未经确认的主机，
@@ -292,20 +310,10 @@ def save_settings(data: SettingsSaveRequest, user: User = Depends(_require_admin
                     "只改地址会把服务器已保存的密钥发送到新地址。",
                 )
         _guard_base_url(base_url)
-        os.environ["LLM_BASE_URL"] = base_url
-        try:
-            _update_config_file("LLM_BASE_URL", base_url)
-            changed.append("LLM_BASE_URL")
-        except Exception as e:
-            logger.warning("Failed to write config file: %s", e)
+        _persist("LLM_BASE_URL", base_url)
 
     if model:
-        os.environ["LLM_MODEL"] = model
-        try:
-            _update_config_file("LLM_MODEL", model)
-            changed.append("LLM_MODEL")
-        except Exception as e:
-            logger.warning("Failed to write config file: %s", e)
+        _persist("LLM_MODEL", model)
 
     return {"ok": True, "changed": changed}
 
@@ -331,7 +339,9 @@ def _update_config_file(key: str, value: str):
     with _env_file_lock():
         lines = []
         if ENV_PATH.exists():
-            lines = ENV_PATH.read_text(encoding="utf-8").splitlines()
+            # 必须和 env_sync._parse 用同一套切行规则：用 str.splitlines() 的话，
+            # 旧版注入进来的单行值会在这里被拆成真正的多行，反而把注入「扶正」。
+            lines = _split_env_lines(ENV_PATH.read_text(encoding="utf-8"))
         # 同一个键可能已经出现多次；只改第一行会让「读最后一行」的解析器继续用旧值，
         # 所以先全删再追加。
         lines = [ln for ln in lines if not _is_key_line(ln, key)]
@@ -340,7 +350,17 @@ def _update_config_file(key: str, value: str):
         ENV_PATH.parent.mkdir(parents=True, exist_ok=True)
         tmp = ENV_PATH.with_name(ENV_PATH.name + ".tmp")
         tmp.write_text("\n".join(lines) + "\n", encoding="utf-8")
-        os.replace(tmp, ENV_PATH)
+        # Windows 上目标文件被别的 worker 打开着读时，os.replace 会抛 PermissionError
+        #（POSIX 的 rename 不会）。调用方把异常记成 warning 后仍然回 ok，
+        # 于是「保存成功」但文件没变，所以这里短暂重试。
+        for attempt in range(10):
+            try:
+                os.replace(tmp, ENV_PATH)
+                break
+            except PermissionError:
+                if attempt == 9:
+                    raise
+                time.sleep(0.02)
 
     _sync_env(force=True)
 
