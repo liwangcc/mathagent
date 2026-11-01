@@ -1,0 +1,66 @@
+# MathAgent 单实例部署：一台服务器 = 一个学校，设计寿命三年。
+#
+# 硬约束：单实例部署。数据在 ./data（SQLite + 票据库）与 ./uploads（试卷图片），
+# 都是本机磁盘；批阅批次在 HTTP 请求内执行。请不要并行起第二个 app 容器。
+#
+# Redis 只存易失状态（限流计数、进行中的租约；验证码票据与微信 state 在 ./data/auth_tickets.db），
+# 不是数据源。Redis 数据全丢只影响进行中的操作，不影响成绩与档案：
+# SQLite（./data/mathagent.db）才是唯一事实源。
+services:
+  app:
+    build: .
+    image: mathagent:latest
+    container_name: mathagent
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      # 默认按 IP 直访；配了域名就把 ALLOWED_HOSTS 写成该域名
+      ALLOWED_HOSTS: "${ALLOWED_HOSTS:-*}"
+      # 同机 Redis 负责跨 worker 的共享状态与配额
+      REDIS_URL: redis://redis:6379/0
+      MODEL_LIMITER_BACKEND: redis
+      # 两个 worker 之间不会再出现「A 签发、B 校验失败」：票据已落共享存储
+      GUNICORN_WORKERS: "2"
+      # 没有阿里云短信账号也能跑：默认关闭短信登录，用管理员建号 + 密码登录
+      SMS_ENABLED: "0"
+      CAPTCHA_PROVIDER: builtin
+      MATHAGENT_DATA_DIR: /app/data
+      DATABASE_URL: sqlite:////app/data/mathagent.db
+    volumes:
+      - ./data:/app/data
+      - ./uploads:/app/uploads
+      - ./output:/app/output
+    depends_on:
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8080/api/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 90s
+
+  redis:
+    image: redis:7-alpine
+    container_name: mathagent-redis
+    restart: unless-stopped
+    # 只做进程间共享状态：AOF 每秒刷盘 + 保留一份 RDB 快照，够用且不拖慢请求。
+    # 即便整个 Redis 数据丢失，也只是让进行中的验证码/租约失效，成绩与档案不受影响。
+    command:
+      - redis-server
+      - --appendonly
+      - "yes"
+      - --appendfsync
+      - everysec
+      - --save
+      - "900 1"
+    # 独立目录：不要放进 ./data，否则 app 容器启动时的 chown -R 会把
+    # Redis 的 AOF 文件改成 mathagent 属主，redis 进程（uid 999）就写不进去了。
+    volumes:
+      - ./redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5

@@ -1,0 +1,12 @@
+# 可选依赖：只有「教师办公助手」这条链路需要，核心批阅（上传→模板→转录→判分）不用。
+#
+# 为什么单独放：hermes-agent 把 certifi 钉死在 2026.5.20、PyJWT 钉死在 2.12.1，
+# 而核心依赖要求 certifi>=2026.10.23（emSign G3 根证书被移除，旧信任库会握手失败）
+# 和 PyJWT==2.13.0。两个要求互斥，放在同一个 requirements.txt 里 pip 会直接 ResolutionImpossible。
+#
+# 装机顺序：
+#   pip install -r requirements.txt
+#   pip install --no-deps hermes-agent          # 只用它的代码，不换掉上面装好的 certifi/PyJWT
+# 这样能跑，但 hermes-agent 是按旧版 certifi/PyJWT 测的；如果办公助手报依赖错误，
+# 把它单独装进另一个 venv，用环境变量把 MathAgent 指向那个解释器。
+hermes-agent>=0.16.0; python_version < '3.14'

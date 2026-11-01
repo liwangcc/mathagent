@@ -1,0 +1,1405 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light"><title>MathAgent 数学工作台</title><style>:root{--ink:#173b3b;--muted:#586f70;--paper:#f3f5f1;--panel:#fff;--line:#d9e4df;--a:#327fc2;--b:#ce831d;--c:#8963bb;--teal:#147c69;--soft:#ecf5ef;--danger:#b34132;--shadow:0 12px 32px #243b3510}*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:system-ui,'Microsoft YaHei','Noto Sans CJK SC',sans-serif;line-height:1.55}button,input,select{font:inherit}button{cursor:pointer;user-select:none}button:disabled{opacity:.48;cursor:default}button,input,select,summary,a{touch-action:manipulation}button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible,a:focus-visible,[tabindex]:focus-visible{outline:3px solid #258ad5;outline-offset:3px}button{border:1px solid var(--line);background:#fff;color:var(--ink);border-radius:10px;padding:8px 13px;min-height:40px;transition:background .14s,box-shadow .14s}button:hover{background:#f0f6f3;box-shadow:0 3px 9px #25443412}button:active{background:#dceee4}button.primary,button.active{background:var(--ink);border-color:var(--ink);color:white}button.subtle{background:transparent;border:0}a{color:var(--teal);text-decoration:none}header{border-bottom:1px solid var(--line);background:#fcfdfb}.topbar{padding:13px 26px;max-width:1880px;margin:auto;display:flex;gap:16px;align-items:center;justify-content:space-between}.brand{display:flex;align-items:center;gap:12px;min-width:0}.brand-icon{width:36px;height:36px;border-radius:11px;background:var(--ink);display:grid;place-items:center;color:#fff;font-size:22px;font-weight:700}.eyebrow{font-size:12px;letter-spacing:.12em;color:var(--teal);font-weight:700}.brand h1{font-size:23px;line-height:1.25;margin:0;font-weight:720}.global-tools{display:flex;gap:6px;align-items:center}.global-tools button{font-size:13px;padding:6px 10px}.global-tools label{display:flex;align-items:center;gap:4px;font-size:12px;white-space:nowrap}.global-tools input{accent-color:var(--teal)}.scene-nav{display:flex;gap:6px;padding:0 26px 12px;max-width:1880px;margin:auto;flex-wrap:wrap}.scene-nav a{display:flex;gap:9px;align-items:center;border:1px solid transparent;color:var(--muted);font-size:14px;padding:7px 12px;border-radius:9px}.scene-nav a span{font-family:ui-monospace,monospace;font-size:12px;opacity:.7}.scene-nav a.active{background:#e2efe7;border-color:#c5dacc;color:var(--ink);font-weight:700}main{max-width:1880px;margin:auto;padding:18px 26px 24px}.scene-heading{display:flex;justify-content:space-between;align-items:start;gap:20px;margin:0 0 12px}.scene-heading h2{font-size:23px;margin:0;line-height:1.35}.scene-heading p{font-size:14px;margin:3px 0 0;color:var(--muted)}.scene-code{font:12px ui-monospace,monospace;color:var(--muted);padding:7px 10px;border:1px solid var(--line);border-radius:8px;white-space:nowrap}.workbench{display:grid;grid-template-columns:minmax(0,1.72fr) minmax(340px,1fr);gap:18px;align-items:start}.model-panel{background:#fff;border:1px solid var(--line);box-shadow:var(--shadow);border-radius:18px;overflow:hidden}.model-top{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:11px 16px;border-bottom:1px solid var(--line);font-size:13px;color:var(--muted)}.model-top strong{color:var(--ink);font-size:14px}.model-top .model-label{display:flex;align-items:center;gap:8px}.status-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:#298b68}.controls{padding:12px 16px 7px;display:flex;gap:10px 18px;align-items:end;flex-wrap:wrap;background:#fafcf9}.control{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--muted)}.control span{white-space:normal}.control input[type=number]{width:85px;height:37px;padding:4px 9px;border:1px solid #c8d9cf;background:#fff;border-radius:8px;font-weight:700;color:var(--ink)}.control select{max-width:100%;height:37px;border:1px solid #c8d9cf;border-radius:8px;padding:2px 7px;color:var(--ink);background:white}.control input[type=range]{width:140px;accent-color:var(--teal)}.control.toggle{flex-direction:row;align-items:center;align-self:center;min-height:37px}.control input[type=checkbox]{accent-color:var(--teal)}.controls .control-note{font-size:12px;color:var(--muted);width:100%}.figure-wrap{position:relative;width:100%;background:radial-gradient(ellipse at 50% 38%,#fff 20%,#f4f8f5 100%)}#diagram{display:block;width:100%;height:auto;aspect-ratio:800/470;overflow:hidden;user-select:none}#diagram text{font-family:system-ui,'Microsoft YaHei','Noto Sans CJK SC',sans-serif;fill:var(--ink);font-size:21px;pointer-events:none}#diagram .small{font-size:16px;fill:var(--muted)}#diagram .tiny{font-size:14px;fill:var(--muted)}#diagram .big{font-size:28px;font-weight:700}#diagram .label{font-size:21px;font-weight:650}#diagram .blue{fill:var(--a)}#diagram .amber{fill:var(--b)}#diagram .purple{fill:var(--c)}#diagram .red{fill:var(--danger)}#diagram .dim{stroke:#768e86;stroke-width:1.5;fill:none}#diagram .cut{stroke:#173b3b;stroke-width:2;stroke-dasharray:6 5;fill:none}#diagram [data-sem],#diagram [data-pick],#diagram [data-drag],#diagram [data-face]{cursor:pointer}#diagram [data-drag]{touch-action:none;cursor:grab}#diagram [data-drag].grabbing{cursor:grabbing;filter:drop-shadow(0 0 5px #249782)}#diagram .sem-on{filter:drop-shadow(0 0 5px #e0b653);stroke-width:3.5px;stroke:#d69b18}#diagram .node{fill:white;stroke:#cfddd5;stroke-width:1.5}.figure-note{font-size:13px;color:var(--muted);padding:0 16px 10px;min-height:27px}.timeline{border-top:1px solid var(--line);padding:11px 16px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:#fff}.timeline .transport{display:flex;gap:5px}.timeline button{font-size:13px;padding:5px 10px;min-height:34px}.timeline label{display:flex;align-items:center;gap:8px;flex:1;min-width:150px;color:var(--muted);font-size:12px}.timeline input{width:100%;accent-color:var(--teal)}.timeline output{font-size:12px;font-variant-numeric:tabular-nums;min-width:37px}.timeline .timeline-caption{width:100%;font-size:13px;color:var(--muted)}.info-panel{display:flex;flex-direction:column;gap:11px}.info-block{padding:15px 19px;border-radius:15px;border:1px solid var(--line);background:#fff}.info-block h3{font-size:12px;font-weight:750;letter-spacing:.08em;color:var(--teal);margin:0 0 7px;display:flex;gap:8px;align-items:center}.info-block p{font-size:20px;line-height:1.58;margin:0}.info-block .plain{font-size:17px;color:var(--muted);margin-top:7px}.info-block.current{background:#e7f1e9;border-color:#c9ddcc}.info-block.current h3{color:#37634b}.equation{display:flex;align-items:center;gap:7px;flex-wrap:wrap;font-size:27px;font-weight:700;line-height:1.7;margin-bottom:6px;overflow-wrap:anywhere}.frac{display:inline-flex;vertical-align:middle;flex-direction:column;align-items:center;justify-content:center;line-height:1.05;margin:0 3px;font-size:.85em;min-width:.7em}.frac>span:first-child{border-bottom:1.5px solid currentColor;padding:0 3px 3px}.frac>span:last-child{padding:3px 3px 0}.token{border:0;padding:0 3px;min-height:28px;box-shadow:none;background:transparent;color:var(--a);font-weight:700;border-radius:4px;display:inline;line-height:inherit}.token:hover,.token.selected{background:#e3eff8;box-shadow:none}.token.b{color:var(--b)}.token.c{color:var(--c)}.meaning-row{font-size:17px;line-height:1.6}.meaning-row+.meaning-row{margin-top:4px}.math-note{font-size:16px!important;color:var(--muted)}.feedback-message{font-size:14px;border-left:3px solid #409777;padding:6px 10px;margin-top:8px;background:#ffffff80}.feedback-message:empty{display:none}.auxiliary{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:16px}.auxiliary details{border:1px solid var(--line);border-radius:12px;background:#fbfcfa;padding:11px 16px}.auxiliary summary{cursor:pointer;font-size:14px;font-weight:700}.auxiliary .detail-content{padding-top:10px;font-size:16px;color:var(--muted)}.exercise-answer{padding:10px 12px;background:var(--soft);border-radius:9px;margin-top:8px;color:var(--ink)}.exercise-controls{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}.exercise-controls input{border-radius:8px;padding:6px 10px;border:1px solid var(--line);max-width:190px}.footer{padding-top:14px;font-size:11px;color:var(--muted);display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}.camera-tools{position:absolute;left:12px;top:9px;z-index:2;display:flex;gap:5px;flex-wrap:wrap;max-width:70%}.camera-tools button{background:#fffffff0;padding:4px 8px;min-height:29px;font-size:12px}.space-canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}.space-figure #diagram{position:relative;background:transparent;touch-action:none}.engine-badge{position:absolute;right:10px;top:13px;font-size:11px;color:var(--muted);background:#ffffffdb;padding:2px 6px;border-radius:5px}.fallback-warning{padding:7px 16px;background:#fff7e7;font-size:12px;color:#805320}.face-buttons{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}.face-buttons button{font-size:14px;padding:6px 8px}.invalid{color:var(--danger)}.counterexample{background:#fff3e6;border-color:#edd4b5}.projector .info-block p{font-size:25px}.projector .info-block .plain,.projector .meaning-row{font-size:21px}.projector #diagram text{font-size:24px}.projector #diagram .small{font-size:18px}.projector .workbench{grid-template-columns:minmax(0,1.55fr) minmax(360px,1fr)}.projector .control{font-size:16px}body.low-motion *{scroll-behavior:auto}.low-motion *, .low-motion *::before,.low-motion *::after{animation:none!important;transition:none!important}@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}@media(min-width:1700px){.info-block p{font-size:25px}.info-block .plain,.meaning-row{font-size:20px}.info-block{padding:20px 24px}.controls{padding:16px 22px}.control{font-size:16px}.topbar{padding-top:18px;padding-bottom:18px}.brand h1{font-size:27px}.scene-nav a{font-size:17px}.equation{font-size:33px}.scene-heading h2{font-size:27px}.figure-note,.timeline .timeline-caption{font-size:16px}}
+@media(max-width:1100px){.topbar{padding:12px 18px}.global-tools{flex-wrap:wrap;justify-content:end;max-width:380px}.scene-nav{padding-left:18px;padding-right:18px}.scene-nav a{padding:6px 9px;font-size:13px}main{padding:15px 18px}.workbench{grid-template-columns:minmax(0,1.45fr) minmax(305px,1fr);gap:12px}.info-block{padding:13px 15px}.info-block p{font-size:18px}.info-block .plain,.meaning-row{font-size:16px}.controls{gap:8px 12px;padding:10px 12px}.control input[type=number]{width:73px}.control select{max-width:220px}.projector .workbench{grid-template-columns:1fr}}
+@media(max-width:800px){.topbar{align-items:start;gap:10px;padding:13px 14px;flex-wrap:wrap}.brand h1{font-size:21px}.brand-icon{width:34px;height:34px}.global-tools{max-width:none;gap:4px;width:100%;justify-content:start}.global-tools button{font-size:12px}.scene-nav{padding:0 10px 10px;gap:4px}.scene-nav a{font-size:13px;background:#f4f7f2;flex:1 0 auto;justify-content:center}.scene-nav a span{display:none}main{padding:13px 12px}.scene-heading{gap:8px}.scene-heading h2{font-size:21px}.scene-heading p{font-size:13px}.scene-code{display:none}.workbench,.projector .workbench{grid-template-columns:1fr}.info-panel{gap:10px}.info-block p{font-size:20px}.info-block .plain,.meaning-row{font-size:17px}.info-block{padding:16px 18px}.model-panel{border-radius:14px}.model-top{padding:10px 12px}.model-top .right-label{display:none}.controls{gap:8px 12px}.control{font-size:12px}.control input[type=number]{width:72px}.control select{max-width:190px}.auxiliary{grid-template-columns:1fr;gap:10px}.footer{font-size:11px}.timeline{padding:10px 12px}.camera-tools{top:7px;left:8px;max-width:75%;gap:3px}.camera-tools button{font-size:10px;min-height:25px;padding:3px 6px}.engine-badge{font-size:9px;top:10px;right:6px}.figure-note{font-size:12px}.space-figure #diagram{aspect-ratio:800/470}.equation{font-size:28px}}
+
+/* Keep essential controls, model and current explanation together on short classroom displays. */
+.timeline label{white-space:nowrap}.timeline input{min-width:60px}
+@media(min-width:1101px) and (max-height:850px){
+ .topbar{padding-top:8px;padding-bottom:7px}.scene-nav{padding-bottom:7px}.scene-nav a{padding:5px 11px}
+ main{padding-top:12px}.scene-heading{margin-bottom:9px}.scene-heading h2{font-size:21px}.scene-heading p{font-size:13px}
+ .model-top{padding:8px 14px}.controls{padding:9px 14px 6px;gap:7px 14px}
+ #diagram{width:min(100%,600px);margin-inline:auto}.projector #diagram{width:100%}
+ .info-block{padding:12px 16px}.info-block p{font-size:18px;line-height:1.55}.info-block .plain,.meaning-row{font-size:16px}
+ .info-block.current .math-note{font-size:15px!important}.equation{font-size:25px;line-height:1.6}.timeline{padding:8px 14px;gap:6px}
+ .timeline .timeline-caption{font-size:12px}.figure-note{padding-bottom:7px}.auxiliary{margin-top:12px}
+}
+
+/* Author display:flex must never override HTML hidden semantics. */
+[hidden]{display:none!important}
+
+/* Revision 2: usable hit areas and explicit direct-operation affordances. */
+#figure-wrap.space-figure{cursor:grab;touch-action:none}
+#figure-wrap.space-figure button{cursor:pointer;touch-action:manipulation}
+#figure-wrap.dragging,#figure-wrap.dragging *{cursor:grabbing!important;user-select:none}
+#diagram [data-drag],#diagram [data-bar-move],#diagram [data-frac-cell],#diagram [data-piece-id]{touch-action:none;cursor:grab}
+#diagram [data-drag]:hover{filter:drop-shadow(0 0 4px #78b395)}
+#figure-wrap.fraction-workspace{touch-action:none;cursor:default}
+.fraction-tools{padding:10px 14px;background:#f2f7ef;border-block:1px solid #d5e2d4}
+.fraction-toolbar-main,.fraction-toolbar-edit{display:flex;align-items:center;gap:6px 10px;flex-wrap:wrap}
+.fraction-tools strong{font-size:13px;letter-spacing:.05em}
+.fraction-tools button{padding:5px 9px;min-height:34px;font-size:13px;background:#fff}
+.fraction-tools button[data-board-command="add"]{background:#245747;color:white;border-color:#245747}
+.fraction-tools label{display:inline-flex;align-items:center;gap:5px;font-size:12px;white-space:nowrap}
+.fraction-tools input[type=number]{width:51px;border:1px solid #c6d5c7;border-radius:6px;padding:5px;color:#173b3b;background:white}
+.fraction-toolbar-edit{margin-top:7px}
+.fraction-tip{font-size:12px;color:#476752;line-height:1.5;margin-top:6px}
+.piece-edit-fields{display:flex;flex-wrap:wrap;gap:12px;margin:12px 0}
+.piece-edit-fields label{display:flex;flex-direction:column;font-size:13px;gap:4px}
+.piece-edit-fields input{width:88px;padding:5px 8px;border:1px solid #bbcdbc;border-radius:7px;font-size:17px}
+#diagram [data-piece-id]:focus-visible{outline:2px dashed #315b47;outline-offset:6px}
+#diagram [data-frac-cell]:hover{fill:#93bca52b}
+@media(min-width:1101px) and (max-height:850px){.fraction-tools{padding:6px 12px}.fraction-tools button{min-height:30px;font-size:12px}.fraction-tip{font-size:11px}}
+
+/* SVG child groups alone do not reliably establish a touch gesture boundary.
+   Reserve the actual interactive SVG viewport; the surrounding document still scrolls. */
+#diagram{touch-action:none}
+
+/* v4: a compact viewport bar and an object-local editor, not a free-form modeller. */
+.canvas-view-tools{display:flex;flex-wrap:wrap;gap:7px 14px;justify-content:space-between;align-items:center;padding:7px 12px;border-block:1px solid var(--line);background:#f2f7f3;font-size:12px}
+.view-buttons{display:flex;gap:4px;align-items:center}.canvas-view-tools button{min-height:30px;padding:3px 9px;font-size:12px}.canvas-view-tools output{min-width:45px;text-align:center;font-variant-numeric:tabular-nums;color:var(--teal);font-weight:700}#canvas-gesture-hint{color:var(--muted)}
+.figure-wrap{touch-action:none;outline:none}.figure-wrap.canvas-active{box-shadow:inset 0 0 0 2px #4b968456}.figure-wrap[data-view-kind=pan]{cursor:grab}.figure-wrap.dragging{cursor:grabbing!important}#diagram [data-param-field]{cursor:ew-resize;touch-action:none}#diagram [data-param-axis]{cursor:grab}#diagram [data-param-field]:focus-visible{outline:none;filter:drop-shadow(0 0 3px #189175)}
+.canvas-editor{position:absolute;z-index:8;border:1px solid #a8c6b5;border-radius:13px;box-shadow:0 10px 36px #203c3540;background:#fcfefd;color:var(--ink);font-size:13px;display:flex;flex-direction:column;cursor:default;overflow:hidden;min-height:120px;touch-action:pan-y}.canvas-editor-head{display:flex;align-items:center;justify-content:space-between;padding:7px 11px;background:#e4f0e7;border-bottom:1px solid #c2d9ca;gap:8px}.canvas-editor-head strong{font-size:14px;line-height:1.3}.canvas-editor-head button{border:0;min-height:27px;min-width:27px;padding:0;background:transparent;font-size:21px}.canvas-editor-scroll{overflow:auto;overscroll-behavior:contain;padding:9px 11px;min-height:0;touch-action:pan-y}#canvas-editor-note{font-size:12px;line-height:1.45;color:#506e5c;margin:0 0 9px}.canvas-param-row{padding:7px 0;border-top:1px solid #e3ece5}.canvas-param-label{font-size:12px;font-weight:650;display:block;line-height:1.4;margin-bottom:4px;overflow-wrap:anywhere}.canvas-param-input{display:flex;align-items:center;gap:5px;flex-wrap:wrap}.canvas-param-input input:not([type=checkbox]),.canvas-param-input select{padding:4px 7px;min-height:31px;max-width:100%;width:calc(100% - 77px);flex:1 1 125px;min-width:50px;border:1px solid #b9cdbf;border-radius:7px;color:var(--ink);background:white;font-size:14px}.canvas-param-input input[type=checkbox]{width:20px;height:20px;accent-color:var(--teal)}.canvas-param-input button{min-height:31px;width:29px;padding:2px;flex:0 0 29px;font-weight:700}.canvas-param-scrub{border:1px dashed #b3cfc0;background:#f0f7f2;border-radius:5px;padding:3px 6px;color:#467861;font-size:11px;flex:1 0 100%;text-align:center;cursor:ew-resize;touch-action:none;user-select:none}#canvas-editor-commands{display:flex;gap:5px;flex-wrap:wrap;margin-top:7px}#canvas-editor-commands small{display:block;flex:1 0 100%;font-size:11px;color:var(--muted);margin-bottom:2px}#canvas-editor-commands button{font-size:12px;padding:4px 7px;min-height:31px}.canvas-editor-foot{border-top:1px solid #d5e3d9;padding:7px 10px;background:#f5f9f5;display:flex;align-items:start;gap:7px}.canvas-editor-foot button{white-space:nowrap;font-size:11px;padding:3px 6px;min-height:26px;flex-shrink:0}#canvas-editor-feedback{font-size:11px;color:#52705f;line-height:1.4;max-height:44px;overflow:auto}.canvas-editor [disabled]{opacity:.4}.canvas-editor:focus-within{border-color:#398c6d}
+@media(max-width:800px){.canvas-view-tools{padding:7px 9px;gap:5px}.canvas-view-tools #canvas-gesture-hint{font-size:10px}.canvas-editor-scroll{padding:7px 9px}.canvas-editor-head strong{font-size:12px}.canvas-editor .canvas-param-label{font-size:11px}.canvas-editor-foot{padding:5px 7px}#canvas-editor-feedback{font-size:10px}.canvas-editor-head{padding:5px 8px}}
+</style><style id="lesson-flow-style">/* MathAgent lesson flow v1 — presentation only (see lesson-flow.js). */
+:root{--lf-motivate:#843f05;--lf-motivate-bg:#fff5e8;--lf-explore:#174f8f;--lf-explore-bg:#edf4fc;--lf-formalize:#0b5a53;--lf-formalize-bg:#e9f5f2;--lf-practice:#4f2398;--lf-practice-bg:#f3effb;--lf-ink:#10292a;--lf-soft:#33494a;--lf-line:#d3dfda}
+body{--lf-c:var(--lf-motivate);--lf-bg:var(--lf-motivate-bg)}
+body[data-lf-stage=explore]{--lf-c:var(--lf-explore);--lf-bg:var(--lf-explore-bg)}
+body[data-lf-stage=formalize]{--lf-c:var(--lf-formalize);--lf-bg:var(--lf-formalize-bg)}
+body[data-lf-stage=practice]{--lf-c:var(--lf-practice);--lf-bg:var(--lf-practice-bg)}
+/* Projector type scale: 1280 px wide ≈ the minimums; grows to a 1920 px whiteboard.
+   「大字」 (the chapter's own projector toggle) adds one more step. */
+body.lf-on{--lf-t-read:clamp(19px,1.1vw + 5px,25px);--lf-t-key:clamp(21px,1.2vw + 6px,28px);--lf-t-eq:clamp(30px,1.7vw + 8px,40px);--lf-t-title:clamp(26px,1.4vw + 8px,34px);--lf-t-sub:clamp(17px,.8vw + 7px,21px);--lf-t-ui:clamp(15px,.6vw + 7px,18px)}
+body.lf-on.projector,body.lf-on.large,body.lf-on.presentation{--lf-t-read:clamp(22px,1.3vw + 6px,29px);--lf-t-key:clamp(24px,1.4vw + 7px,32px);--lf-t-eq:clamp(34px,2vw + 9px,46px);--lf-t-sub:clamp(19px,.9vw + 8px,23px)}
+
+/* Rail: four steps · prev/next · overview · help */
+.lf-rail{position:relative;display:flex;align-items:center;gap:8px;flex-wrap:nowrap;justify-content:flex-end;margin-left:auto;flex:none}
+.lf-steps{display:flex;gap:4px;list-style:none;margin:0;padding:3px;border:1px solid var(--lf-line);border-radius:999px;background:#fff}
+.lf-steps li{margin:0}
+.lf-step{display:flex;align-items:center;gap:6px;border:0!important;background:transparent!important;box-shadow:none!important;border-radius:999px!important;padding:5px 12px 5px 6px!important;min-height:36px;font-size:var(--lf-t-ui,16px);font-weight:650;color:var(--lf-soft)!important;white-space:nowrap}
+.lf-step b{display:inline-grid;place-items:center;width:24px;height:24px;border-radius:50%;font-size:13px;background:#e8eeeb;color:var(--lf-soft)}
+.lf-step[data-lf-stage=motivate]{--c:var(--lf-motivate)}.lf-step[data-lf-stage=explore]{--c:var(--lf-explore)}.lf-step[data-lf-stage=formalize]{--c:var(--lf-formalize)}.lf-step[data-lf-stage=practice]{--c:var(--lf-practice)}
+.lf-step:hover{background:#f1f5f3!important}
+.lf-step.active{background:var(--c)!important;color:#fff!important}
+.lf-step.active b{background:#fff;color:var(--c)}
+.lf-move{display:flex;gap:6px}
+.lf-move button,.lf-overview,.lf-help{min-height:40px;font-size:var(--lf-t-ui,15px);font-weight:650;border-radius:10px;padding:7px 13px;white-space:nowrap}
+.lf-prev{width:6.9em}
+.lf-next{background:var(--lf-c)!important;border-color:var(--lf-c)!important;color:#fff!important;width:14.4em;display:inline-flex;align-items:center;justify-content:center;gap:4px}
+.lf-next span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.lf-next:disabled{background:#e9eeeb!important;border-color:#d7e0db!important;color:#33494a!important;opacity:1}
+.lf-help{width:40px;padding:0!important;font-weight:800}
+.lf-help-panel{position:absolute;right:0;top:calc(100% + 8px);z-index:40;width:min(470px,92vw);background:#fff;color:var(--lf-ink);border:1px solid var(--lf-line);border-radius:14px;box-shadow:0 18px 44px #10292a33;padding:16px 18px;font-size:16px;line-height:1.6;text-align:left}
+.lf-help-panel strong{display:block;font-size:17px;margin-bottom:6px;outline:none}
+.lf-help-panel ul{margin:0;padding-left:20px}.lf-help-panel li{margin:4px 0}
+.lf-help-panel kbd{font:600 13px ui-monospace,monospace;border:1px solid #c5d2cc;border-bottom-width:2px;border-radius:5px;padding:0 5px;background:#f6f8f7}
+
+/* Stage card head (inside the existing side panel) */
+.lf-card-head{display:none}
+body.lf-on .lf-card-head{display:flex;gap:12px;align-items:center;padding:11px 16px;border-radius:14px;background:var(--lf-bg);border:1px solid #d9e2de;border:1px solid color-mix(in srgb,var(--lf-c) 28%,#fff);border-left:6px solid var(--lf-c)}
+.lf-num{flex:none;display:grid;place-items:center;width:34px;height:34px;border-radius:50%;background:var(--lf-c);color:#fff;font-size:19px;font-weight:800}
+.lf-cue-line{margin:0!important;font-size:var(--lf-t-read)!important;line-height:1.45!important;color:var(--lf-ink)!important}
+.lf-title{font-size:1.06em;color:var(--lf-c);margin-right:.55em;letter-spacing:.04em}
+.lf-hint{display:none}
+body.lf-on .lf-hint{display:block;font-size:14px;color:var(--lf-soft);margin-left:auto;margin-right:8px;text-align:right;line-height:1.3}
+
+/* Controls inside the stage card never drop below 16 px on a projector. */
+body.lf-on .lf-card button:not(.token){font-size:max(16px,var(--lf-t-ui));min-height:38px}
+/* Data tables shown in a stage card are key content: reading size. */
+body.lf-on .lf-card table th,body.lf-on .lf-card table td{font-size:var(--lf-t-read)}
+/* Formula annotations (small/sub/sup labels) stay readable: 16 px, dark ink. */
+body.lf-on .lf-card small{font-size:16px;font-weight:600;color:var(--lf-soft)}
+
+/* Calm, legible transitions; reduced motion removes them entirely. */
+@keyframes lf-in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+body.lf-on .lf-card.lf-enter>*{animation:lf-in .24s ease-out both}
+@media (prefers-reduced-motion:reduce){body.lf-on .lf-card.lf-enter>*{animation:none!important}}
+body.low-motion .lf-card.lf-enter>*,body.reduced .lf-card.lf-enter>*,body.lf-reduce .lf-card.lf-enter>*{animation:none!important}
+
+/* Folding: hidden blocks leave the layout, except keep-layout ones (parameter
+   bars) which collapse to zero height and are inert, so in-figure editors that
+   list "visible" source controls keep working in every stage. */
+body.lf-on .lf-fold:not(.lf-keep){display:none!important}
+body.lf-on .lf-keep.lf-fold{height:0!important;min-height:0!important;padding:0!important;margin:0!important;border:0!important;overflow:hidden!important;opacity:0;box-shadow:none!important}
+body.lf-on .lf-tools{display:block}
+body.lf-on:not(.lf-tools-open) .lf-tools{height:0;overflow:hidden;opacity:0}
+.lf-tools-toggle{display:none}
+body.lf-on .lf-tools-toggle{display:inline-flex;align-items:center;min-height:34px;font-size:14px;padding:4px 11px}
+
+/* ---------- primary runtime (小学) ---------- */
+/* Same hues as the chapter's A/B/C/R colour coding, darkened for projector contrast (≥6:1 on white). */
+body.lf-on[data-lf-family=primary]{--muted:#3f5657;--a:#1f5f99;--b:#93530a;--c:#6a44a0;--teal:#0f6558}
+/* Stacked fractions are key mathematics: full size in lesson mode (runtime default is .85em). */
+body.lf-on[data-lf-family=primary] .frac{font-size:1em}
+/* Tokens coloured inline with the runtime's teal (#147c69) get the same darker teal. */
+body.lf-on[data-lf-family=primary] .token[style*="147c69"]{color:#0f6558!important}
+body.lf-on[data-lf-family=primary] .topbar{padding:7px 18px}
+body.lf-on[data-lf-family=primary] .brand-icon{width:32px;height:32px;font-size:19px}
+body.lf-on[data-lf-family=primary] .eyebrow{display:none}
+body.lf-on[data-lf-family=primary] .brand h1{font-size:21px}
+body.lf-on[data-lf-family=primary] .scene-nav{padding:0 18px 7px}
+body.lf-on[data-lf-family=primary] .scene-nav a{font-size:15px;padding:5px 11px}
+body.lf-on[data-lf-family=primary] main{padding:7px 18px 20px}
+body.lf-on[data-lf-family=primary] .scene-heading{align-items:center;margin:0 0 7px;gap:8px 14px}
+body.lf-on[data-lf-family=primary] .scene-heading>div:first-child{flex:1;min-width:0}
+body.lf-on[data-lf-family=primary] .scene-heading h2{font-size:var(--lf-t-title);line-height:1.25}
+body.lf-on[data-lf-family=primary] .scene-heading p{font-size:var(--lf-t-sub);color:var(--lf-soft);margin-top:2px}
+body.lf-on[data-lf-family=primary] #scene-code{display:none}
+body.lf-on[data-lf-family=primary] .workbench{grid-template-columns:minmax(0,1.78fr) minmax(300px,1fr);gap:14px}
+body.lf-on[data-lf-family=primary] .model-top{padding:3px 12px;min-height:36px}
+body.lf-on[data-lf-family=primary] .model-top .right-label{display:none}
+body.lf-on[data-lf-family=primary] .model-top strong{font-size:16px}
+body.lf-on[data-lf-family=primary] .timeline{padding:4px 12px;gap:8px}
+body.lf-on[data-lf-family=primary] .timeline-caption{font-size:15px;color:var(--lf-soft)}
+/* --lf-fig-h is measured by lesson-flow.js: the height left under the figure's
+   real top edge in the first screen, so the whole model is visible. */
+body.lf-on[data-lf-family=primary] #diagram{width:min(100%,calc(var(--lf-fig-h,440px) * 1.7021));margin-inline:auto}
+body.lf-on[data-lf-family=primary] #diagram text{font-size:23px}
+body.lf-on[data-lf-family=primary] #diagram .small{font-size:19px;fill:#3f5657}
+body.lf-on[data-lf-family=primary] #diagram .tiny{font-size:17px;fill:#3f5657}
+body.lf-on[data-lf-family=primary] #diagram .label{font-size:23px}
+body.lf-on[data-lf-family=primary] #diagram .big{font-size:30px}
+/* The fallback warning is pinned directly under the figure title so the
+   degradation is never below the fold (honest 2D path). */
+body.lf-on[data-lf-family=primary] .model-panel{display:flex;flex-direction:column}
+body.lf-on[data-lf-family=primary] .model-panel>*{order:2}
+body.lf-on[data-lf-family=primary] .model-panel>.model-top{order:0}
+body.lf-on[data-lf-family=primary] .model-panel>#fallback-warning{order:1;font-size:14px;line-height:1.4;padding:5px 12px;font-weight:650;border-bottom:1px solid #f0dcb4}
+body.lf-on[data-lf-family=primary] .engine-badge{font-size:13px;font-weight:700;color:#23393a;background:#fffffff0;border:1px solid #cfdcd6;padding:3px 8px}
+body.lf-on[data-lf-family=primary] .info-panel{gap:10px;align-self:stretch}
+body.lf-on[data-lf-family=primary] .info-panel>.info-block{border-radius:14px;padding:13px 17px}
+body.lf-on[data-lf-family=primary] .info-block h3{font-size:14px;color:var(--lf-soft)}
+body.lf-on[data-lf-family=primary] .info-block p{font-size:var(--lf-t-key)}
+body.lf-on[data-lf-family=primary] .info-block .plain,body.lf-on[data-lf-family=primary] .meaning-row{font-size:var(--lf-t-read);color:var(--lf-ink)}
+body.lf-on[data-lf-family=primary] .info-block.current{background:#fff;border-color:var(--lf-line)}
+body.lf-on[data-lf-family=primary][data-lf-stage=formalize] .info-block.current{background:var(--lf-formalize-bg);border-color:#bfe0d9}
+body.lf-on[data-lf-family=primary] .equation{font-size:var(--lf-t-eq)}
+body.lf-on[data-lf-family=primary] .math-note{font-size:max(18px,calc(var(--lf-t-read) - 1px))!important;color:var(--lf-ink)!important}
+body.lf-on[data-lf-family=primary] .feedback-message{font-size:17px}
+body.lf-on[data-lf-family=primary] .info-panel>#controls{display:flex;flex-wrap:wrap;gap:10px 14px;padding:13px 16px;border:1px solid var(--lf-line);border-radius:14px;background:#fbfcfb}
+body.lf-on[data-lf-family=primary] .info-panel>#controls .control{font-size:16px;color:var(--lf-ink)}
+body.lf-on[data-lf-family=primary] .info-panel>#controls input[type=number]{width:78px;height:42px;font-size:19px}
+body.lf-on[data-lf-family=primary] .info-panel>#controls select{height:42px;font-size:17px}
+body.lf-on[data-lf-family=primary] .info-panel>#figure-note{font-size:17px;color:var(--lf-soft);padding:2px 4px;min-height:0}
+body.lf-on[data-lf-family=primary] .info-panel>#exercise{border:1px solid #d5c9ef;border-radius:14px;background:#fff;padding:14px 17px}
+body.lf-on[data-lf-family=primary] .info-panel>#exercise summary{font-size:17px;font-weight:700;color:var(--lf-practice)}
+body.lf-on[data-lf-family=primary] .info-panel>#exercise .detail-content{font-size:var(--lf-t-read);color:var(--lf-ink)}
+body.lf-on[data-lf-family=primary] .info-panel>#exercise input{font-size:19px;height:44px}
+body.lf-on[data-lf-family=primary] .info-panel>#exercise .exercise-answer{font-size:var(--lf-t-read)}
+body.lf-on[data-lf-family=primary] .info-panel>#exercise .exercise-answer:empty{display:none}
+body.lf-on[data-lf-family=primary] .auxiliary{grid-template-columns:1fr}
+@media (max-width:1180px){body.lf-on[data-lf-family=primary] .scene-heading{flex-wrap:wrap}body.lf-on[data-lf-family=primary] .scene-heading>div:first-child{flex-basis:100%}.lf-rail{margin-left:0;justify-content:flex-start}}
+@media (max-width:960px){body.lf-on[data-lf-family=primary] .workbench{grid-template-columns:1fr}.lf-rail{flex-wrap:wrap}}
+@media (max-width:800px){.lf-step{font-size:14px;padding:5px 9px 5px 5px!important}.lf-next{width:auto}.lf-prev{width:auto}}
+@media print{.lf-rail,.lf-card-head,.lf-tools-toggle{display:none!important}}
+
+/* ---------- junior runtime (初中) ---------- */
+/* The junior plot measures itself on each render and draws at 1:1 CSS px (labels
+   stay 20 px), so lesson mode keeps its native size and moves side blocks only. */
+body.lf-on[data-lf-family=junior]{--muted:#3f5a60}
+body.lf-on[data-lf-family=junior] .scene-nav{padding-bottom:8px}
+body.lf-on[data-lf-family=junior] .scene-nav button{padding:6px 10px}
+body.lf-on[data-lf-family=junior] .scene-heading{padding:8px 0 8px;gap:8px 14px}
+body.lf-on[data-lf-family=junior] .scene-heading>div:first-child{flex:1;min-width:0}
+body.lf-on[data-lf-family=junior] #entryLabel{display:none}
+body.lf-on[data-lf-family=junior] .scene-heading h2{font-size:var(--lf-t-title)}
+body.lf-on[data-lf-family=junior] .scene-heading p{font-size:var(--lf-t-sub);color:var(--lf-soft)}
+body.lf-on[data-lf-family=junior] .workspace{grid-template-columns:minmax(0,1.62fr) minmax(300px,1fr);gap:14px}
+body.lf-on[data-lf-family=junior] aside.reading{display:flex;flex-direction:column;gap:10px;padding:12px 14px}
+body.lf-on[data-lf-family=junior] aside.reading>*{margin:0}
+body.lf-on[data-lf-family=junior] aside.reading>.eyebrow{font-size:14px;color:var(--lf-soft);margin-bottom:-4px}
+body.lf-on[data-lf-family=junior] .definition{font-size:var(--lf-t-key);color:var(--lf-ink)}
+body.lf-on[data-lf-family=junior] .mapping{font-size:var(--lf-t-read);color:var(--lf-ink)}
+body.lf-on[data-lf-family=junior] .formula{font-size:var(--lf-t-eq);border-top:0;padding:4px 0}
+body.lf-on[data-lf-family=junior] .formula .second{font-size:var(--lf-t-read);color:var(--lf-soft)}
+body.lf-on[data-lf-family=junior] .readings{margin:0}
+body.lf-on[data-lf-family=junior] .readings dt{font-size:15px;color:var(--lf-soft)}
+body.lf-on[data-lf-family=junior] .feedback{font-size:var(--lf-t-read)}
+body.lf-on[data-lf-family=junior] .selected-note{font-size:var(--lf-t-read);color:#6b4a12}
+body.lf-on[data-lf-family=junior] .gesture-hint{font-size:15px;color:#1f5a51}
+body.lf-on[data-lf-family=junior] .diagram-caption{font-size:16px;color:var(--lf-soft)}
+body.lf-on[data-lf-family=junior] aside.reading>.controls-card{box-shadow:none;padding:10px 12px;display:flex;flex-direction:column;gap:8px}
+body.lf-on[data-lf-family=junior] aside.reading>.controls-card .controls{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+body.lf-on[data-lf-family=junior] aside.reading>.controls-card .control-heading>strong{display:none}
+body.lf-on[data-lf-family=junior] aside.reading>section.timeline{box-shadow:none;padding:8px 10px;gap:8px}
+body.lf-on[data-lf-family=junior] aside.reading>section.timeline strong{min-width:0}
+body.lf-on[data-lf-family=junior] aside.reading>#counterexample,body.lf-on[data-lf-family=junior] aside.reading>#snapshot{align-self:flex-start}
+body.lf-on[data-lf-family=junior] aside.reading>#exerciseDetails{border:1px solid #d5c9ef;border-radius:14px;background:#fff;padding:12px 16px}
+body.lf-on[data-lf-family=junior] aside.reading>#exerciseDetails summary{font-size:17px;font-weight:700;color:var(--lf-practice);cursor:pointer}
+body.lf-on[data-lf-family=junior] aside.reading>#exerciseDetails .extra-body,body.lf-on[data-lf-family=junior] aside.reading>#exerciseDetails p{font-size:var(--lf-t-read);color:var(--lf-ink)}
+body.lf-on[data-lf-family=junior] aside.reading>#exerciseDetails .answer{font-size:var(--lf-t-read)}
+body.lf-on[data-lf-family=junior] .top-tools .lf-pin{font-size:14px}
+@media (max-width:1180px){body.lf-on[data-lf-family=junior] .scene-heading{flex-wrap:wrap}body.lf-on[data-lf-family=junior] .scene-heading>div:first-child{flex-basis:100%}}
+@media (max-width:960px){body.lf-on[data-lf-family=junior] .workspace{grid-template-columns:1fr}}
+body.lf-on[data-lf-family=junior] header.top{padding-top:6px;padding-bottom:4px}
+body.lf-on[data-lf-family=junior] header.top .brand{display:none}
+body.lf-on[data-lf-family=junior] header.top h1{font-size:24px;margin:0}
+body.lf-on[data-lf-family=junior] .figure-head{padding-top:6px;padding-bottom:6px}
+body.lf-on[data-lf-family=junior] .figure-card>.fallback-warning{font-size:14px;font-weight:650;line-height:1.4;padding:5px 12px}
+body.lf-on[data-lf-family=junior] .engine-badge{font-size:13px;font-weight:700}
+
+/* ---------- senior runtime (高中) ---------- */
+/* The senior painter also measures its SVG on each render (1:1 px), so the plot
+   keeps the runtime's height; lesson mode re-sequences the side sections only. */
+body.lf-on[data-lf-family=senior]{--muted:#3d5752}
+body.lf-on[data-lf-family=senior] .head{padding-top:4px;padding-bottom:2px}
+body.lf-on[data-lf-family=senior] .head .eyebrow{display:none}
+body.lf-on[data-lf-family=senior] .head h1{font-size:24px}
+body.lf-on[data-lf-family=senior] .tabs{margin:8px 0 8px}
+body.lf-on[data-lf-family=senior] .scenehead{margin-bottom:8px;gap:8px 14px}
+body.lf-on[data-lf-family=senior] .scenehead>h2{flex:1;min-width:0;font-size:var(--lf-t-title)}
+body.lf-on[data-lf-family=senior] .scenehead>small{display:none}
+body.lf-on[data-lf-family=senior] .bench{grid-template-columns:minmax(0,1.62fr) minmax(300px,1fr);gap:14px}
+body.lf-on[data-lf-family=senior] aside.lesson{display:flex;flex-direction:column;gap:10px;border-left:0;padding-left:0}
+body.lf-on[data-lf-family=senior] aside.lesson>.sect{margin:0;padding:12px 16px;border:1px solid var(--lf-line);border-radius:14px;background:#fff}
+body.lf-on[data-lf-family=senior][data-lf-stage=formalize] aside.lesson>.sect[data-lf-block=definition]{background:var(--lf-formalize-bg);border-color:#bfe0d9}
+body.lf-on[data-lf-family=senior] .sect .label{font-size:14px;color:var(--lf-soft)}
+body.lf-on[data-lf-family=senior] #definition{font-size:var(--lf-t-key);color:var(--lf-ink);margin:0}
+body.lf-on[data-lf-family=senior] #formula{font-size:var(--lf-t-eq)}
+body.lf-on[data-lf-family=senior] #correspondence{font-size:var(--lf-t-read);color:var(--lf-ink)}
+body.lf-on[data-lf-family=senior] #selection{font-size:17px;color:var(--lf-soft)}
+body.lf-on[data-lf-family=senior] #feedback{font-size:var(--lf-t-read)}
+body.lf-on[data-lf-family=senior] #why{font-size:var(--lf-t-read);color:var(--lf-ink)}
+body.lf-on[data-lf-family=senior] .boardnote{font-size:16px;color:var(--lf-soft)}
+body.lf-on[data-lf-family=senior] #plot text{font-size:18px}
+body.lf-on[data-lf-family=senior] aside.lesson>#metrics{border:1px solid var(--lf-line);border-radius:12px;overflow:hidden;grid-template-columns:repeat(2,minmax(0,1fr))}
+body.lf-on[data-lf-family=senior] aside.lesson>#controls{margin:0;grid-template-columns:repeat(2,minmax(0,1fr))}
+body.lf-on[data-lf-family=senior] aside.lesson>section.animation{margin:0;padding:8px 10px;border:1px solid var(--lf-line);border-radius:12px;background:#fff}
+body.lf-on[data-lf-family=senior] aside.lesson>section.animation small{font-size:15px;color:var(--lf-soft)}
+body.lf-on[data-lf-family=senior] aside.lesson>#exercise{border:1px solid #d5c9ef;border-radius:14px;background:#fff;padding:12px 16px}
+body.lf-on[data-lf-family=senior] aside.lesson>#exercise summary{font-size:17px;font-weight:700;color:var(--lf-practice);cursor:pointer}
+body.lf-on[data-lf-family=senior] aside.lesson>#exercise .detailsbody,body.lf-on[data-lf-family=senior] aside.lesson>#exercise p{font-size:var(--lf-t-read);color:var(--lf-ink)}
+body.lf-on[data-lf-family=senior] aside.lesson>#exercise .answer{font-size:var(--lf-t-read)}
+body.lf-on[data-lf-family=senior] .fallback-warning{font-size:14px;font-weight:650;line-height:1.4}
+body.lf-on[data-lf-family=senior] .engine-badge{font-size:13px;font-weight:700}
+@media (max-width:1180px){body.lf-on[data-lf-family=senior] .scenehead{flex-wrap:wrap}body.lf-on[data-lf-family=senior] .scenehead>h2{flex-basis:100%}}
+@media (max-width:960px){body.lf-on[data-lf-family=senior] .bench{grid-template-columns:1fr}}
+
+/* ---------- H16 runtime (高中 · 导数) ---------- */
+body.lf-on[data-lf-family=h16] .header .eyebrow{display:none}
+body.lf-on[data-lf-family=h16] .header h1{font-size:24px}
+body.lf-on[data-lf-family=h16] .scene-line{gap:8px 14px;align-items:center}
+body.lf-on[data-lf-family=h16] .scene-line>div:first-child{flex:1;min-width:0}
+body.lf-on[data-lf-family=h16] #sceneTitle{font-size:var(--lf-t-title)}
+body.lf-on[data-lf-family=h16] .scene-line .question{font-size:var(--lf-t-sub);color:var(--lf-soft)}
+body.lf-on[data-lf-family=h16] #knowledgeBadge{display:none}
+body.lf-on[data-lf-family=h16] .workbench{grid-template-columns:minmax(0,1.62fr) minmax(300px,1fr);gap:14px}
+body.lf-on[data-lf-family=h16] aside.lesson{display:flex;flex-direction:column;gap:10px}
+body.lf-on[data-lf-family=h16] aside.lesson>.lesson-section{margin:0;padding:12px 16px;border:1px solid var(--lf-line);border-radius:14px;background:#fff}
+body.lf-on[data-lf-family=h16][data-lf-stage=formalize] aside.lesson>.lesson-section[data-lf-block=definition]{background:var(--lf-formalize-bg);border-color:#bfe0d9}
+body.lf-on[data-lf-family=h16] .section-label{font-size:14px;color:var(--lf-soft)}
+body.lf-on[data-lf-family=h16] .definition{font-size:var(--lf-t-key);color:var(--lf-ink)}
+body.lf-on[data-lf-family=h16] .formula{font-size:var(--lf-t-eq)}
+body.lf-on[data-lf-family=h16] aside.lesson .explain,body.lf-on[data-lf-family=h16] aside.lesson .facts{font-size:var(--lf-t-read);color:var(--lf-ink)}
+body.lf-on[data-lf-family=h16] .selection-info{font-size:17px;color:var(--lf-soft)}
+body.lf-on[data-lf-family=h16] .graph-note{font-size:16px;color:var(--lf-soft)}
+body.lf-on[data-lf-family=h16] aside.lesson>#metrics{border:1px solid var(--lf-line);border-radius:12px;overflow:hidden}
+body.lf-on[data-lf-family=h16] aside.lesson>#controls{margin:0}
+body.lf-on[data-lf-family=h16] aside.lesson>section.animation{margin:0;padding:8px 10px;border:1px solid var(--lf-line);border-radius:12px;background:#fff}
+body.lf-on[data-lf-family=h16] aside.lesson>#exercise{border:1px solid #d5c9ef;border-radius:14px;background:#fff;padding:12px 16px}
+body.lf-on[data-lf-family=h16] aside.lesson>#exercise summary{font-size:17px;font-weight:700;color:var(--lf-practice);cursor:pointer}
+body.lf-on[data-lf-family=h16] aside.lesson>#exercise .details-body,body.lf-on[data-lf-family=h16] aside.lesson>#exercise p{font-size:var(--lf-t-read);color:var(--lf-ink)}
+body.lf-on[data-lf-family=h16] aside.lesson>#exercise .answer{font-size:var(--lf-t-read)}
+@media (max-width:1180px){body.lf-on[data-lf-family=h16] .scene-line{flex-wrap:wrap}body.lf-on[data-lf-family=h16] .scene-line>div:first-child{flex-basis:100%}}
+@media (max-width:960px){body.lf-on[data-lf-family=h16] .workbench{grid-template-columns:1fr}}
+/* H16 colour tokens: same hues, ≥6:1 on white; card tokens bold like the other families. */
+body.lf-on[data-lf-family=h16]{--green:#066a58;--orange:#9a4a10;--blue:#1f5f99;--purple:#6a44a0;--muted:#3d5760}
+body.lf-on[data-lf-family=h16] .lf-card .token{font-weight:700}
+/* W3 senior chapters: keep the engine badge clear of the fallback warning bar. */
+body.lf-on[data-lf-family=senior] .board:has(>#fallback-warning:not([hidden])) .engine-badge{top:84px}
+
+/* ---------- single-scene 3D demo (高中/空间几何关系) ---------- */
+.lf-sr{position:absolute!important;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+body.lf-on[data-lf-family=space] main{max-width:1200px;padding:10px 16px}
+body.lf-on[data-lf-family=space] main>section{padding:12px 20px;margin-bottom:10px}
+body.lf-on[data-lf-family=space] main>section:first-child>.tag{font-size:15px}
+body.lf-on[data-lf-family=space] main>section:first-child>h1{margin:0;font-size:var(--lf-t-title)}
+body.lf-on[data-lf-family=space] main>section:first-child>p{margin:0 0 6px;font-size:var(--lf-t-sub);color:#3d5566}
+body.lf-on[data-lf-family=space] main>section:nth-child(2)>p:first-child{margin:0 0 6px;font-size:17px;color:#3d5566}
+/* figure left, the step's own controls in a column on the right */
+body.lf-on[data-lf-family=space] .board.lf-card{display:grid;grid-template-columns:minmax(0,1fr) 172px 172px;grid-template-rows:auto repeat(14,min-content) 1fr;column-gap:18px;row-gap:6px;align-items:start;margin-top:6px;padding:12px}
+body.lf-on[data-lf-family=space] .board.lf-card>*{grid-column:2/4;justify-self:start;margin:0}
+/* paired buttons share a row: 锁定/重置视角, 先猜一下/显示规律 */
+body.lf-on[data-lf-family=space] .board.lf-card>#lock,body.lf-on[data-lf-family=space] .board.lf-card>#guess{grid-column:2;justify-self:stretch}
+body.lf-on[data-lf-family=space] .board.lf-card>#reset,body.lf-on[data-lf-family=space] .board.lf-card>#show{grid-column:3;justify-self:stretch}
+body.lf-on[data-lf-family=space] .board.lf-card>.lf-card-head{grid-column:1/-1;grid-row:1;justify-self:stretch}
+body.lf-on[data-lf-family=space] .board.lf-card>canvas{grid-column:1;grid-row:2/-1;justify-self:stretch;height:var(--lf-fig-h,420px)}
+body.lf-on[data-lf-family=space] .board.lf-card>.fallback-warning{order:-1;justify-self:stretch;font-size:15px;font-weight:650;line-height:1.45;border-radius:9px}
+body.lf-on[data-lf-family=space] .board.lf-card>.svg-fallback,body.lf-on[data-lf-family=space] .board.lf-card>[data-sd=overlay]{grid-column:auto}
+body.lf-on[data-lf-family=space] .board.lf-card>.engine-badge{grid-column:auto;font-size:13px;font-weight:700;color:#203548}
+body.lf-on[data-lf-family=space] .board .group{display:flex;flex-wrap:wrap;gap:6px;margin:0}
+body.lf-on[data-lf-family=space] .board .group{align-items:center}
+body.lf-on[data-lf-family=space] .board .group b{min-width:2.4em;font-size:17px;color:#203548}
+body.lf-on[data-lf-family=space] .board button{font-size:17px;font-weight:650;min-height:44px;padding:8px 12px;margin:0}
+body.lf-on[data-lf-family=space] .board button.active{background:#1f5572;outline:3px solid #f0a53a;outline-offset:2px}
+body.lf-on[data-lf-family=space] .board button:focus-visible{outline:3px solid #b35a00;outline-offset:2px}
+body.lf-on[data-lf-family=space] #legend{font-size:18px;font-weight:650;gap:18px;color:#203548}
+body.lf-on[data-lf-family=space] #legend .l1{color:#b8433a}
+body.lf-on[data-lf-family=space] #legend .l2{color:#1d64a8}
+body.lf-on[data-lf-family=space] #o{font-size:var(--lf-t-key);font-weight:750;color:#203548;justify-self:stretch}
+body.lf-on[data-lf-family=space] #a{font-size:18px;color:#1f5a43;justify-self:stretch}
+body.lf-on[data-lf-family=space] #a:empty{display:none}
+body.lf-on[data-lf-family=space] .board:not(.lf-card){margin-top:0;padding:12px 18px;font-size:var(--lf-t-read)}
+body.lf-on[data-lf-family=space] .board:not(.lf-card) summary{font-size:18px;font-weight:700;color:var(--lf-practice);cursor:pointer}
+body.lf-on[data-lf-family=space] .board:not(.lf-card) .answer{font-size:18px}
+@media (max-width:959px){
+body.lf-on[data-lf-family=space] .board.lf-card{display:block}
+body.lf-on[data-lf-family=space] .board.lf-card>canvas{height:min(var(--lf-fig-h,420px),52vh)}
+body.lf-on[data-lf-family=space] .board.lf-card>.lf-card-head,body.lf-on[data-lf-family=space] .board.lf-card>.group,body.lf-on[data-lf-family=space] .board.lf-card>#o,body.lf-on[data-lf-family=space] .board.lf-card>#a,body.lf-on[data-lf-family=space] .board.lf-card>.board{margin:8px 0}
+body.lf-on[data-lf-family=space] .board.lf-card>button{margin:6px 6px 0 0}
+}</style></head>
+<body>
+<header><div class="topbar"><div class="brand"><a class="brand-icon" href="../index.html" title="返回小学原目录" aria-label="返回小学原目录">M</a><div><div class="eyebrow">MATHAGENT · 小学数学工作台</div><h1 id="chapter-title"></h1></div></div><div class="global-tools"><button id="undo" title="撤销数学参数，保留视角">↶ 撤销</button><button id="reset">本场景重置</button><button id="large-text" aria-pressed="false">大字</button><button id="fullscreen">全屏</button><label><input type="checkbox" id="reduced">减少动态</label></div></div><nav id="scene-nav" class="scene-nav" aria-label="章节内自由场景"></nav></header>
+<main><div class="scene-heading"><div><h2 id="scene-title"></h2><p id="scene-subtitle"></p></div><span id="scene-code" class="scene-code"></span></div>
+<div class="workbench"><section class="model-panel" aria-label="模型与操作"><div class="model-top"><div class="model-label"><span class="status-dot"></span><strong id="model-name"></strong></div><span class="right-label">操作改变什么，图与数就解释什么</span></div><div id="controls" class="controls"></div><div id="figure-wrap" class="figure-wrap"><canvas id="space-canvas" class="space-canvas" hidden></canvas><div id="camera-tools" class="camera-tools" hidden></div><span id="engine-badge" class="engine-badge" hidden></span><svg id="diagram" viewBox="0 0 800 470" role="img" aria-label="数学模型"></svg></div><div id="fallback-warning" class="fallback-warning" hidden></div><div id="figure-note" class="figure-note"></div><div id="timeline" class="timeline"><div class="transport"><button id="play">▶ 播放</button><button id="pause" disabled>暂停</button><button id="reverse">◀ 反向</button><button id="replay">重播</button></div><label>演示进度<input id="progress" type="range" min="0" max="1000" step="1" value="0" aria-label="演示进度"></label><output id="progress-value">0%</output><div id="timeline-caption" class="timeline-caption"></div></div></section>
+<aside class="info-panel" aria-label="定义与当前解释"><section class="info-block"><h3>01 / 定义说的是什么</h3><p id="definition"></p><p id="plain-language" class="plain"></p></section><section class="info-block"><h3>02 / 图中对应的是</h3><div id="correspondence"></div></section><section class="info-block current"><h3>03 / 当前量与关系</h3><div id="equation" class="equation"></div><p id="fact" class="math-note"></p><div id="feedback-message" class="feedback-message"></div></section></aside></div>
+<div class="auxiliary"><details id="exercise"><summary>可选练习 · 随时查看答案</summary><div class="detail-content"><div id="exercise-question"></div><div class="exercise-controls"><input id="exercise-input" aria-label="练习回答" placeholder="例如 5/6；只填数值"><button id="check-answer">检查回答</button><button id="show-answer">直接显示答案</button></div><div id="exercise-result" class="exercise-answer"></div></div></details><details id="teacher"><summary>教师可用能力与条件说明</summary><div id="teacher-content" class="detail-content"></div></details></div>
+<footer class="footer"><span>MathAgent · 原目录编号保留 · 单文件无网络依赖</span><span>定义措辞待指定教材审校；教师可直接切换场景，不设教学门禁。</span></footer></main><div id="announcer" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
+<script></script><script>/* MathAgent | Pure mathematical kernel. No DOM, no network, no eval. */
+(function(root){
+'use strict';
+const gcd=(a,b)=>{a=Math.abs(a);b=Math.abs(b);while(b){[a,b]=[b,a%b]}return a||1};
+const lcm=(a,b)=>Math.abs(a/gcd(a,b)*b);
+function rational(n,d=1){if(!Number.isSafeInteger(n)||!Number.isSafeInteger(d)||d===0)throw new RangeError('分子、分母须为安全整数，分母不能为0');if(d<0){n=-n;d=-d}const g=gcd(n,d);return {n:n/g,d:d/g}}
+const add=(a,b)=>rational(a.n*b.d+b.n*a.d,a.d*b.d);
+const sub=(a,b)=>rational(a.n*b.d-b.n*a.d,a.d*b.d);
+const mul=(a,b)=>rational(a.n*b.n,a.d*b.d);
+const div=(a,b)=>{if(!b.n)throw new RangeError('除数不能为0');return rational(a.n*b.d,a.d*b.n)};
+const value=a=>a.n/a.d;
+const str=a=>a.d===1?String(a.n):`${a.n}/${a.d}`;
+function parseFraction(s){s=String(s).trim().replace(/\s/g,'');if(!/^[+-]?\d+(?:\/\d+|\.\d+)?$/.test(s))return null;try{if(s.includes('/')){let a=s.split('/').map(Number);return rational(a[0],a[1])}if(s.includes('.')){let sign=s[0]==='-'?-1:1;let a=s.replace(/^[+-]/,'').split('.');return rational(sign*(Number(a[0])*10**a[1].length+Number(a[1])),10**a[1].length)}return rational(Number(s))}catch{return null}}
+const eq=(a,b)=>!!a&&!!b&&a.n*b.d===b.n*a.d;
+const rect=(l,w)=>({perimeter:2*(l+w),area:l*w});
+function box(l,w,h){if([l,w,h].some(v=>!Number.isFinite(v)||v<=0))throw new RangeError('长、宽、高必须大于0');return{volume:l*w*h,surface:2*(l*w+l*h+w*h),base:l*w,faces:{bottom:l*w,top:l*w,front:l*h,back:l*h,left:w*h,right:w*h},views:{front:[l,h],top:[l,w],side:[w,h]}}}
+function cylinder(r,h){if(!(r>0&&h>0))throw new RangeError('半径与高必须大于0');return{volume:Math.PI*r*r*h,surface:2*Math.PI*r*(r+h),cone:Math.PI*r*r*h/3,lateral:2*Math.PI*r*h,circumference:2*Math.PI*r}}
+function signedArea(poly){return poly.reduce((s,p,i)=>{let q=poly[(i+1)%poly.length];return s+p[0]*q[1]-q[0]*p[1]},0)/2}
+const area=poly=>Math.abs(signedArea(poly));
+function clip(poly,x0,y0,x1,y1){let out=poly.map(p=>p.slice());for(const [axis,bound,ge] of [[0,x0,true],[0,x1,false],[1,y0,true],[1,y1,false]]){const inp=out;out=[];if(!inp.length)break;for(let i=0;i<inp.length;i++){let a=inp[i],b=inp[(i+1)%inp.length],ia=ge?a[axis]>=bound:a[axis]<=bound,ib=ge?b[axis]>=bound:b[axis]<=bound;if(ia)out.push(a);if(ia!==ib){let t=(bound-a[axis])/(b[axis]-a[axis]);out.push([a[0]+t*(b[0]-a[0]),a[1]+t*(b[1]-a[1])])}}}return out}
+const irregular=[[.4,.5],[4.8,.3],[5.5,2],[4.5,2.8],[5.1,4.7],[2.8,4.4],[.6,3.6]];
+function gridBounds(step,poly=irregular){let full=0,boundary=0,cells=[];for(let i=0;i<Math.round(6/step);i++)for(let j=0;j<Math.round(5/step);j++){let a=area(clip(poly,i*step,j*step,(i+1)*step,(j+1)*step));let type=a<1e-10?'empty':Math.abs(a-step*step)<1e-9?'full':'boundary';if(type==='full')full++;if(type==='boundary')boundary++;cells.push({x:i*step,y:j*step,type,area:a})}return{full,boundary,lower:full*step*step,upper:(full+boundary)*step*step,cells,exact:area(poly)}}
+const rotate2=(p,c,ang)=>[c[0]+(p[0]-c[0])*Math.cos(ang)-(p[1]-c[1])*Math.sin(ang),c[1]+(p[0]-c[0])*Math.sin(ang)+(p[1]-c[1])*Math.cos(ang)];
+function cuts(kind,b,h,a=3,skew=2,t=0){if(kind==='para'){let s=Math.min(skew,b);return{pieces:[[[s,0],[b,0],[b+s,h],[s,h]],[[0,0],[s,0],[s,h]].map(p=>[p[0]+b*t,p[1]])],original:[[0,0],[b,0],[b+s,h],[s,h]],singleArea:b*h,totalArea:b*h}}
+let s=kind==='triangle'?Math.min(skew,b):(b-a)/2;let original=kind==='triangle'?[[0,0],[b,0],[s,h]]:[[0,0],[b,0],[s+a,h],[s,h]];let C=kind==='triangle'?[s,h]:[s+a,h];let center=[(b+C[0])/2,h/2];return {pieces:[original,original.map(p=>rotate2(p,center,Math.PI*t))],original,singleArea:area(original),totalArea:area(original)*2}}
+const rx=(p,o,a)=>{let x=p[0]-o[0],y=p[1]-o[1],z=p[2]-o[2];return[x+o[0],o[1]+y*Math.cos(a)-z*Math.sin(a),o[2]+y*Math.sin(a)+z*Math.cos(a)]};
+const ry=(p,o,a)=>{let x=p[0]-o[0],y=p[1]-o[1],z=p[2]-o[2];return[o[0]+x*Math.cos(a)+z*Math.sin(a),y+o[1],o[2]-x*Math.sin(a)+z*Math.cos(a)]};
+function boxFaces(l,w,h,t=0){let x=l/2,y=w/2,q=t*Math.PI/2;const faces=[{id:'bottom',points:[[-x,-y,0],[x,-y,0],[x,y,0],[-x,y,0]]},{id:'front',points:[[-x,-y,0],[x,-y,0],[x,-y,h],[-x,-y,h]].map(p=>rx(p,[0,-y,0],q))},{id:'back',points:[[x,y,0],[-x,y,0],[-x,y,h],[x,y,h]].map(p=>rx(p,[0,y,0],-q))},{id:'left',points:[[-x,y,0],[-x,-y,0],[-x,-y,h],[-x,y,h]].map(p=>ry(p,[-x,0,0],-q))},{id:'right',points:[[x,-y,0],[x,y,0],[x,y,h],[x,-y,h]].map(p=>ry(p,[x,0,0],q))},{id:'top',points:[[-x,-y,h],[x,-y,h],[x,y,h],[-x,y,h]].map(p=>rx(rx(p,[0,y,h],-q),[0,y,0],-q))}];return faces}
+function polygon3Area(ps){if(ps.length<3)return 0;let total=0,a=ps[0];for(let i=1;i<ps.length-1;i++){let u=ps[i].map((v,j)=>v-a[j]),v=ps[i+1].map((v,j)=>v-a[j]);total+=Math.hypot(u[1]*v[2]-u[2]*v[1],u[2]*v[0]-u[0]*v[2],u[0]*v[1]-u[1]*v[0])/2}return total}
+function cylinderSheet(r,h,t,segments=64){let k=1-t;let point=(a,z)=>[k<1e-8?r*a:r/k*Math.sin(k*a),k<1e-8?-r:r/k*(1-Math.cos(k*a))-r,z];return Array.from({length:segments},(_,i)=>{let a=-Math.PI+i*2*Math.PI/segments,b=a+2*Math.PI/segments;return{ id:'side',points:[point(a,0),point(b,0),point(b,h),point(a,h)]}})}
+function capacity(l,w,h,thickness){if(!(thickness>=0&&l>2*thickness&&w>2*thickness&&h>thickness))throw new RangeError('壁厚必须小于对应尺寸');const inner=[l-2*thickness,w-2*thickness,h-thickness];return{inner,volume:inner.reduce((a,b)=>a*b,1)}}
+function displacement(initial,volume,f,capacity=200){let displaced=volume*f,total=initial+displaced;return{displaced,total,reading:Math.min(capacity,total),overflow:Math.max(0,total-capacity),valid:total<=capacity&&f===1}}
+function mixture(a,b,c,inner='+',outer='×'){let first=inner==='+'?add(a,b):sub(a,b);return{first,result:outer==='×'?mul(first,c):div(first,c)}}
+const M={gcd,lcm,rational,add,sub,mul,div,value,str,parseFraction,eq,rect,box,cylinder,area,signedArea,clip,gridBounds,irregular,rotate2,cuts,rx,ry,boxFaces,polygon3Area,cylinderSheet,capacity,displacement,mixture};root.MathCore=M;if(typeof module!=='undefined'&&module.exports)module.exports=M;
+})(typeof globalThis!=='undefined'?globalThis:this);
+</script><script>/* MathAgent offline workbench. State is separated into math, view and pedagogy. */
+'use strict';
+const M=MathCore;
+const colors={A:'#327fc2',B:'#ce831d',C:'#8963bb',R:'#147c69',danger:'#b34132'};
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const num=(v,d=3)=>Number.isFinite(v)?Number(v.toFixed(d)).toLocaleString('zh-CN',{maximumFractionDigits:d}):'未定义';
+const rf=(n,d)=>M.rational(n,d);
+function frac(n,d,cls=''){let f=typeof n==='object'?n:{n,d};return `<span class="frac ${cls}"><span>${esc(f.n)}</span><span>${esc(f.d)}</span></span>`}
+const pretty=f=>f.d===1?esc(f.n):frac(f);
+const tok=(key,body,cls='')=>`<button class="token ${cls}" ${['R','first'].includes(key)?'style="color:#147c69"':''} data-sem="${key}" aria-label="查看${esc(key)}的图中含义">${body}</button>`;
+const tx=(x,y,text,cls='',anchor='start',extra='')=>`<text x="${Number(x.toFixed(5))}" y="${Number(y.toFixed(5))}" class="${cls}" text-anchor="${anchor}" ${extra}>${esc(text)}</text>`;
+const line=(x1,y1,x2,y2,stroke='#82988d',width=1.5,extra='')=>`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${stroke}" stroke-width="${width}" ${extra}/>`;
+const rect=(x,y,w,h,fill='#fff',extra='')=>`<rect x="${x}" y="${y}" width="${Math.max(0,w)}" height="${Math.max(0,h)}" fill="${fill}" ${extra}/>`;
+const dot=(x,y,r,fill,extra='')=>`<circle cx="${x}" cy="${y}" r="${r}" fill="${fill}" ${extra}/>`;
+const polygon=(points,fill,extra='')=>`<polygon points="${points.map(p=>p.join(',')).join(' ')}" fill="${fill}" ${extra}/>`;
+function dim(x1,y1,x2,y2,label,cls='',off=22){return line(x1,y1,x2,y2,'#789286',1.5)+line(x1-4,y1-5,x1+4,y1+5)+line(x2-4,y2-5,x2+4,y2+5)+tx((x1+x2)/2,(y1+y2)/2-off,label,cls||'small','middle')}
+function pill(x,y,label,fill='#eef5f0',color='#173b3b',w=150){return rect(x-w/2,y-24,w,36,fill,`rx="9" stroke="#d4e2d8"`)+tx(x,y,label,'small','middle',`style="fill:${color}"`)}
+function svgFraction(x,y,n,d,cls=''){return tx(x,y-5,n,cls,'middle')+line(x-16,y+2,x+16,y+2,'currentColor',1.3)+tx(x,y+27,d,cls,'middle')}
+function axis(x,y,unit=310,max=2,marks=[]){let out=line(x,y,x+unit*max+14,y,'#526e62',2,'marker-end="url(#arrow)"');for(let i=0;i<=max;i++)out+=line(x+i*unit,y-7,x+i*unit,y+7)+tx(x+i*unit,y+32,i,'small','middle');for(const p of marks){let px=x+unit*p.value;out+=dot(px,y,6,p.color||colors.A)+line(px,y-7,px,y-23,p.color||colors.A)+tx(px,y-33,p.label,'small','middle',`style="fill:${p.color||colors.A}"`)}return out}
+function bar({x=90,y=150,unit=310,height=48,n=3,d=8,id='A',units=1,label=true,drag=false,divOpacity=1,fill,whole=true}){let out='',val=n/d,c=colors[id]||colors.A;const movable=typeof App!=='undefined'&&App.chapter?.id==='P05'&&['P05-S01','P05-S02'].includes(App.scene.id)&&drag;for(let k=0;k<units;k++){let xx=x+k*unit;out+=rect(xx,y+4,unit,height,'#dbe4de','rx="7"')+rect(xx,y,unit,height,'#fefefd','rx="7" stroke="#b9cabe" stroke-width="1.5"');let f=Math.max(0,Math.min(1,val-k));if(f>0)out+=rect(xx,y,f*unit,height,fill||`url(#grad${id})`,`data-sem="${id}"`);for(let j=1;j<d;j++)out+=line(xx+j*unit/d,y,xx+j*unit/d,y+height,'#597668',1,`opacity="${divOpacity}" data-pick="${id}:${k*d+j}"`);out+=rect(xx,y,unit,height,'none',`rx="7" stroke="#739282" stroke-width="1.3" data-sem="${id}"`);if(whole)out+=dim(xx,y-17,xx+unit,y-17,k===0?'单位 1':'又一个单位 1','small',9)}if(movable){for(let j=0;j<units*d;j++)out+=rect(x+j*unit/d,y,unit/d,height,'transparent',`data-frac-cell="${id}:${j+1}" data-bar-move="${id}" tabindex="0" role="button" aria-label="${id}：点选${j+1}份；按住拖动整条"`)}if(label)out+=tx(x-16,y+height/2+7,id,'label','end',`style="fill:${c}"`);if(drag)out+=`<g data-drag="${id}" data-sem="${id}" tabindex="0" role="slider" aria-label="${id}分子，直接拖动边界或用方向键" aria-valuemin="0" aria-valuemax="${2*d}" aria-valuenow="${n}">${dot(x+Math.max(0,val)*unit,y+height/2,16,'#fff',`stroke="${c}" stroke-width="3"`)}${line(x+val*unit-3,y+height/2-4,x+val*unit-3,y+height/2+4,c,1)}${line(x+val*unit+3,y+height/2-4,x+val*unit+3,y+height/2+4,c,1)}</g>`;if(movable){let off=App.view.barOffsets?.[id]||{x:0,y:0};out=out+rect(x-65,y+height+10,114,27,'#eff5ef',`rx="7" data-bar-move="${id}" tabindex="0" role="button" aria-label="移动整条${id}"`)+tx(x-8,y+height+29,`⠿ 移动 ${id}`,'tiny','middle');out=`<g data-bar-object="${id}" transform="translate(${off.x} ${off.y})">${out}</g>`}return out}
+const svgDefs=`<defs><linearGradient id="gradA" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#87b6da"/><stop offset="1" stop-color="#4b91c7"/></linearGradient><linearGradient id="gradB" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#f2c981"/><stop offset="1" stop-color="#dc9e3f"/></linearGradient><linearGradient id="gradC" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#c7b3df"/><stop offset="1" stop-color="#9976c5"/></linearGradient><linearGradient id="gradR" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#82bea5"/><stop offset="1" stop-color="#3f9477"/></linearGradient><pattern id="hatch" width="7" height="7" patternUnits="userSpaceOnUse"><path d="M0,7L7,0" stroke="#c88a31" stroke-width="1.2"/></pattern><pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M40 0H0V40" fill="none" stroke="#e7eee8" stroke-width="1"/></pattern><marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10Z" fill="#526e62"/></marker></defs>`;
+function controlNum(key,label,min,max,step=1){return `<label class="control"><span>${label}</span><input data-field="${key}" type="number" min="${min}" max="${max}" step="${step}" aria-label="${esc(label.replace(/<[^>]+>/g,''))}"></label>`}
+function controlSelect(key,label,options){return `<label class="control"><span>${label}</span><select data-field="${key}" aria-label="${esc(label)}">${options.map(o=>`<option value="${o[0]}">${esc(o[1])}</option>`).join('')}</select></label>`}
+function controlToggle(key,label){return `<label class="control toggle"><input data-field="${key}" type="checkbox"><span>${label}</span></label>`}
+function action(key,label,primary=false){return `<button data-action="${key}" class="${primary?'primary':''}">${label}</button>`}
+function clone(x){return JSON.parse(JSON.stringify(x))}
+function morphSVG(el,markup){let tmp=document.createElementNS('http://www.w3.org/2000/svg','svg');tmp.innerHTML=markup;const patch=(a,b)=>{if(a.nodeType!==b.nodeType||a.nodeName!==b.nodeName){a.replaceWith(b.cloneNode(true));return}if(a.nodeType===3){if(a.nodeValue!==b.nodeValue)a.nodeValue=b.nodeValue;return}for(const at of [...a.attributes])if(!b.hasAttribute(at.name))a.removeAttribute(at.name);for(const at of [...b.attributes])if(a.getAttribute(at.name)!==at.value)a.setAttribute(at.name,at.value);let old=[...a.childNodes],fresh=[...b.childNodes];fresh.forEach((n,i)=>{if(old[i])patch(old[i],n);else a.appendChild(n.cloneNode(true))});for(let i=old.length-1;i>=fresh.length;i--)old[i].remove()};let active=document.activeElement;let focusKey=el.contains(active)?active.getAttribute('data-drag')||active.getAttribute('data-sem'):null;patch(el,tmp);el.id='diagram';el.setAttribute('viewBox','0 0 800 470');el.setAttribute('aria-label','可交互数学模型，图内有单位及对象名称');el.setAttribute('role','img');if(focusKey&&document.activeElement===document.body){let f=el.querySelector(`[data-drag="${focusKey}"],[data-sem="${focusKey}"][tabindex]`);f?.focus({preventScroll:true})}}
+const App={chapter:null,scenes:[],store:{},hist:{},current:0,t:0,playing:false,direction:1,selected:null,lastChange:null,revision:0,message:'',raf:0,
+ get scene(){return this.scenes[this.current]},get state(){return this.store[this.scene.id].math},get ped(){return this.store[this.scene.id].ped},get view(){return this.store[this.scene.id].view},
+ init(chapter){this.chapter=chapter;this.scenes=chapter.scenes;for(const s of this.scenes){this.store[s.id]={math:clone(s.defaults),view:{t:s.startT??0,yaw:.67,pitch:.48},ped:{answer:false,predict:false,guess:null}};this.hist[s.id]=[]}
+ document.querySelector('#chapter-title').textContent=chapter.title;document.title=`${chapter.id} ${chapter.title}｜MathAgent`;
+ document.querySelector('#scene-nav').innerHTML=this.scenes.map((s,i)=>`<a href="#${s.id}" data-scene="${i}"><span>${String(i+1).padStart(2,'0')}</span>${s.title}</a>`).join('');
+ document.querySelector('#scene-nav').addEventListener('click',e=>{let a=e.target.closest('[data-scene]');if(a){e.preventDefault();this.go(+a.dataset.scene)}});
+ document.querySelector('#controls').addEventListener('change',e=>{const el=e.target.closest('[data-field]');if(el)this.applyControl(el)});
+ document.addEventListener('click',e=>{let btn=e.target.closest('[data-action]');if(btn){this.scene.action?.(btn.dataset.action,this);return}let sem=e.target.closest('[data-sem]');if(sem&&!sem.closest('#diagram'))this.select(sem.dataset.sem)});
+ document.querySelector('#reset').onclick=()=>this.reset();document.querySelector('#undo').onclick=()=>this.undo();document.querySelector('#play').onclick=()=>this.play(1);document.querySelector('#reverse').onclick=()=>this.play(-1);document.querySelector('#pause').onclick=()=>this.stop();document.querySelector('#replay').onclick=()=>{this.stop();this.view.t=0;this.render();this.play(1)};
+ document.querySelector('#progress').oninput=e=>{this.stop();this.view.t=Number(e.target.value)/1000;this.render()};
+ document.querySelector('#reduced').checked=matchMedia('(prefers-reduced-motion: reduce)').matches;document.querySelector('#reduced').onchange=()=>{document.body.classList.toggle('low-motion',this.reduced());if(this.playing&&this.reduced()){this.stop();this.view.t=this.direction>0?1:0;this.render()}};
+ matchMedia('(prefers-reduced-motion: reduce)').addEventListener('change',()=>{document.body.classList.toggle('low-motion',this.reduced());if(this.playing&&this.reduced()){this.stop();this.view.t=this.direction>0?1:0;this.render()}});
+ document.querySelector('#large-text').onclick=e=>{document.body.classList.toggle('projector');e.currentTarget.setAttribute('aria-pressed',document.body.classList.contains('projector'));this.render()};
+ document.querySelector('#fullscreen').onclick=async()=>{try{if(document.fullscreenElement)await document.exitFullscreen();else await document.documentElement.requestFullscreen()}catch{this.notify('浏览器未允许全屏。可使用浏览器自身的全屏键；数学状态不受影响。')}};
+ document.querySelector('#show-answer').onclick=()=>{this.ped.answer=true;this.renderExercise()};document.querySelector('#check-answer').onclick=()=>this.checkAnswer();document.querySelector('#exercise-input').oninput=()=>{this.ped.answer=false;this.ped.checked=null;document.querySelector('#exercise-result').textContent=''};
+ document.querySelector('#diagram').addEventListener('click',e=>{if(performance.now()<(this.suppressClick||0))return;if(this.interaction?.click?.(e,this))return;let pick=e.target.closest('[data-pick]'),face=e.target.closest('[data-face]'),sem=e.target.closest('[data-sem]');if(pick)this.notify(this.scene.pick?.(pick.dataset.pick,this)||'短按只查看这份的含义，不改变数量。');if(face){this.selected=face.dataset.face;this.render()}else if(sem)this.select(sem.dataset.sem)});
+ this.bindDrag();window.addEventListener('hashchange',()=>{let id=location.hash.slice(1),i=this.scenes.findIndex(s=>s.id===id);if(i>=0&&i!==this.current)this.go(i,false)});window.addEventListener('blur',()=>{this.cancelDrag();this.stop()});window.addEventListener('resize',()=>{this.scene.space&&this.render()});
+ let idx=this.scenes.findIndex(s=>s.id===location.hash.slice(1));this.go(idx<0?0:idx,false);document.body.classList.toggle('low-motion',this.reduced());window.CW={app:this,math:M,snapshot:()=>({chapter:chapter.id,scene:this.scene.id,state:clone(this.state),view:clone(this.view),revision:this.revision,playing:this.playing,derived:this.scene.derive?.(this.state,this.view)??null}),go:id=>this.go(this.scenes.findIndex(s=>s.id===id)),set:(key,v)=>this.param(key,v)};
+ },
+ reduced(){return document.querySelector('#reduced').checked||matchMedia('(prefers-reduced-motion: reduce)').matches},
+ go(i,hash=true){if(i<0||i>=this.scenes.length)return;this.stop();this.cancelDrag();this.current=i;this.selected=null;this.lastChange=null;this.message='';document.querySelectorAll('[data-scene]').forEach((a,j)=>{a.classList.toggle('active',i===j);a.setAttribute('aria-current',i===j?'page':'false')});if(hash&&location.hash!==`#${this.scene.id}`)location.hash=this.scene.id;document.querySelector('#scene-title').textContent=this.scene.title;document.querySelector('#scene-subtitle').textContent=this.scene.subtitle;document.querySelector('#scene-code').textContent=this.scene.id;document.querySelector('#exercise').open=false;document.querySelector('#teacher').open=false;document.querySelector('#exercise-input').value='';this.controls();this.render();},
+ controls(){document.querySelector('#controls').innerHTML=this.scene.controls(this.state);this.syncControls()},
+ syncControls(){for(const e of document.querySelectorAll('[data-field]')){let v=this.state[e.dataset.field];if(e.type==='checkbox')e.checked=!!v;else if(v!==undefined&&String(e.value)!==String(v))e.value=v}document.querySelector('#undo').disabled=(this.interaction?.undoAvailable?.(this)??(this.hist[this.scene.id].length>0))===false},
+ applyControl(el,record=true){
+   if(!el||!el.matches('#controls [data-field]')||el.disabled||el.closest('[hidden]'))return false;
+   const k=el.dataset.field,v=el.type==='checkbox'?el.checked:el.type==='number'?Number(el.value):el.value;
+   if(el.type==='number'&&(el.value.trim()===''||!Number.isFinite(v)||!el.checkValidity())){
+     this.notify(`参数没有更改：请填写 ${el.min}～${el.max} 范围内、步长为 ${el.step} 的数。`);el.value=this.state[k];return false;
+   }
+   this.param(k,v,record);return true;
+ },
+ param(key,value,record=true){if(!Object.hasOwn(this.state,key))return;let old=clone(this.state),next={...old,[key]:value};next=this.scene.normalize?.(next,old,key)||next;if(JSON.stringify(old)===JSON.stringify(next)){this.syncControls();return}if(record)this.pushHistory(old);this.store[this.scene.id].math=next;this.lastChange={before:old,key};this.revision++;this.ped.answer=false;this.ped.guess=null;this.ped.checked=null;document.querySelector('#exercise-input').value='';this.message='';if(next[key]!==value){let label=document.querySelector(`[data-field="${key}"]`)?.getAttribute('aria-label')||key;this.message=`受当前模型范围限制，${label}已调整为 ${next[key]}；请以图中的当前数值为准。`}this.scene.changed?.(key,this);if(this.scene.rebuildOn?.includes(key))this.controls();this.syncControls();this.render()},
+ replace(patch,rebuild=false){this.pushHistory(clone(this.state));let old=clone(this.state),s={...this.state,...patch};this.store[this.scene.id].math=this.scene.normalize?.(s,old,'preset')||s;this.lastChange={before:old,key:'preset'};this.revision++;this.ped.answer=false;this.ped.guess=null;this.ped.checked=null;this.message='';document.querySelector('#exercise-input').value='';if(rebuild)this.controls();this.syncControls();this.render()},
+ pushHistory(s){this.hist[this.scene.id].push(s);if(this.hist[this.scene.id].length>80)this.hist[this.scene.id].shift()},
+ undo(){if(this.interaction?.undo?.(this))return;let p=this.hist[this.scene.id].pop();if(!p)return;this.stop();this.store[this.scene.id].math=p;this.ped.answer=false;this.ped.guess=null;this.ped.checked=null;this.lastChange=null;this.revision++;this.selected=null;document.querySelector('#exercise-input').value='';this.message='已撤销上一次参数变化，观察视角保持不变。';this.controls();this.render()},
+ reset(){this.stop();this.cancelDrag();this.interaction?.reset?.(this);let s=this.scene;this.store[s.id]={math:clone(s.defaults),view:{t:s.startT??0,yaw:.67,pitch:.48},ped:{answer:false,predict:false,guess:null}};this.hist[s.id]=[];this.selected=null;this.lastChange=null;this.message='';this.revision++;document.querySelector('#exercise').open=false;document.querySelector('#teacher').open=false;document.querySelector('#exercise-input').value='';this.controls();this.render()},
+ notify(msg){this.message=msg;document.querySelector('#feedback-message').textContent=msg;clearTimeout(this.liveTimer);this.liveTimer=setTimeout(()=>document.querySelector('#announcer').textContent=msg,180)},
+ select(key){this.selected=this.selected===key?null:key;this.render();let desc=typeof this.scene.semantics==='function'?this.scene.semantics(this.state)[key]:this.scene.semantics?.[key];if(desc)this.notify(desc)},
+ render(){let d=this.scene.render(this);if(this.interaction?.decorate)d=this.interaction.decorate(d,this);for(const [id,val] of Object.entries({'definition':d.definition,'plain-language':d.plain||'','correspondence':d.meaning,'equation':d.equation,'fact':d.fact,'figure-note':d.note||'','teacher-content':d.teacher||'场景均可直接进入；参数、演示进度和答案开关互相独立。'}))document.getElementById(id).innerHTML=val??'';document.querySelector('#model-name').textContent=d.modelName||'数学模型';document.querySelector('#timeline').hidden=!d.timeline;document.querySelector('#timeline-caption').textContent=d.timeline||'';document.querySelector('#progress').value=Math.round(this.view.t*1000);document.querySelector('#progress-value').textContent=Math.round(this.view.t*100)+'%';document.querySelector('#play').textContent=this.playing&&this.direction>0?'播放中':'▶ 播放';document.querySelector('#play').disabled=this.playing&&this.direction>0;document.querySelector('#reverse').disabled=this.playing&&this.direction<0;document.querySelector('#pause').disabled=!this.playing;document.querySelector('#feedback-message').textContent=this.message;document.querySelector('#figure-wrap').classList.toggle('space-figure',!!this.scene.space);
+ if(d.svg!==undefined)morphSVG(document.querySelector('#diagram'),svgDefs+d.svg);document.querySelectorAll('[data-sem]').forEach(e=>e.classList.toggle(e.closest('svg')?'sem-on':'selected',this.selected&&e.dataset.sem===this.selected));this.renderExercise();this.syncControls();this.canvas?.afterRender(this);
+ },
+ renderExercise(){let ex=this.interaction?.exercise?.(this)||this.scene.exercise?.(this.state)||{question:'解释当前模型中每个量代表什么。',answer:'依次指出图中对象、单位，以及变化时保持不变的量。'};document.querySelector('#exercise-question').innerHTML=ex.question;document.querySelector('#exercise-input').hidden=ex.expected===undefined;document.querySelector('#check-answer').hidden=ex.expected===undefined;document.querySelector('#exercise-result').innerHTML=this.ped.answer?ex.answer:this.ped.checked?((this.ped.checked.ok?'✓ 当前回答正确。':'当前回答不符。请留意单位和运算条件。')+'<br>'+ex.answer):''},
+ checkAnswer(){let ex=this.interaction?.exercise?.(this)||this.scene.exercise(this.state),raw=document.querySelector('#exercise-input').value.trim(),ok=false;if(typeof ex.expected==='object')ok=M.eq(M.parseFraction(raw),ex.expected);else if(typeof ex.expected==='number')ok=raw!==''&&Number.isFinite(Number(raw))&&Math.abs(Number(raw)-ex.expected)<1e-6;else ok=raw===String(ex.expected);this.ped.answer=false;this.ped.checked={ok,raw};this.renderExercise()},
+ stop(){cancelAnimationFrame(this.raf);this.playing=false;const b=document.querySelector('#play');if(b){b.disabled=false;b.textContent='▶ 播放';document.querySelector('#reverse').disabled=false;document.querySelector('#pause').disabled=true}},
+ play(direction){this.stop();this.direction=direction;if(this.reduced()){this.view.t=direction>0?1:0;this.render();this.notify('减少动态已开启：直接到达同一数学终态，可用进度条查看中间状态。');return}if((direction>0&&this.view.t>=1)||(direction<0&&this.view.t<=0))this.view.t=direction>0?0:1;let last=performance.now();this.playing=true;const tick=now=>{if(!this.playing)return;let dt=Math.max(0,Math.min(now-last,80));last=now;this.view.t=Math.max(0,Math.min(1,this.view.t+direction*dt/(this.scene.duration||4200)));this.render();if((direction>0&&this.view.t>=1)||(direction<0&&this.view.t<=0)){this.stop();this.render()}else this.raf=requestAnimationFrame(tick)};this.raf=requestAnimationFrame(tick)},
+ point(e){const svg=document.querySelector('#diagram'),m=svg.getScreenCTM();if(m){const p=new DOMPoint(e.clientX,e.clientY).matrixTransform(m.inverse());return[p.x,p.y]}const r=svg.getBoundingClientRect();return[(e.clientX-r.left)/r.width*800,(e.clientY-r.top)/r.height*470]},
+ bindDrag(){DirectInteraction.bind(this)},
+ cancelDrag(){DirectInteraction.cancel(this)}
+};
+</script><script></script><script>/* Direct pointer gestures. Capture lives on the stable figure wrapper, not on
+   SVG children that get reconciled during rendering. No hold timer is used. */
+'use strict';
+const DirectInteraction = {
+  bind(app) {
+    const wrap = document.querySelector('#figure-wrap');
+    const svg = document.querySelector('#diagram');
+    wrap.tabIndex = 0;
+    wrap.setAttribute('aria-label', '数学模型操作区；二维空白拖动平移，三维空白拖动旋转；点击后滚轮缩放，尺寸手柄受参数约束');
+    const release = g => {
+      try { if (g && wrap.hasPointerCapture(g.id)) wrap.releasePointerCapture(g.id); } catch (_) {}
+    };
+    this.release = release;
+    const finish = (e, cancel = false) => {
+      const g = app.pending || app.dragging;
+      if (!g || (e && e.pointerId !== undefined && e.pointerId !== g.id)) return;
+      // Clear first: releasing capture can dispatch lostpointercapture synchronously.
+      app.pending = null;
+      app.dragging = null;
+      wrap.classList.remove('dragging');
+      if (g.active) {
+        app.suppressClick = performance.now() + 280;
+        if (cancel) {
+          if (g.custom) g.custom.cancel?.();
+          else if (g.kind === 'camera') Object.assign(app.view, {yaw:g.yaw,pitch:g.pitch});
+          else if (g.kind === 'math') {
+            app.store[app.scene.id].math = g.state;
+            app.revision++;
+          } else if (g.kind === 'bar') app.view.barOffsets = g.offsets;
+        } else {
+          if (g.custom) g.custom.finish?.();
+          else if (g.kind === 'math' && JSON.stringify(g.state) !== JSON.stringify(app.state)) {
+            app.pushHistory(g.state);
+          }
+        }
+      }
+      release(g);
+      if (g.active) {
+        app.render();
+        if (cancel) app.notify('本次拖动已取消，恢复到按下前的状态。');
+        else if (g.kind === 'camera') app.notify('观察方向已改变；尺寸、面积、体积与演示进度没有改变。');
+        else if (g.kind === 'bar') app.notify('只移动了分数条的位置；分数值未变。可用“原位对齐”恢复起点。');
+        else if (g.kind === 'math') app.notify('已按图中边界更新当前数量；公式、读数与练习答案已同步。');
+      }
+    };
+    this.finish = finish;
+    wrap.addEventListener('pointerdown', e => {
+      if (e.button !== 0 || !e.isPrimary && e.pointerType !== 'mouse') return;
+      // A new physical press is a new click; only suppress the trailing click of a drag.
+      app.suppressClick=0;
+      // Buttons above the SVG are controls, never starts of camera gestures.
+      const canvasGesture=app.canvas?.begin(e,app);
+      if (!canvasGesture && e.target.closest('button,input,select,textarea,a,[data-action],.camera-tools,.canvas-editor,.canvas-view-tools')) return;
+      if (app.pending || app.dragging) return;
+      const custom = canvasGesture || app.interaction?.begin?.(e, app);
+      const handle = e.target.closest('[data-drag]');
+      const bar = e.target.closest('[data-bar-move]');
+      let kind = custom ? 'custom' : handle ? 'math' : bar ? 'bar' : app.scene.space ? 'camera' : null;
+      if (!kind) return;
+      const point = app.point(e);
+      app.pending = {
+        kind, custom, key: handle?.dataset.drag || bar?.dataset.barMove || 'camera',
+        id:e.pointerId, active:false, xy:[e.clientX,e.clientY], point,
+        state:clone(app.state), yaw:app.view.yaw, pitch:app.view.pitch,
+        offsets:clone(app.view.barOffsets || {})
+      };
+      // Touch scrolling is disabled only on the figure; the surrounding page still scrolls.
+      if (e.pointerType === 'touch') e.preventDefault();
+    });
+    window.addEventListener('pointermove', e => {
+      let g = app.pending || app.dragging;
+      if (!g || g.id !== e.pointerId) return;
+      if (!g.active) {
+        if (Math.hypot(e.clientX-g.xy[0], e.clientY-g.xy[1]) < 3) return;
+        g.active = true;
+        app.pending = null;
+        app.dragging = g;
+        try { wrap.setPointerCapture(g.id); } catch (_) {}
+        wrap.classList.add('dragging');
+        if (g.kind !== 'camera' && !g.custom?.viewOnly) app.stop();
+        app.canvas?.gestureStart?.(g,app);
+        g.custom?.activate?.();
+      }
+      const p = app.point(e);
+      if (g.custom) g.custom.move(p, e);
+      else if (g.kind === 'camera') {
+        app.view.yaw = g.yaw - (e.clientX-g.xy[0]) * .009;
+        app.view.pitch = Math.max(-1.45, Math.min(1.52, g.pitch+(e.clientY-g.xy[1])*.007));
+        app.render();
+      } else if (g.kind === 'bar') {
+        const initial = g.offsets[g.key] || {x:0,y:0};
+        app.view.barOffsets ||= {};
+        app.view.barOffsets[g.key] = {
+          x:Math.max(-70, Math.min(70, initial.x+p[0]-g.point[0])),
+          y:Math.max(-60, Math.min(95, initial.y+p[1]-g.point[1]))
+        };
+        app.render();
+      } else app.scene.drag?.(g.key, p, app);
+      e.preventDefault();
+    }, {passive:false});
+    window.addEventListener('pointerup', e => finish(e));
+    window.addEventListener('pointercancel', e => finish(e, true));
+    wrap.addEventListener('lostpointercapture', e => {
+      // Touch implicitly captures the original SVG child. When capture transfers
+      // to this wrapper, that child's lostpointercapture bubbles here; it is not
+      // loss of OUR capture and must not cancel the gesture.
+      if (e.target === wrap && (app.pending || app.dragging)?.id === e.pointerId) finish(e, true);
+    });
+    window.addEventListener('keydown', e => {
+      if (e.key === 'Escape' && (app.pending || app.dragging)) {
+        e.preventDefault(); finish(null, true);
+      }
+    });
+    wrap.addEventListener('keydown', e => {
+      if (app.interaction?.key?.(e, app)) return;
+      const h = e.target.closest('[data-drag]');
+      const cell = e.target.closest('[data-frac-cell]');
+      const arrows=['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'];
+      if (h && arrows.includes(e.key)) {
+        e.preventDefault();
+        app.scene.key?.(h.dataset.drag, ['ArrowRight','ArrowUp'].includes(e.key)?1:-1, app);
+      } else if (cell && ['Enter',' '].includes(e.key)) {
+        e.preventDefault(); app.interaction?.click?.({target:cell},app);
+      } else if (e.target === wrap && app.scene.space && arrows.includes(e.key)) {
+        e.preventDefault();
+        if (e.key==='ArrowLeft') app.view.yaw+=Math.PI/24;
+        if (e.key==='ArrowRight') app.view.yaw-=Math.PI/24;
+        if (e.key==='ArrowUp') app.view.pitch=Math.min(1.52,app.view.pitch+.08);
+        if (e.key==='ArrowDown') app.view.pitch=Math.max(-1.45,app.view.pitch-.08);
+        app.render();
+      } else if (['Enter',' '].includes(e.key) && e.target.dataset.sem) {
+        e.preventDefault(); app.select(e.target.dataset.sem);
+      }
+    });
+  },
+  cancel(app) {
+    if (app.pending || app.dragging) this.finish?.(null, true);
+    app.pending=null; app.dragging=null;
+  }
+};
+</script><script></script><script>/* Additional primary scenes. All calculations are local and deterministic except
+ * explicit seeded sampling. No network, eval, dynamic import, or external fonts. */
+'use strict';
+const PK={
+ clamp:(x,lo,hi)=>Math.max(lo,Math.min(hi,x)),
+ round:(x,n=2)=>Number(x.toFixed(n)),
+ textField:(key,label,max=40)=>`<label class="control"><span>${esc(label)}</span><input data-field="${key}" type="text" maxlength="${max}" aria-label="${esc(label)}"></label>`,
+ field:controlNum, select:controlSelect, toggle:controlToggle, action,
+ H:(key,x,y,label='',color=colors.A)=>`<g data-drag="${key}" tabindex="0" role="slider" aria-label="${esc(label||key)}；直接拖动" data-sem="${key}">${dot(x,y,15,'white',`stroke="${color}" stroke-width="3"`)}${dot(x,y,4,color)}${label?tx(x,y-23,label,'small','middle'):''}</g>`,
+ button:(id,x,y,label,w=110)=>`<g data-action="${id}" tabindex="0" role="button" aria-label="${esc(label)}">${rect(x-w/2,y-22,w,42,'#fff','rx="10" stroke="#bed3c6" stroke-width="1.5"')}${tx(x,y+5,label,'small','middle')}</g>`,
+ card:(x,y,w,h,title,sub='',key='A',fill='#f3f8f4')=>`<g data-sem="${key}">${rect(x,y,w,h,fill,'rx="14" stroke="#c9dbcf"')}${tx(x+w/2,y+32,title,'label','middle')}${sub?tx(x+w/2,y+63,sub,'small','middle'):''}</g>`,
+ bars(vals,{x=95,y=75,w=570,h=45,gap=48,max=null,unit='',names=null,dragKeys=null}={}){max=max??Math.max(1,...vals);let o='';vals.forEach((v,i)=>{const yy=y+i*(h+gap),c=[colors.A,colors.B,colors.C,colors.R][i%4],key=dragKeys?.[i]||String.fromCharCode(65+i);o+=rect(x,yy,w,h,'#ecf2ed','rx="5"')+rect(x,yy,Math.max(0,v/max)*w,h,c,`rx="5" data-sem="${key}"`)+tx(x,yy-13,`${names?.[i]||key} = ${num(v)}${unit}`,'label')+tx(x+w,yy+h+22,`同一刻度：整条 ${num(max)}${unit}`,'tiny','end');if(dragKeys)o+=PK.H(key,x+v/max*w,yy+h/2,'',c)});return o},
+ balls(n,{x=100,y=95,cols=12,step=39,r=12,color=colors.A,key='A',click=null,drag=null,positions=null,counted=[]}={}){let o='';for(let i=0;i<n;i++){let p=positions?.[i]||[x+i%cols*step,y+Math.floor(i/cols)*step];o+=`<g ${click?`data-action="${click}:${i}" role="button" tabindex="0" aria-label="第${i+1}个物体"`:''} ${drag?`data-drag="${drag}:${i}" tabindex="0" role="slider" aria-label="移动第${i+1}个物体"`:''} data-sem="${key}">${dot(p[0],p[1],r,counted.includes(i)?colors.R:color,`stroke="#ffffff" stroke-width="2"`)}${counted.includes(i)?tx(p[0],p[1]+5,counted.indexOf(i)+1,'tiny','middle','style="fill:white"'):''}</g>`}return o},
+ grid(x=90,y=50,w=620,h=340,step=40){let o='';for(let i=0;i<=w;i+=step)o+=line(x+i,y,x+i,y+h,'#dfe9e2',1);for(let i=0;i<=h;i+=step)o+=line(x,y+i,x+w,y+i,'#dfe9e2',1);return o},
+ coord({x=95,y=365,w=560,h=265,xmax=10,ymax=10,xname='x',yname='y',points=[],polyline=false}={}){let o=PK.grid(x,y-h,w,h,w/10)+line(x,y,x+w+20,y,'#61786b',2,'marker-end="url(#arrow)"')+line(x,y,x,y-h-20,'#61786b',2,'marker-end="url(#arrow)"');for(let i=0;i<=5;i++){o+=tx(x+w*i/5,y+25,num(xmax*i/5),'tiny','middle');if(i)o+=tx(x-12,y-h*i/5+5,num(ymax*i/5),'tiny','end')}o+=tx(x+w+18,y+45,xname,'small','end')+tx(x,y-h-32,yname,'small');if(polyline&&points.length)o+=`<polyline points="${points.map(p=>`${x+p[0]/xmax*w},${y-p[1]/ymax*h}`).join(' ')}" fill="none" stroke="${colors.A}" stroke-width="3" data-sem="A"/>`;points.forEach((p,i)=>o+=dot(x+p[0]/xmax*w,y-p[1]/ymax*h,7,colors.A,`data-sem="pt${i}"`));return o},
+ labelLines(x,y,lines,cls='small',anchor='start',leading=27){return lines.map((v,i)=>tx(x,y+i*leading,v,cls,anchor)).join('')},
+ pairs(rows){return rows.map(([k,v],i)=>`<div class="meaning-row">${tok(k,v,i===1?'b':i===2?'c':'')}</div>`).join('')},
+ scene(c){
+   const normalize=c.normalize;
+   return {...c,duration:c.duration||3000,subtitle:c.subtitle||c.plain,
+    controls:c.controls||(()=>''),
+    normalize(s,o,k){for(const [key,lim] of Object.entries(c.bounds||{})){let val=Number(s[key]);s[key]=PK.clamp(Number.isFinite(val)?val:Number(o[key]),lim[0],lim[1]);if(lim[2])s[key]=PK.round(Math.round(s[key]/lim[2])*lim[2],6)}return normalize?.(s,o,k)||s},
+    key:c.key||((key,delta,a)=>{if(typeof a.state[key]==='number')a.param(key,a.state[key]+delta*(c.bounds?.[key]?.[2]||1))}),
+    render(a){const d=c.render.call(this,a);
+    if(d.timeline===true)d.timeline=d.timelineCaption||'按进度观察同一数学过程；数量和单位由当前参数确定。';
+    // A correspondence link is interactive only when that object exists in this state.
+    if(d.meaning){const keys=new Set([...String(d.svg||'').matchAll(/data-sem="([^"]+)"/g)].map(m=>m[1]));
+      d.meaning=d.meaning.replace(/<button([^>]*data-sem="([^"]+)"[^>]*)>([\s\S]*?)<\/button>/g,(all,attrs,key,body)=>keys.has(key)?all:'<span class="meaning-static">'+body+'</span>');}
+    return {definition:c.definition,plain:c.plain,meaning:PK.pairs([['A','蓝色对象 A'],['B','橙色对象 B']]),modelName:c.title,teacher:c.teacher||'任何场景均可直接使用；拖动和精确输入并行，点击解释可定位图中对象。重置仅重置本场景；撤销可以恢复上一次操作。定义措辞仍待指定教材审校。',...d,svg:`<defs><filter id="softshadow" x="-30%" y="-30%" width="160%" height="180%"><feDropShadow dx="0" dy="3" stdDeviation="3" flood-color="#365446" flood-opacity=".13"/></filter></defs>`+(d.svg||'')};},
+    exercise:c.exercise||((s)=>{let d=c.derive?.(s);return {question:'用当前图形说明：改变了什么，什么没有变？',answer:esc(d?.reason||c.definition)}})
+   }
+ },
+ change(a,patch,record=true){const old=clone(a.state);let next={...old,...patch};next=a.scene.normalize?.(next,old,Object.keys(patch)[0])||next;if(JSON.stringify(next)===JSON.stringify(old))return;if(record)a.pushHistory(old);a.store[a.scene.id].math=next;a.revision++;a.ped.answer=false;a.ped.checked=null;a.ped.guess=null;a.message='';document.querySelector('#exercise-input').value='';for(const key of Object.keys(patch))if(JSON.stringify(old[key])!==JSON.stringify(next[key]))a.scene.changed?.(key,a);if(Object.keys(patch).some(k=>a.scene.rebuildOn?.includes(k)))a.controls();a.syncControls();a.render()},
+ fracValue(v){return M.value(v)},
+ decimal(v,places=8){ // exact terminating decimals; rational notation otherwise
+  if(typeof v==='number')return num(v,places);let n=v.n,d=v.d;let q=d;while(q%2===0)q/=2;while(q%5===0)q/=5;if(q!==1)return `${n}/${d}`;return String(Number((n/d).toFixed(places)))
+ },
+ dec(s){const f=M.parseFraction(String(s));if(!f)throw new Error('无效十进制数');return f},
+ validDec(s,o,keys,places=6,max=10000){for(const k of keys){const raw=String(s[k]).trim(),valid=new RegExp('^[+-]?\\d+(?:\\.\\d{1,'+places+'})?$').test(raw);let f=valid?M.parseFraction(raw):null;if(!f||Math.abs(M.value(f))>max)s[k]=o[k];else s[k]=raw}return s},
+ factors(n){let v=[];for(let i=1;i<=n;i++)if(n%i===0)v.push(i);return v},
+ primeFactors(n){let v=[];for(let i=2;i*i<=n;i++)while(n%i===0){v.push(i);n/=i}if(n>1)v.push(n);return v},
+ cnInteger(raw){let s=String(raw).replace(/^0+(?=\d)/,'');if(!/^\d+$/.test(s))return '请输入非负整数';if(s==='0')return '零';const chars='零一二三四五六七八九',units=['','十','百','千'],big=['','万','亿','万亿','亿亿','万亿亿'];let parts=[];while(s.length){parts.unshift(s.slice(-4));s=s.slice(0,-4)}let result='',zero=false;parts.forEach((g,i)=>{let v=Number(g);if(!v){if(result)zero=true;return}if(result&&(zero||v<1000))result+='零';zero=false;let t='',z=false;g=String(v);for(let j=0;j<g.length;j++){let d=+g[j],p=g.length-j-1;if(!d){if(t)z=true;continue}if(z){t+='零';z=false}t+=chars[d]+units[p]}result+=t+big[parts.length-i-1]});return result.replace(/^一十/,'十')},
+ bigUnit(n,unit){n=BigInt(n);const d=unit==='亿'?100000000n:10000n;const whole=n/d,rem=n%d;const decimals=rem?'.'+rem.toString().padStart(unit==='亿'?8:4,'0').replace(/0+$/,''):'';return {exact:whole+decimals+unit,rounded:((n+d/2n)/d).toString()+unit,rounds:rem!==0n}},
+ rng(seed){let x=Number(seed)>>>0;x^=x<<13;x^=x>>>17;x^=x<<5;return x>>>0||0x9e3779b9},
+ drawSamples(s,n){let z=clone(s);for(let i=0;i<n;i++){let r=z.replace?z.red:z.remainingRed,b=z.replace?z.blue:z.remainingBlue,total=r+b;if(total<=0)break;z.seed=PK.rng(z.seed);const red=(z.seed/4294967296*total)<r;z.trials++;if(red)z.hits++;if(!z.replace){if(red)z.remainingRed--;else z.remainingBlue--}z.record.push(red?'红':'蓝');if(z.record.length>120)z.record.shift()}return z},
+ dayCount:(year,month)=>new Date(Date.UTC(year,month,0)).getUTCDate(),
+ time:(min)=>`${String(Math.floor(((min%1440)+1440)%1440/60)).padStart(2,'0')}:${String(((min%60)+60)%60).padStart(2,'0')}`,
+ clock(cx,cy,r,min,key=null){let out=dot(cx,cy,r,'#fff','stroke="#b9cec2" stroke-width="3" filter="url(#softshadow)"');for(let i=0;i<60;i++){let v=i*Math.PI/30;out+=line(cx+Math.sin(v)*(r-9),cy-Math.cos(v)*(r-9),cx+Math.sin(v)*(r-(i%5?15:23)),cy-Math.cos(v)*(r-(i%5?15:23)),'#72887d',i%5?1:2)}for(let i=1;i<=12;i++)out+=tx(cx+Math.sin(i*Math.PI/6)*(r-39),cy-Math.cos(i*Math.PI/6)*(r-39)+7,i,'small','middle');let m=min*Math.PI/30,h=(min%720)*Math.PI/360;out+=line(cx,cy,cx+Math.sin(h)*r*.48,cy-Math.cos(h)*r*.48,colors.B,7)+line(cx,cy,cx+Math.sin(m)*r*.78,cy-Math.cos(m)*r*.78,colors.A,4)+dot(cx,cy,6,colors.R);if(key)out+=PK.H(key,cx+Math.sin(m)*r*.78,cy-Math.cos(m)*r*.78,'',colors.A);return out},
+ install(){
+  // Reject invalid text explicitly instead of silently restoring the previous value.
+  const originalParam=App.param;App.param=function(key,value,record=true){const before=JSON.stringify(this.state[key]);originalParam.call(this,key,value,record);if(before===JSON.stringify(this.state[key])&&String(this.state[key])!==String(value)){const label=document.querySelector('[data-field=\"'+key+'\"]')?.getAttribute('aria-label')||key;this.notify('输入未采用：'+label+' 不符合当前模型的范围或格式；已保留原值。')}};
+  // Keyboard equivalent for SVG action controls. Direct pointer behavior is inherited from v2.
+  const oldKey=App.interaction?.key;
+  App.interaction={...(App.interaction||{}),key(e,a){if(oldKey?.(e,a))return true;const target=e.target.closest('[data-action]');if(target&&['Enter',' '].includes(e.key)){e.preventDefault();a.scene.action?.(target.dataset.action,a);return true}return false}};
+  const exportBtn=document.createElement('button');exportBtn.textContent='导出当前图';exportBtn.id='export-diagram';exportBtn.title='本地导出含尺寸和算式的PNG或SVG图';document.querySelector('.global-tools').appendChild(exportBtn);const format=document.createElement('select');format.id='export-format';format.setAttribute('aria-label','导出图像格式');format.innerHTML='<option value="png">PNG图片</option><option value="svg">SVG矢量图</option>';format.style.maxWidth='120px';document.querySelector('.global-tools').insertBefore(format,exportBtn);exportBtn.onclick=()=>format.value==='png'?PK.exportPNG(App):PK.exportSVG(App);
+  const style=document.createElement('style');style.textContent=`.control input[type=text]{height:37px;max-width:235px;width:170px;padding:4px 9px;border:1px solid #c8d9cf;border-radius:8px;color:var(--ink);background:#fff}.control input[type=time],.control input[type=date]{border:1px solid #c8d9cf;padding:4px;border-radius:7px}#diagram [data-action]{cursor:pointer}#diagram [data-action]:hover{filter:brightness(.96)}#diagram .small{font-size:17px}#diagram .tiny{font-size:14px}.meaning-static{color:var(--muted)}.data-table{border-collapse:collapse;width:100%;font-size:15px}.data-table th,.data-table td{border:1px solid var(--line);padding:4px 6px;text-align:center}.data-table td[data-sem]{cursor:pointer}.data-table .selected{background:#e4f0e8}.global-tools{flex-wrap:wrap}#diagram [data-drag]{touch-action:none}@media(min-width:1101px) and (max-height:850px){#diagram{width:100%}.info-block p{font-size:19px}.info-block .plain,.meaning-row{font-size:17px}.equation{font-size:25px}}`;document.head.appendChild(style);
+ },
+ equationText(){const node=document.querySelector('#equation').cloneNode(true);for(const f of node.querySelectorAll('.frac')){const parts=f.querySelectorAll(':scope > span');if(parts.length===2)f.replaceWith(document.createTextNode(' '+parts[0].textContent+'/'+parts[1].textContent+' '))}return node.textContent.replace(/\s+/g,' ').trim()},
+ exportSVG(a,download=true){let svg=document.querySelector('#diagram').cloneNode(true);svg.setAttribute('xmlns','http://www.w3.org/2000/svg');svg.setAttribute('viewBox','0 0 800 610');svg.setAttribute('width','1200');svg.setAttribute('height','915');let css=document.createElementNS('http://www.w3.org/2000/svg','style');css.textContent='text{font-family:system-ui,"Microsoft YaHei",sans-serif;fill:#173b3b;font-size:21px}.small{font-size:17px}.tiny{font-size:14px}.label{font-size:21px;font-weight:650}.big{font-size:28px}.blue{fill:#327fc2}.amber{fill:#ce831d}.purple{fill:#8963bb}';svg.prepend(css);let background=document.createElementNS('http://www.w3.org/2000/svg','rect');background.setAttribute('width','800');background.setAttribute('height','610');background.setAttribute('fill','white');svg.insertBefore(background,svg.children[1]);let t=document.createElementNS('http://www.w3.org/2000/svg','g');t.innerHTML=rect(0,475,800,135,'#f0f6f2')+tx(24,507,`${a.scene.id} ${a.scene.title}`,'label')+tx(24,540,PK.equationText().slice(0,65),'small')+tx(24,576,'图中尺寸与单位来自当前数学状态；教学示例，不代表实测资料。','tiny');svg.append(t);let data=new XMLSerializer().serializeToString(svg),u=URL.createObjectURL(new Blob([data],{type:'image/svg+xml;charset=utf-8'}));if(download){let link=document.createElement('a');link.href=u;link.download=a.scene.id+'-当前方案.svg';link.click();a.notify('已生成带尺寸与当前算式的SVG图。可在浏览器中打开或插入支持SVG的软件。')}setTimeout(()=>URL.revokeObjectURL(u),2000);return data},
+ async exportPNG(a){let url;try{const data=PK.exportSVG(a,false);url=URL.createObjectURL(new Blob([data],{type:'image/svg+xml;charset=utf-8'}));const image=new Image();await new Promise((resolve,reject)=>{image.onload=resolve;image.onerror=()=>reject(new Error('当前浏览器不能读取本地SVG图'));image.src=url});const canvas=document.createElement('canvas');canvas.width=1200;canvas.height=915;const ctx=canvas.getContext('2d');if(!ctx)throw new Error('不能创建图片画布');ctx.drawImage(image,0,0,1200,915);const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/png'));if(!blob)throw new Error('PNG编码失败');const out=URL.createObjectURL(blob),link=document.createElement('a');link.href=out;link.download=a.scene.id+'-当前方案.png';link.click();setTimeout(()=>URL.revokeObjectURL(out),2000);a.notify('已导出1200×915的PNG图片，包含当前尺寸、单位与算式。')}catch(error){a.notify('PNG导出未完成：'+error.message+'。可改选SVG格式。')}finally{if(url)URL.revokeObjectURL(url)}}
+};
+
+const Calc={parse(text){text=String(text).replace(/×/g,'*').replace(/[÷]/g,'/').replace(/[−–]/g,'-').replace(/\s/g,'');if(text.length>100||/[^0-9.+*/()\-]/.test(text)||!text)throw new Error('只允许数字、括号、+ − × ÷');let tokens=text.match(/\d+(?:\.\d+)?|[()+*/-]/g);if(!tokens||tokens.join('')!==text)throw new Error('数字格式错误');let i=0,depth=0;function atom(){if(++depth>20)throw new Error('括号太深');let tok=tokens[i++],v;if(tok==='('){v=sum();if(tokens[i++]!==')')throw new Error('括号不匹配')}else if(tok==='-'||tok==='+'){v=atom();if(tok==='-')v=M.mul(v,rf(-1))}else{v=M.parseFraction(tok);if(!v)throw new Error('缺少数字')}depth--;return v}function prod(){let a=atom();while(tokens[i]==='*'||tokens[i]==='/'){let op=tokens[i++],b=atom();a=op==='*'?M.mul(a,b):M.div(a,b)}return a}function sum(){let a=prod();while(tokens[i]==='+'||tokens[i]==='-'){let op=tokens[i++],b=prod();a=op==='+'?M.add(a,b):M.sub(a,b)}return a}let v=sum();if(i!==tokens.length)throw new Error('算式未完整结束');return v}};
+
+const Geo={
+ len:(a,b)=>Math.hypot(a[0]-b[0],a[1]-b[1]),area(ps){return Math.abs(ps.reduce((v,p,i)=>v+p[0]*ps[(i+1)%ps.length][1]-p[1]*ps[(i+1)%ps.length][0],0))/2},
+ shapes:{square:[[0,0],[2,0],[2,2],[0,2]],triangle:[[0,0],[3,0],[0,3]],rectangle:[[0,0],[3,0],[3,2],[0,2]],parallelogram:[[0,0],[3,0],[4,2],[1,2]]},names:{square:'正方形',triangle:'直角三角形',rectangle:'长方形',parallelogram:'平行四边形'},
+ arc(cx,cy,r,start,end){const p=t=>[cx+r*Math.cos(t*Math.PI/180),cy+r*Math.sin(t*Math.PI/180)],a=p(start),b=p(end);return `M${a} A${r},${r} 0 ${end-start>180?1:0} 1 ${b}`},
+ wedge(cx,cy,r,start,end,color,key){const p=[cx+r*Math.cos(start*Math.PI/180),cy+r*Math.sin(start*Math.PI/180)];return `<path d="M${cx},${cy} L${p} ${Geo.arc(cx,cy,r,start,end).replace(/^M[^A]+/,'')} Z" fill="${color}" fill-opacity=".5" stroke="${color}" data-sem="${key}"/>`},
+ triangle(s){let a=s.a,b=s.b,c=s.c,valid=a+b>c&&a+c>b&&b+c>a,degenerate=Math.abs(a+b-c)<1e-8||Math.abs(a+c-b)<1e-8||Math.abs(b+c-a)<1e-8;if(!valid)return{valid:false,degenerate};let x=(b*b+c*c-a*a)/(2*c),h=Math.sqrt(Math.max(0,b*b-x*x)),A=Math.acos(PK.clamp(x/b,-1,1))*180/Math.PI,B=Math.acos(PK.clamp((c-x)/a,-1,1))*180/Math.PI,C=180-A-B;let max=Math.max(A,B,C),type=Math.abs(max-90)<.05?'直角三角形':max>90?'钝角三角形':'锐角三角形';let side=Math.abs(a-b)<1e-6&&Math.abs(b-c)<1e-6?'等边三角形':Math.abs(a-b)<1e-6||Math.abs(b-c)<1e-6||Math.abs(a-c)<1e-6?'等腰三角形':'不等边三角形';return{valid:true,x,h,angles:[A,B,C],type,side,area:c*h/2}}
+};
+
+Geo.clipLine=function(A,u,ray=false){let lo=ray?0:-Infinity,hi=Infinity;for(let i=0;i<2;i++){let min=i?35:50,max=i?388:750;if(Math.abs(u[i])<1e-10){if(A[i]<min||A[i]>max)return[A,A];continue}let p=(min-A[i])/u[i],q=(max-A[i])/u[i];lo=Math.max(lo,Math.min(p,q));hi=Math.min(hi,Math.max(p,q))}if(hi<lo)return[A,A];return[[A[0]+lo*u[0],A[1]+lo*u[1]],[A[0]+hi*u[0],A[1]+hi*u[1]]]};
+
+'use strict';
+const p06=[
+PK.scene({id:'P06-S01',title:'总量、分量和倍数',definition:'总量等于各分量的和；说一个量是另一个量的几倍，要先确定作为1份的基准量。',plain:'3倍就是3份同样大的基准量，不是给长度任意增加3。',defaults:{a:4,b:7,k:3,mode:'times'},bounds:{a:[1,12,1],b:[0,20,1],k:[1,6,1]},controls:s=>controlNum('a','基准 A（本）',1,12)+controlNum('b','分量 B（本）',0,20)+controlNum('k','倍数（倍）',1,6)+controlSelect('mode','关系',[['times','倍数关系'],['sum','总量与分量']]),drag(k,p,a){a.param(k,Math.round((p[0]-90)/28),false)},derive:s=>({B:s.mode==='times'?s.a*s.k:s.b,total:s.a+(s.mode==='times'?s.a*s.k:s.b)}),
+ render(a){let s=a.state,d=this.derive(s),max=Math.max(s.a,d.B,1),u=580/max,o=rect(90,95,s.a*u,48,colors.A,'rx="7" data-sem="a"')+tx(90,75,`A = ${s.a} 本（1份）`,'label')+rect(90,223,d.B*u,48,colors.B,'rx="7" data-sem="B"')+tx(90,201,`B = ${d.B} 本`,'label');if(s.mode==='times')for(let i=0;i<s.k;i++)o+=line(90+i*s.a*u,223,90+i*s.a*u,271,'#fff',2)+tx(90+(i+.5)*s.a*u,251,`${i+1}份`,'small','middle');o+=dim(90,310,90+d.B*u,310,`${s.mode==='times'?s.k+'份 × '+s.a+'本':d.B+'本'}`,'small',-27)+line(90,409,426,409)+PK.H('a',90+s.a*28,409,`A每份${s.a}本`);return{svg:o,meaning:PK.pairs([['a',`基准量 A=${s.a}本；每一份的大小。`],['B',`B=${d.B}本，${s.mode==='times'?s.k+'个同样大的A':'另一个独立分量'}。`]]),equation:s.mode==='times'?`${s.a} × ${s.k} = ${d.B} 本`:`${s.a} + ${s.b} = ${d.total} 本`,fact:`两部分合起来共有${d.total}本。${s.mode==='times'?'改变基准量时，每一份同样改变，份数不变。':'只知道总量不能唯一确定两个分量，还需要其他独立条件。'}`,note:'拖基准量圆点或输入精确数量；倍数模式中的B由A和倍数派生，不同时独立修改三个量。'}},exercise:s=>({question:'两部分合起来共有多少本？',expected:s.a+(s.mode==='times'?s.a*s.k:s.b),answer:`A+B=${s.a+(s.mode==='times'?s.a*s.k:s.b)}本。先确认B是给定分量还是A的倍数。`})}),
+PK.scene({id:'P06-S02',title:'单价与行程',definition:'总价=单价×数量。匀速行程中，路程=速度×时间；速度的单位要和时间单位配套。',plain:'8元/件买3件是24元；60千米/小时行2小时是120千米。',defaults:{mode:'price',price:8,count:3,speed:60,hours:2},bounds:{price:[1,50,1],count:[0,8,1],speed:[0,120,1],hours:[0,6,.25]},controls:s=>controlSelect('mode','情境',[['price','购物'],['trip','匀速行程']])+controlNum('price','单价（元/件）',1,50)+controlNum('count','数量（件）',0,8)+controlNum('speed','速度（km/h）',0,120)+controlNum('hours','时间（h）',0,6,.25),drag(k,p,a){if(k==='car'){a.stop();a.view.t=PK.clamp((p[0]-100)/600,0,1);a.render()}else a.param('count',Math.round((p[0]-100)/70),false)},key(k,d,a){if(k==='car'){a.view.t=PK.clamp(a.view.t+d*.05,0,1);a.render()}else a.param(k,a.state[k]+d)},derive:s=>({cost:s.price*s.count,distance:s.speed*s.hours}),
+ render(a){let s=a.state,d=this.derive(s),o='';if(s.mode==='price'){for(let i=0;i<s.count;i++)o+=PK.card(70+i%4*175,70+Math.floor(i/4)*135,155,105,`第${i+1}件`,`${s.price}元`,'A');o+=line(100,407,660,407)+PK.H('count',100+s.count*70,407,`${s.count}件`,colors.B)}else{let t=a.view.t,elapsed=s.hours*t,dist=s.speed*elapsed;o+=line(100,250,700,250,'#6f887b',5)+tx(100,289,'起点 0km','small')+tx(700,289,`终点 ${num(d.distance)}km`,'small','end');for(let i=0;i<=4;i++)o+=line(100+150*i,242,100+150*i,258)+tx(100+150*i,320,`${num(d.distance*i/4)}km`,'tiny','middle');o+=`<g data-drag="car" tabindex="0" role="slider" aria-label="拖车辆改变演示时刻" data-sem="A">${rect(70+600*t,207,60,32,colors.A,'rx="7"')}${dot(80+600*t,243,8,'#173b3b')}${dot(120+600*t,243,8,'#173b3b')}</g>`+PK.card(100,52,260,100,`已过 ${num(elapsed)}h`,`当前路程 ${num(dist)}km`,'A')+PK.card(440,52,260,100,`速度 ${s.speed}km/h`,'本段始终匀速','B')+tx(400,383,`${s.speed} × ${num(elapsed)} = ${num(dist)}km（当前）`,'label','middle')}
+ return{svg:o,meaning:PK.pairs(s.mode==='price'?[['A',`每件物品单价${s.price}元/件。`],['count',`当前${s.count}件。`]]:[['A','车辆位置对应已过时间，不改变总行程设定。'],['B',`本段速度固定为${s.speed}km/h。`]]),equation:s.mode==='price'?`${s.price}元/件 × ${s.count}件 = ${d.cost}元`:`${s.speed}km/h × ${s.hours}h = ${num(d.distance)}km`,fact:s.mode==='price'?`每增加1件，总价增加${s.price}元。“件”约去，结果单位是元。`:'修改速度表示重新设定整段匀速旅程，不是运动中突然变速后仍套用原来的vt。暂停只停演示，当前读数保留。',note:s.mode==='price'?'拖数量圆点，物品卡和总价同时更新。':'按住车身直接拖动时刻；也可拖进度条、暂停、反向。',timeline:s.mode==='trip'?'同一时刻由速度×已过时间求车辆路程，不分别插值位置和读数。':null}},exercise:s=>({question:s.mode==='price'?'总价是多少元？':'设定整段旅程有多少千米？',expected:s.mode==='price'?s.price*s.count:s.speed*s.hours,answer:s.mode==='price'?`${s.price}×${s.count}=${s.price*s.count}元。`:`${s.speed}×${s.hours}=${s.speed*s.hours}km，条件是整段匀速。`})}),
+PK.scene({id:'P06-S03',title:'等量关系与字母',definition:'等式表示左右两边的量相等。等式两边加或减同一个数，或乘同一个数，仍相等；两边同时除以同一个非零数，仍相等。',plain:'字母代表一个数量的位置。天平是否平衡由当前两边实际数量决定，而不是因为选了“等量”按钮。',defaults:{x:4,added:0,extra:0,mode:'balance',l:6,w:4},bounds:{x:[0,10,1],added:[0,10,1],extra:[0,10,1],l:[1,10,1],w:[1,8,1]},controls:s=>controlSelect('mode','模型',[['balance','等式与天平'],['law','字母表示运算律和公式']])+controlNum('x','未知量 x（g）',0,10)+controlNum('added','两边同加（g）',0,10)+controlNum('extra','只给右边增加（g）',0,10)+controlNum('l','长 l（cm）',1,10)+controlNum('w','宽 w（cm）',1,8)+action('addboth','两边同加1')+action('solve','使2x+3=11'),action(k,a){if(k==='addboth')a.param('added',a.state.added+1);if(k==='solve')PK.change(a,{x:4,extra:0})},drag(k,p,a){if(k==='x')a.param('x',Math.round((p[0]-100)/56),false);if(k==='l')a.param('l',Math.round((p[0]-120)/35),false);if(k==='w')a.param('w',Math.round((p[1]-80)/35),false)},derive:s=>({left:2*s.x+3+s.added,right:11+s.added+s.extra,area:s.l*s.w,perimeter:2*(s.l+s.w)}),
+ render(a){let s=a.state,d=this.derive(s),o='';if(s.mode==='balance'){let tilt=PK.clamp((d.right-d.left)*2,-35,35);o+=polygon([[365,365],[435,365],[400,180]],'#d8e4dc')+line(150,195-tilt,650,195+tilt,'#506e60',8)+line(180,195-tilt,180,285-tilt)+line(620,195+tilt,620,285+tilt)+rect(85,285-tilt,190,12,colors.A,'rx="5" data-sem="A"')+rect(525,285+tilt,190,12,colors.B,'rx="5" data-sem="B"')+tx(180,255-tilt,`${d.left}g`,'big','middle')+tx(620,255+tilt,`${d.right}g`,'big','middle')+tx(180,113,`2x+3+${s.added}`,'label','middle')+tx(620,113,`11+${s.added}+${s.extra}`,'label','middle')+line(100,417,660,417)+PK.H('x',100+s.x*56,417,`x=${s.x}g`)}else{o+=rect(120,80,s.l*35,s.w*35,'#a6c8df','stroke="#548578" stroke-width="2" data-sem="A"')+dim(120,60,120+s.l*35,60,`l=${s.l}cm`,'small',12)+PK.H('l',120+s.l*35,80+s.w*17.5,'l')+PK.H('w',120+s.l*17.5,80+s.w*35,'w',colors.B)+tx(400,395,`S=l×w=${s.l}×${s.w}=${d.area}cm²`,'label','middle')+tx(400,440,`2(l+w)=2l+2w=${d.perimeter}cm`,'label','middle')}
+ return{svg:o,meaning:PK.pairs([['A',s.mode==='balance'?`左盘：2×${s.x}+3+${s.added}=${d.left}g。`:`l和w是长、宽，不是固定的数字。`],['B',s.mode==='balance'?`右盘：11+${s.added}+${s.extra}=${d.right}g。`:'对调l、w，乘积不变：lw=wl。']]),equation:s.mode==='balance'?`${d.left} ${d.left===d.right?'=':d.left<d.right?'<':'>'} ${d.right} g`:`S = lw = ${d.area} cm²`,fact:s.mode==='balance'?d.left===d.right?'当前平衡；两边同加保持相等。只改一边，会破坏这个等量关系。':'当前不平衡；应核对x及是否只改一边。天平更重的一侧更低，不把预设当成事实。':`分配律：2(l+w)=2l+2w；交换律：lw=wl。代入当前长宽，周长${d.perimeter}cm，面积${d.area}cm²。`,note:'直接拖x或尺寸圆点；输入与图形读数同步。除以0不包含在等式性质中。'}},exercise:s=>({question:s.mode==='balance'?'当2x+3=11时，x是多少？':'当前长方形面积是多少cm²？',expected:s.mode==='balance'?4:s.l*s.w,answer:s.mode==='balance'?'两边减3得2x=8，再除以2得x=4。':`${s.l}×${s.w}=${s.l*s.w}cm²。`})}),
+PK.scene({id:'P06-S04',title:'规律与表达',definition:'按一个明确规则生成数或图形，可以用文字、算式或字母表达规律；只有有限几个例子，通常不能唯一决定后面的规律。',plain:'同样的前3项可以来自不同规则。应先说明“按哪条规则继续”，而不是说后面只能这样。',defaults:{n:4,rule:'triangle'},bounds:{n:[1,6,1]},controls:s=>controlNum('n','第 n 项',1,6)+controlSelect('rule','生成规则',[['triangle','每次多一行：1+2+…+n'],['alternative','相同前三项，之后加入新块']])+action('next','生成下一项'),action(k,a){if(k==='next')a.param('n',a.state.n+1)},derive:s=>({base:s.n*(s.n+1)/2,extra:s.rule==='alternative'?(s.n-1)*(s.n-2)*(s.n-3):0,value:s.n*(s.n+1)/2+(s.rule==='alternative'?(s.n-1)*(s.n-2)*(s.n-3):0)}),
+ render(a){let s=a.state,d=this.derive(s),o='';for(let r=0;r<s.n;r++)for(let j=0;j<=r;j++)o+=dot(120+j*39,80+r*44,12,colors.A,'data-sem="A"');o+=PK.balls(d.extra,{x:465,y:80,cols:7,step:30,r:9,color:colors.B,key:'B'})+tx(250,371,`1+2+…+${s.n} = ${d.base}`,'label','middle')+tx(590,371,`新增 ${d.extra} 个`,'label','middle')+tx(400,422,'两种规则前三项：1，3，6；第4项：10 或 16。','small','middle');return{svg:o,meaning:PK.pairs([['A','基础点阵：第r行有r个点。'],['B','另一规则额外生成的点；前3项为0。']]),equation:`第 ${s.n} 项 = ${d.value}`,fact:s.rule==='triangle'?`规则：n(n+1)÷2。n=${s.n}时有${d.value}个点。`:`规则：n(n+1)÷2+(n−1)(n−2)(n−3)。当前基础${d.base}，新增${d.extra}，合计${d.value}。有限前三项不能区分两条规则。`,note:'下一项真正增加对应点阵；随时切换规则，明确区分“生成规则”和“从样例猜规律”。'}},exercise:s=>({question:'当前规则下这一项共有几个点？',expected:s.n*(s.n+1)/2+(s.rule==='alternative'?(s.n-1)*(s.n-2)*(s.n-3):0),answer:'按当前明示规则计算，而不是假定所有序列都会按同一种方式继续。'})})
+];PK.install();App.init({id:'P06',title:'数量关系与规律',scenes:p06});
+</script>
+<script>/* MathAgent v4: constrained in-figure controls and independent viewport navigation.
+ * Every editor source is an EXISTING visible control. No new math operation is
+ * invented here. Numeric edits go through App.applyControl + scene.normalize;
+ * material commands click the existing button and retain its domain checks.
+ * Viewport x/y/z never enter mathematical state, history or derived quantities.
+ */
+'use strict';
+const CanvasTools = {
+  minZoom:.5,maxZoom:4,active:false,context:null,signature:'',lastScene:'',
+  // Object -> existing known quantities, not arbitrary vertex manipulation.
+  scopes:{
+    'P01-S01':{A:['n','selected']},'P01-S02':{A:['tens'],B:['ones'],new:['ones']},
+    'P01-S03':{'*':['value','selected']},'P01-S04':{A:['a'],B:['b']},
+    'P02-S01':{A:['a'],B:['b']},'P02-S02':{'*':['n','k','mode','selected']},
+    'P02-S03':{'*':['a','b','mode']},'P02-S04':{A:['a'],B:['b'],C:['c']},'P02-S05':{A:['a','split'],B:['b','split']},
+    'P03-S01':{A:['n','k']},'P03-S02':{A:['n'],B:['test']},'P03-S03':{A:['n'],B:['k']},
+    'P04-S01':{A:['hundredths'],whole:['zoom']},'P04-S02':{A:['a'],B:['b']},'P04-S03':{A:['a'],B:['b']},
+    'P04-S04':{A:['decimal','n','d','a'],B:['b'],C:['c']},
+    'P05':{A:['nA','dA'],B:['nB','dB'],C:['nC','dC'],ratioA:['nA','dA'],ratioB:['nB','dB']},
+    'P06-S01':{A:['a'],B:['b','k']},'P06-S02':{A:['price','count','speed','hours']},'P06-S03':{A:['x','added'],B:['extra']},
+    'P07-S02':{A:['m','total'],B:['n','total'],m:['m','n','total']},'P07-S03':{A:['k','x'],B:['intercept','contrast']},'P07-S04':{A:['price','x','fee']},
+    'P08-S01':{'*':['type','snap']},'P08-S02':{A:['ax','ay','bx','by'],a:['ax','ay'],b:['bx','by'],c:['angle']},
+    'P08-S03':{A:['theta','length'],B:['px','py','rotation'],protractor:['px','py','rotation']},
+    'P08-S04':{'*':['a','b','c']},'P08-S05':{'*':['mode','base','top','h','shift','r','theta']},
+    'P09-S01':{A:['length','unit'],B:['offset','unit']},'P09-S02':{'*':['l','w','mode','fixed']},
+    'P09-S03':{'*':['shape','b','h','skew','wrong']},'P09-S04':{r:['r']},
+    'P10-S01':{lw:['l','w'],lh:['l','h'],wh:['w','h']},'P10-S02':{lw:['l','w'],lh:['l','h'],wh:['w','h'],circ:['r']},
+    'P10-S03':{'*':['mode','l','w','h','wall','unit']},'P10-S04':{cone:['r','h','half'],side:['r','h']},
+    'P10-S05':{before:['initial'],after:['initial','volume','absorbs'],'object-top':['volume'],'object-side':['volume'],'object-bottom':['volume']},
+    'P11-S01':{target:['x','y'],A:['x','y'],B:['observer','facing','mapAngle']},'P11-S02':{position:['col','row'],cm:['cm','scale']},
+    'P11-S03':{A:['mode','dx','dy','angle','ox','oy'],transform:['dx','dy','angle','ox','oy']},'P11-S04':{A:['x','y'],B:['x','y','axis']},
+    'P12-S01':{'*':['criterion','newColor','newShape','missing']},'P12-S02':{'*':['data','names','selected','type','ordered']},
+    'P12-S03':{mean:['a','b','c']},'P12-S04':{'*':['data','extreme','predict']},
+    'P13-S01':{base:['base'],part:['part','base']},'P13-S03':{base:['price'],fold:['fold','useSecond','second']},'P13-S04':{base:['base'],rate:['rate','years']},
+    'P14-S01':{'*':['kind','replace']},'P14-S03':{A:['red','blue'],B:['r2','b2','equalSize']},'P14-S04':{'*':['reveal','replace','seedStart']},
+    'P15-S01':{A:['paid'],B:['cost']},'P15-S02':{minute:['endH','endM','day']},'P15-S04':{A:['mass','unit'],B:['weights','unit'],weight:['weights']},
+    'P16-S01':{A:['amount','context'],B:['entry','context']},'P16-S02':{current:['start','end']},'P16-S03':{'*':['value','from','zeroFloor','context']},
+    'P17-S01':{room:['length','width','scale'],aisle:['aisle'],'*':['selected']},
+    'P17-S02':{a:['a','priceA'],b:['b','priceB'],c:['c','priceC']},'P17-S03':{'*':['length','width','side','reserve','price','budget']},'P17-S04':{'*':['length','width','side','reserve','price','budget']}
+  },
+  viewport(a){return a.view.viewport ||= {x:0,y:0,z:1}},
+  visible(e){return !!e && !e.closest('[hidden]') && e.getClientRects().length>0},
+  sources(a){
+    const fields=[],commands=[];
+    if(typeof FractionBoard!=='undefined' && FractionBoard.active(a)){
+      for(const e of document.querySelectorAll('#correspondence [data-piece-field]')) fields.push({id:'piece:'+e.dataset.pieceField,e});
+      for(const id of ['board-new-n','board-new-d']){const e=document.getElementById(id);if(this.visible(e))fields.push({id:'new:'+id,e})}
+      for(const e of document.querySelectorAll('#fraction-tools [data-board-command]'))if(this.visible(e))commands.push({id:'board:'+e.dataset.boardCommand,e});
+    }else{
+      for(const e of document.querySelectorAll('#controls [data-field]'))if(this.visible(e))fields.push({id:'field:'+e.dataset.field,e});
+      for(const e of document.querySelectorAll('#controls [data-action]'))if(this.visible(e))commands.push({id:'action:'+e.dataset.action,e});
+      if(a.chapter.id==='P05')for(const e of document.querySelectorAll('#fraction-tools [data-board-command]'))if(this.visible(e)&&['open','add','unit','align-model'].includes(e.dataset.boardCommand))commands.push({id:'board:'+e.dataset.boardCommand,e});
+    }
+    return {fields,commands};
+  },
+  source(id,a=this.app){return this.sources(a).fields.find(f=>f.id===id)?.e||null},
+  label(e){return e.getAttribute('aria-label')||e.closest('label')?.querySelector('span')?.textContent||e.closest('label')?.textContent.trim()||e.dataset.field||'参数'},
+  install(a){
+    this.app=a;a.canvas=this;this.wrap=document.querySelector('#figure-wrap');this.svg=document.querySelector('#diagram');
+    const tools=document.createElement('div');tools.className='canvas-view-tools';tools.id='canvas-view-tools';
+    tools.innerHTML='<div class="view-buttons"><button type="button" data-view="out" aria-label="缩小视图">−</button><output id="canvas-zoom">100%</output><button type="button" data-view="in" aria-label="放大视图">＋</button><button type="button" data-view="reset">恢复视图</button><button type="button" data-view="edit" aria-expanded="false">图内编辑</button></div><span id="canvas-gesture-hint"></span>';
+    this.wrap.before(tools);this.tools=tools;
+    const panel=document.createElement('section');panel.id='canvas-editor';panel.className='canvas-editor';panel.hidden=true;panel.setAttribute('aria-label','图内便捷编辑，仅允许原参数栏的操作');
+    panel.innerHTML='<div class="canvas-editor-head"><strong id="canvas-editor-title">关联的已知量</strong><button type="button" data-editor="close" aria-label="关闭图内编辑">×</button></div><div class="canvas-editor-scroll"><p id="canvas-editor-note"></p><div id="canvas-editor-commands"></div><div id="canvas-editor-fields"></div></div><div class="canvas-editor-foot"><button type="button" data-editor="all">全部场景参数</button><span id="canvas-editor-feedback" role="status"></span></div>';
+    this.wrap.append(panel);this.panel=panel;
+    tools.addEventListener('click',e=>{const b=e.target.closest('[data-view]');if(!b)return;this.activate(true);const op=b.dataset.view;if(op==='in'||op==='out')this.zoom(a,op==='in'?1.25:.8);else if(op==='reset')this.resetView(a);else if(op==='edit'){if(this.context)this.close();else this.open({key:'*',all:true},null,a)}});
+    panel.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;if(b.dataset.editor==='close'){this.close();this.wrap.focus({preventScroll:true});return}if(b.dataset.editor==='all'){this.context.all=true;this.signature='';this.refresh(a);return}if(b.dataset.stepSource){this.step(b.dataset.stepSource,Number(b.dataset.delta),a);return}if(b.dataset.command){this.command(b.dataset.command,a);return}});
+    panel.addEventListener('change',e=>{if(e.target.dataset.canvasSource)this.commit(e.target.dataset.canvasSource,e.target,a)});
+    panel.addEventListener('keydown',e=>{if(e.target.dataset.scrub&&['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.key)){e.preventDefault();this.step(e.target.dataset.scrub,['ArrowRight','ArrowUp'].includes(e.key)?1:-1,a);return}if(e.key==='Escape'){e.stopPropagation();this.close();this.wrap.focus({preventScroll:true})}else if(e.key==='Enter'&&e.target.matches('input[data-canvas-source]')){e.preventDefault();this.commit(e.target.dataset.canvasSource,e.target,a)}});
+    this.wrap.addEventListener('pointerdown',e=>{if(e.button===0)this.activate(true)},true);
+    // Remember the hit object before the original click changes/reconciles SVG nodes.
+    this.wrap.addEventListener('click',e=>{
+      if(performance.now()<(a.suppressClick||0)||e.target.closest('.canvas-editor,.camera-tools,.canvas-view-tools,button,input,select,a'))return;
+      const target=e.target,object=this.object(target),pos={x:e.clientX,y:e.clientY};
+      const desc=object?this.describe(object,a):null;
+      queueMicrotask(()=>{if(desc)this.open(desc,pos,a);else this.close()});
+    },true);
+    document.addEventListener('pointerdown',e=>{if(!this.wrap.contains(e.target)&&!tools.contains(e.target)){this.activate(false);this.close()}},true);
+    this.wrap.addEventListener('wheel',e=>{
+      if(!this.active||e.ctrlKey||e.metaKey||e.target.closest('.canvas-editor,.camera-tools,button,input,select')||a.pending||a.dragging)return;
+      const delta=e.deltaY*(e.deltaMode===1?16:e.deltaMode===2?this.wrap.clientHeight:1);if(!delta)return;
+      e.preventDefault();this.zoom(a,Math.exp(-Math.max(-500,Math.min(500,delta))*.0018),e);
+    },{passive:false});
+    this.wrap.addEventListener('keydown',e=>{
+      if(e.target.closest('input,select,textarea,.canvas-editor')||a.pending||a.dragging)return;
+      const field=e.target.closest('[data-param-field]');
+      if(field&&['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.key)){e.preventDefault();e.stopImmediatePropagation();this.step('field:'+field.dataset.paramField,['ArrowRight','ArrowUp'].includes(e.key)?1:-1,a);return}
+      if(field&&['Enter',' '].includes(e.key)){e.preventDefault();e.stopImmediatePropagation();this.open(this.describe(field,a),null,a);return}
+      if(e.target!==this.wrap)return;
+      if(['+','=','-','0','Home'].includes(e.key)){e.preventDefault();if(e.key==='0'||e.key==='Home')this.resetView(a);else this.zoom(a,e.key==='-'?.8:1.25)}
+      else if(!a.scene.space&&e.key.startsWith('Arrow')){e.preventDefault();const v=this.viewport(a);v.x+=e.key==='ArrowRight'?30:e.key==='ArrowLeft'?-30:0;v.y+=e.key==='ArrowDown'?30:e.key==='ArrowUp'?-30:0;a.render()}
+    },true);
+    window.addEventListener('resize',()=>this.position());
+    // View UI lives outside reconciled SVG and is re-applied after every frame.
+    a.render();window.CW.canvas={version:4,snapshot:()=>({active:this.active,viewport:clone(this.viewport(a)),context:this.context?clone(this.context):null}),capabilities:()=>this.capabilities(a)};
+    const ex=document.getElementById('export-diagram');if(ex)ex.title='导出完整数学图与当前关系式；不带编辑浮层，不受临时视图平移缩放裁切';
+  },
+  activate(on){this.active=on;this.wrap.classList.toggle('canvas-active',on)},
+  afterRender(a){
+    const view=this.viewport(a);
+    if(!a.scene.space)this.svg.setAttribute('viewBox',`${-view.x/view.z} ${-view.y/view.z} ${800/view.z} ${470/view.z}`);
+    if(this.lastScene!==a.scene.id){this.lastScene=a.scene.id;this.close();this.activate(false)}
+    if(!this.tools)return;
+    this.tools.querySelector('#canvas-zoom').textContent=Math.round(view.z*100)+'%';
+    this.tools.querySelector('[data-view="in"]').disabled=view.z>=this.maxZoom-1e-8;
+    this.tools.querySelector('[data-view="out"]').disabled=view.z<=this.minZoom+1e-8;
+    this.tools.querySelector('#canvas-gesture-hint').textContent=(a.scene.space?'空白拖动：转视角':'空白拖动：移画布')+' · 点图后滚轮缩放 · 点对象精调';
+    this.wrap.setAttribute('data-view-kind',a.scene.space?'orbit':'pan');
+    this.wrap.setAttribute('data-view-zoom',view.z);
+    if(this.context)this.refresh(a);
+  },
+  zoom(a,factor,e=null){
+    const v=this.viewport(a),old=v.z,z=Math.max(this.minZoom,Math.min(this.maxZoom,old*factor));
+    if(Math.abs(z-old)<1e-8){a.notify(`视图缩放范围为50%～400%；当前已到${Math.round(z*100)}%。数学尺寸没有改变。`);return}
+    if(!a.scene.space){const r=this.svg.getBoundingClientRect(),cx=e?(e.clientX-r.left)*800/r.width:400,cy=e?(e.clientY-r.top)*470/r.height:235,wx=(cx-v.x)/old,wy=(cy-v.y)/old;v.x=cx-wx*z;v.y=cy-wy*z}
+    v.z=z;this.close();a.render();a.notify(`视图 ${Math.round(z*100)}%；${a.scene.space?'以模型中心缩放':e?'以鼠标位置为中心缩放':'以画布中心缩放'}，尺寸、数量、算式与演示进度不变。`);
+  },
+  resetView(a){a.cancelDrag();a.view.viewport={x:0,y:0,z:1};if(a.scene.space){a.view.yaw=.67;a.view.pitch=.48}this.close();a.render();a.notify('已恢复视图：缩放100%，平移归零'+(a.scene.space?'，恢复初始观察方向':'')+'；数学参数、材料位置和演示进度保持不变。')},
+  object(target){
+    if(!(target instanceof Element)||!this.svg.contains(target))return null;
+    const named=target.closest('[data-piece-id],[data-param-field],[data-drag],[data-bar-move],[data-frac-cell],[data-face],[data-sem],[data-pick],[data-action]');if(named)return named;
+    if(target===this.svg||target.closest('defs'))return null;
+    const tag=target.tagName.toLowerCase();if(!['rect','circle','ellipse','polygon','polyline','path','line','text'].includes(tag))return null;
+    if(tag==='rect'){const w=Number(target.getAttribute('width')),h=Number(target.getAttribute('height'));if(w>=790&&h>=430)return null}
+    return target;
+  },
+  describe(el,a){
+    const parent=el.closest('[data-piece-id]');if(parent)return {piece:parent.dataset.pieceId,key:'piece',all:true};
+    const param=el.closest('[data-param-field]');if(param)return {key:param.dataset.paramField,field:param.dataset.paramField,all:false};
+    const key=el.dataset.sem||el.dataset.drag||el.dataset.face||el.dataset.barMove||el.dataset.fracCell?.split(':')[0]||'*';
+    return {key,dragKey:el.dataset.drag||'',all:false};
+  },
+  chosenFields(a,allSources){
+    if(this.context.all||this.context.piece)return allSources;
+    const key=this.context.key,available=allSources.map(f=>f.e.dataset.field);
+    if(this.context.field)return allSources.filter(f=>f.e.dataset.field===this.context.field);
+    const map=this.scopes[a.scene.id]||this.scopes[a.chapter.id]||{},special=map[key]||map['*'];
+    let keys=special||(available.includes(key)?[key]:null);
+    if(a.chapter.id==='P10'&&a.state.type==='cube'&&keys)keys=keys.map(k=>['w','h'].includes(k)?'l':k);
+    const result=keys?allSources.filter(f=>keys.includes(f.e.dataset.field)):allSources;
+    // Unmapped/result clicks edit named existing known quantities, never the output.
+    return result.length?result:allSources;
+  },
+  open(context,pos,a){
+    // Clicking a material must target the same item as the original selected-index control.
+    // No dimensions/positions are invented by selecting it.
+    let pick=null;
+    if(a.scene.id==='P01-S01'&&/^obj:\d+$/.test(context.dragKey||''))pick=Number(context.dragKey.split(':')[1]);
+    if(a.scene.id==='P17-S01'&&/^f:\d+$/.test(context.dragKey||context.key))pick=Number((context.dragKey||context.key).split(':')[1]);
+    if(a.scene.id==='P12-S02'&&/^item\d+$/.test(context.key))pick=Number(context.key.slice(4));
+    if(a.scene.id==='P01-S03'&&/^d\d+$/.test(context.key))pick=Number(context.key.slice(1));
+    if(a.scene.id==='P02-S02'&&/^ball:\d+$/.test(context.dragKey||''))pick=Number(context.dragKey.split(':')[1]);
+    if(pick!==null&&a.state.selected!==pick)this.write('field:selected',pick,a);
+    this.context=context;this.anchor=pos;this.signature='';this.panel.hidden=false;this.tools.querySelector('[data-view="edit"]').setAttribute('aria-expanded','true');this.refresh(a);this.position();
+  },
+  close(){this.context=null;this.signature='';if(this.panel)this.panel.hidden=true;if(this.tools)this.tools.querySelector('[data-view="edit"]').setAttribute('aria-expanded','false')},
+  position(){
+    if(!this.context||this.panel.hidden)return;const r=this.wrap.getBoundingClientRect(),w=Math.min(340,Math.max(220,r.width-16)),h=Math.min(330,Math.max(160,r.height-20));
+    this.panel.style.width=w+'px';this.panel.style.maxHeight=h+'px';
+    const x=this.anchor?this.anchor.x-r.left:r.width/2,y=this.anchor?this.anchor.y-r.top:55;
+    let left=x+24;if(left+w>r.width-8)left=x-w-24;
+    this.panel.style.left=Math.max(8,Math.min(r.width-w-8,left))+'px';
+    const actual=Math.min(h,this.panel.offsetHeight||h);this.panel.style.top=Math.max(8,Math.min(r.height-actual-8,y-24))+'px';
+  },
+  refresh(a){
+    if(!this.context)return;
+    if(this.context.piece&&(typeof FractionBoard==='undefined'||!FractionBoard.active(a)||!FractionBoard.state(a).blocks.some(b=>b.id===this.context.piece))){this.close();return}
+    const data=this.sources(a),fields=this.chosenFields(a,data.fields),commands=data.commands;
+    const sig=JSON.stringify({scene:a.scene.id,context:this.context,fields:fields.map(f=>[f.id,f.e.tagName,f.e.type,this.label(f.e),f.e.min,f.e.max,f.e.step,f.e.disabled,f.e.maxLength,[...f.e.querySelectorAll('option')].map(o=>[o.value,o.textContent,o.disabled])]),commands:commands.map(c=>[c.id,c.e.textContent,c.e.disabled])});
+    if(sig!==this.signature){
+      const activeId=document.activeElement?.dataset.canvasSource;this.signature=sig;
+      this.panel.querySelector('#canvas-editor-title').textContent=this.context.piece?'选中的分数材料':this.context.all?'本场景原有参数':'图形关联的已知量';
+      this.panel.querySelector('#canvas-editor-note').textContent=this.context.piece?'只改分子、分母和原有材料操作；移动位置不改分数。':a.scene.space&&a.state.type==='cube'?'正方体只改同一个棱长，其他棱同步；不允许单独拉歪一个面。':a.scene.space&&a.state.mode==='container'?'内尺寸由外尺寸和壁厚计算；只能修改原参数栏中的外尺寸与壁厚。':'与上方参数栏是同一组值、范围和数学规则；结果自动重算，不能直接改写。';
+      const holder=this.panel.querySelector('#canvas-editor-fields');holder.replaceChildren();
+      for(const {id,e} of fields){
+        const row=document.createElement('div');row.className='canvas-param-row';
+        const label=document.createElement('label');label.className='canvas-param-label';label.textContent=this.label(e);const copy=e.cloneNode(true);
+        copy.removeAttribute('data-field');copy.removeAttribute('data-piece-field');copy.removeAttribute('id');copy.dataset.canvasSource=id;copy.id='canvas-copy-'+id.replace(/[^a-z0-9-]/ig,'-');label.htmlFor=copy.id;
+        const edit=document.createElement('div');edit.className='canvas-param-input';
+        if(e.type==='number'){
+          const minus=document.createElement('button');minus.type='button';minus.textContent='−';minus.dataset.stepSource=id;minus.dataset.delta='-1';minus.setAttribute('aria-label',this.label(e)+' 减少一个原步长');edit.append(minus);
+          edit.append(copy);const plus=minus.cloneNode(true);plus.textContent='＋';plus.dataset.delta='1';plus.setAttribute('aria-label',this.label(e)+' 增加一个原步长');edit.append(plus);
+          if(id.startsWith('field:')){const scrub=document.createElement('div');scrub.className='canvas-param-scrub';scrub.dataset.scrub=id;scrub.setAttribute('role','slider');scrub.tabIndex=0;scrub.setAttribute('aria-label','左右拖动修改 '+this.label(e));scrub.textContent='↔ 按原步长拖调';edit.append(scrub)}
+        }else{edit.append(copy)}
+        row.append(label,edit);holder.append(row);
+      }
+      if(!fields.length)holder.textContent='本状态没有独立可修改的数值；只能使用原场景提供的动作。';
+      const cmd=this.panel.querySelector('#canvas-editor-commands');cmd.replaceChildren();
+      if(commands.length){const title=document.createElement('small');title.textContent='原场景动作（保留原有条件检查）';cmd.append(title)}
+      for(const c of commands){const b=document.createElement('button');b.type='button';b.dataset.command=c.id;b.textContent=c.e.textContent;b.disabled=c.e.disabled;cmd.append(b)}
+      if(activeId)this.panel.querySelector('[data-canvas-source="'+CSS.escape(activeId)+'"]')?.focus({preventScroll:true});
+    }
+    for(const f of fields){const copy=this.panel.querySelector('[data-canvas-source="'+CSS.escape(f.id)+'"]');if(!copy)continue;copy.disabled=f.e.disabled;if(copy.type==='checkbox')copy.checked=f.e.checked;else if(document.activeElement!==copy||this.forceSync)copy.value=f.e.value;
+      for(const b of this.panel.querySelectorAll('[data-step-source="'+CSS.escape(f.id)+'"]')){const v=Number(f.e.value),d=Number(b.dataset.delta),min=f.e.min===''?-Infinity:Number(f.e.min),max=f.e.max===''?Infinity:Number(f.e.max);b.disabled=f.e.disabled||!Number.isFinite(v)||(d<0?v<=min:v>=max)}}
+    this.forceSync=false;this.panel.querySelector('#canvas-editor-feedback').textContent=a.message||'数值步长、单位、边界与原参数栏一致。';this.position();
+  },
+  write(id,value,a,record=true){
+    const original=this.source(id,a);if(!original||original.disabled)return false;
+    if(original.type==='checkbox')original.checked=!!value;else original.value=String(value);
+    let ok=true;
+    if(id.startsWith('field:'))ok=a.applyControl(original,record);
+    else original.dispatchEvent(new Event('change',{bubbles:true}));
+    this.forceSync=true;this.refresh(a);return ok;
+  },
+  commit(id,copy,a){a.stop();this.write(id,copy.type==='checkbox'?copy.checked:copy.value,a);this.forceSync=true;this.refresh(a)},
+  step(id,d,a){const e=this.source(id,a);if(!e||e.disabled||e.type!=='number')return;const copy=e.cloneNode(true);copy.value=e.value;try{d>0?copy.stepUp():copy.stepDown()}catch(_){return}a.stop();const old=JSON.stringify(a.state);this.write(id,copy.value,a);if(old===JSON.stringify(a.state)&&id.startsWith('field:'))a.notify(a.message||'已到本模型允许的边界；未增加数学参数范围。');this.forceSync=true;this.refresh(a)},
+  command(id,a){const item=this.sources(a).commands.find(c=>c.id===id);if(!item||item.e.disabled)return;a.cancelDrag();item.e.click();this.forceSync=true;this.refresh(a)},
+  gestureStart(g,a){if(g.custom?.name!=='parameter')this.close()},
+  begin(e,a){
+    if(e.button!==0)return null;
+    const knob=e.target.closest('[data-scrub],[data-param-field]');
+    if(knob){const id=knob.dataset.scrub||'field:'+knob.dataset.paramField;return this.parameterGesture(id,knob,e,a)}
+    if(e.target.closest('.canvas-editor,.canvas-view-tools,.camera-tools,button,input,select,a,[data-action]'))return null;
+    if(a.scene.space||this.object(e.target))return null;
+    const before=clone(this.viewport(a)),r=this.svg.getBoundingClientRect(),origin=[e.clientX,e.clientY];
+    return {name:'pan',viewOnly:true,move:(_,event)=>{const v=this.viewport(a);v.x=Math.max(-8000,Math.min(8000,before.x+(event.clientX-origin[0])*800/r.width));v.y=Math.max(-4700,Math.min(4700,before.y+(event.clientY-origin[1])*470/r.height));a.render()},finish:()=>a.notify('已移动二维视图；物体之间的相对位置、数值、单位和算式未改变。'),cancel:()=>{a.view.viewport=before}};
+  },
+  parameterGesture(id,knob,e,a){
+    const el=this.source(id,a);if(!el||el.disabled||el.type!=='number'||!id.startsWith('field:'))return null;
+    const state=clone(a.state),ped=clone(a.ped),hist=clone(a.hist[a.scene.id]),beforeValue=Number(el.value),step=Number(el.step)||1,min=el.min===''?-Infinity:Number(el.min),max=el.max===''?Infinity:Number(el.max),origin=[e.clientX,e.clientY],startPoint=a.point(e),message=a.message;
+    const axis=knob.dataset.paramAxis?.split(',').map(Number);let last=beforeValue,blocked=false;
+    return {name:'parameter',activate:()=>{a.notify('正在按原参数步长调整；范围、联动条件与参数栏完全相同。')},move:(point,event)=>{
+      let delta=(event.clientX-origin[0])/14*step;
+      if(axis?.length===3&&axis.every(Number.isFinite)&&axis[2]>1e-4)delta=((point[0]-startPoint[0])*axis[0]+(point[1]-startPoint[1])*axis[1])/axis[2];
+      let wanted=beforeValue+Math.round(delta/step)*step;wanted=Number(wanted.toFixed(9));blocked=wanted<min||wanted>max;const value=Math.max(min,Math.min(max,wanted));
+      if(Math.abs(value-last)>1e-10){last=value;this.write(id,value,a,false)}
+    },finish:()=>{a.hist[a.scene.id]=hist;if(JSON.stringify(state)!==JSON.stringify(a.state))a.pushHistory(state);a.notify((blocked?'已到原参数范围边界。':'')+'图内调整已提交；原参数栏、图形和当前关系同步，撤销可恢复整次拖动。')},cancel:()=>{a.store[a.scene.id].math=state;a.store[a.scene.id].ped=ped;a.hist[a.scene.id]=hist;a.message=message;a.revision++;a.controls()}};
+  },
+  dimensionField(label,a){
+    if(a.chapter.id!=='P10')return null;
+    if(label.text.includes('内')||label.key==='after'||label.key==='circ')return null;
+    let key=label.key==='before'?'initial':label.key;
+    if(a.state.type==='cube'&&['w','h'].includes(key))key='l';
+    const e=this.source('field:'+key,a);return e&&e.type==='number'&&!e.disabled?key:null;
+  },
+  spaceHandles(labels,a,pd){
+    let out='';for(const [i,label] of labels.entries()){
+      const key=this.dimensionField(label,a);if(!key)continue;
+      const e=this.source('field:'+key,a),color=label.color||colors.A,value=Number(e.value),labelPos=label.pos||pd.project(label.anchor||label.start.map((v,j)=>(v+label.end[j])/2)),width=label.width||210;
+      // A tag beside the existing dimension offers horizontal, step-snapped editing.
+      const x=Math.min(778,labelPos[0]+width/2+10),y=labelPos[1]-10;
+      out+=`<g data-canvas-ui="dimension" data-param-field="${esc(key)}" tabindex="0" role="slider" aria-label="拖动或点击精调 ${esc(this.label(e))}" aria-valuemin="${e.min}" aria-valuemax="${e.max}" aria-valuenow="${value}" data-dimension-index="${i}">${dot(x,y,10,'#fff',`stroke="${color}" stroke-width="2"`)}${tx(x,y+4,'↔','tiny','middle',`style="fill:${color};font-size:13px"`)}</g>`;
+      if(label.start&&label.end){const p=pd.project(label.start),q=pd.project(label.end),len=Math.hypot(q[0]-p[0],q[1]-p[1]);if(len>30&&value>0){const axis=[(q[0]-p[0])/len,(q[1]-p[1])/len,len/value];out+=`<g data-canvas-ui="dimension" data-param-field="${esc(key)}" data-param-axis="${axis.join(',')}" tabindex="0" role="slider" aria-label="沿尺寸线拖动 ${esc(this.label(e))}" aria-valuenow="${value}">${dot(q[0],q[1],8,'#fff',`stroke="${color}" stroke-width="2.5"`)}${dot(q[0],q[1],2.5,color)}</g>`}}
+    }
+    return out;
+  },
+  capabilities(a){const s=this.sources(a);return {scene:a.scene.id,view:a.scene.space?'blank-orbit':'blank-pan',zoom:{min:.5,max:4,mathIndependent:true},fields:s.fields.map(({id,e})=>({id,label:this.label(e),type:e.type,min:e.min,max:e.max,step:e.step})),commands:s.commands.map(({id,e})=>({id,label:e.textContent,disabled:e.disabled})),constraintSource:'Existing DOM control -> App.applyControl -> scene.normalize/action; no invented mathematical degrees of freedom'}}
+};
+CanvasTools.install(App);
+</script>
+<script id="lesson-flow">/* MathAgent lesson flow v1 — presentation layer only.
+   Re-sequences the chapter's EXISTING blocks into a teacher-paced rhythm:
+   引入 → 探究 → 归纳 → 练习 (motivate → explore → formalize → practice).
+   It never writes mathematical state and never calls scene/model functions
+   except the runtime's own scene navigation. Every formula, definition and
+   answer shown in a stage is the node the chapter already rendered; the only
+   text added here is generic classroom guidance (stage names and prompts).
+   Stages are views, not gates: any stage and the full workbench (总览) are
+   one click or key away. Works identically for the WebGL and SVG paths.
+   Only nodes the runtime reaches by global id are moved; anything it finds
+   relative to a parent (e.g. a tool row's hint) is mirrored, never moved. */
+(function () {
+  'use strict';
+  if (window.LessonFlow) return;
+  const $ = (s, r = document) => r.querySelector(s);
+  const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+  const text = el => (el ? el.textContent.replace(/\s+/g, ' ').trim() : '');
+  const STAGES = [
+    { id: 'motivate', n: 1, name: '引入', cue: '先看图：说一说图中每种颜色、每个标注表示什么。' },
+    { id: 'explore', n: 2, name: '探究', cue: '动手试：改变一个量，看图、式子和数值怎样一起变。' },
+    { id: 'formalize', n: 3, name: '归纳', cue: '说规律：用定义把发现说完整，注意成立条件。' },
+    { id: 'practice', n: 4, name: '练习', cue: '试一试：先独立作答，再检查或看答案。' },
+  ];
+
+  /* Each adapter only names existing DOM of one runtime family.
+     blocks: key → { el, keep (fold in place of leaving layout), open (details) }
+     stages: stage → ordered block keys shown in the stage card
+     pins:   [element, destination] moved into always-visible chrome in lesson mode */
+  const ADAPTERS = {
+    primary: {
+      detect: () => !!(window.CW && window.CW.app && $('#scene-nav') && $('.info-panel')),
+      sceneCount: () => window.CW.app.scenes.length,
+      sceneIndex: () => window.CW.app.current,
+      sceneName: i => window.CW.app.scenes[i]?.title || '',
+      goScene: i => window.CW.app.go(i),
+      watch: () => [$('#scene-title')],
+      live: () => $('#announcer'),
+      heading: () => $('.scene-heading'),
+      card: () => $('.info-panel'),
+      figurePanel: () => $('.model-panel'),
+      math: () => { try { return JSON.stringify(window.CW.snapshot().state); } catch (_) { return null; } },
+      tools: () => [$('#fraction-tools'), $('#canvas-view-tools')].filter(Boolean),
+      toolsAnchor: () => $('.model-top'),
+      hint: () => $('#canvas-gesture-hint'),
+      hintAnchor: () => $('.model-top'),
+      // Figure keeps its aspect and is sized to the first screen under its real top edge.
+      fit: { el: '#diagram', below: ['#timeline'], min: 300 },
+      blocks: {
+        look: { el: () => $$('.info-panel > .info-block')[1] },
+        definition: { el: () => $$('.info-panel > .info-block')[0] },
+        current: { el: () => $('.info-panel > .info-block.current') },
+        controls: { el: () => $('#controls'), keep: true },
+        note: { el: () => $('#figure-note') },
+        exercise: { el: () => $('#exercise'), open: true },
+      },
+      stages: {
+        motivate: ['look'],
+        explore: ['controls', 'current', 'note'],
+        formalize: ['definition', 'current'],
+        practice: ['exercise'],
+      },
+    },
+    junior: {
+      detect: () => !!(window.MathAgent && $('#sceneNav [data-scene]') && $('aside.reading')),
+      nav: () => $$('#sceneNav [data-scene]'),
+      sceneCount() { return this.nav().length; },
+      sceneIndex() { return Math.max(0, this.nav().findIndex(b => b.classList.contains('active'))); },
+      sceneName(i) { return text(this.nav()[i]?.querySelector('.scene-name')) || text(this.nav()[i]); },
+      goScene(i) { this.nav()[i]?.click(); },
+      watch: () => [$('#sceneTitle')],
+      live: () => $('#live'),
+      heading: () => $('.scene-heading'),
+      card: () => $('aside.reading'),
+      figurePanel: () => $('.figure-card'),
+      math: () => { try { return JSON.stringify(window.MathAgent.mathState); } catch (_) { return null; } },
+      blocks: {
+        look: { el: () => $('#mapping') },
+        select: { el: () => $('#selectedNote') },
+        demo: { el: () => $('section.timeline') },
+        controls: { el: () => $('.controls-card'), keep: true },
+        label: { el: () => $('aside.reading > .eyebrow') },
+        definition: { el: () => $('#definition') },
+        formula: { el: () => $('#formula') },
+        readings: { el: () => $('#readings') },
+        feedback: { el: () => $('#feedback') },
+        boundary: { el: () => $('#counterexample') },
+        snapshot: { el: () => $('#snapshot') },
+        exercise: { el: () => $('#exerciseDetails'), open: true },
+      },
+      stages: {
+        motivate: ['look', 'select', 'demo'],
+        explore: ['controls', 'formula', 'readings', 'feedback', 'select', 'demo', 'snapshot'],
+        formalize: ['label', 'definition', 'formula', 'readings', 'boundary'],
+        practice: ['exercise'],
+      },
+      // 撤销 / 恢复本场景 stay one click away in every stage (they live below the fold otherwise).
+      pins: () => [[$('#undo'), $('.top-tools')], [$('#resetScene'), $('.top-tools')]],
+    },
+    senior: {
+      detect: () => !!(window.CourseApp && $('#tabs [data-scene]') && $('aside.lesson')),
+      nav: () => $$('#tabs [data-scene]'),
+      sceneCount() { return this.nav().length; },
+      sceneIndex() {
+        let id = null; try { id = window.CourseApp.getState().scene; } catch (_) {}
+        const i = this.nav().findIndex(b => (id ? b.dataset.scene === id : b.classList.contains('active')));
+        return Math.max(0, i);
+      },
+      sceneName(i) { const b = this.nav()[i]; if (!b) return ''; const c = b.cloneNode(true); c.querySelectorAll('small').forEach(x => x.remove()); return text(c); },
+      goScene(i) { this.nav()[i]?.click(); },
+      watch: () => [$('#sceneTitle')],
+      live: () => $('#live'),
+      heading: () => $('.scenehead'),
+      card: () => $('aside.lesson'),
+      figurePanel: () => $('section.board'),
+      math: () => { try { return JSON.stringify(window.CourseApp.getState().math); } catch (_) { return null; } },
+      blocks: {
+        definition: { el: () => $$('aside.lesson > .sect')[0] },
+        look: { el: () => $$('aside.lesson > .sect')[1] },
+        facts: { el: () => $$('aside.lesson > .sect')[2] },
+        metrics: { el: () => $('#metrics') },
+        controls: { el: () => $('#controls'), keep: true },
+        demo: { el: () => $('section.animation') },
+        exercise: { el: () => $('#exercise'), open: true },
+      },
+      stages: {
+        motivate: ['look', 'demo'],
+        explore: ['controls', 'metrics', 'facts', 'demo'],
+        formalize: ['definition', 'facts'],
+        practice: ['exercise'],
+      },
+    },
+    // H16 ships its own constrained runtime (window.H16Courseware) with the same lesson sections.
+    h16: {
+      detect: () => !!(window.H16Courseware && $('.tabs [data-scene]') && $('aside.lesson')),
+      nav: () => $$('.tabs [data-scene]'),
+      sceneCount() { return this.nav().length; },
+      sceneIndex() {
+        let id = null; try { id = window.H16Courseware.getState().scene; } catch (_) {}
+        return Math.max(0, this.nav().findIndex(b => (id ? b.dataset.scene === id : b.getAttribute('aria-selected') === 'true')));
+      },
+      sceneName(i) { return text(this.nav()[i]?.querySelector('span')) || text(this.nav()[i]); },
+      goScene(i) { this.nav()[i]?.click(); },
+      watch: () => [$('#sceneTitle')],
+      live: () => $('#live'),
+      heading: () => $('.scene-line'),
+      card: () => $('aside.lesson'),
+      figurePanel: () => $('section.board-card'),
+      math: () => { try { return JSON.stringify(window.H16Courseware.getState().math); } catch (_) { return null; } },
+      blocks: {
+        definition: { el: () => $$('aside.lesson > .lesson-section')[0] },
+        look: { el: () => $$('aside.lesson > .lesson-section')[1] },
+        facts: { el: () => $$('aside.lesson > .lesson-section')[2] },
+        metrics: { el: () => $('#metrics') },
+        controls: { el: () => $('#controls'), keep: true },
+        demo: { el: () => $('section.animation') },
+        exercise: { el: () => $('#exercise'), open: true },
+      },
+      stages: {
+        motivate: ['look', 'demo'],
+        explore: ['controls', 'metrics', 'facts', 'demo'],
+        formalize: ['definition', 'facts'],
+        practice: ['exercise'],
+      },
+    },
+    // Single-scene WebGL demo (高中/空间几何关系): the canvas stays put under the stage head;
+    // each step shows the page's own controls for that step below it.
+    space: {
+      detect: () => !!($('[data-rel]') && $('#s-fallback') && $('main .board')),
+      sceneCount: () => 1,
+      sceneIndex: () => 0,
+      sceneName: () => text($('main h1')),
+      goScene() {},
+      watch: () => [],
+      live: () => $('#lf-live'),
+      heading: () => $('main > section'),
+      card: () => $$('main .board')[0],
+      figurePanel: () => $$('main .board')[0],
+      math: () => JSON.stringify({ relation: ($('[data-rel].active') || {}).dataset?.rel || null }),
+      fit: { el: '#s', below: [], min: 320 },
+      cues: {
+        explore: '动手试：切换线线、线面、面面关系，拖动旋转，从不同角度看位置关系。',
+        formalize: '说规律：先猜一下，再显示规律，把位置关系说完整。',
+      },
+      blocks: {
+        look: { el: () => $('#legend') },
+        relation: { el: () => $('#o') },
+        lines: { el: () => $$('main .board .group')[0] },
+        lineplane: { el: () => $$('main .board .group')[1] },
+        planes: { el: () => $$('main .board .group')[2] },
+        lock: { el: () => $('#lock') },
+        reset: { el: () => $('#reset') },
+        guess: { el: () => $('#guess') },
+        show: { el: () => $('#show') },
+        rule: { el: () => $('#a') },
+        exercise: { el: () => $$('main .board')[1], openInside: 'details' },
+      },
+      stages: {
+        motivate: ['relation', 'look'],
+        explore: ['relation', 'lines', 'lineplane', 'planes', 'lock', 'reset'],
+        formalize: ['relation', 'guess', 'show', 'rule'],
+        practice: ['exercise'],
+      },
+    },
+  };
+
+  const LF = {
+    stages: STAGES, on: false, stage: 'motivate', family: null, a: null, parked: new Map(), pinned: [], sceneSeen: -1,
+    init() {
+      const fam = Object.keys(ADAPTERS).find(k => { try { return ADAPTERS[k].detect(); } catch (_) { return false; } });
+      if (!fam) return false;
+      this.family = fam; this.a = ADAPTERS[fam];
+      document.body.dataset.lfFamily = fam;
+      this.build();
+      let pref = null; try { pref = localStorage.getItem('mathagent.lessonflow'); } catch (_) {}
+      const q = new URLSearchParams(location.search).get('lesson');
+      this.setOn(q ? q !== 'off' : pref !== 'off', false);
+      const mo = new MutationObserver(() => this.sceneChanged());
+      this.a.watch().filter(Boolean).forEach(el => mo.observe(el, { childList: true, characterData: true, subtree: true }));
+      this.sceneChanged(true);
+      document.addEventListener('keydown', e => this.key(e));
+      window.addEventListener('resize', () => this.queueFit());
+      // The chapter's own 减少动态 switch also removes stage transitions (OS preference is handled in CSS).
+      const rc = $('#reduced') || $('#reduce') || $('#reduceMotion');
+      if (rc) { const sync = () => document.body.classList.toggle('lf-reduce', rc.checked); rc.addEventListener('change', sync); sync(); }
+      const fp = this.a.figurePanel && this.a.figurePanel();
+      if (fp) new MutationObserver(() => this.queueFit()).observe(fp, { attributes: true, attributeFilter: ['hidden'], subtree: true });
+      return true;
+    },
+    build() {
+      const a = this.a;
+      if (a.live && !a.live() && a.sceneCount() === 1) {
+        const l = document.createElement('p');
+        l.id = 'lf-live'; l.className = 'lf-sr'; l.setAttribute('role', 'status'); l.setAttribute('aria-live', 'polite');
+        document.body.append(l);
+      }
+      const card = a.card();
+      card.classList.add('lf-card');
+      const head = document.createElement('div');
+      head.className = 'lf-card-head'; head.id = 'lf-card-head';
+      head.innerHTML = '<span class="lf-num" aria-hidden="true"></span><p class="lf-cue-line"><strong class="lf-title"></strong><span class="lf-cue"></span></p>';
+      card.prepend(head);
+      this.head = head;
+      const rail = document.createElement('nav');
+      rail.className = 'lf-rail'; rail.id = 'lf-rail';
+      rail.setAttribute('aria-label', '课堂节奏：引入、探究、归纳、练习（翻页笔或 PageDown 下一步）');
+      rail.innerHTML = '<ol class="lf-steps">' +
+        STAGES.map(s => `<li><button type="button" class="lf-step" data-lf-stage="${s.id}" data-lf-n="${s.n}"><b>${s.n}</b>${s.name}</button></li>`).join('') +
+        '</ol><div class="lf-move"><button type="button" id="lf-prev" class="lf-prev">◀ 上一步</button><button type="button" id="lf-next" class="lf-next">下一步 ▶</button></div>' +
+        '<button type="button" id="lf-overview" class="lf-overview" aria-pressed="false" title="显示完整工作台：全部参数、定义与练习同屏">总览</button>' +
+        '<button type="button" id="lf-help" class="lf-help" aria-expanded="false" aria-controls="lf-help-panel" aria-label="课堂操作帮助">?</button>' +
+        '<div id="lf-help-panel" class="lf-help-panel" role="dialog" aria-label="课堂操作帮助" hidden><strong tabindex="-1">课堂节奏怎么用</strong><ul>' +
+        '<li><kbd>PageDown</kbd> / 翻页笔「下一页」：下一步；<kbd>PageUp</kbd>：上一步。练习之后自动进入下一个场景。</li>' +
+        '<li>数字键 <kbd>1</kbd>–<kbd>4</kbd>：直接跳到引入、探究、归纳、练习（输入框和图上不生效）。</li>' +
+        '<li>四个步骤随时可点，不设门槛；「总览」恢复完整工作台，再点一次回到课堂节奏。</li>' +
+        '<li>切换步骤只改变显示重点，不改变任何数学参数；图上拖动、方向键、滚轮缩放在每一步都可用。</li>' +
+        '<li><kbd>Esc</kbd> 关闭本帮助。</li></ul></div>';
+      a.heading().append(rail);
+      this.rail = rail;
+      rail.addEventListener('click', e => {
+        const b = e.target.closest('button'); if (!b) return;
+        if (b.dataset.lfStage) this.go(b.dataset.lfStage, true);
+        else if (b.id === 'lf-prev') this.prev();
+        else if (b.id === 'lf-next') this.next();
+        else if (b.id === 'lf-overview') this.setOn(!this.on, true);
+        else if (b.id === 'lf-help') this.help();
+      });
+      // Tool rows (zoom / free board) fold behind one toggle; folded rows stay
+      // laid out (inert, zero height) so in-figure editors keep every source.
+      const tools = a.tools ? a.tools() : [];
+      if (tools.length) {
+        const drawer = document.createElement('div');
+        drawer.className = 'lf-tools'; drawer.id = 'lf-tools';
+        tools[0].before(drawer);
+        tools.forEach(t => drawer.append(t));
+        const tbtn = document.createElement('button');
+        tbtn.type = 'button'; tbtn.id = 'lf-tools-toggle'; tbtn.className = 'lf-tools-toggle';
+        tbtn.setAttribute('aria-expanded', 'false'); tbtn.setAttribute('aria-controls', 'lf-tools');
+        tbtn.textContent = '缩放与工具 ▾';
+        tbtn.onclick = () => this.tools(!document.body.classList.contains('lf-tools-open'));
+        a.toolsAnchor()?.append(tbtn);
+        this.drawer = drawer; this.tbtn = tbtn;
+      }
+      // The runtime owns its gesture hint (and finds it relative to its tool
+      // row), so the hint is mirrored as text, never moved.
+      const hint = a.hint ? a.hint() : null;
+      if (hint) {
+        const mirror = document.createElement('span');
+        mirror.className = 'lf-hint'; mirror.setAttribute('aria-hidden', 'true');
+        const copy = () => { mirror.textContent = hint.textContent; };
+        copy(); new MutationObserver(copy).observe(hint, { childList: true, characterData: true, subtree: true });
+        (a.hintAnchor() || hint.parentNode).insertBefore(mirror, this.tbtn && this.tbtn.parentNode === a.hintAnchor() ? this.tbtn : null);
+      }
+      for (const [k, def] of Object.entries(a.blocks)) {
+        const el = def.el();
+        if (!el) continue;
+        el.dataset.lfBlock = k;
+        if (def.keep) el.classList.add('lf-keep');
+        const mark = document.createComment('lf:' + k);
+        el.before(mark);
+        this.parked.set(k, { el, mark, def });
+      }
+      for (const [el, to] of (a.pins ? a.pins() : [])) {
+        if (!el || !to) continue;
+        const mark = document.createComment('lf:pin');
+        el.before(mark);
+        this.pinned.push({ el, mark, to });
+      }
+    },
+    // an adapter may word a step's cue for its own controls (same four steps)
+    cue(s) { return (this.a.cues && this.a.cues[s.id]) || s.cue; },
+    queueFit() {
+      if (this.fitRaf) return;
+      this.fitRaf = requestAnimationFrame(() => { this.fitRaf = 0; this.fit(); });
+    },
+    fit() {
+      const f = this.a.fit, body = document.body;
+      if (!f || !this.on) { body.style.removeProperty('--lf-fig-h'); this.figH = 0; return; }
+      const el = $(f.el); if (!el) return;
+      let below = 8;
+      for (const sel of f.below || []) { const e = $(sel); if (e && !e.hidden && e.getClientRects().length) below += e.getBoundingClientRect().height; }
+      const top = el.getBoundingClientRect().top + window.scrollY;
+      const h = Math.max(f.min || 300, Math.floor(window.innerHeight - top - below));
+      if (h !== this.figH) { this.figH = h; body.style.setProperty('--lf-fig-h', h + 'px'); window.dispatchEvent(new Event('resize')); }
+    },
+    tools(open) {
+      document.body.classList.toggle('lf-tools-open', open);
+      this.tbtn?.setAttribute('aria-expanded', String(open));
+      if (this.drawer) this.drawer.inert = this.on && !open;
+      if (this.tbtn) this.tbtn.textContent = open ? '缩放与工具 ▴' : '缩放与工具 ▾';
+      this.queueFit();
+    },
+    setOn(on, user) {
+      this.on = on;
+      document.body.classList.toggle('lf-on', on);
+      $('#lf-overview')?.setAttribute('aria-pressed', String(!on));
+      if ($('#lf-overview')) $('#lf-overview').textContent = on ? '总览' : '课堂节奏';
+      if (user) { try { localStorage.setItem('mathagent.lessonflow', on ? 'on' : 'off'); } catch (_) {} }
+      for (const p of this.pinned) { if (on) p.to.append(p.el); else p.mark.after(p.el); p.el.classList.toggle('lf-pin', on); }
+      if (on) this.apply(); else this.restore();
+      this.tools(document.body.classList.contains('lf-tools-open'));
+      if (user) this.say(on ? `课堂节奏：第 ${this.cur().n} 步 ${this.cur().name}` : '总览：完整工作台已显示，数学状态不变。');
+      this.fit();
+      window.dispatchEvent(new Event('resize'));
+    },
+    restore() {
+      for (const p of this.parked.values()) {
+        p.mark.after(p.el);
+        p.el.classList.remove('lf-fold', 'lf-show'); p.el.inert = false;
+        if (p.def.open) p.el.open = false;
+        if (p.def.openInside) { const d = p.el.querySelector(p.def.openInside); if (d) d.open = false; }
+      }
+      document.body.removeAttribute('data-lf-stage');
+    },
+    cur() { return STAGES.find(s => s.id === this.stage); },
+    apply() {
+      if (!this.on) return;
+      const s = this.cur(), card = this.a.card(), shown = this.a.stages[s.id] || [];
+      document.body.dataset.lfStage = s.id;
+      for (const [k, p] of this.parked) {
+        if (shown.includes(k)) continue;
+        // keep-layout blocks fold inside the card (zero height, inert) instead of leaving the layout
+        if (p.def.keep) card.append(p.el); else p.mark.after(p.el);
+        p.el.classList.remove('lf-show'); p.el.classList.add('lf-fold');
+        p.el.inert = !!p.def.keep;
+        if (p.def.open) p.el.open = false;
+        if (p.def.openInside) { const d = p.el.querySelector(p.def.openInside); if (d) d.open = false; }
+      }
+      for (const k of shown) {
+        const p = this.parked.get(k); if (!p) continue;
+        card.append(p.el);
+        p.el.classList.add('lf-show'); p.el.classList.remove('lf-fold'); p.el.inert = false;
+        if (p.def.open) p.el.open = true;
+        if (p.def.openInside) { const d = p.el.querySelector(p.def.openInside); if (d) d.open = true; }
+      }
+      this.head.querySelector('.lf-num').textContent = s.n;
+      this.head.querySelector('.lf-title').textContent = s.name;
+      this.head.querySelector('.lf-cue').textContent = this.cue(s);
+      card.classList.remove('lf-enter'); void card.offsetWidth; card.classList.add('lf-enter');
+      this.syncRail();
+      this.queueFit();
+    },
+    syncRail() {
+      const s = this.cur(), i = this.a.sceneIndex();
+      $$('.lf-step', this.rail).forEach(b => {
+        const on = b.dataset.lfStage === s.id;
+        b.classList.toggle('active', on);
+        if (on) b.setAttribute('aria-current', 'step'); else b.removeAttribute('aria-current');
+      });
+      const next = this.nextTarget(), prev = this.prevTarget();
+      const nb = $('#lf-next'), pb = $('#lf-prev');
+      nb.disabled = !next; pb.disabled = !prev;
+      const nextName = !next ? '' : next.scene !== i ? `下一场景：${this.a.sceneName(next.scene)}` : `下一步：${STAGES.find(x => x.id === next.stage).name}`;
+      nb.innerHTML = !next ? '本章已完成' : `<span>${nextName.replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]))}</span> ▶`;
+      nb.title = nextName || '已是本章最后一步';
+      nb.setAttribute('aria-label', nextName || '本章已完成');
+      pb.textContent = !prev ? '◀ 上一步' : prev.scene !== i ? '◀ 上一场景' : `◀ ${STAGES.find(x => x.id === prev.stage).name}`;
+      pb.setAttribute('aria-label', !prev ? '上一步（已是第一步）' : prev.scene !== i ? `上一场景：${this.a.sceneName(prev.scene)}` : `上一步：${STAGES.find(x => x.id === prev.stage).name}`);
+    },
+    nextTarget() {
+      const k = STAGES.findIndex(s => s.id === this.stage), i = this.a.sceneIndex();
+      if (k < STAGES.length - 1) return { scene: i, stage: STAGES[k + 1].id };
+      if (i < this.a.sceneCount() - 1) return { scene: i + 1, stage: STAGES[0].id };
+      return null;
+    },
+    prevTarget() {
+      const k = STAGES.findIndex(s => s.id === this.stage), i = this.a.sceneIndex();
+      if (k > 0) return { scene: i, stage: STAGES[k - 1].id };
+      if (i > 0) return { scene: i - 1, stage: STAGES[STAGES.length - 1].id };
+      return null;
+    },
+    move(t) {
+      if (!t) return;
+      if (!this.on) this.setOn(true, true);
+      if (t.scene !== this.a.sceneIndex()) { this.pending = t.stage; this.a.goScene(t.scene); this.sceneChanged(); }
+      else this.go(t.stage, true);
+    },
+    next() { this.move(this.nextTarget()); },
+    prev() { this.move(this.prevTarget()); },
+    go(id, user) {
+      if (!STAGES.some(s => s.id === id)) return;
+      if (!this.on) this.setOn(true, !!user);
+      this.stage = id;
+      this.apply();
+      if (user) { const s = this.cur(); this.say(`第 ${s.n} 步 ${s.name}：${this.cue(s)}`); }
+    },
+    sceneChanged(first) {
+      const i = this.a.sceneIndex();
+      if (!first && i === this.sceneSeen) { this.syncRail(); return; }
+      this.sceneSeen = i;
+      this.stage = this.pending || 'motivate';
+      this.pending = null;
+      if (this.on) this.apply(); else this.syncRail();
+    },
+    say(msg) {
+      const live = this.a.live(); if (!live) return;
+      clearTimeout(this.sayTimer);
+      this.sayTimer = setTimeout(() => { live.textContent = msg; }, 60);
+    },
+    help(force) {
+      const p = $('#lf-help-panel'), b = $('#lf-help');
+      const open = force === undefined ? p.hidden : force;
+      p.hidden = !open; b.setAttribute('aria-expanded', String(open));
+      if (open) p.querySelector('strong').focus();
+    },
+    key(e) {
+      if (e.defaultPrevented || e.altKey || e.ctrlKey || e.metaKey) return;
+      const t = e.target;
+      if (e.key === 'Escape' && !$('#lf-help-panel').hidden) { this.help(false); $('#lf-help').focus(); return; }
+      const typing = t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName) || t.getAttribute?.('role') === 'slider');
+      if (typing) return;
+      if (e.key === 'PageDown') { e.preventDefault(); this.next(); }
+      else if (e.key === 'PageUp') { e.preventDefault(); this.prev(); }
+      else if (/^[1-4]$/.test(e.key) && !(t && t.closest && t.closest('svg, canvas, #figure-wrap, .plot-host, .board'))) {
+        e.preventDefault(); this.go(STAGES[+e.key - 1].id, true);
+      }
+    },
+    snapshot() {
+      const vis = el => !!el && el.getClientRects().length > 0 && getComputedStyle(el).visibility !== 'hidden' && !el.classList.contains('lf-fold');
+      return {
+        family: this.family, on: this.on, stage: this.stage, scene: this.a.sceneIndex(), scenes: this.a.sceneCount(),
+        next: $('#lf-next')?.textContent || '', shown: [...this.parked.keys()].filter(k => vis(this.parked.get(k).el)),
+        title: this.head?.querySelector('.lf-title')?.textContent || '', cue: this.head?.querySelector('.lf-cue')?.textContent || '', math: this.a.math(),
+      };
+    },
+  };
+  window.LessonFlow = LF;
+  const start = () => { if (!LF.init()) setTimeout(() => LF.init(), 300); };
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else setTimeout(start, 0);
+})();</script></body></html>

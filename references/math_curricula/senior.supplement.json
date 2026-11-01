@@ -1,0 +1,200 @@
+{
+  "schema_version": 1,
+  "stage": "senior",
+  "subject": "math",
+  "base_version": "2026-09-09.v1",
+  "version": "2026-10-08.s1",
+  "review_status": "editorial_supplement_not_source_verified",
+  "coverage_note": "在冻结的高中基础目录之外追加的扩展知识点：一是高考常见考点，二是旧教材内容（算法、简单线性规划、三视图、四种命题、坐标系与参数方程、不等式选讲），新课程标准已调整但历史试卷和题库仍常出现。全部标为extension，不改变基础目录的核心范围。未逐页核对来源；仅用于减少分类失败，不表示属于课程标准核心要求。",
+  "modules": [
+    {
+      "id": "senior.math.legacy_electives",
+      "chapter": "旧教材选修：算法、坐标系与参数方程、不等式选讲",
+      "domain": "旧教材内容"
+    }
+  ],
+  "topics": [
+    {
+      "module_id": "senior.math.sets_logic",
+      "id": "senior.math.sets_logic.s01",
+      "name": "四种命题及其关系",
+      "scope": "extension",
+      "course": "elective",
+      "basis": "legacy_textbook",
+      "note": "旧人教A版选修常用逻辑用语章节内容，新课程标准已不单列。",
+      "aliases": [
+        "四种命题",
+        "逆否命题"
+      ]
+    },
+    {
+      "module_id": "senior.math.inequalities",
+      "id": "senior.math.inequalities.s01",
+      "name": "简单线性规划",
+      "scope": "extension",
+      "course": "elective",
+      "basis": "legacy_textbook",
+      "note": "旧人教A版必修5不等式章节内容，新课程标准已删除。",
+      "aliases": [
+        "线性规划",
+        "二元一次不等式组与简单线性规划"
+      ]
+    },
+    {
+      "module_id": "senior.math.functions",
+      "id": "senior.math.functions.s01",
+      "name": "函数的对称性",
+      "scope": "extension",
+      "course": "compulsory",
+      "basis": "exam_practice",
+      "note": "高考常见的函数图象轴对称、中心对称及与奇偶性、周期性的综合。",
+      "aliases": [
+        "函数图象的对称性"
+      ]
+    },
+    {
+      "module_id": "senior.math.elementary_functions",
+      "id": "senior.math.elementary_functions.s01",
+      "name": "指数式与对数式的大小比较",
+      "scope": "extension",
+      "course": "compulsory",
+      "basis": "exam_practice",
+      "note": "高考常见的利用指数、对数函数性质比较大小。"
+    },
+    {
+      "module_id": "senior.math.solid_geometry",
+      "id": "senior.math.solid_geometry.s01",
+      "name": "三视图",
+      "scope": "extension",
+      "course": "elective",
+      "basis": "legacy_textbook",
+      "note": "旧人教A版必修2空间几何体章节内容，新课程标准高中部分已不再要求。",
+      "aliases": [
+        "空间几何体的三视图"
+      ]
+    },
+    {
+      "module_id": "senior.math.solid_geometry",
+      "id": "senior.math.solid_geometry.s02",
+      "name": "球的切接问题",
+      "scope": "extension",
+      "course": "compulsory",
+      "basis": "exam_practice",
+      "note": "高考常见的几何体外接球、内切球问题。",
+      "aliases": [
+        "外接球",
+        "内切球",
+        "几何体的外接球"
+      ]
+    },
+    {
+      "module_id": "senior.math.solve_triangles",
+      "id": "senior.math.solve_triangles.s01",
+      "name": "三角形中的范围与最值问题",
+      "scope": "extension",
+      "course": "compulsory",
+      "basis": "exam_practice",
+      "note": "高考常见的解三角形取值范围与最值问题。",
+      "aliases": [
+        "解三角形中的最值问题"
+      ]
+    },
+    {
+      "module_id": "senior.math.sequences",
+      "id": "senior.math.sequences.s01",
+      "name": "由递推关系求通项",
+      "scope": "extension",
+      "course": "selective_required",
+      "basis": "exam_practice",
+      "note": "高考常见的由递推关系构造等差、等比数列求通项。",
+      "aliases": [
+        "递推数列",
+        "数列的递推公式"
+      ]
+    },
+    {
+      "module_id": "senior.math.legacy_electives",
+      "id": "senior.math.legacy_electives.s01",
+      "name": "算法与程序框图",
+      "scope": "extension",
+      "course": "elective",
+      "basis": "legacy_textbook",
+      "note": "旧人教A版必修3算法初步，新课程标准已删除。",
+      "aliases": [
+        "程序框图",
+        "算法初步"
+      ]
+    },
+    {
+      "module_id": "senior.math.legacy_electives",
+      "id": "senior.math.legacy_electives.s02",
+      "name": "极坐标与极坐标方程",
+      "scope": "extension",
+      "course": "elective",
+      "basis": "legacy_textbook",
+      "note": "旧人教A版选修4-4坐标系与参数方程。",
+      "aliases": [
+        "极坐标"
+      ]
+    },
+    {
+      "module_id": "senior.math.legacy_electives",
+      "id": "senior.math.legacy_electives.s03",
+      "name": "参数方程",
+      "scope": "extension",
+      "course": "elective",
+      "basis": "legacy_textbook",
+      "note": "旧人教A版选修4-4坐标系与参数方程。"
+    },
+    {
+      "module_id": "senior.math.legacy_electives",
+      "id": "senior.math.legacy_electives.s04",
+      "name": "绝对值不等式",
+      "scope": "extension",
+      "course": "elective",
+      "basis": "legacy_textbook",
+      "note": "旧人教A版选修4-5不等式选讲。",
+      "aliases": [
+        "含绝对值的不等式"
+      ]
+    },
+    {
+      "module_id": "senior.math.legacy_electives",
+      "id": "senior.math.legacy_electives.s05",
+      "name": "柯西不等式与排序不等式",
+      "scope": "extension",
+      "course": "elective",
+      "basis": "legacy_textbook",
+      "note": "旧人教A版选修4-5不等式选讲。",
+      "aliases": [
+        "柯西不等式"
+      ]
+    }
+  ],
+  "aliases": {
+    "senior.math.solid_geometry.02": [
+      "斜二测画法"
+    ],
+    "senior.math.conics.05": [
+      "离心率",
+      "圆锥曲线的离心率"
+    ],
+    "senior.math.conics.07": [
+      "定点定值问题"
+    ],
+    "senior.math.derivatives.02": [
+      "切线方程"
+    ],
+    "senior.math.derivatives.05": [
+      "利用导数研究函数的单调性"
+    ],
+    "senior.math.plane_vectors.05": [
+      "向量的夹角",
+      "向量的模"
+    ],
+    "senior.math.statistics.04": [
+      "频率分布直方图",
+      "茎叶图"
+    ]
+  }
+}

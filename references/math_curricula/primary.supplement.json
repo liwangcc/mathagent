@@ -1,0 +1,399 @@
+{
+  "schema_version": 1,
+  "stage": "primary",
+  "subject": "math",
+  "base_version": "2026-09-09.v1",
+  "version": "2026-10-08.s1",
+  "review_status": "editorial_supplement_not_source_verified",
+  "coverage_note": "在冻结的小学基础目录之外，按现行常见教材单元与小学常见考查内容追加的扩展知识点，用于让真实题目能落到具体知识点而不是分类失败。全部标为extension，不宣称属于2022课程标准小学主干；简易方程、反比例等内容在部分现行教材中仍在小学阶段教学。未逐页核对来源；仅用于减少分类失败，不表示属于课程标准核心要求。",
+  "topics": [
+    {
+      "module_id": "primary.math.numbers",
+      "id": "primary.math.numbers.s01",
+      "name": "整数的近似数与改写",
+      "scope": "extension",
+      "course": "compulsory",
+      "basis": "textbook",
+      "note": "人教版四年级上册“大数的认识”中的改写与求近似数。",
+      "aliases": [
+        "求近似数"
+      ]
+    },
+    {
+      "module_id": "primary.math.integer_operations",
+      "id": "primary.math.integer_operations.s01",
+      "name": "有余数的除法",
+      "scope": "extension",
+      "course": "compulsory",
+      "basis": "textbook",
+      "note": "人教版二年级下册“有余数的除法”单元。",
+      "aliases": [
+        "有余数除法"
+      ]
+    },
+    {
+      "module_id": "primary.math.integer_operations",
+      "id": "primary.math.integer_operations.s02",
+      "name": "积的变化规律与商不变的性质",
+      "scope": "extension",
+      "course": "compulsory",
+      "basis": "textbook",
+      "note": "人教版四年级上册乘法、除法单元中的规律内容。",
+      "aliases": [
+        "积的变化规律",
+        "商不变的性质"
+      ]
+    },
+    {
+      "module_id": "primary.math.factors_multiples",
+      "id": "primary.math.factors_multiples.s01",
+      "name": "分解质因数",
+      "scope": "extension",
+      "course": "compulsory",
+      "basis": "textbook",
+      "note": "部分版本教材因数与倍数单元内容。",
+      "aliases": [
+        "质因数"
+      ]
+    },
+    {
+      "module_id": "primary.math.decimals",
+      "id": "primary.math.decimals.s01",
+      "name": "小数的性质与小数点移动",
+      "scope": "extension",
+      "course": "compulsory",
+      "basis": "textbook",
+      "note": "人教版四年级下册“小数的意义和性质”单元。",
+      "aliases": [
+        "小数的性质",
+        "小数点位置移动"
+      ]
+    },
+    {
+      "module_id": "primary.math.decimals",
+      "id": "primary.math.decimals.s02",
+      "name": "小数的近似数与改写",
+      "scope": "extension",
+      "course": "compulsory",
+      "basis": "textbook",
+      "note": "人教版四年级下册“小数的意义和性质”单元。",
+      "aliases": [
+        "小数的近似数"
+      ]
+    },
+    {
+      "module_id": "primary.math.decimals",
+      "id": "primary.math.decimals.s03",
+      "name": "循环小数",
+      "scope": "extension",
+      "course": "compulsory",
+      "basis": "textbook",
+      "note": "人教版五年级上册“小数除法”单元。"
+    },
+    {
+      "module_id": "primary.math.fractions",
+      "id": "primary.math.fractions.s01",
+      "name": "分数的基本性质与约分",
+      "scope": "extension",
+      "course": "compulsory",
+      "basis": "textbook",
+      "note": "人教版五年级下册“分数的意义和性质”单元。",
+      "aliases": [
+        "分数的基本性质",
+        "约分",
+        "最简分数"
+      ]
+    },
+    {
+      "module_id": "primary.math.fractions",
+      "id": "primary.math.fractions.s02",
+      "name": "真分数、假分数与带分数",
+      "scope": "extension",
+      "course": "compulsory",
+      "basis": "textbook",
+      "note": "人教版五年级下册“分数的意义和性质”单元。",
+      "aliases": [
+        "假分数",
+        "带分数"
+      ]
+    },
+    {
+      "module_id": "primary.math.fractions",
+      "id": "primary.math.fractions.s03",
+      "name": "倒数的认识",
+      "scope": "extension",
+      "course": "compulsory",
+      "basis": "textbook",
+      "note": "人教版六年级上册“分数除法”单元。",
+      "aliases": [
+        "倒数"
+      ]
+    },
+    {
+      "module_id": "primary.math.fractions",
+      "id": "primary.math.fractions.s04",
+      "name": "分数乘除法的实际问题",
+      "scope": "extension",
+      "course": "compulsory",
+      "basis": "exam_practice",
+      "note": "分数乘除法单元常见的“求一个数的几分之几”等实际问题。",
+      "aliases": [
+        "分数应用题"
+      ]
+    },
+    {
+      "module_id": "primary.math.quantity_relations",
+      "id": "primary.math.quantity_relations.s01",
+      "name": "方程的意义",
+      "scope": "extension",
+      "course": "compulsory",
+      "basis": "textbook",
+      "note": "人教版五年级上册“简易方程”单元。"
+    },
+    {
+      "module_id": "primary.math.quantity_relations",
+      "id": "primary.math.quantity_relations.s02",
+      "name": "解简易方程",
+      "scope": "extension",
+      "course": "compulsory",
+      "basis": "textbook",
+      "note": "人教版五年级上册“简易方程”单元。",
+      "aliases": [
+        "解方程",
+        "简易方程"
+      ]
+    },
+    {
+      "module_id": "primary.math.quantity_relations",
+      "id": "primary.math.quantity_relations.s03",
+      "name": "列方程解决实际问题",
+      "scope": "extension",
+      "course": "compulsory",
+      "basis": "textbook",
+      "note": "人教版五年级上册“简易方程”单元。",
+      "aliases": [
+        "列方程解应用题"
+      ]
+    },
+    {
+      "module_id": "primary.math.quantity_relations",
+      "id": "primary.math.quantity_relations.s04",
+      "name": "工程问题",
+      "scope": "extension",
+      "course": "compulsory",
+      "basis": "exam_practice",
+      "note": "小学高年级常见的工作总量、工作效率与工作时间问题。"
+    },
+    {
+      "module_id": "primary.math.quantity_relations",
+      "id": "primary.math.quantity_relations.s05",
+      "name": "和差倍问题",
+      "scope": "extension",
+      "course": "compulsory",
+      "basis": "exam_practice",
+      "note": "小学中年级常见的和差、和倍、差倍类实际问题。",
+      "aliases": [
+        "和倍问题",
+        "差倍问题",
+        "和差问题"
+      ]
+    },
+    {
+      "module_id": "primary.math.ratio_proportion",
+      "id": "primary.math.ratio_proportion.s01",
+      "name": "比的基本性质与化简比",
+      "scope": "extension",
+      "course": "compulsory",
+      "basis": "textbook",
+      "note": "人教版六年级上册“比”单元。",
+      "aliases": [
+        "化简比",
+        "比的基本性质"
+      ]
+    },
+    {
+      "module_id": "primary.math.ratio_proportion",
+      "id": "primary.math.ratio_proportion.s02",
+      "name": "比例的基本性质与解比例",
+      "scope": "extension",
+      "course": "compulsory",
+      "basis": "textbook",
+      "note": "人教版六年级下册“比例”单元。",
+      "aliases": [
+        "解比例",
+        "比例的基本性质"
+      ]
+    },
+    {
+      "module_id": "primary.math.ratio_proportion",
+      "id": "primary.math.ratio_proportion.s03",
+      "name": "反比例关系的识别与应用",
+      "scope": "extension",
+      "course": "compulsory",
+      "basis": "textbook",
+      "note": "人教版六年级下册“比例”单元；2022课程标准将反比例调整到初中。",
+      "aliases": [
+        "反比例",
+        "反比例关系"
+      ]
+    },
+    {
+      "module_id": "primary.math.length_area",
+      "id": "primary.math.length_area.s01",
+      "name": "组合图形的面积",
+      "scope": "extension",
+      "course": "compulsory",
+      "basis": "textbook",
+      "note": "人教版五年级上册“多边形的面积”单元。",
+      "aliases": [
+        "组合图形面积"
+      ]
+    },
+    {
+      "module_id": "primary.math.percentages",
+      "id": "primary.math.percentages.s01",
+      "name": "百分数与分数、小数的互化",
+      "scope": "extension",
+      "course": "compulsory",
+      "basis": "textbook",
+      "note": "人教版六年级上册“百分数（一）”单元。",
+      "aliases": [
+        "百分数的互化"
+      ]
+    },
+    {
+      "module_id": "primary.math.percentages",
+      "id": "primary.math.percentages.s02",
+      "name": "成数问题",
+      "scope": "extension",
+      "course": "compulsory",
+      "basis": "textbook",
+      "note": "人教版六年级下册“百分数（二）”单元。",
+      "aliases": [
+        "成数"
+      ]
+    },
+    {
+      "module_id": "primary.math.integrated_practice",
+      "id": "primary.math.integrated_practice.s01",
+      "name": "搭配与简单排列组合",
+      "scope": "extension",
+      "course": "compulsory",
+      "basis": "textbook",
+      "note": "人教版“数学广角—搭配”。",
+      "aliases": [
+        "搭配问题"
+      ]
+    },
+    {
+      "module_id": "primary.math.integrated_practice",
+      "id": "primary.math.integrated_practice.s02",
+      "name": "简单推理",
+      "scope": "extension",
+      "course": "compulsory",
+      "basis": "textbook",
+      "note": "人教版二年级下册“数学广角—推理”。",
+      "aliases": [
+        "逻辑推理"
+      ]
+    },
+    {
+      "module_id": "primary.math.integrated_practice",
+      "id": "primary.math.integrated_practice.s03",
+      "name": "集合与重叠问题",
+      "scope": "extension",
+      "course": "compulsory",
+      "basis": "textbook",
+      "note": "人教版三年级上册“数学广角—集合”。",
+      "aliases": [
+        "重叠问题"
+      ]
+    },
+    {
+      "module_id": "primary.math.integrated_practice",
+      "id": "primary.math.integrated_practice.s04",
+      "name": "优化问题",
+      "scope": "extension",
+      "course": "compulsory",
+      "basis": "textbook",
+      "note": "人教版四年级上册“数学广角—优化”。",
+      "aliases": [
+        "烙饼问题",
+        "沏茶问题",
+        "田忌赛马"
+      ]
+    },
+    {
+      "module_id": "primary.math.integrated_practice",
+      "id": "primary.math.integrated_practice.s05",
+      "name": "鸡兔同笼",
+      "scope": "extension",
+      "course": "compulsory",
+      "basis": "textbook",
+      "note": "人教版四年级下册“数学广角—鸡兔同笼”。"
+    },
+    {
+      "module_id": "primary.math.integrated_practice",
+      "id": "primary.math.integrated_practice.s06",
+      "name": "植树问题",
+      "scope": "extension",
+      "course": "compulsory",
+      "basis": "textbook",
+      "note": "人教版五年级上册“数学广角—植树问题”。"
+    },
+    {
+      "module_id": "primary.math.integrated_practice",
+      "id": "primary.math.integrated_practice.s07",
+      "name": "找次品",
+      "scope": "extension",
+      "course": "compulsory",
+      "basis": "textbook",
+      "note": "人教版五年级下册“数学广角—找次品”。"
+    },
+    {
+      "module_id": "primary.math.integrated_practice",
+      "id": "primary.math.integrated_practice.s08",
+      "name": "数与形",
+      "scope": "extension",
+      "course": "compulsory",
+      "basis": "textbook",
+      "note": "人教版六年级上册“数学广角—数与形”。"
+    },
+    {
+      "module_id": "primary.math.integrated_practice",
+      "id": "primary.math.integrated_practice.s09",
+      "name": "鸽巢问题",
+      "scope": "extension",
+      "course": "compulsory",
+      "basis": "textbook",
+      "note": "人教版六年级下册“数学广角—鸽巢问题”。",
+      "aliases": [
+        "抽屉原理"
+      ]
+    },
+    {
+      "module_id": "primary.math.integrated_practice",
+      "id": "primary.math.integrated_practice.s10",
+      "name": "数字编码",
+      "scope": "extension",
+      "course": "compulsory",
+      "basis": "exam_practice",
+      "note": "身份证号、邮政编码等数字编码的常见实践问题。",
+      "aliases": [
+        "编码"
+      ]
+    }
+  ],
+  "aliases": {
+    "primary.math.length_area.08": [
+      "圆环的面积"
+    ],
+    "primary.math.quantity_relations.04": [
+      "行程问题",
+      "相遇问题"
+    ],
+    "primary.math.time_money_mass.03": [
+      "认识钟表"
+    ]
+  }
+}

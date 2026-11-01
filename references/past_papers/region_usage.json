@@ -1,0 +1,3445 @@
+{
+ "about": "Year-specific Gaokao mathematics paper usage by province-level region, 2016-2026. Each mapping cites its sources (S..) with verbatim quotes; 'conflict' entries carry a provisional assignment explained in 'conflicts'. Region keys follow services/past_papers.py REGIONS; series keys follow services/past_papers.py SERIES. Shanghai spring papers: see shanghai_spring.",
+ "generated_at": "2026-10-08",
+ "years": {
+  "2016": {
+   "national_1": {
+    "regions": [
+     "hebei",
+     "henan",
+     "jiangxi",
+     "guangdong",
+     "anhui",
+     "hunan",
+     "hubei",
+     "fujian",
+     "shanxi"
+    ],
+    "tracks": [
+     "science",
+     "liberal"
+    ],
+    "sources": [
+     "S01"
+    ],
+    "confidence": "confirmed",
+    "region_notes": {
+     "shandong": "山东 used 全国卷I only for 英语/文综/理综 in 2016; its math was the self-set 山东卷 (S01, S02, S03)."
+    },
+    "source_families": [
+     "sina"
+    ],
+    "non_community_families": 1
+   },
+   "national_2": {
+    "regions": [
+     "gansu",
+     "qinghai",
+     "xizang",
+     "heilongjiang",
+     "jilin",
+     "liaoning",
+     "ningxia",
+     "neimenggu",
+     "xinjiang",
+     "shaanxi",
+     "chongqing",
+     "hainan"
+    ],
+    "tracks": [
+     "science",
+     "liberal"
+    ],
+    "sources": [
+     "S01",
+     "S02"
+    ],
+    "confidence": "confirmed",
+    "region_notes": {
+     "hainan": "语数外 on 全国卷II; other subjects set separately for 海南 (S01, S02).",
+     "xizang": "西藏 on 全国卷II in 2016 (S01)."
+    },
+    "source_families": [
+     "sina"
+    ],
+    "non_community_families": 1
+   },
+   "national_3": {
+    "regions": [
+     "guangxi",
+     "guizhou",
+     "yunnan"
+    ],
+    "tracks": [
+     "science",
+     "liberal"
+    ],
+    "sources": [
+     "S01"
+    ],
+    "confidence": "confirmed",
+    "region_notes": {
+     "sichuan": "四川 used 全国卷III only for 语文/文综 in 2016; its math was 四川卷 (S01, S03)."
+    },
+    "source_families": [
+     "sina"
+    ],
+    "non_community_families": 1
+   },
+   "beijing": {
+    "regions": [
+     "beijing"
+    ],
+    "tracks": [
+     "science",
+     "liberal"
+    ],
+    "sources": [
+     "S01",
+     "S04"
+    ],
+    "confidence": "confirmed",
+    "source_families": [
+     "sina",
+     "xinhua"
+    ],
+    "non_community_families": 2
+   },
+   "tianjin": {
+    "regions": [
+     "tianjin"
+    ],
+    "tracks": [
+     "science",
+     "liberal"
+    ],
+    "sources": [
+     "S01",
+     "S04"
+    ],
+    "confidence": "confirmed",
+    "source_families": [
+     "sina",
+     "xinhua"
+    ],
+    "non_community_families": 2
+   },
+   "shanghai": {
+    "regions": [
+     "shanghai"
+    ],
+    "tracks": [
+     "science",
+     "liberal"
+    ],
+    "sources": [
+     "S04",
+     "S05"
+    ],
+    "confidence": "confirmed",
+    "tracks_confidence": "single_source",
+    "tracks_note": "文/理 split only from the eol 2016 tab (S05); Sina S01 lists just 数学理 for 上海; deekur has separate gk2016-shanghai-l/-w files (S56).",
+    "source_families": [
+     "eol.cn",
+     "xinhua"
+    ],
+    "non_community_families": 2
+   },
+   "jiangsu": {
+    "regions": [
+     "jiangsu"
+    ],
+    "tracks": [],
+    "sources": [
+     "S01",
+     "S04"
+    ],
+    "confidence": "confirmed",
+    "tracks_note": "One paper (数学Ⅰ for all) plus 附加题 for 选修物理 candidates; not a 文/理 split.",
+    "source_families": [
+     "sina",
+     "xinhua"
+    ],
+    "non_community_families": 2
+   },
+   "zhejiang": {
+    "regions": [
+     "zhejiang"
+    ],
+    "tracks": [
+     "science",
+     "liberal"
+    ],
+    "sources": [
+     "S04",
+     "S05"
+    ],
+    "confidence": "confirmed",
+    "tracks_confidence": "single_source",
+    "tracks_note": "文/理 split only from the eol 2016 tab (S05); Sina S01 lists just 数学理 for 浙江; deekur has separate gk2016-zhejiang-l/-w files (S56).",
+    "source_families": [
+     "eol.cn",
+     "xinhua"
+    ],
+    "non_community_families": 2
+   },
+   "shandong": {
+    "regions": [
+     "shandong"
+    ],
+    "tracks": [
+     "science",
+     "liberal"
+    ],
+    "sources": [
+     "S01",
+     "S02",
+     "S03"
+    ],
+    "confidence": "confirmed",
+    "source_families": [
+     "eol.cn",
+     "sina"
+    ],
+    "non_community_families": 2
+   },
+   "sichuan": {
+    "regions": [
+     "sichuan"
+    ],
+    "tracks": [
+     "science",
+     "liberal"
+    ],
+    "sources": [
+     "S01",
+     "S03"
+    ],
+    "confidence": "confirmed",
+    "source_families": [
+     "eol.cn",
+     "sina"
+    ],
+    "non_community_families": 2
+   }
+  },
+  "2017": {
+   "national_1": {
+    "regions": [
+     "henan",
+     "hebei",
+     "shanxi",
+     "jiangxi",
+     "hubei",
+     "hunan",
+     "guangdong",
+     "anhui",
+     "fujian"
+    ],
+    "tracks": [
+     "science",
+     "liberal"
+    ],
+    "sources": [
+     "S06",
+     "S09"
+    ],
+    "confidence": "confirmed",
+    "region_notes": {
+     "shandong": "山东 used 全国卷I only for 外语/文综/理综; math self-set (S06)."
+    },
+    "source_families": [
+     "eol.cn",
+     "sina"
+    ],
+    "non_community_families": 2
+   },
+   "national_2": {
+    "regions": [
+     "gansu",
+     "qinghai",
+     "heilongjiang",
+     "jilin",
+     "liaoning",
+     "ningxia",
+     "xinjiang",
+     "neimenggu",
+     "shaanxi",
+     "chongqing",
+     "hainan"
+    ],
+    "tracks": [
+     "science",
+     "liberal"
+    ],
+    "sources": [
+     "S06",
+     "S07",
+     "S09"
+    ],
+    "confidence": "conflict",
+    "region_notes": {
+     "hainan": "'海南卷 （语文、数学理、数学文 、英语 适用全国卷II）' (S06).",
+     "xizang": "Province lists from Sina (S06, S07) and eol (S09, S10, S59) put 西藏 on 全国卷II, but they repeat 2016 / pre-exam wording verbatim; provisionally moved to national_3 - see conflicts."
+    },
+    "source_families": [
+     "eol.cn",
+     "sina"
+    ],
+    "non_community_families": 2
+   },
+   "national_3": {
+    "regions": [
+     "yunnan",
+     "guangxi",
+     "guizhou",
+     "sichuan",
+     "xizang"
+    ],
+    "tracks": [
+     "science",
+     "liberal"
+    ],
+    "sources": [
+     "S06",
+     "S08",
+     "S09",
+     "S58",
+     "S56"
+    ],
+    "confidence": "conflict",
+    "region_notes": {
+     "xizang": "PROVISIONAL. eol's own 西藏 paper pages for 2017 show the 全国卷3 papers (S58) and its 西藏 download links go to 云南/广西 pages (S10); deekur (S56) and 百度百科 (S57) also put 西藏 on Ⅲ in 2017. Contradicted by the province lists cited under national_2."
+    },
+    "source_families": [
+     "community",
+     "eol.cn",
+     "sina"
+    ],
+    "non_community_families": 2
+   },
+   "beijing": {
+    "regions": [
+     "beijing"
+    ],
+    "tracks": [
+     "science",
+     "liberal"
+    ],
+    "sources": [
+     "S06"
+    ],
+    "confidence": "confirmed",
+    "source_families": [
+     "sina"
+    ],
+    "non_community_families": 1
+   },
+   "tianjin": {
+    "regions": [
+     "tianjin"
+    ],
+    "tracks": [
+     "science",
+     "liberal"
+    ],
+    "sources": [
+     "S06"
+    ],
+    "confidence": "confirmed",
+    "source_families": [
+     "sina"
+    ],
+    "non_community_families": 1
+   },
+   "shanghai": {
+    "regions": [
+     "shanghai"
+    ],
+    "tracks": [],
+    "sources": [
+     "S06"
+    ],
+    "confidence": "confirmed",
+    "source_families": [
+     "sina"
+    ],
+    "non_community_families": 1
+   },
+   "jiangsu": {
+    "regions": [
+     "jiangsu"
+    ],
+    "tracks": [],
+    "sources": [
+     "S06"
+    ],
+    "confidence": "confirmed",
+    "tracks_note": "数学Ⅰ + 附加题 (选修物理), not a 文/理 split.",
+    "source_families": [
+     "sina"
+    ],
+    "non_community_families": 1
+   },
+   "zhejiang": {
+    "regions": [
+     "zhejiang"
+    ],
+    "tracks": [],
+    "sources": [
+     "S06"
+    ],
+    "confidence": "confirmed",
+    "source_families": [
+     "sina"
+    ],
+    "non_community_families": 1
+   },
+   "shandong": {
+    "regions": [
+     "shandong"
+    ],
+    "tracks": [
+     "science",
+     "liberal"
+    ],
+    "sources": [
+     "S06"
+    ],
+    "confidence": "confirmed",
+    "source_families": [
+     "sina"
+    ],
+    "non_community_families": 1
+   }
+  },
+  "2018": {
+   "national_1": {
+    "regions": [
+     "anhui",
+     "hubei",
+     "fujian",
+     "hunan",
+     "shanxi",
+     "hebei",
+     "jiangxi",
+     "guangdong",
+     "henan",
+     "shandong"
+    ],
+    "tracks": [
+     "science",
+     "liberal"
+    ],
+    "sources": [
+     "S11",
+     "S14"
+    ],
+    "confidence": "confirmed",
+    "source_families": [
+     "eol.cn",
+     "sina"
+    ],
+    "non_community_families": 2
+   },
+   "national_2": {
+    "regions": [
+     "gansu",
+     "qinghai",
+     "heilongjiang",
+     "jilin",
+     "liaoning",
+     "ningxia",
+     "xinjiang",
+     "neimenggu",
+     "shaanxi",
+     "chongqing",
+     "hainan"
+    ],
+    "tracks": [
+     "science",
+     "liberal"
+    ],
+    "sources": [
+     "S11",
+     "S13",
+     "S15",
+     "S17"
+    ],
+    "confidence": "confirmed",
+    "region_notes": {
+     "hainan": "语数外 on 全国卷II, other subjects separately set (S15, S17)."
+    },
+    "source_families": [
+     "eol.cn",
+     "sina"
+    ],
+    "non_community_families": 2
+   },
+   "national_3": {
+    "regions": [
+     "yunnan",
+     "sichuan",
+     "guangxi",
+     "guizhou",
+     "xizang"
+    ],
+    "tracks": [
+     "science",
+     "liberal"
+    ],
+    "sources": [
+     "S11",
+     "S12",
+     "S15",
+     "S16"
+    ],
+    "confidence": "confirmed",
+    "source_families": [
+     "eol.cn",
+     "sina"
+    ],
+    "non_community_families": 2
+   },
+   "beijing": {
+    "regions": [
+     "beijing"
+    ],
+    "tracks": [
+     "science",
+     "liberal"
+    ],
+    "sources": [
+     "S15",
+     "S17"
+    ],
+    "confidence": "confirmed",
+    "source_families": [
+     "eol.cn",
+     "sina"
+    ],
+    "non_community_families": 2
+   },
+   "tianjin": {
+    "regions": [
+     "tianjin"
+    ],
+    "tracks": [
+     "science",
+     "liberal"
+    ],
+    "sources": [
+     "S17"
+    ],
+    "confidence": "confirmed",
+    "source_families": [
+     "eol.cn"
+    ],
+    "non_community_families": 1
+   },
+   "shanghai": {
+    "regions": [
+     "shanghai"
+    ],
+    "tracks": [],
+    "sources": [
+     "S17"
+    ],
+    "confidence": "confirmed",
+    "source_families": [
+     "eol.cn"
+    ],
+    "non_community_families": 1
+   },
+   "jiangsu": {
+    "regions": [
+     "jiangsu"
+    ],
+    "tracks": [],
+    "sources": [
+     "S17"
+    ],
+    "confidence": "confirmed",
+    "tracks_note": "数学Ⅰ + 附加题 (选修物理), not a 文/理 split.",
+    "source_families": [
+     "eol.cn"
+    ],
+    "non_community_families": 1
+   },
+   "zhejiang": {
+    "regions": [
+     "zhejiang"
+    ],
+    "tracks": [],
+    "sources": [
+     "S17"
+    ],
+    "confidence": "confirmed",
+    "source_families": [
+     "eol.cn"
+    ],
+    "non_community_families": 1
+   }
+  },
+  "2019": {
+   "national_1": {
+    "regions": [
+     "hebei",
+     "henan",
+     "shanxi",
+     "shandong",
+     "jiangxi",
+     "anhui",
+     "hubei",
+     "hunan",
+     "guangdong",
+     "fujian"
+    ],
+    "tracks": [
+     "science",
+     "liberal"
+    ],
+    "sources": [
+     "S18",
+     "S19"
+    ],
+    "confidence": "confirmed",
+    "source_families": [
+     "eol.cn",
+     "sina"
+    ],
+    "non_community_families": 2
+   },
+   "national_2": {
+    "regions": [
+     "neimenggu",
+     "heilongjiang",
+     "liaoning",
+     "jilin",
+     "chongqing",
+     "shaanxi",
+     "gansu",
+     "ningxia",
+     "qinghai",
+     "xinjiang",
+     "hainan"
+    ],
+    "tracks": [
+     "science",
+     "liberal"
+    ],
+    "sources": [
+     "S18",
+     "S21"
+    ],
+    "confidence": "confirmed",
+    "region_notes": {
+     "hainan": "'海南卷（语数外用全国Ⅱ卷）' (S18)."
+    },
+    "source_families": [
+     "eol.cn",
+     "sina"
+    ],
+    "non_community_families": 2
+   },
+   "national_3": {
+    "regions": [
+     "yunnan",
+     "guangxi",
+     "guizhou",
+     "sichuan",
+     "xizang"
+    ],
+    "tracks": [
+     "science",
+     "liberal"
+    ],
+    "sources": [
+     "S18",
+     "S20"
+    ],
+    "confidence": "confirmed",
+    "source_families": [
+     "eol.cn",
+     "sina"
+    ],
+    "non_community_families": 2
+   },
+   "beijing": {
+    "regions": [
+     "beijing"
+    ],
+    "tracks": [
+     "science",
+     "liberal"
+    ],
+    "sources": [
+     "S18"
+    ],
+    "confidence": "confirmed",
+    "source_families": [
+     "sina"
+    ],
+    "non_community_families": 1
+   },
+   "tianjin": {
+    "regions": [
+     "tianjin"
+    ],
+    "tracks": [
+     "science",
+     "liberal"
+    ],
+    "sources": [
+     "S18"
+    ],
+    "confidence": "confirmed",
+    "source_families": [
+     "sina"
+    ],
+    "non_community_families": 1
+   },
+   "shanghai": {
+    "regions": [
+     "shanghai"
+    ],
+    "tracks": [],
+    "sources": [
+     "S18"
+    ],
+    "confidence": "confirmed",
+    "source_families": [
+     "sina"
+    ],
+    "non_community_families": 1
+   },
+   "jiangsu": {
+    "regions": [
+     "jiangsu"
+    ],
+    "tracks": [],
+    "sources": [
+     "S18"
+    ],
+    "confidence": "confirmed",
+    "tracks_note": "数学Ⅰ + 附加题 (选修物理), not a 文/理 split.",
+    "source_families": [
+     "sina"
+    ],
+    "non_community_families": 1
+   },
+   "zhejiang": {
+    "regions": [
+     "zhejiang"
+    ],
+    "tracks": [],
+    "sources": [
+     "S18"
+    ],
+    "confidence": "confirmed",
+    "source_families": [
+     "sina"
+    ],
+    "non_community_families": 1
+   }
+  },
+  "2020": {
+   "national_1": {
+    "regions": [
+     "anhui",
+     "hubei",
+     "fujian",
+     "hunan",
+     "shanxi",
+     "hebei",
+     "jiangxi",
+     "guangdong",
+     "henan"
+    ],
+    "tracks": [
+     "science",
+     "liberal"
+    ],
+    "sources": [
+     "S23",
+     "S24"
+    ],
+    "confidence": "confirmed",
+    "source_families": [
+     "eol.cn",
+     "sina"
+    ],
+    "non_community_families": 2
+   },
+   "national_2": {
+    "regions": [
+     "gansu",
+     "qinghai",
+     "heilongjiang",
+     "jilin",
+     "liaoning",
+     "ningxia",
+     "xinjiang",
+     "neimenggu",
+     "shaanxi",
+     "chongqing"
+    ],
+    "tracks": [
+     "science",
+     "liberal"
+    ],
+    "sources": [
+     "S23",
+     "S24"
+    ],
+    "confidence": "confirmed",
+    "source_families": [
+     "eol.cn",
+     "sina"
+    ],
+    "non_community_families": 2
+   },
+   "national_3": {
+    "regions": [
+     "yunnan",
+     "sichuan",
+     "guangxi",
+     "guizhou",
+     "xizang"
+    ],
+    "tracks": [
+     "science",
+     "liberal"
+    ],
+    "sources": [
+     "S23",
+     "S24"
+    ],
+    "confidence": "confirmed",
+    "source_families": [
+     "eol.cn",
+     "sina"
+    ],
+    "non_community_families": 2
+   },
+   "new_curriculum_1": {
+    "regions": [
+     "shandong"
+    ],
+    "tracks": [],
+    "sources": [
+     "S23",
+     "S24"
+    ],
+    "confidence": "confirmed",
+    "source_families": [
+     "eol.cn",
+     "sina"
+    ],
+    "non_community_families": 2
+   },
+   "new_curriculum_2": {
+    "regions": [
+     "hainan"
+    ],
+    "tracks": [],
+    "sources": [
+     "S23",
+     "S24"
+    ],
+    "confidence": "confirmed",
+    "source_families": [
+     "eol.cn",
+     "sina"
+    ],
+    "non_community_families": 2
+   },
+   "beijing": {
+    "regions": [
+     "beijing"
+    ],
+    "tracks": [],
+    "sources": [
+     "S23",
+     "S24"
+    ],
+    "confidence": "confirmed",
+    "source_families": [
+     "eol.cn",
+     "sina"
+    ],
+    "non_community_families": 2
+   },
+   "tianjin": {
+    "regions": [
+     "tianjin"
+    ],
+    "tracks": [],
+    "sources": [
+     "S23",
+     "S24"
+    ],
+    "confidence": "confirmed",
+    "source_families": [
+     "eol.cn",
+     "sina"
+    ],
+    "non_community_families": 2
+   },
+   "shanghai": {
+    "regions": [
+     "shanghai"
+    ],
+    "tracks": [],
+    "sources": [
+     "S23"
+    ],
+    "confidence": "confirmed",
+    "source_families": [
+     "eol.cn"
+    ],
+    "non_community_families": 1
+   },
+   "jiangsu": {
+    "regions": [
+     "jiangsu"
+    ],
+    "tracks": [],
+    "sources": [
+     "S23"
+    ],
+    "confidence": "confirmed",
+    "tracks_note": "数学Ⅰ + 附加题 (选修物理), not a 文/理 split; last self-set 江苏 math year.",
+    "source_families": [
+     "eol.cn"
+    ],
+    "non_community_families": 1
+   },
+   "zhejiang": {
+    "regions": [
+     "zhejiang"
+    ],
+    "tracks": [],
+    "sources": [
+     "S23"
+    ],
+    "confidence": "confirmed",
+    "source_families": [
+     "eol.cn"
+    ],
+    "non_community_families": 1
+   }
+  },
+  "2021": {
+   "national_jia": {
+    "regions": [
+     "yunnan",
+     "sichuan",
+     "guangxi",
+     "guizhou",
+     "xizang"
+    ],
+    "tracks": [
+     "science",
+     "liberal"
+    ],
+    "sources": [
+     "S25",
+     "S26"
+    ],
+    "confidence": "confirmed",
+    "source_families": [
+     "eol.cn",
+     "sina"
+    ],
+    "non_community_families": 2
+   },
+   "national_yi": {
+    "regions": [
+     "gansu",
+     "qinghai",
+     "heilongjiang",
+     "jilin",
+     "ningxia",
+     "xinjiang",
+     "neimenggu",
+     "shaanxi",
+     "anhui",
+     "shanxi",
+     "jiangxi",
+     "henan"
+    ],
+    "tracks": [
+     "science",
+     "liberal"
+    ],
+    "sources": [
+     "S25",
+     "S26"
+    ],
+    "confidence": "confirmed",
+    "source_families": [
+     "eol.cn",
+     "sina"
+    ],
+    "non_community_families": 2
+   },
+   "new_curriculum_1": {
+    "regions": [
+     "hubei",
+     "guangdong",
+     "shandong",
+     "jiangsu",
+     "hunan",
+     "hebei",
+     "fujian"
+    ],
+    "tracks": [],
+    "sources": [
+     "S25",
+     "S26"
+    ],
+    "confidence": "confirmed",
+    "source_families": [
+     "eol.cn",
+     "sina"
+    ],
+    "non_community_families": 2
+   },
+   "new_curriculum_2": {
+    "regions": [
+     "liaoning",
+     "hainan",
+     "chongqing"
+    ],
+    "tracks": [],
+    "sources": [
+     "S25",
+     "S26"
+    ],
+    "confidence": "confirmed",
+    "source_families": [
+     "eol.cn",
+     "sina"
+    ],
+    "non_community_families": 2
+   },
+   "beijing": {
+    "regions": [
+     "beijing"
+    ],
+    "tracks": [],
+    "sources": [
+     "S25",
+     "S27"
+    ],
+    "confidence": "confirmed",
+    "source_families": [
+     "eol.cn",
+     "official"
+    ],
+    "non_community_families": 2
+   },
+   "tianjin": {
+    "regions": [
+     "tianjin"
+    ],
+    "tracks": [],
+    "sources": [
+     "S25",
+     "S27"
+    ],
+    "confidence": "confirmed",
+    "source_families": [
+     "eol.cn",
+     "official"
+    ],
+    "non_community_families": 2
+   },
+   "shanghai": {
+    "regions": [
+     "shanghai"
+    ],
+    "tracks": [],
+    "sources": [
+     "S25",
+     "S27"
+    ],
+    "confidence": "confirmed",
+    "source_families": [
+     "eol.cn",
+     "official"
+    ],
+    "non_community_families": 2
+   },
+   "zhejiang": {
+    "regions": [
+     "zhejiang"
+    ],
+    "tracks": [],
+    "sources": [
+     "S25",
+     "S27"
+    ],
+    "confidence": "confirmed",
+    "note": "Last self-set 浙江 math years were 2021-2022 (浙江 moved to 新课标Ⅰ卷 in 2023, S35).",
+    "source_families": [
+     "eol.cn",
+     "official"
+    ],
+    "non_community_families": 2
+   }
+  },
+  "2022": {
+   "national_jia": {
+    "regions": [
+     "yunnan",
+     "sichuan",
+     "guangxi",
+     "guizhou",
+     "xizang"
+    ],
+    "tracks": [
+     "science",
+     "liberal"
+    ],
+    "sources": [
+     "S28",
+     "S29"
+    ],
+    "confidence": "confirmed",
+    "source_families": [
+     "eol.cn",
+     "sina"
+    ],
+    "non_community_families": 2
+   },
+   "national_yi": {
+    "regions": [
+     "gansu",
+     "qinghai",
+     "heilongjiang",
+     "jilin",
+     "ningxia",
+     "xinjiang",
+     "neimenggu",
+     "shaanxi",
+     "anhui",
+     "shanxi",
+     "jiangxi",
+     "henan"
+    ],
+    "tracks": [
+     "science",
+     "liberal"
+    ],
+    "sources": [
+     "S28",
+     "S30"
+    ],
+    "confidence": "confirmed",
+    "source_families": [
+     "eol.cn",
+     "sina"
+    ],
+    "non_community_families": 2
+   },
+   "new_curriculum_1": {
+    "regions": [
+     "hubei",
+     "guangdong",
+     "shandong",
+     "jiangsu",
+     "hunan",
+     "hebei",
+     "fujian"
+    ],
+    "tracks": [],
+    "sources": [
+     "S28",
+     "S29",
+     "S30"
+    ],
+    "confidence": "confirmed",
+    "source_families": [
+     "eol.cn",
+     "sina"
+    ],
+    "non_community_families": 2
+   },
+   "new_curriculum_2": {
+    "regions": [
+     "liaoning",
+     "hainan",
+     "chongqing"
+    ],
+    "tracks": [],
+    "sources": [
+     "S28",
+     "S29"
+    ],
+    "confidence": "confirmed",
+    "source_families": [
+     "eol.cn",
+     "sina"
+    ],
+    "non_community_families": 2
+   },
+   "beijing": {
+    "regions": [
+     "beijing"
+    ],
+    "tracks": [],
+    "sources": [
+     "S28"
+    ],
+    "confidence": "confirmed",
+    "source_families": [
+     "eol.cn"
+    ],
+    "non_community_families": 1
+   },
+   "tianjin": {
+    "regions": [
+     "tianjin"
+    ],
+    "tracks": [],
+    "sources": [
+     "S28"
+    ],
+    "confidence": "confirmed",
+    "source_families": [
+     "eol.cn"
+    ],
+    "non_community_families": 1
+   },
+   "shanghai": {
+    "regions": [
+     "shanghai"
+    ],
+    "tracks": [],
+    "sources": [
+     "S28"
+    ],
+    "confidence": "confirmed",
+    "source_families": [
+     "eol.cn"
+    ],
+    "non_community_families": 1
+   },
+   "zhejiang": {
+    "regions": [
+     "zhejiang"
+    ],
+    "tracks": [],
+    "sources": [
+     "S28"
+    ],
+    "confidence": "confirmed",
+    "note": "Last self-set 浙江 math years were 2021-2022 (浙江 moved to 新课标Ⅰ卷 in 2023, S35).",
+    "source_families": [
+     "eol.cn"
+    ],
+    "non_community_families": 1
+   }
+  },
+  "2023": {
+   "national_jia": {
+    "regions": [
+     "sichuan",
+     "guangxi",
+     "guizhou",
+     "xizang"
+    ],
+    "tracks": [
+     "science",
+     "liberal"
+    ],
+    "sources": [
+     "S31",
+     "S34",
+     "S56"
+    ],
+    "confidence": "conflict",
+    "region_notes": {
+     "xizang": "Resolved to 全国甲卷 (文/理) on the strength of 西藏's official 2023 rule '数学(分文理科)' (S34): in 2023 only 甲卷/乙卷 math were split, and 甲卷 is 西藏's prior lineage; deekur agrees (S56). But eol's post-exam index (S31) lists 西藏 统考科目 under 新课标Ⅱ卷 and the pre-exam overview (S32) does too; no source states '西藏 数学 = 全国甲卷' explicitly for 2023."
+    },
+    "source_families": [
+     "community",
+     "eol.cn",
+     "official"
+    ],
+    "non_community_families": 2
+   },
+   "national_yi": {
+    "regions": [
+     "neimenggu",
+     "shaanxi",
+     "gansu",
+     "qinghai",
+     "ningxia",
+     "xinjiang",
+     "jiangxi",
+     "henan"
+    ],
+    "tracks": [
+     "science",
+     "liberal"
+    ],
+    "sources": [
+     "S31",
+     "S56"
+    ],
+    "confidence": "confirmed",
+    "source_families": [
+     "community",
+     "eol.cn"
+    ],
+    "non_community_families": 1
+   },
+   "new_curriculum_1": {
+    "regions": [
+     "shandong",
+     "guangdong",
+     "hunan",
+     "hubei",
+     "hebei",
+     "jiangsu",
+     "fujian",
+     "zhejiang"
+    ],
+    "tracks": [],
+    "sources": [
+     "S31",
+     "S32",
+     "S35"
+    ],
+    "confidence": "confirmed",
+    "source_families": [
+     "eol.cn",
+     "official"
+    ],
+    "non_community_families": 2
+   },
+   "new_curriculum_2": {
+    "regions": [
+     "liaoning",
+     "chongqing",
+     "hainan",
+     "yunnan",
+     "shanxi",
+     "anhui",
+     "jilin",
+     "heilongjiang"
+    ],
+    "tracks": [],
+    "sources": [
+     "S31",
+     "S32",
+     "S56"
+    ],
+    "confidence": "conflict",
+    "region_notes": {
+     "yunnan|shanxi|anhui|jilin|heilongjiang": "Still in the old 文/理 system (文/理综合 on 新课标卷) but took the single unsplit 新课标Ⅱ卷 math paper (S31).",
+     "xizang": "eol (S31, S32) also lists 西藏 here; excluded per the resolution under national_jia."
+    },
+    "source_families": [
+     "community",
+     "eol.cn"
+    ],
+    "non_community_families": 1
+   },
+   "beijing": {
+    "regions": [
+     "beijing"
+    ],
+    "tracks": [],
+    "sources": [
+     "S31",
+     "S32"
+    ],
+    "confidence": "confirmed",
+    "source_families": [
+     "eol.cn"
+    ],
+    "non_community_families": 1
+   },
+   "tianjin": {
+    "regions": [
+     "tianjin"
+    ],
+    "tracks": [],
+    "sources": [
+     "S31",
+     "S32"
+    ],
+    "confidence": "confirmed",
+    "source_families": [
+     "eol.cn"
+    ],
+    "non_community_families": 1
+   },
+   "shanghai": {
+    "regions": [
+     "shanghai"
+    ],
+    "tracks": [],
+    "sources": [
+     "S31",
+     "S32"
+    ],
+    "confidence": "confirmed",
+    "source_families": [
+     "eol.cn"
+    ],
+    "non_community_families": 1
+   }
+  },
+  "2024": {
+   "national_jia": {
+    "regions": [
+     "sichuan",
+     "shaanxi",
+     "neimenggu",
+     "qinghai",
+     "ningxia",
+     "xizang"
+    ],
+    "tracks": [
+     "science",
+     "liberal"
+    ],
+    "sources": [
+     "S36",
+     "S39",
+     "S40",
+     "S56"
+    ],
+    "confidence": "confirmed",
+    "region_notes": {
+     "xizang": "eol index states '西藏（数学、英语、理综）' under 全国甲卷 (S36); 西藏 official rule '数学（分文理科）' (S39) and the official note that 全国甲卷 had 文/理 papers (S40) agree. Generic eol articles saying 西藏 used 新课标Ⅱ卷 (S37, S38) refer to 语文 / are internally inconsistent - see conflicts."
+    },
+    "source_families": [
+     "community",
+     "eol.cn",
+     "official"
+    ],
+    "non_community_families": 2
+   },
+   "new_curriculum_1": {
+    "regions": [
+     "shandong",
+     "guangdong",
+     "hunan",
+     "hubei",
+     "hebei",
+     "jiangsu",
+     "fujian",
+     "zhejiang",
+     "jiangxi",
+     "anhui",
+     "henan"
+    ],
+    "tracks": [],
+    "sources": [
+     "S36"
+    ],
+    "confidence": "confirmed",
+    "region_notes": {
+     "henan": "Old 文/理 system (文/理综合 on 新课标卷) but took the unsplit 新课标Ⅰ卷 math paper (S36)."
+    },
+    "source_families": [
+     "eol.cn"
+    ],
+    "non_community_families": 1
+   },
+   "new_curriculum_2": {
+    "regions": [
+     "liaoning",
+     "chongqing",
+     "hainan",
+     "guangxi",
+     "guizhou",
+     "jilin",
+     "heilongjiang",
+     "gansu",
+     "xinjiang",
+     "yunnan",
+     "shanxi"
+    ],
+    "tracks": [],
+    "sources": [
+     "S36"
+    ],
+    "confidence": "confirmed",
+    "region_notes": {
+     "yunnan|shanxi|xinjiang": "Old 文/理 system (文/理综合 on 新课标卷) but took the unsplit 新课标Ⅱ卷 math paper (S36).",
+     "xizang": "Only 西藏 语文 used 新课标Ⅱ卷 (S36 '西藏（语文）'); math was 全国甲卷."
+    },
+    "source_families": [
+     "eol.cn"
+    ],
+    "non_community_families": 1
+   },
+   "beijing": {
+    "regions": [
+     "beijing"
+    ],
+    "tracks": [],
+    "sources": [
+     "S36"
+    ],
+    "confidence": "confirmed",
+    "source_families": [
+     "eol.cn"
+    ],
+    "non_community_families": 1
+   },
+   "tianjin": {
+    "regions": [
+     "tianjin"
+    ],
+    "tracks": [],
+    "sources": [
+     "S36"
+    ],
+    "confidence": "confirmed",
+    "source_families": [
+     "eol.cn"
+    ],
+    "non_community_families": 1
+   },
+   "shanghai": {
+    "regions": [
+     "shanghai"
+    ],
+    "tracks": [],
+    "sources": [
+     "S36"
+    ],
+    "confidence": "confirmed",
+    "source_families": [
+     "eol.cn"
+    ],
+    "non_community_families": 1
+   }
+  },
+  "2025": {
+   "national_1_2025": {
+    "regions": [
+     "hebei",
+     "jiangsu",
+     "zhejiang",
+     "anhui",
+     "fujian",
+     "jiangxi",
+     "shandong",
+     "henan",
+     "hubei",
+     "hunan",
+     "guangdong"
+    ],
+    "tracks": [],
+    "sources": [
+     "S41",
+     "S42",
+     "S45"
+    ],
+    "confidence": "confirmed",
+    "source_families": [
+     "eol.cn",
+     "official"
+    ],
+    "non_community_families": 2
+   },
+   "national_2_2025": {
+    "regions": [
+     "yunnan",
+     "guangxi",
+     "guizhou",
+     "sichuan",
+     "xizang",
+     "shanxi",
+     "gansu",
+     "neimenggu",
+     "jilin",
+     "ningxia",
+     "xinjiang",
+     "shaanxi",
+     "hainan",
+     "liaoning",
+     "chongqing",
+     "heilongjiang",
+     "qinghai"
+    ],
+    "tracks": [],
+    "sources": [
+     "S41",
+     "S43",
+     "S44",
+     "S45"
+    ],
+    "confidence": "confirmed",
+    "region_notes": {
+     "xizang|xinjiang": "Still 3+文科综合/理科综合 (old system) but math is the single unsplit 全国二卷 ('数学（不分文理科）', S43 for 西藏).",
+     "sichuan|neimenggu|shaanxi|qinghai|ningxia|shanxi|henan|yunnan": "2025 is the first new-gaokao year for this reform cohort (e.g. 四川 '不再分文理科', S44)."
+    },
+    "source_families": [
+     "cnr",
+     "eol.cn",
+     "official"
+    ],
+    "non_community_families": 3
+   },
+   "beijing": {
+    "regions": [
+     "beijing"
+    ],
+    "tracks": [],
+    "sources": [
+     "S41"
+    ],
+    "confidence": "confirmed",
+    "source_families": [
+     "eol.cn"
+    ],
+    "non_community_families": 1
+   },
+   "tianjin": {
+    "regions": [
+     "tianjin"
+    ],
+    "tracks": [],
+    "sources": [
+     "S41"
+    ],
+    "confidence": "confirmed",
+    "source_families": [
+     "eol.cn"
+    ],
+    "non_community_families": 1
+   },
+   "shanghai": {
+    "regions": [
+     "shanghai"
+    ],
+    "tracks": [],
+    "sources": [
+     "S41"
+    ],
+    "confidence": "confirmed",
+    "source_families": [
+     "eol.cn"
+    ],
+    "non_community_families": 1
+   }
+  },
+  "2026": {
+   "national_1_2025": {
+    "regions": [
+     "hebei",
+     "jiangsu",
+     "zhejiang",
+     "anhui",
+     "fujian",
+     "jiangxi",
+     "shandong",
+     "henan",
+     "hubei",
+     "hunan",
+     "guangdong"
+    ],
+    "tracks": [],
+    "sources": [
+     "S46"
+    ],
+    "confidence": "confirmed",
+    "source_families": [
+     "eol.cn"
+    ],
+    "non_community_families": 1
+   },
+   "national_2_2025": {
+    "regions": [
+     "yunnan",
+     "guangxi",
+     "guizhou",
+     "sichuan",
+     "xizang",
+     "shanxi",
+     "gansu",
+     "neimenggu",
+     "jilin",
+     "ningxia",
+     "xinjiang",
+     "shaanxi",
+     "hainan",
+     "liaoning",
+     "chongqing",
+     "heilongjiang",
+     "qinghai"
+    ],
+    "tracks": [],
+    "sources": [
+     "S46",
+     "S47"
+    ],
+    "confidence": "confirmed",
+    "region_notes": {
+     "xizang": "Official 2026 rule lists 数学 without a 文/理 split (S47)."
+    },
+    "source_families": [
+     "eol.cn",
+     "official"
+    ],
+    "non_community_families": 2
+   },
+   "beijing": {
+    "regions": [
+     "beijing"
+    ],
+    "tracks": [],
+    "sources": [
+     "S46"
+    ],
+    "confidence": "confirmed",
+    "source_families": [
+     "eol.cn"
+    ],
+    "non_community_families": 1
+   },
+   "tianjin": {
+    "regions": [
+     "tianjin"
+    ],
+    "tracks": [],
+    "sources": [
+     "S46"
+    ],
+    "confidence": "confirmed",
+    "source_families": [
+     "eol.cn"
+    ],
+    "non_community_families": 1
+   },
+   "shanghai": {
+    "regions": [
+     "shanghai"
+    ],
+    "tracks": [],
+    "sources": [
+     "S46"
+    ],
+    "confidence": "confirmed",
+    "source_families": [
+     "eol.cn"
+    ],
+    "non_community_families": 1
+   }
+  }
+ },
+ "sources": {
+  "S01": {
+   "title": "2016年全国各地高考真题汇总",
+   "publisher": "新浪教育 (Sina Education)",
+   "url": "https://edu.sina.cn/gaokao/qsbk/2016-06-07/detail-ifxsvenv6857596.d.html",
+   "published": "2016-06-07",
+   "accessed_at": "2026-10-08",
+   "kind": "major_media",
+   "quote": [
+    "全国卷I （适用地区：河北 河南 江西 广东 安徽 湖南 湖北 福建 山西）",
+    "全国卷II （适用地区：甘、青、藏、黑、吉、辽、宁、蒙、新、陕、渝、琼、海南语数英）",
+    "全国卷III （适用地区：四川语文、文综 广西 贵州 云南）",
+    "2016年高考数学理真题及参考答案(山东卷) 2016年高考数学文真题及参考答案(山东卷)",
+    "2016年高考数学理真题及参考答案(四川卷) 2016年高考数学文真题及参考答案(四川卷)",
+    "2016年高考数学理真题及参考答案（北京卷） 2016年高考数学文真题及参考答案（北京卷）",
+    "2016年高考数学理真题及参考答案(天津卷) 2016年高考数学文真题及参考答案(天津卷)",
+    "2016年高考数学真题及参考答案（江苏卷）"
+   ],
+   "note": "Post-exam list. Lists only 数学理 under 浙江卷 and 上海卷 (文 entries absent from the list).",
+   "quote_verified_against_local_copy": true
+  },
+  "S02": {
+   "title": "31省市2016高考用卷详情：23地全科使用全国卷",
+   "publisher": "新浪教育 (Sina Education)",
+   "url": "http://doc.sina.cn/?id=comos%3Afxmihae9153628",
+   "published": "2015-12-07",
+   "accessed_at": "2026-10-08",
+   "kind": "major_media",
+   "quote": [
+    "2016年山东、海南、四川三省部分科目采用全国卷，北京、天津、上海、江苏、浙江五省市全部科目2016年仍将自主命题。",
+    "山东 英语、综合全国卷I卷，其它自主命题 2015年起山东高考英语使用全国卷，2016年起文科综合和理科综合使用全国卷，2018年起语文和数学科目使用全国卷。",
+    "海南 语数外全国卷II卷，其它自主命题"
+   ],
+   "note": "PRE-EXAM (Dec 2015) table. Its I/II split predates the creation of 全国卷III and wrongly lists 贵州/广西/云南 under 全国卷II; used only for the 山东/海南/四川 partial-adoption facts.",
+   "quote_verified_against_local_copy": true
+  },
+  "S03": {
+   "title": "2016年高考：全国卷省份名单",
+   "publisher": "中国教育在线 (eol.cn)",
+   "url": "https://gaokao.eol.cn/news/201606/t20160607_1408573.shtml",
+   "published": "2016-06-07",
+   "accessed_at": "2026-10-08",
+   "kind": "major_media",
+   "quote": [
+    "山东：英语、综合全国卷I卷;语文、数学自主命题",
+    "四川：语文、文科综合、外语科小语种使用全国卷，而数学、理科综合、英语科则使用四川卷。"
+   ],
+   "note": "Its I/II province lists are incomplete/outdated (no 全国卷III); used only for 山东/四川 math being self-set in 2016.",
+   "quote_verified_against_local_copy": true
+  },
+  "S04": {
+   "title": "26省份高考选择全国卷 重回全国卷为何成趋势",
+   "publisher": "新华网 (转载光明日报)",
+   "url": "http://www.xinhuanet.com/politics/2016-06/09/c_129048594.htm",
+   "published": "2016-06-09",
+   "accessed_at": "2026-10-08",
+   "kind": "major_media",
+   "quote": "今年，除北京、上海、天津、江苏、浙江5省份外，其余26个省份均选择全国统一命题试卷。",
+   "note": "'26 provinces chose national papers' counts partial adopters (山东/海南/四川); math was still self-set in 山东 and 四川 in 2016 (S01, S02, S03).",
+   "quote_verified_against_local_copy": true
+  },
+  "S05": {
+   "title": "2016年高考真题 (eol annual index page)",
+   "publisher": "中国教育在线 (eol.cn)",
+   "url": "https://gaokao.eol.cn/e_html/gk/gkst/2016st.shtml",
+   "published": null,
+   "accessed_at": "2026-10-08",
+   "kind": "major_media",
+   "quote": [
+    "适用地区：云南、四川、广西、贵州、西藏",
+    "浙江卷 … 数学（理） … 数学（文） … 上海卷 … 数学（理） … 数学（文）"
+   ],
+   "note": "TEMPLATE PAGE shared by 2016/2017/2018 (identical 适用地区 lines on all three - see eol_st_2017.html and eol_st_2018.html - with 2018/2017/2016 tabs). Its 适用地区 lines are NOT year-specific and are not used for 2016/2017 mappings; only the per-year subject tabs (浙江/上海 数学（理）/（文） in 2016) are used for track info.",
+   "quote_verified_against_local_copy": true
+  },
+  "S06": {
+   "title": "2017年全国各地高考真题及参考答案汇总",
+   "publisher": "新浪教育 (Sina Education)",
+   "url": "https://edu.sina.cn/gaokao/qsbk/2017-06-07/detail-ifyfuzny3833856.d.html",
+   "published": "2017-06-07",
+   "accessed_at": "2026-10-08",
+   "kind": "major_media",
+   "quote": [
+    "全国卷I （适用地区：河南 河北 山西 江西 湖北 湖南 广东 安徽 福建 山东外语及文理综 浙江外语）",
+    "全国卷II （适用地区：甘肃 青海 西藏 黑龙江 吉林 辽宁 宁夏 新疆 内蒙古 陕西 重庆 海南语数外）",
+    "全国卷III （适用地区：云南、广西、贵州、四川）",
+    "山东卷 （英语、理综、文综 适用全国卷I） 2017年高考语文真题及参考答案（山东卷） 2017年高考数学理真题及参考答案（山东卷） 2017年高考数学文真题及参考答案（山东卷）",
+    "海南卷 （语文、数学理、数学文 、英语 适用全国卷II）",
+    "2017年高考数学真题及参考答案（上海卷）",
+    "2017年高考数学真题及参考答案（浙江卷）"
+   ],
+   "quote_verified_against_local_copy": true
+  },
+  "S07": {
+   "title": "2017年高考数学文真题及参考答案(全国卷II)",
+   "publisher": "新浪教育 (Sina Education)",
+   "url": "https://edu.sina.cn/gaokao/qsbk/2017-06-07/detail-ifyfuzmy2285377.d.html",
+   "published": "2017-06-07",
+   "accessed_at": "2026-10-08",
+   "kind": "major_media",
+   "quote": "以下为2017高考数学文真题（全国卷II）及参考答案。[适用地区：甘肃、青海、西藏、黑龙江、吉林、辽宁、宁夏、新疆、内蒙古、陕西、重庆]",
+   "quote_verified_against_local_copy": true
+  },
+  "S08": {
+   "title": "2017年高考数学文真题及参考答案(全国卷III)",
+   "publisher": "新浪教育 (Sina Education)",
+   "url": "http://edu.sina.com.cn/gaokao/2017-06-07/doc-ifyfuzmy2265949.shtml",
+   "published": "2017-06-07",
+   "accessed_at": "2026-10-08",
+   "kind": "major_media",
+   "quote": "以下为2017高考数学真题(全国卷III)及参考答案。【适用地区：四川 广西 贵州 云南】",
+   "quote_verified_against_local_copy": true
+  },
+  "S09": {
+   "title": "2017年全国高考数学试题汇总",
+   "publisher": "中国教育在线 (eol.cn)",
+   "url": "https://gaokao.eol.cn/shiti/sx/201706/t20170607_1523943.shtml",
+   "published": "2017-06-07",
+   "accessed_at": "2026-10-08",
+   "kind": "major_media",
+   "quote": [
+    "全国卷I 适用地区：河南、河北、山西、江西、湖北、湖南、广东、安徽、福建",
+    "全国卷Ⅱ 适用地区：甘肃、青海、内蒙古、黑龙江、吉林、辽宁、宁夏、新疆、西藏、陕西、重庆",
+    "全国卷Ⅲ 适用地区：云南、广西、贵州、四川"
+   ],
+   "quote_verified_against_local_copy": true
+  },
+  "S10": {
+   "title": "2017西藏高考文综试题 (eol 西藏 channel page)",
+   "publisher": "中国教育在线 (eol.cn)",
+   "url": "https://gaokao.eol.cn/xi_zang/dongtai/201706/t20170608_1524736_1.shtml",
+   "published": "2017-06-08",
+   "accessed_at": "2026-10-08",
+   "kind": "major_media",
+   "quote": "全国卷Ⅱ 甘肃 青海 西藏 黑龙江 吉林 辽宁 宁夏 新疆 内蒙古 陕西 重庆 全国卷Ⅲ 云南 四川 广西 贵州",
+   "note": "Navigation table on eol's 西藏 channel lists 西藏 under 全国卷Ⅱ for 2017, but the same page's '下载' links point to 广西/云南 (全国卷Ⅲ) channel pages and the channel's actual 2017 西藏 paper pages show 全国卷3 papers (S58), so the eol 西藏 channel is internally inconsistent.",
+   "quote_verified_against_local_copy": true
+  },
+  "S58": {
+   "title": "2017西藏高考文科数学试题 / 2017西藏高考语文试题 (eol 西藏 channel paper pages)",
+   "publisher": "中国教育在线 (eol.cn), content credited to 学科网",
+   "url": "https://gaokao.eol.cn/xi_zang/dongtai/201706/t20170607_1523897.shtml",
+   "published": "2017-06-07",
+   "accessed_at": "2026-10-08",
+   "kind": "major_media",
+   "quote": [
+    "<title>2017西藏高考文科数学试题",
+    "alt=\"2017全国卷3高考数学文试题\""
+   ],
+   "note": "The page eol published as 西藏's 2017 文科数学 paper displays the 全国卷3 文数 images (img alt '2017全国卷3高考数学文试题', src .../2017shiti/qgj3/j3ws1.jpg); the companion 西藏 语文 page (eol_xizang_2017_yuwen.html, t20170607_1523600) shows alt '2017全国卷3高考语文试题'. Quote verified against raw HTML (attribute text).",
+   "quote_verified_against_local_copy": true
+  },
+  "S59": {
+   "title": "2017年各省市高考用卷 四川用全国Ⅲ卷",
+   "publisher": "中国教育在线 (eol.cn)",
+   "url": "https://gaokao.eol.cn/si_chuan/dongtai/201706/t20170607_1523005.shtml",
+   "published": "2017-06-07",
+   "accessed_at": "2026-10-08",
+   "kind": "major_media",
+   "quote": [
+    "全国Ⅱ卷地区：甘肃、青海、内蒙古、黑龙江、吉林、辽宁、宁夏、新疆、西藏、陕西、重庆",
+    "全国Ⅲ卷地区：云南、广西、贵州、四川",
+    "海南省：全国Ⅱ卷(语、数、英) 单独命题(政、史、地、物、化、生)"
+   ],
+   "note": "Same wording and province order as eol's pre-exam article of 2016-12-27 (t20161227_1479436), i.e. very likely a carried-over pre-exam list.",
+   "quote_verified_against_local_copy": true
+  },
+  "S11": {
+   "title": "2018年全国各地高考试题及答案（汇总）",
+   "publisher": "中国教育在线 (eol.cn)",
+   "url": "https://gaokao.eol.cn/shiti/zhenti/201906/t20190608_1662930.shtml",
+   "published": "2019-06-08 (retrospective, year-specific)",
+   "accessed_at": "2026-10-08",
+   "kind": "major_media",
+   "quote": [
+    "全国1卷 2018年高考全国卷一真题及答案汇总 适用地区：安徽、湖北、福建、湖南、山西、河北、江西、广东、河南、山东",
+    "全国2卷 2018年高考全国卷二真题及答案汇总 适用地区：甘肃、青海、黑龙江、吉林、辽宁、宁夏、新疆、内蒙古、陕西、重庆",
+    "全国3卷 2018年高考全国卷三真题及答案汇总 适用地区：云南、四川、广西、贵州、西藏"
+   ],
+   "quote_verified_against_local_copy": true
+  },
+  "S12": {
+   "title": "2018年高考全国卷3理科数学试题及参考答案",
+   "publisher": "中国教育在线 (eol.cn)",
+   "url": "https://gaokao.eol.cn/shiti/zhenti/201806/t20180608_1607250.shtml",
+   "published": "2018-06-08",
+   "accessed_at": "2026-10-08",
+   "kind": "major_media",
+   "quote": "适用地区：云南、四川、广西、贵州、西藏",
+   "quote_verified_against_local_copy": true
+  },
+  "S13": {
+   "title": "2018年高考数学理真题（全国卷2）及参考答案",
+   "publisher": "中国教育在线 (eol.cn)",
+   "url": "https://gaokao.eol.cn/shiti/zhenti/201806/t20180607_1606407.shtml",
+   "published": "2018-06-07",
+   "accessed_at": "2026-10-08",
+   "kind": "major_media",
+   "quote": "适用地区：甘肃、青海、黑龙江、吉林、辽宁、宁夏、新疆、内蒙古、陕西、重庆",
+   "quote_verified_against_local_copy": true
+  },
+  "S14": {
+   "title": "2018年高考文数真题及参考答案(全国卷I)",
+   "publisher": "新浪教育 (Sina Education)",
+   "url": "http://edu.sina.com.cn/gaokao/2018-06-08/doc-ihcscwxa6401005.shtml",
+   "published": "2018-06-08",
+   "accessed_at": "2026-10-08",
+   "kind": "major_media",
+   "quote": "以下为2018高考文数真题及参考答案（全国卷I）。（适用地区河北、河南、山西、山东、江西、安徽、湖北、湖南、广东、福建）",
+   "quote_verified_against_local_copy": true
+  },
+  "S15": {
+   "title": "高考真题及答案 专题 (2018年高考真题及答案解析)",
+   "publisher": "新浪教育 (Sina Education)",
+   "url": "http://edu.sina.com.cn/zt_d/gkzt/",
+   "published": "2018-06",
+   "accessed_at": "2026-10-08",
+   "kind": "major_media",
+   "quote": [
+    "全国卷II 适用地区：陕西 重庆 内蒙古 黑龙江 吉林 甘肃 宁夏 青海 新疆 海南语数外",
+    "全国卷III 适用地区：广西 四川 云南 贵州 西藏"
+   ],
+   "note": "2018 topic page. Its 全国卷II list omits 辽宁 (contradicted by S11, S13, S16); used for 海南 (语数外 on 全国卷II) and 全国卷III.",
+   "quote_verified_against_local_copy": true
+  },
+  "S16": {
+   "title": "2018年高考理综真题及参考答案(全国卷II / 全国卷III)",
+   "publisher": "新浪教育 (Sina Education)",
+   "url": "http://edu.sina.com.cn/gaokao/2018-06-09/doc-ihcscwxc0519538.shtml",
+   "published": "2018-06-09",
+   "accessed_at": "2026-10-08",
+   "kind": "major_media",
+   "quote": "以下为2018理综真题（全国卷III）及参考答案。[适用地区：云南、广西、贵州、四川、西藏]",
+   "note": "理综 page (not math); supporting evidence for the whole-paper-set assignment. Companion 全国卷II 理综 page saved as sina_2018_n2_lizong.html lists 内蒙古、黑龙江、辽宁、吉林、重庆、陕西、甘肃、宁夏、青海、新疆.",
+   "quote_verified_against_local_copy": true
+  },
+  "S17": {
+   "title": "2018年高考真题 (eol annual index page)",
+   "publisher": "中国教育在线 (eol.cn)",
+   "url": "https://gaokao.eol.cn/e_html/gk/gkst/2018st.shtml",
+   "published": null,
+   "accessed_at": "2026-10-08",
+   "kind": "major_media",
+   "quote": [
+    "海南卷 语、数、英使用全国Ⅱ卷，政、史、地、物、化、生为自主命题",
+    "北京卷 … 数学（文） … 数学（理） … 天津卷 … 数学（文） … 数学（理） … 江苏卷 … 数学 … 浙江卷 … 数学 … 上海卷 … 数学"
+   ],
+   "note": "Same 2016-2018 template as S05 (适用地区 lines not year-specific); used only for per-paper subject tabs (track info) and the 海南 note.",
+   "quote_verified_against_local_copy": true
+  },
+  "S18": {
+   "title": "2019年全国各地高考试题及参考答案汇总",
+   "publisher": "新浪教育 (Sina Education)",
+   "url": "http://edu.sina.com.cn/gaokao/2019-06-08/doc-ihvhiqay4336039.shtml",
+   "published": "2019-06-08",
+   "accessed_at": "2026-10-08",
+   "kind": "major_media",
+   "quote": [
+    "全国I卷 [适用地区：河北、河南、山西、山东、江西、安徽、湖北、湖南、广东、福建]",
+    "全国Ⅱ卷 [适用地区：内蒙古、黑龙江、辽宁、吉林、重庆、陕西、甘肃、宁夏、青海、新疆、海南]",
+    "全国Ⅲ卷： [适用地区：云南、广西、贵州、四川、西藏]",
+    "海南卷（语数外用全国Ⅱ卷）：",
+    "2019年高考文科数学真题及参考答案（北京卷） 2019年高考理科数学真题及参考答案（北京卷）",
+    "2019年高考数学真题及参考答案（上海卷）",
+    "2019年高考文科数学真题及参考答案（天津卷） 2019年高考理科数学真题及参考答案（天津卷）",
+    "2019年高考数学真题及参考答案（浙江卷）",
+    "2019年高考数学真题及参考答案（江苏卷）"
+   ],
+   "quote_verified_against_local_copy": true
+  },
+  "S19": {
+   "title": "2019高考真题及答案（全国1卷）",
+   "publisher": "中国教育在线 (eol.cn)",
+   "url": "https://gaokao.eol.cn/shiti/zhenti/201906/t20190608_1662978.shtml",
+   "published": "2019-06-08",
+   "accessed_at": "2026-10-08",
+   "kind": "major_media",
+   "quote": "全国一卷适用地区：安徽、湖北、福建、湖南、山西、河北、江西、广东、河南、山东",
+   "note": "The 2019 文科数学（全国1卷） page (eol_2019_n1_wenshu.html) carries the same line.",
+   "quote_verified_against_local_copy": true
+  },
+  "S20": {
+   "title": "2019年高考理科数学真题及答案（全国3卷）",
+   "publisher": "中国教育在线 (eol.cn)",
+   "url": "https://gaokao.eol.cn/shiti/zhenti/201906/t20190609_1662997.shtml",
+   "published": "2019-06-09",
+   "accessed_at": "2026-10-08",
+   "kind": "major_media",
+   "quote": "全国三卷适用地区：云南、四川、广西、贵州、西藏",
+   "quote_verified_against_local_copy": true
+  },
+  "S21": {
+   "title": "2019年高考理科数学真题答案（全国2卷）",
+   "publisher": "中国教育在线 (eol.cn)",
+   "url": "https://gaokao.eol.cn/shiti/zhenti/201906/t20190608_1662958.shtml",
+   "published": "2019-06-08",
+   "accessed_at": "2026-10-08",
+   "kind": "major_media",
+   "quote": "全国二卷适用地区：甘肃、青海、黑龙江、吉林、辽宁、宁夏、新疆、内蒙古、陕西、重庆",
+   "quote_verified_against_local_copy": true
+  },
+  "S22": {
+   "title": "2019年高考理科数学真题及参考答案(全国卷III)",
+   "publisher": "新浪教育 (Sina Education)",
+   "url": "https://edu.sina.cn/gaokao/qsbk/2019-06-08/detail-ihvhiqay4144244.d.html",
+   "published": "2019-06-08",
+   "accessed_at": "2026-10-08",
+   "kind": "major_media",
+   "quote": "以下为2019高考理科数学真题（全国卷III）及参考答案。[适用地区：云南、广西、贵州、四川]",
+   "note": "Omits 西藏 - contradicts Sina's own 2019 summary (S18) and eol (S20); the wording matches Sina's 2017 template (S08), so treated as a stale header.",
+   "quote_verified_against_local_copy": true
+  },
+  "S23": {
+   "title": "2020年高考真题 (eol annual index page)",
+   "publisher": "中国教育在线 (eol.cn)",
+   "url": "https://gaokao.eol.cn/e_html/gk/gkst/2020st.shtml",
+   "published": null,
+   "accessed_at": "2026-10-08",
+   "kind": "major_media",
+   "quote": [
+    "全国卷I 适用地区：安徽、湖北、福建、湖南、山西、河北、江西、广东、河南",
+    "全国卷Ⅱ 适用地区：甘肃、青海、黑龙江、吉林、辽宁、宁夏、新疆、内蒙古、陕西、重庆",
+    "全国卷Ⅲ 适用地区：云南、四川、广西、贵州、西藏",
+    "新高考全国I卷 适用地区：山东",
+    "新高考全国Ⅱ卷 适用地区：海南",
+    "北京卷 … 数学 … 天津卷 … 数学 … 江苏卷 … 数学 … 浙江卷 … 数学 … 上海卷 … 数学"
+   ],
+   "quote_verified_against_local_copy": true
+  },
+  "S24": {
+   "title": "考后估分：2020年全国各地高考试题及参考答案汇总",
+   "publisher": "新浪教育 (Sina Education)",
+   "url": "https://edu.sina.cn/gaokao/gkrx/2020-07-08/detail-iircuyvk2621471.d.html",
+   "published": "2020-07-08",
+   "accessed_at": "2026-10-08",
+   "kind": "major_media",
+   "quote": [
+    "全国I卷： [适用地区：河北、河南、山西、江西、安徽、湖北、湖南、广东、福建]",
+    "全国Ⅱ卷： [适用地区：内蒙古、黑龙江、辽宁、吉林、重庆、陕西、甘肃、宁夏、青海、新疆]",
+    "全国Ⅲ卷： [适用地区：云南、广西、贵州、四川、西藏]",
+    "2020年高考数学真题及参考答案（北京卷）",
+    "2020年高考数学真题及参考答案（天津卷）",
+    "2020年新高考数学真题及参考答案（新高考全国卷Ⅰ山东）",
+    "2020年新高考数学真题（新高考全国卷II 海南）"
+   ],
+   "quote_verified_against_local_copy": true
+  },
+  "S25": {
+   "title": "2021年高考真题 (eol annual index page)",
+   "publisher": "中国教育在线 (eol.cn)",
+   "url": "https://gaokao.eol.cn/e_html/gk/gkst/2021st.shtml",
+   "published": null,
+   "accessed_at": "2026-10-08",
+   "kind": "major_media",
+   "quote": [
+    "全国甲卷 适用地区：云南、四川、广西、贵州、西藏",
+    "全国乙卷 适用地区：甘肃、青海、黑龙江、吉林、宁夏、新疆、内蒙古、陕西、安徽、山西、江西、河南",
+    "新高考全国I卷 适用地区：湖北、广东、山东、江苏、湖南、河北、福建（语数外）",
+    "新高考全国Ⅱ卷 适用地区：辽宁、海南、重庆（语数外）"
+   ],
+   "quote_verified_against_local_copy": true
+  },
+  "S26": {
+   "title": "2021年全国高考真题及参考答案汇总(更新中)",
+   "publisher": "新浪教育 (Sina Education)",
+   "url": "https://edu.sina.cn/gaokao/qsbk/2021-06-08/detail-ikqciyzi8351398.d.html",
+   "published": "2021-06-08",
+   "accessed_at": "2026-10-08",
+   "kind": "major_media",
+   "quote": [
+    "2021全国甲卷 适用地区：四川 云南 贵州 西藏 广西",
+    "2021全国乙卷 适用地区：安徽 河南 山西 江西 甘肃 陕西 黑龙江 吉林 宁夏 新疆 青海 内蒙古",
+    "2021新高考I卷 适用地区：山东 湖北 江苏 河北 广东 湖南 福建",
+    "2021新高考II卷 适用地区：海南 辽宁 重庆",
+    "2021江苏卷 适用地区：江苏 物理 化学 生物 政治 历史 地理"
+   ],
+   "note": "The 2021 江苏卷 entry lists only the six 选考 subjects (no 数学), consistent with 江苏 math on 新高考I卷.",
+   "quote_verified_against_local_copy": true
+  },
+  "S27": {
+   "title": "2021年全国高考语文共8套试卷 教育部发布试题评析",
+   "publisher": "中国新闻网 (citing 教育部新闻办公室)",
+   "url": "https://www.chinanews.com/gn/2021/06-07/9494378.shtml",
+   "published": "2021-06-07",
+   "accessed_at": "2026-10-08",
+   "kind": "official",
+   "quote": "全国高考语文共有8套试卷，教育部考试中心命制4套，分别为全国甲卷、全国乙卷、新高考Ⅰ卷、新高考Ⅱ卷，北京、天津、上海、浙江自主命制4套。",
+   "note": "Official statement relayed by 中新网 (also reprinted on moe.gov.cn, local copy moe_2021_yuwen.html). It is about 语文, but establishes the 2021 self-set regions (北京、天津、上海、浙江).",
+   "quote_verified_against_local_copy": true
+  },
+  "S28": {
+   "title": "2022年高考真题 (eol annual index page)",
+   "publisher": "中国教育在线 (eol.cn)",
+   "url": "https://gaokao.eol.cn/e_html/gk/gkst/2022st.shtml",
+   "published": null,
+   "accessed_at": "2026-10-08",
+   "kind": "major_media",
+   "quote": [
+    "全国甲卷 适用地区：云南、四川、广西、贵州、西藏",
+    "全国乙卷 适用地区：甘肃、青海、黑龙江、吉林、宁夏、新疆、内蒙古、陕西、安徽、山西、江西、河南",
+    "新高考全国I卷 适用地区：湖北、广东、山东、江苏、湖南、河北、福建（语数外）",
+    "新高考全国Ⅱ卷 适用地区：辽宁、海南、重庆（语数外）"
+   ],
+   "quote_verified_against_local_copy": true
+  },
+  "S29": {
+   "title": "考后估分：2022高考部分真题及参考答案",
+   "publisher": "新浪教育 (Sina Education)",
+   "url": "https://edu.sina.cn/gaokao/qsbk/2022-06-08/detail-imizirau7273241.d.html",
+   "published": "2022-06-08",
+   "accessed_at": "2026-10-08",
+   "kind": "major_media",
+   "quote": [
+    "全国甲卷（适用地区：四川 云南 贵州 西藏 广西）",
+    "新高考全国Ⅰ卷（适用地区：山东 湖北 江苏 河北 广东 湖南 福建）",
+    "新高考全国Ⅱ卷（适用地区：海南 辽宁 重庆）"
+   ],
+   "note": "Companion 2022 全国甲卷 语文 page (sina_2022_jia_yuwen.html) carries '适用地区：四川 云南 贵州 西藏 广西'.",
+   "quote_verified_against_local_copy": true
+  },
+  "S30": {
+   "title": "2022高考数学真题及参考答案(新高考Ⅰ卷/Ⅱ卷, 全国乙卷文/理)",
+   "publisher": "新浪教育 (Sina Education)",
+   "url": "https://edu.sina.cn/gaokao/qsbk/2022-06-08/detail-imizirau7274260.d.html",
+   "published": "2022-06-08",
+   "accessed_at": "2026-10-08",
+   "kind": "major_media",
+   "quote": "适用地区：山东、广东、湖南、湖北、河北、江苏、福建",
+   "note": "Math-specific pages. Companions saved: sina_2022_xgk2_math.html ('[适用地区：辽宁、海南、重庆]'), sina_2022_yi_lishu.html and sina_2022_yi_wenshu.html ('适用地区：安徽 河南 山西 江西 甘肃 陕西 黑龙江 吉林 宁夏 新疆 青海 内蒙古').",
+   "quote_verified_against_local_copy": true
+  },
+  "S31": {
+   "title": "2023年高考真题 (eol annual index page)",
+   "publisher": "中国教育在线 (eol.cn)",
+   "url": "https://gaokao.eol.cn/e_html/gk/gkst/2023st.shtml",
+   "published": null,
+   "accessed_at": "2026-10-08",
+   "kind": "major_media",
+   "quote": [
+    "全国甲卷 适用地区：西藏（文理综合）、四川、广西、贵州",
+    "全国乙卷 适用地区：内蒙古、陕西、甘肃、青海、宁夏、新疆、江西、河南",
+    "新课标I卷 适用地区：山东、广东、湖南、湖北、河北、江苏、福建、浙江",
+    "新课标Ⅱ卷 适用地区：辽宁、重庆、海南 | 云南、西藏、山西、安徽、吉林、黑龙江统考科目采用新课标2",
+    "新课标卷（文理综合） 适用地区：云南、安徽、吉林、黑龙江、山西"
+   ],
+   "note": "Places 西藏's 统考科目 (incl. math by implication) on 新课标Ⅱ卷 and only its 文理综合 on 全国甲卷 - conflicts with 西藏's official 2023 rule that math is split 文/理 (S34), since 2023 新课标Ⅱ卷 math is a single unsplit paper.",
+   "quote_verified_against_local_copy": true
+  },
+  "S32": {
+   "title": "2023年高考各省高考试卷一览表",
+   "publisher": "中国教育在线 (eol.cn)",
+   "url": "https://gaokao.eol.cn/shiti/zhenti/202306/t20230606_2430424.shtml",
+   "published": "2023-06-06",
+   "accessed_at": "2026-10-08",
+   "kind": "major_media",
+   "quote": [
+    "一、全国甲卷：3+文科综合/理科综合 使用地区：四川、广西、贵州(3省区)",
+    "四、新课标全国Ⅱ卷：3+1+2/3+3 使用地区：辽宁、重庆、海南、云南、西藏、山西、安徽、吉林、黑龙江(9省市)",
+    "五、自主命题：天津卷、上海卷、北京卷(3+3) 使用地区：天津、上海、北京(3市)"
+   ],
+   "note": "PRE-EXAM overview (2023-06-06); puts 西藏 wholly on 新课标Ⅱ卷.",
+   "quote_verified_against_local_copy": true
+  },
+  "S33": {
+   "title": "2023西藏高考使用什么卷_西藏高考试卷类型",
+   "publisher": "中国教育在线 (eol.cn)",
+   "url": "https://gaokao.eol.cn/xi_zang/dongtai/202306/t20230607_2430993.shtml",
+   "published": "2023-06-07",
+   "accessed_at": "2026-10-08",
+   "kind": "major_media",
+   "quote": "2023年西藏高考时间是6月7日-9日，试卷类型为新课标2卷，2023年西藏高考科目设置为3+文科综合/理科综合。其中3指语文(语文+藏语文)、数学(分文理科)、外语",
+   "note": "Internally inconsistent: says 新课标2卷 yet copies the official '数学(分文理科)'.",
+   "quote_verified_against_local_copy": true
+  },
+  "S34": {
+   "title": "西藏自治区2023年普通高等学校招生规定",
+   "publisher": "西藏自治区教育考试院 (via 中国西藏新闻网 xzxw.com)",
+   "url": "https://www.xzxw.com/wh/2023-04/27/content_5640209.html",
+   "published": "2023-04-27",
+   "accessed_at": "2026-10-08",
+   "kind": "official",
+   "quote": "我区普通高等学校招生全国统一考试科目设置为3+文科综合/理科综合。其中3指语文(语文+藏语文)、数学(分文理科)、外语",
+   "quote_verified_against_local_copy": true
+  },
+  "S35": {
+   "title": "重磅！2023年浙江高考最新消息 (浙江省教育厅通知)",
+   "publisher": "浙江在线 (zjol.com.cn), quoting 浙江省教育厅",
+   "url": "http://edu.zjol.com.cn/jyjsb/jyfb/202210/t20221003_24881679.shtml",
+   "published": "2022-10-03",
+   "accessed_at": "2026-10-08",
+   "kind": "official",
+   "quote": "浙江省教育厅发布相关通知，明确自2023年起，我省高考语文、数学和外语科目使用全国统一命题试卷，选用全国新高考I卷。",
+   "quote_verified_against_local_copy": true
+  },
+  "S36": {
+   "title": "2024年高考真题 (eol annual index page)",
+   "publisher": "中国教育在线 (eol.cn)",
+   "url": "https://gaokao.eol.cn/e_html/gk/gkst/2024st.shtml",
+   "published": null,
+   "accessed_at": "2026-10-08",
+   "kind": "major_media",
+   "quote": [
+    "全国甲卷 适用地区：四川、陕西、内蒙古、青海、宁夏、西藏（数学、英语、理综）",
+    "新课标I卷 适用地区：山东、广东、湖南、湖北、河北、江苏、福建、浙江、江西、安徽、河南(语数外)",
+    "新课标Ⅱ卷 适用地区：辽宁、重庆、海南、广西、贵州、吉林、黑龙江、甘肃、新疆、云南、山西、西藏（语文）",
+    "新课标卷（文理综合） 适用地区：云南、山西、新疆、河南、西藏（文综）"
+   ],
+   "quote_verified_against_local_copy": true
+  },
+  "S37": {
+   "title": "全国乙卷没了，2024年高考各省份试卷类型是什么？",
+   "publisher": "中国教育在线 (eol.cn)",
+   "url": "https://gaokao.eol.cn/news/202406/t20240607_2615074.shtml",
+   "published": "2024-06-07",
+   "accessed_at": "2026-10-08",
+   "kind": "major_media",
+   "quote": [
+    "以下为2024年高考各省份语文所用试卷类型",
+    "重庆 新课标Ⅰ卷",
+    "西藏 新课标Ⅱ卷"
+   ],
+   "note": "语文-only table; contains an error (重庆 listed as 新课标Ⅰ卷; S36 and every other source put 重庆 on Ⅱ). 西藏 entry is correct for 语文 only.",
+   "quote_verified_against_local_copy": true
+  },
+  "S38": {
+   "title": "2024年西藏高考使用什么卷？西藏高考试卷类型",
+   "publisher": "中国教育在线 (eol.cn)",
+   "url": "https://gaokao.eol.cn/xi_zang/dongtai/202406/t20240607_2614917.shtml",
+   "published": "2024-06-07",
+   "accessed_at": "2026-10-08",
+   "kind": "major_media",
+   "quote": "2024年西藏高考时间是6月7日-9日，试卷类型为新课标Ⅱ卷，2024年西藏高考科目设置为3+文科综合/理科综合。其中3指语文(语文+藏语文)、数学(分文理科)、外语",
+   "note": "Same internally inconsistent template as S33 (新课标Ⅱ卷 yet 数学分文理科).",
+   "quote_verified_against_local_copy": true
+  },
+  "S39": {
+   "title": "西藏自治区2024年普通高等学校招生规定",
+   "publisher": "西藏自治区教育考试院 (via 拉萨市教育局 jyj.lasa.gov.cn)",
+   "url": "https://jyj.lasa.gov.cn/jiaoyuju/c100360/202405/88b052db74cb406f96fae05352377cb1.shtml",
+   "published": "2024-05-06",
+   "accessed_at": "2026-10-08",
+   "kind": "official",
+   "quote": [
+    "我区普通高等学校招生全国统一考试科目设置为3＋文科综合/理科综合。其中3指语文（语文+藏语文）、数学（分文理科）、外语",
+    "我区高校招生全国统一考试藏语文试题由国家授权我区自主命制，其他科目由国家统一命题。"
+   ],
+   "quote_verified_against_local_copy": true
+  },
+  "S40": {
+   "title": "2024年高考数学全国卷试题评析 (教育部教育考试院)",
+   "publisher": "教育部教育考试院 (via eol.cn)",
+   "url": "https://gaokao.eol.cn/news/202406/t20240607_2615164.shtml",
+   "published": "2024-06-07",
+   "accessed_at": "2026-10-08",
+   "kind": "official",
+   "quote": "新课标卷、全国甲卷的考查内容分别按照新、旧课程标准的知识范围设定，特别是全国甲卷的文科试卷，回避了排列组合、空间向量等不在课程标准要求范围之内的内容。",
+   "note": "Confirms 2024 全国甲卷 math had separate 文科/理科 papers on the OLD curriculum, while 新课标卷 were unsplit.",
+   "quote_verified_against_local_copy": true
+  },
+  "S41": {
+   "title": "2025年高考真题 (eol annual index page)",
+   "publisher": "中国教育在线 (eol.cn)",
+   "url": "https://gaokao.eol.cn/e_html/gk/gkst/2025st.shtml",
+   "published": null,
+   "accessed_at": "2026-10-08",
+   "kind": "major_media",
+   "quote": [
+    "全国一卷 适用地区：河北、江苏、浙江、安徽、福建、江西、山东、河南、湖北、湖南、广东",
+    "全国二卷 适用地区：云南、广西、贵州、四川、西藏、山西、甘肃、内蒙古、吉林、宁夏、新疆、陕西、海南、辽宁、重庆、黑龙江、青海"
+   ],
+   "quote_verified_against_local_copy": true
+  },
+  "S42": {
+   "title": "浙江省2025年高考数学全国一卷评析",
+   "publisher": "浙江省教育考试院 (zjzs.net)",
+   "url": "https://www.zjzs.net/art/2025/6/7/art_31_11264.html",
+   "published": "2025-06-07",
+   "accessed_at": "2026-10-08",
+   "kind": "official",
+   "quote": "2025年高考数学全国一卷深入贯彻了党的二十届二中、三中全会及全国教育大会精神",
+   "quote_verified_against_local_copy": true
+  },
+  "S43": {
+   "title": "关于做好西藏自治区2025年普通高等学校招生报名工作的通知",
+   "publisher": "西藏自治区教育厅 (via 昌都市边坝县政府网)",
+   "url": "https://bianba.changdu.gov.cn/bbxrmzf/c105702/202411/3c8bda6d4d054022ae85ffaf5ca58daa.shtml",
+   "published": "2024-11-08",
+   "accessed_at": "2026-10-08",
+   "kind": "official",
+   "quote": "我区普通高等学校招生全国统一考试科目设置为3＋文科综合/理科综合。其中3指语文（藏语文）、数学（不分文理科）、外语",
+   "quote_verified_against_local_copy": true
+  },
+  "S44": {
+   "title": "四川考生迎来新高考“首考”",
+   "publisher": "央广网 (来源：人民日报四川频道)",
+   "url": "https://sc.cnr.cn/scpd/yw201/20250608/t20250608_527200340.shtml",
+   "published": "2025-06-08",
+   "accessed_at": "2026-10-08",
+   "kind": "major_media",
+   "quote": "今年四川省普通高考实行“3+1+2”模式，不再分文理科。其中，“3”为语文、数学、外语3门全国统一高考科目",
+   "quote_verified_against_local_copy": true
+  },
+  "S45": {
+   "title": "教育部教育考试院：2025年高考数学全国卷试题评析",
+   "publisher": "教育部教育考试院 (via 新浪财经)",
+   "url": "https://finance.sina.com.cn/jjxw/2025-06-07/doc-inezhewz4333963.shtml",
+   "published": "2025-06-07",
+   "accessed_at": "2026-10-08",
+   "kind": "official",
+   "quote": "全国一卷第19题突破以往以幂指对函数为情境设置函数导数试题的模式",
+   "note": "Official commentary naming the two 2025 national math papers 全国一卷/全国二卷 (no province list in the official text).",
+   "quote_verified_against_local_copy": true
+  },
+  "S46": {
+   "title": "2026年高考真题 (eol current-year index page)",
+   "publisher": "中国教育在线 (eol.cn)",
+   "url": "https://gaokao.eol.cn/e_html/gk/gkst/index.shtml",
+   "published": null,
+   "accessed_at": "2026-10-08",
+   "kind": "major_media",
+   "quote": [
+    "2026年高考真题",
+    "全国一卷 适用地区：河北、江苏、浙江、安徽、福建、江西、山东、河南、湖北、湖南、广东",
+    "全国二卷 适用地区：云南、广西、贵州、四川、西藏、山西、甘肃、内蒙古、吉林、宁夏、新疆、陕西、海南、辽宁、重庆、黑龙江、青海"
+   ],
+   "note": "Rolling 'current year' page (titled 2026 when accessed); the list is identical to 2025 and may have been carried over, but 2026 had no new reform-cohort province.",
+   "quote_verified_against_local_copy": true
+  },
+  "S47": {
+   "title": "西藏自治区2026年普通高等学校招生规定",
+   "publisher": "西藏自治区教育考试院 (via eol.cn)",
+   "url": "https://gaokao.eol.cn/xi_zang/dongtai/202606/t20260607_2742067_1.shtml",
+   "published": "2026-06-07",
+   "accessed_at": "2026-10-08",
+   "kind": "official",
+   "quote": "我区普通高等学校招生全国统一考试科目设置为3＋文科综合/理科综合。其中3指语文、数学、外语",
+   "note": "No 文/理 split for math in 2026 (contrast S34/S39).",
+   "quote_verified_against_local_copy": true
+  },
+  "S48": {
+   "title": "专家点评2024年上海春考数学试卷",
+   "publisher": "上海市教育考试院 (shmeea.edu.cn)",
+   "url": "https://www.shmeea.edu.cn/page/08000/20240106/18126.html",
+   "published": "2024-01-06",
+   "accessed_at": "2026-10-08",
+   "kind": "official",
+   "quote": "1月6日下午，2024年上海市普通高校春季招生统一文化考试（简称“春考”）数学科目顺利结束，市教育考试院邀请学科专家对试卷进行了评析。",
+   "note": "The authority publishes only an expert commentary describing question types; the paper text itself is not published on the page.",
+   "quote_verified_against_local_copy": true
+  },
+  "S49": {
+   "title": "专家点评2025年上海春考数学试卷",
+   "publisher": "上海市教育考试院 (shmeea.edu.cn)",
+   "url": "https://www.shmeea.edu.cn/page/02300/20250104/19016.html",
+   "published": "2025-01-04",
+   "accessed_at": "2026-10-08",
+   "kind": "official",
+   "quote": "1月4日下午，2025年上海市普通高等学校春季招生统一文化考试（简称“春考”）数学科目考试顺利结束，市教育考试院邀请学科专家对试卷进行了评析。",
+   "quote_verified_against_local_copy": true
+  },
+  "S50": {
+   "title": "2024年上海市普通高校春季考试和1月份外语科目考试考场规则 (附件1)",
+   "publisher": "上海市教育考试院 (shmeea.edu.cn)",
+   "url": "https://www.shmeea.edu.cn/download/20231229/9.pdf",
+   "published": "2023-12-29",
+   "accessed_at": "2026-10-08",
+   "kind": "official",
+   "quote": "离场时须将试卷、答题纸和草稿纸一并交出，不得将 … 试卷、答题纸和草稿纸带出考场。",
+   "note": "Candidates may not take the spring paper out of the room. The same rule exists for the June (秋考) exam, so this alone does not prove non-release; it explains why circulating spring copies are reconstructions.",
+   "quote_verified_against_local_copy": true
+  },
+  "S51": {
+   "title": "2019-2020年上海市教育考试院相关出版物出版预告",
+   "publisher": "上海市教育考试院 (shmeea.edu.cn)",
+   "url": "https://www.shmeea.edu.cn/page/07000/20190916/13285.html",
+   "published": "2019-09-16",
+   "accessed_at": "2026-10-08",
+   "kind": "official",
+   "quote": [
+    "上海市教育考试院组织编写以下图书及音像制品",
+    "上海市初中毕业统一学业考试2020年试题汇编（光盘附书）"
+   ],
+   "note": "The authority's own publication list contains a 试题汇编 only for the 中考, none for 春考/高考 papers (same for the 2018-2019 list, shmeea_pub_2018_2019.html). Later years are announced title-by-title; no 春考 试题汇编 announcement was found.",
+   "quote_verified_against_local_copy": true
+  },
+  "S52": {
+   "title": "deekur/gaokaomath 上海春季 PDFs (first-page headers)",
+   "publisher": "deekur (GitHub community re-typeset)",
+   "url": "https://github.com/deekur/gaokaomath/tree/266afe227880603b84ff9334ab7b74b7a8fc334b/%E6%98%A5%E5%AD%A3%E9%AB%98%E8%80%83",
+   "published": null,
+   "accessed_at": "2026-10-08",
+   "kind": "community",
+   "quote": [
+    "2021 年上海春季高考数学试题（网络收集版）",
+    "2022 年上海春季高考练习数学试题",
+    "2024 年上海春季高考练习数学试题",
+    "2025 年上海春季高考练习数学试题",
+    "2026 年上海市春季招生统一文化考试（春季高考）数学试卷（回忆版）"
+   ],
+   "note": "Read from the immutable copies under <workspace>/originals/ (see inventory/candidates.json gk2020..2026-shanghai-spring). 2020 ('2020 年上海市春季高考数学试卷') and 2023 ('2023 年上海春季高考数学试题') carry no provenance label."
+  },
+  "S53": {
+   "title": "【完整版】2026上海春考数学试卷与答案 (上海新王牌)",
+   "publisher": "知乎 (zhihu.com) - tutoring company post",
+   "url": "https://zhuanlan.zhihu.com/p/1991878861617661633",
+   "published": "2026-01",
+   "accessed_at": "2026-10-08",
+   "kind": "community",
+   "quote": "由于官方不公布试卷，试卷为学生回忆版",
+   "note": "Page returns HTTP 403 to WebFetch/curl; the excerpt was seen only in search-engine results and could not be verified or saved."
+  },
+  "S54": {
+   "title": "2024上海春考数学试卷压轴小题解析（回忆版）",
+   "publisher": "知乎 (zhihu.com)",
+   "url": "https://zhuanlan.zhihu.com/p/676441695",
+   "published": "2024-01",
+   "accessed_at": "2026-10-08",
+   "kind": "community",
+   "quote": "由于所有题目来自于学生回忆，个别题号，选项，题文会与原卷有所出入",
+   "note": "Search-engine snippet only (zhihu blocks fetching); unverified."
+  },
+  "S55": {
+   "title": "2024年上海市普通高校春季招生统一文化考试 数学试卷 (上海市教育考试院) (Z-Library)",
+   "publisher": "Scribd user upload",
+   "url": "https://www.scribd.com/document/737733918",
+   "published": null,
+   "accessed_at": "2026-10-08",
+   "kind": "community",
+   "quote": "2024年上海市普通高校春季招生统一文化考试 数学试卷 (上海市教育考试院) (Z-Library)",
+   "note": "Title seen in search results only. Upload sourced from a piracy library; NOT accessed (login/piracy). Suggests some printed version attributed to 上海市教育考试院 may exist, but provenance is unverifiable."
+  },
+  "S60": {
+   "title": "上海市教育考试院关于印发《2026年上海市普通高校春季考试招生实施办法》的通知",
+   "publisher": "上海市教育考试院 (shmeea.edu.cn)",
+   "url": "https://www.shmeea.edu.cn/page/06300/20251118/19864.html",
+   "published": "2025-11-18",
+   "accessed_at": "2026-10-08",
+   "kind": "official",
+   "quote": "统一文化考试科目为语文、数学、外语三门科目，成绩总分为450分。其中语文、数学、外语每科目总分150分。",
+   "note": "Defines the spring 统一文化考试 (math 150 points, 120 minutes); says nothing about publishing papers.",
+   "quote_verified_against_local_copy": true
+  },
+  "S56": {
+   "title": "deekur/gaokaomath file-name region claims (inventory/candidates.json claimed_regions)",
+   "publisher": "deekur (GitHub community)",
+   "url": "https://github.com/deekur/gaokaomath",
+   "published": null,
+   "accessed_at": "2026-10-08",
+   "kind": "community",
+   "quote": "claimed_regions per candidate paper, e.g. gk2023-jia-l: 广西、贵州、西藏、四川; gk2024-jia-l: 西藏、四川、内蒙古、陕西、青海、宁夏",
+   "note": "Local data: <workspace>/inventory/candidates.json. Compared year by year in 'deekur_comparison'."
+  },
+  "S57": {
+   "title": "全国统一高考试卷 (百度百科)",
+   "publisher": "百度百科 (community wiki)",
+   "url": "https://baike.baidu.com/item/%E5%85%A8%E5%9B%BD%E7%BB%9F%E4%B8%80%E9%AB%98%E8%80%83%E8%AF%95%E5%8D%B7/62872763",
+   "published": null,
+   "accessed_at": "2026-10-08",
+   "kind": "community",
+   "quote": "2017年西藏由新课标全国Ⅱ卷转为使用Ⅲ卷",
+   "note": "HTTP 403 to fetch; excerpt seen only in search-engine results (unverified). For 2017 it agrees with eol's 西藏 paper pages (S58) and deekur, and disagrees with the province lists S06-S10/S59."
+  }
+ },
+ "conflicts": [
+  {
+   "year": 2016,
+   "series": [
+    "national_2",
+    "national_3"
+   ],
+   "detail": "Pre-exam lists (Sina Dec-2015 table S02; eol 2016-06-07 article S03) put 贵州/广西/云南 on 全国卷II and have no 全国卷III; the eol 2016-2018 template index (S05) lists 西藏 under 全国卷III.",
+   "resolution": "Superseded by the post-exam Sina 2016 summary (S01): Ⅲ = 广西、贵州、云南 (+四川 语文/文综 only); 西藏 on Ⅱ. The eol template lines are not year-specific."
+  },
+  {
+   "year": 2017,
+   "series": [
+    "national_2",
+    "national_3"
+   ],
+   "detail": "西藏 2017: every province LIST found puts 西藏 on 全国卷II (Sina summary S06, Sina 文数Ⅱ header S07, Sina Ⅲ header S08 omitting 西藏, eol 数学汇总 S09, eol 西藏-channel nav S10, eol 四川 page S59). But eol's 西藏-channel PAPER pages for 2017 display the 全国卷3 文数 and 语文 papers (S58), its 西藏 download links go to 云南/广西 (Ⅲ) pages (S10), and deekur (S56) and 百度百科 (S57, snippet) put 西藏 on Ⅲ from 2017.",
+   "resolution": "UNRESOLVED; provisionally 西藏 -> national_3 (agreeing with deekur). Reasoning: the Ⅱ-lists repeat 2016 / Dec-2016 pre-exam wording and order verbatim (Sina's order 甘青藏黑吉辽宁新蒙陕渝 is its 2016 list; eol's matches its 2016-12-27 pre-exam article), and Sina's Ⅲ math header is demonstrably stale (its 2019 Ⅲ header S22 also omits 西藏, contradicting Sina's own 2019 summary). The Ⅲ evidence is per-province content chosen after the exam. 西藏 is on Ⅲ in all 2018 lists (S11, S12, S15, S16). Both 2017 series marked 'conflict'; an official 2017 西藏 notice is still needed."
+  },
+  {
+   "year": 2018,
+   "series": [
+    "national_2"
+   ],
+   "detail": "Sina 2018 topic page (S15) omits 辽宁 from 全国卷II.",
+   "resolution": "辽宁 kept on Ⅱ per eol S11/S13 and Sina 理综 Ⅱ page (sina_2018_n2_lizong.html)."
+  },
+  {
+   "year": 2019,
+   "series": [
+    "national_3"
+   ],
+   "detail": "Sina's 2019 全国卷III 理数 page header (S22) lists only 云南、广西、贵州、四川.",
+   "resolution": "Kept 西藏 on Ⅲ: Sina's own 2019 summary (S18) and eol (S20) include 西藏; S22's header text is identical to Sina's 2017 template (S08)."
+  },
+  {
+   "year": 2020,
+   "series": [
+    "national_1",
+    "new_curriculum_1"
+   ],
+   "detail": "A Sina 2020 全国卷I 文综 page (seen in search results, not saved) lists 山东 among 全国卷I regions.",
+   "resolution": "山东 took 新高考全国Ⅰ卷 in 2020 (S23, S24 summary lists exclude 山东 from 全国I and title the 山东 papers 新高考全国卷Ⅰ山东)."
+  },
+  {
+   "year": 2023,
+   "series": [
+    "national_jia",
+    "new_curriculum_2"
+   ],
+   "detail": "西藏 math: eol post-exam index (S31) puts 西藏 统考科目 on 新课标Ⅱ卷 and 甲卷 only for 文理综合; eol pre-exam overview (S32) and eol 西藏 article (S33) say 新课标2卷. Official 西藏 2023 rule (S34) says 数学(分文理科); 2023 新课标Ⅱ卷 math was a single unsplit paper, so a 文/理 split implies 全国甲卷. deekur (S56) and several community posts list 西藏 on 甲卷 for math.",
+   "resolution": "UNRESOLVED BY DIRECT STATEMENT; provisionally 西藏 -> national_jia (文/理). Both affected series marked 'conflict'. A 2023 西藏 exam-authority notice naming the math paper would settle it."
+  },
+  {
+   "year": 2023,
+   "series": [
+    "national_yi"
+   ],
+   "detail": "Some 2023 web lists (gk100, sohu, an eol '几套试卷' article seen only in search results) give 乙卷 as 12 provinces or swap 内蒙古 for 安徽; gk100 lists 云南 under 甲卷.",
+   "resolution": "Those are pre-exam/carry-over lists; post-exam eol index (S31) gives 乙卷 = 8, 甲卷 without 云南, and 安徽/云南 on 新课标Ⅱ卷. deekur agrees."
+  },
+  {
+   "year": 2024,
+   "series": [
+    "national_jia",
+    "new_curriculum_2"
+   ],
+   "detail": "eol articles of 2024-06-07 say 西藏 used 新课标Ⅱ卷 (S37 语文 table; S38 西藏 article, which also says 数学分文理科).",
+   "resolution": "Resolved: eol's subject-specific index (S36) puts 西藏 数学 on 全国甲卷 and only 语文 on 新课标Ⅱ卷; consistent with the official 数学（分文理科） rule (S39) and 甲卷 文/理 papers (S40)."
+  },
+  {
+   "year": 2024,
+   "series": [
+    "new_curriculum_1",
+    "new_curriculum_2"
+   ],
+   "detail": "eol 2024 语文 table (S37) lists 重庆 under 新课标Ⅰ卷.",
+   "resolution": "Error in that table; 重庆 on 新课标Ⅱ卷 per eol index (S36) and all other sources."
+  }
+ ],
+ "coverage": {
+  "2016": {
+   "regions_assigned": 31,
+   "missing": [],
+   "overlaps": [],
+   "ok": true
+  },
+  "2017": {
+   "regions_assigned": 31,
+   "missing": [],
+   "overlaps": [],
+   "ok": true
+  },
+  "2018": {
+   "regions_assigned": 31,
+   "missing": [],
+   "overlaps": [],
+   "ok": true
+  },
+  "2019": {
+   "regions_assigned": 31,
+   "missing": [],
+   "overlaps": [],
+   "ok": true
+  },
+  "2020": {
+   "regions_assigned": 31,
+   "missing": [],
+   "overlaps": [],
+   "ok": true
+  },
+  "2021": {
+   "regions_assigned": 31,
+   "missing": [],
+   "overlaps": [],
+   "ok": true
+  },
+  "2022": {
+   "regions_assigned": 31,
+   "missing": [],
+   "overlaps": [],
+   "ok": true
+  },
+  "2023": {
+   "regions_assigned": 31,
+   "missing": [],
+   "overlaps": [],
+   "ok": true
+  },
+  "2024": {
+   "regions_assigned": 31,
+   "missing": [],
+   "overlaps": [],
+   "ok": true
+  },
+  "2025": {
+   "regions_assigned": 31,
+   "missing": [],
+   "overlaps": [],
+   "ok": true
+  },
+  "2026": {
+   "regions_assigned": 31,
+   "missing": [],
+   "overlaps": [],
+   "ok": true
+  }
+ },
+ "deekur_comparison": [
+  {
+   "year": 2016,
+   "series_key": "national_1",
+   "deekur_paper_ids": [
+    "gk2016-n1-l",
+    "gk2016-n1-w"
+   ],
+   "deekur_claimed": [
+    "anhui",
+    "fujian",
+    "guangdong",
+    "hebei",
+    "henan",
+    "hubei",
+    "hunan",
+    "jiangxi",
+    "shanxi"
+   ],
+   "agrees": true,
+   "deekur_extra": [],
+   "deekur_missing": []
+  },
+  {
+   "year": 2016,
+   "series_key": "national_2",
+   "deekur_paper_ids": [
+    "gk2016-n2-l",
+    "gk2016-n2-w"
+   ],
+   "deekur_claimed": [
+    "chongqing",
+    "gansu",
+    "hainan",
+    "heilongjiang",
+    "jilin",
+    "liaoning",
+    "neimenggu",
+    "ningxia",
+    "qinghai",
+    "shaanxi",
+    "xinjiang",
+    "xizang"
+   ],
+   "agrees": true,
+   "deekur_extra": [],
+   "deekur_missing": []
+  },
+  {
+   "year": 2016,
+   "series_key": "national_3",
+   "deekur_paper_ids": [
+    "gk2016-n3-l",
+    "gk2016-n3-w"
+   ],
+   "deekur_claimed": [
+    "guangxi",
+    "guizhou",
+    "yunnan"
+   ],
+   "agrees": true,
+   "deekur_extra": [],
+   "deekur_missing": []
+  },
+  {
+   "year": 2017,
+   "series_key": "national_1",
+   "deekur_paper_ids": [
+    "gk2017-n1-l",
+    "gk2017-n1-w"
+   ],
+   "deekur_claimed": [
+    "anhui",
+    "fujian",
+    "guangdong",
+    "hebei",
+    "henan",
+    "hubei",
+    "hunan",
+    "jiangxi",
+    "shanxi"
+   ],
+   "agrees": true,
+   "deekur_extra": [],
+   "deekur_missing": []
+  },
+  {
+   "year": 2017,
+   "series_key": "national_2",
+   "deekur_paper_ids": [
+    "gk2017-n2-l",
+    "gk2017-n2-w"
+   ],
+   "deekur_claimed": [
+    "chongqing",
+    "gansu",
+    "hainan",
+    "heilongjiang",
+    "jilin",
+    "liaoning",
+    "neimenggu",
+    "ningxia",
+    "qinghai",
+    "shaanxi",
+    "xinjiang"
+   ],
+   "agrees": true,
+   "deekur_extra": [],
+   "deekur_missing": []
+  },
+  {
+   "year": 2017,
+   "series_key": "national_3",
+   "deekur_paper_ids": [
+    "gk2017-n3-l",
+    "gk2017-n3-w"
+   ],
+   "deekur_claimed": [
+    "guangxi",
+    "guizhou",
+    "sichuan",
+    "xizang",
+    "yunnan"
+   ],
+   "agrees": true,
+   "deekur_extra": [],
+   "deekur_missing": []
+  },
+  {
+   "year": 2018,
+   "series_key": "national_1",
+   "deekur_paper_ids": [
+    "gk2018-n1-l",
+    "gk2018-n1-w"
+   ],
+   "deekur_claimed": [
+    "anhui",
+    "fujian",
+    "guangdong",
+    "hebei",
+    "henan",
+    "hubei",
+    "hunan",
+    "jiangxi",
+    "shandong",
+    "shanxi"
+   ],
+   "agrees": true,
+   "deekur_extra": [],
+   "deekur_missing": []
+  },
+  {
+   "year": 2018,
+   "series_key": "national_2",
+   "deekur_paper_ids": [
+    "gk2018-n2-l",
+    "gk2018-n2-w"
+   ],
+   "deekur_claimed": [
+    "chongqing",
+    "gansu",
+    "hainan",
+    "heilongjiang",
+    "jilin",
+    "liaoning",
+    "neimenggu",
+    "ningxia",
+    "qinghai",
+    "shaanxi",
+    "xinjiang"
+   ],
+   "agrees": true,
+   "deekur_extra": [],
+   "deekur_missing": []
+  },
+  {
+   "year": 2018,
+   "series_key": "national_3",
+   "deekur_paper_ids": [
+    "gk2018-n3-l",
+    "gk2018-n3-w"
+   ],
+   "deekur_claimed": [
+    "guangxi",
+    "guizhou",
+    "sichuan",
+    "xizang",
+    "yunnan"
+   ],
+   "agrees": true,
+   "deekur_extra": [],
+   "deekur_missing": []
+  },
+  {
+   "year": 2019,
+   "series_key": "national_1",
+   "deekur_paper_ids": [
+    "gk2019-n1-l",
+    "gk2019-n1-w"
+   ],
+   "deekur_claimed": [
+    "anhui",
+    "fujian",
+    "guangdong",
+    "hebei",
+    "henan",
+    "hubei",
+    "hunan",
+    "jiangxi",
+    "shandong",
+    "shanxi"
+   ],
+   "agrees": true,
+   "deekur_extra": [],
+   "deekur_missing": []
+  },
+  {
+   "year": 2019,
+   "series_key": "national_2",
+   "deekur_paper_ids": [
+    "gk2019-n2-l",
+    "gk2019-n2-w"
+   ],
+   "deekur_claimed": [
+    "chongqing",
+    "gansu",
+    "hainan",
+    "heilongjiang",
+    "jilin",
+    "liaoning",
+    "neimenggu",
+    "ningxia",
+    "qinghai",
+    "shaanxi",
+    "xinjiang"
+   ],
+   "agrees": true,
+   "deekur_extra": [],
+   "deekur_missing": []
+  },
+  {
+   "year": 2019,
+   "series_key": "national_3",
+   "deekur_paper_ids": [
+    "gk2019-n3-l",
+    "gk2019-n3-w"
+   ],
+   "deekur_claimed": [
+    "guangxi",
+    "guizhou",
+    "sichuan",
+    "xizang",
+    "yunnan"
+   ],
+   "agrees": true,
+   "deekur_extra": [],
+   "deekur_missing": []
+  },
+  {
+   "year": 2020,
+   "series_key": "national_1",
+   "deekur_paper_ids": [
+    "gk2020-n1-l",
+    "gk2020-n1-w"
+   ],
+   "deekur_claimed": [
+    "anhui",
+    "fujian",
+    "guangdong",
+    "hebei",
+    "henan",
+    "hubei",
+    "hunan",
+    "jiangxi",
+    "shanxi"
+   ],
+   "agrees": true,
+   "deekur_extra": [],
+   "deekur_missing": []
+  },
+  {
+   "year": 2020,
+   "series_key": "national_2",
+   "deekur_paper_ids": [
+    "gk2020-n2-l",
+    "gk2020-n2-w"
+   ],
+   "deekur_claimed": [
+    "chongqing",
+    "gansu",
+    "heilongjiang",
+    "jilin",
+    "liaoning",
+    "neimenggu",
+    "ningxia",
+    "qinghai",
+    "shaanxi",
+    "xinjiang"
+   ],
+   "agrees": true,
+   "deekur_extra": [],
+   "deekur_missing": []
+  },
+  {
+   "year": 2020,
+   "series_key": "national_3",
+   "deekur_paper_ids": [
+    "gk2020-n3-l",
+    "gk2020-n3-w"
+   ],
+   "deekur_claimed": [
+    "guangxi",
+    "guizhou",
+    "sichuan",
+    "xizang",
+    "yunnan"
+   ],
+   "agrees": true,
+   "deekur_extra": [],
+   "deekur_missing": []
+  },
+  {
+   "year": 2020,
+   "series_key": "new_curriculum_1",
+   "deekur_paper_ids": [
+    "gk2020-xgk1"
+   ],
+   "deekur_claimed": [
+    "shandong"
+   ],
+   "agrees": true,
+   "deekur_extra": [],
+   "deekur_missing": []
+  },
+  {
+   "year": 2020,
+   "series_key": "new_curriculum_2",
+   "deekur_paper_ids": [
+    "gk2020-xgk2"
+   ],
+   "deekur_claimed": [
+    "hainan"
+   ],
+   "agrees": true,
+   "deekur_extra": [],
+   "deekur_missing": []
+  },
+  {
+   "year": 2021,
+   "series_key": "national_jia",
+   "deekur_paper_ids": [
+    "gk2021-jia-l",
+    "gk2021-jia-w"
+   ],
+   "deekur_claimed": [
+    "guangxi",
+    "guizhou",
+    "sichuan",
+    "xizang",
+    "yunnan"
+   ],
+   "agrees": true,
+   "deekur_extra": [],
+   "deekur_missing": []
+  },
+  {
+   "year": 2021,
+   "series_key": "national_yi",
+   "deekur_paper_ids": [
+    "gk2021-yi-l",
+    "gk2021-yi-w"
+   ],
+   "deekur_claimed": [
+    "anhui",
+    "gansu",
+    "heilongjiang",
+    "henan",
+    "jiangxi",
+    "jilin",
+    "neimenggu",
+    "ningxia",
+    "qinghai",
+    "shaanxi",
+    "shanxi",
+    "xinjiang"
+   ],
+   "agrees": true,
+   "deekur_extra": [],
+   "deekur_missing": []
+  },
+  {
+   "year": 2021,
+   "series_key": "new_curriculum_1",
+   "deekur_paper_ids": [
+    "gk2021-xgk1"
+   ],
+   "deekur_claimed": [
+    "fujian",
+    "guangdong",
+    "hebei",
+    "hubei",
+    "hunan",
+    "jiangsu",
+    "shandong"
+   ],
+   "agrees": true,
+   "deekur_extra": [],
+   "deekur_missing": []
+  },
+  {
+   "year": 2021,
+   "series_key": "new_curriculum_2",
+   "deekur_paper_ids": [
+    "gk2021-xgk2"
+   ],
+   "deekur_claimed": [
+    "chongqing",
+    "hainan",
+    "liaoning"
+   ],
+   "agrees": true,
+   "deekur_extra": [],
+   "deekur_missing": []
+  },
+  {
+   "year": 2022,
+   "series_key": "national_jia",
+   "deekur_paper_ids": [
+    "gk2022-jia-l",
+    "gk2022-jia-w"
+   ],
+   "deekur_claimed": [
+    "guangxi",
+    "guizhou",
+    "sichuan",
+    "xizang",
+    "yunnan"
+   ],
+   "agrees": true,
+   "deekur_extra": [],
+   "deekur_missing": []
+  },
+  {
+   "year": 2022,
+   "series_key": "national_yi",
+   "deekur_paper_ids": [
+    "gk2022-yi-l",
+    "gk2022-yi-w"
+   ],
+   "deekur_claimed": [
+    "anhui",
+    "gansu",
+    "heilongjiang",
+    "henan",
+    "jiangxi",
+    "jilin",
+    "neimenggu",
+    "ningxia",
+    "qinghai",
+    "shaanxi",
+    "shanxi",
+    "xinjiang"
+   ],
+   "agrees": true,
+   "deekur_extra": [],
+   "deekur_missing": []
+  },
+  {
+   "year": 2022,
+   "series_key": "new_curriculum_1",
+   "deekur_paper_ids": [
+    "gk2022-xgk1"
+   ],
+   "deekur_claimed": [
+    "fujian",
+    "guangdong",
+    "hebei",
+    "hubei",
+    "hunan",
+    "jiangsu",
+    "shandong"
+   ],
+   "agrees": true,
+   "deekur_extra": [],
+   "deekur_missing": []
+  },
+  {
+   "year": 2022,
+   "series_key": "new_curriculum_2",
+   "deekur_paper_ids": [
+    "gk2022-xgk2"
+   ],
+   "deekur_claimed": [
+    "chongqing",
+    "hainan",
+    "liaoning"
+   ],
+   "agrees": true,
+   "deekur_extra": [],
+   "deekur_missing": []
+  },
+  {
+   "year": 2023,
+   "series_key": "national_jia",
+   "deekur_paper_ids": [
+    "gk2023-jia-l",
+    "gk2023-jia-w"
+   ],
+   "deekur_claimed": [
+    "guangxi",
+    "guizhou",
+    "sichuan",
+    "xizang"
+   ],
+   "agrees": true,
+   "deekur_extra": [],
+   "deekur_missing": []
+  },
+  {
+   "year": 2023,
+   "series_key": "national_yi",
+   "deekur_paper_ids": [
+    "gk2023-yi-l",
+    "gk2023-yi-w"
+   ],
+   "deekur_claimed": [
+    "gansu",
+    "henan",
+    "jiangxi",
+    "neimenggu",
+    "ningxia",
+    "qinghai",
+    "shaanxi",
+    "xinjiang"
+   ],
+   "agrees": true,
+   "deekur_extra": [],
+   "deekur_missing": []
+  },
+  {
+   "year": 2023,
+   "series_key": "new_curriculum_1",
+   "deekur_paper_ids": [
+    "gk2023-xgk1"
+   ],
+   "deekur_claimed": [
+    "fujian",
+    "guangdong",
+    "hebei",
+    "hubei",
+    "hunan",
+    "jiangsu",
+    "shandong",
+    "zhejiang"
+   ],
+   "agrees": true,
+   "deekur_extra": [],
+   "deekur_missing": []
+  },
+  {
+   "year": 2023,
+   "series_key": "new_curriculum_2",
+   "deekur_paper_ids": [
+    "gk2023-xgk2"
+   ],
+   "deekur_claimed": [
+    "anhui",
+    "chongqing",
+    "hainan",
+    "heilongjiang",
+    "jilin",
+    "liaoning",
+    "shanxi",
+    "yunnan"
+   ],
+   "agrees": true,
+   "deekur_extra": [],
+   "deekur_missing": []
+  },
+  {
+   "year": 2024,
+   "series_key": "national_jia",
+   "deekur_paper_ids": [
+    "gk2024-jia-l",
+    "gk2024-jia-w"
+   ],
+   "deekur_claimed": [
+    "neimenggu",
+    "ningxia",
+    "qinghai",
+    "shaanxi",
+    "sichuan",
+    "xizang"
+   ],
+   "agrees": true,
+   "deekur_extra": [],
+   "deekur_missing": []
+  },
+  {
+   "year": 2024,
+   "series_key": "new_curriculum_1",
+   "deekur_paper_ids": [
+    "gk2024-xgk1"
+   ],
+   "deekur_claimed": [
+    "anhui",
+    "fujian",
+    "guangdong",
+    "hebei",
+    "henan",
+    "hubei",
+    "hunan",
+    "jiangsu",
+    "jiangxi",
+    "shandong",
+    "zhejiang"
+   ],
+   "agrees": true,
+   "deekur_extra": [],
+   "deekur_missing": []
+  },
+  {
+   "year": 2024,
+   "series_key": "new_curriculum_2",
+   "deekur_paper_ids": [
+    "gk2024-xgk2"
+   ],
+   "deekur_claimed": [
+    "chongqing",
+    "gansu",
+    "guangxi",
+    "guizhou",
+    "hainan",
+    "heilongjiang",
+    "jilin",
+    "liaoning",
+    "shanxi",
+    "xinjiang",
+    "yunnan"
+   ],
+   "agrees": true,
+   "deekur_extra": [],
+   "deekur_missing": []
+  },
+  {
+   "year": 2025,
+   "series_key": "national_1_2025",
+   "deekur_paper_ids": [
+    "gk2025-qg1"
+   ],
+   "deekur_claimed": [
+    "anhui",
+    "fujian",
+    "guangdong",
+    "hebei",
+    "henan",
+    "hubei",
+    "hunan",
+    "jiangsu",
+    "jiangxi",
+    "shandong",
+    "zhejiang"
+   ],
+   "agrees": true,
+   "deekur_extra": [],
+   "deekur_missing": []
+  },
+  {
+   "year": 2025,
+   "series_key": "national_2_2025",
+   "deekur_paper_ids": [
+    "gk2025-qg2"
+   ],
+   "deekur_claimed": [
+    "chongqing",
+    "gansu",
+    "guangxi",
+    "guizhou",
+    "hainan",
+    "heilongjiang",
+    "jilin",
+    "liaoning",
+    "neimenggu",
+    "ningxia",
+    "qinghai",
+    "shaanxi",
+    "shanxi",
+    "sichuan",
+    "xinjiang",
+    "xizang",
+    "yunnan"
+   ],
+   "agrees": true,
+   "deekur_extra": [],
+   "deekur_missing": []
+  },
+  {
+   "year": 2026,
+   "series_key": "national_1_2025",
+   "deekur_paper_ids": [
+    "gk2026-qg1"
+   ],
+   "deekur_claimed": [
+    "anhui",
+    "fujian",
+    "guangdong",
+    "hebei",
+    "henan",
+    "hubei",
+    "hunan",
+    "jiangsu",
+    "jiangxi",
+    "shandong",
+    "zhejiang"
+   ],
+   "agrees": true,
+   "deekur_extra": [],
+   "deekur_missing": []
+  },
+  {
+   "year": 2026,
+   "series_key": "national_2_2025",
+   "deekur_paper_ids": [
+    "gk2026-qg2"
+   ],
+   "deekur_claimed": [
+    "chongqing",
+    "gansu",
+    "guangxi",
+    "guizhou",
+    "hainan",
+    "heilongjiang",
+    "jilin",
+    "liaoning",
+    "neimenggu",
+    "ningxia",
+    "qinghai",
+    "shaanxi",
+    "shanxi",
+    "sichuan",
+    "xinjiang",
+    "xizang",
+    "yunnan"
+   ],
+   "agrees": true,
+   "deekur_extra": [],
+   "deekur_missing": []
+  }
+ ],
+ "shanghai_spring": {
+  "question": "Are Shanghai spring-session (春季高考/春考) math papers officially released, or do they circulate only as recollected copies?",
+  "finding": "No official release found. The 上海市教育考试院 publishes the exam rules and an expert commentary (专家点评) after each spring math exam, but not the paper text; its own publication lists carry a 试题汇编 only for the 中考. Candidates must hand in the paper ('不得将试卷…带出考场'), and the copies that circulate are reconstructions explicitly labelled 回忆版 / 网络收集版 / 练习 by their compilers - including the deekur lineage held in this workspace.",
+  "evidence": [
+   "S48",
+   "S49",
+   "S50",
+   "S51",
+   "S52",
+   "S53",
+   "S54",
+   "S60"
+  ],
+  "deekur_file_labels": {
+   "2016": "2016 年上海市普通高等学校春季招生统一考试 （暨上海市普通高中学业水平考试） 数学试卷",
+   "2017": "2017 年上海市春季高考数学试卷 2017.1",
+   "2018": "2018 年上海市春季高考数学试卷 2018.01",
+   "2020": "2020 年上海市春季高考数学试卷",
+   "2021": "2021 年上海春季高考数学试题（网络收集版）",
+   "2022": "2022 年上海春季高考练习数学试题",
+   "2023": "2023 年上海春季高考数学试题",
+   "2024": "2024 年上海春季高考练习数学试题",
+   "2025": "2025 年上海春季高考练习数学试题",
+   "2026": "2026 年上海市春季招生统一文化考试（春季高考）数学试卷（回忆版）"
+  },
+  "deekur_file_label_notes": "First line of each deekur 上海春季 PDF in originals/. 2016 reproduces the paper's full 考生注意 block (两考合一 with 学业水平考试), so a full copy of the printed 2016 paper evidently circulated, but no official publication of it was found; 2017/2018 use a compiler's '年.月' header; 2021 says 网络收集版, 2022/2024/2025 say 练习, 2026 says 回忆版; 2020/2023 carry no label. No 2019 spring paper is in the deekur inventory.",
+  "open_leads": [
+   "A Scribd upload titled '2024年上海市普通高校春季招生统一文化考试 数学试卷 (上海市教育考试院)' (S55) hints that a printed version attributed to the exam authority may exist; it comes from a piracy library and was not accessed. If an official printed source is ever located through a legitimate channel, the 2024 (and possibly other) spring papers could be re-evaluated.",
+   "eol.cn's annual 真题 indexes (2016-2026) contain no 上海春考 entries at all."
+  ],
+  "recommendation": "Under BRIEF §1 ('回忆版/估分版 copies are not acceptable lineages; if only recollected copies exist, quarantine'), treat every gk20xx-shanghai-spring candidate (2016-2018, 2020-2026) as recollected-only: quarantine unless an official/printed lineage is found.",
+  "caveat": "The 'paper must be handed in' rule (S50) also applies to Shanghai's June exam, so the rule alone is not proof; the conclusion rests on the absence of any official publication plus the compilers' own 回忆版/网络收集版/练习 labels. Provenance of the Shanghai June (秋考) papers was NOT investigated here."
+ },
+ "notes": [
+  "Scope: summer Gaokao mathematics, 2016-2026 (2019-2026 priority). gk2010 candidates in inventory are out of scope and not covered.",
+  "Series keys: national_1/2/3 = 全国Ⅰ/Ⅱ/Ⅲ卷 (2016-2020); national_jia (2021-2024); national_yi (2021-2023); new_curriculum_1/2 = 新高考Ⅰ/Ⅱ卷 (2020-2022) = 新课标Ⅰ/Ⅱ卷 (2023-2024); national_1_2025/national_2_2025 = 全国一卷/二卷 (2025-2026); other keys are regional self-set papers. Regional keys 'shandong' (2016-2017) and 'sichuan' (2016) are self-set MATH papers of years when those provinces used national papers only for other subjects.",
+  "tracks: ['science','liberal'] means the paper itself existed as separate 理科/文科 versions; [] means one paper for everyone. Several old-system (文/理) provinces sat unsplit new-curriculum math papers: 2023 山西/吉林/黑龙江/安徽/云南 (新课标Ⅱ卷), 2024 河南 (新课标Ⅰ卷) and 山西/云南/新疆 (新课标Ⅱ卷), 2025-2026 西藏/新疆 (全国二卷). See region_notes.",
+  "西藏 is split by subject in 2023-2024: 语文 (and 政治/历史) moved to new-curriculum papers while math stayed on the old-curriculum 全国甲卷 (文/理). Mappings here are for MATH only.",
+  "海南 2016-2019 used 全国卷II for 语数外 only; math is therefore national_2 (文/理).",
+  "eol.cn per-year index pages for 2016, 2017 and 2018 share one template with identical 适用地区 lines (2018 values); they are not used as year-specific evidence for 2016/2017. eol 2019st.shtml is a 404; 2019 evidence comes from eol per-paper pages and Sina.",
+  "'confirmed' = at least one official or major-media source explicitly giving that year's province list for the paper (or, for self-set papers, naming the regional math paper) and no unresolved conflict. Sina Education (新浪教育) is treated as major media alongside 中国教育在线/新华网/人民网.",
+  "Every quote with a local_copy was machine-checked (whitespace-insensitive) against text extracted from the saved page; quotes from S52-S57 were not (see each note). Fetched pages are stored under research/regions/pages/.",
+  "No source was found that is an Education-Ministry document listing provinces per paper for any year; provincial official documents were used for edge cases (西藏 2023/2024/2025/2026, 浙江 2023/2025)."
+ ]
+}

@@ -1,0 +1,28 @@
+MathAgent — 智能数学批阅工作台
+https://www.mathagent.com.cn
+
+Copyright (C) 2026 李旺 (Li Wang) · 找不到工作的路边野狗
+
+本项目以 GNU Affero General Public License v3.0 发布，全文见 LICENSE。
+本文件不修改许可证条款；许可证文本必须保持逐字不变。
+
+This program is free software: you can redistribute it and/or modify it under
+the terms of the GNU Affero General Public License as published by the Free
+Software Foundation, either version 3 of the License, or (at your option) any
+later version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+PARTICULAR PURPOSE. See the GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License along
+with this program. If not, see <https://www.gnu.org/licenses/>.
+
+商业授权
+--------
+需要闭源集成、商业分发或托管服务的商用授权，请邮件联系作者：
+l1360675298@outlook.com
+
+商标
+----
+MathAgent 名称与标识不随代码许可授予；品牌使用需单独取得许可。

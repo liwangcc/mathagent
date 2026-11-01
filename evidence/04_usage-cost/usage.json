@@ -1,0 +1,252 @@
+{
+  "note": "只记供应商回报的 token 计数，不含任何正文、答案或身份信息；价格为独立输入，见 README。",
+  "collected_at": "2026-11-01",
+  "rows": [
+    {
+      "stage": "grading",
+      "model": "qwen3.8-flash",
+      "request": "01-grade-2580e45129688733",
+      "prompt_tokens": 3277,
+      "completion_tokens": 2743,
+      "total_tokens": 6020
+    },
+    {
+      "stage": "grading",
+      "model": "qwen3.8-flash",
+      "request": "02-grade-42d6ad8a28f0e136",
+      "prompt_tokens": 3280,
+      "completion_tokens": 4906,
+      "total_tokens": 8186
+    },
+    {
+      "stage": "grading",
+      "model": "qwen3.8-flash",
+      "request": "03-grade-66a2cadeb20ace53",
+      "prompt_tokens": 3285,
+      "completion_tokens": 2405,
+      "total_tokens": 5690
+    },
+    {
+      "stage": "grading",
+      "model": "qwen3.8-flash",
+      "request": "04-grade-514ee2a79dd23c52",
+      "prompt_tokens": 3280,
+      "completion_tokens": 3168,
+      "total_tokens": 6448
+    },
+    {
+      "stage": "grading",
+      "model": "qwen3.8-flash",
+      "request": "05-grade-3f71f0545ff54055",
+      "prompt_tokens": 3281,
+      "completion_tokens": 4096,
+      "total_tokens": 7377
+    },
+    {
+      "stage": "grading",
+      "model": "qwen3.8-flash",
+      "request": "06-grade-aa18b7ceaf5b950e",
+      "prompt_tokens": 3281,
+      "completion_tokens": 8036,
+      "total_tokens": 11317
+    },
+    {
+      "stage": "grading",
+      "model": "qwen3.8-flash",
+      "request": "07-grade-9b3430d6fecea312",
+      "prompt_tokens": 3278,
+      "completion_tokens": 2484,
+      "total_tokens": 5762
+    },
+    {
+      "stage": "grading",
+      "model": "qwen3.8-flash",
+      "request": "08-grade-281f084e8ffe93af",
+      "prompt_tokens": 3276,
+      "completion_tokens": 1782,
+      "total_tokens": 5058
+    },
+    {
+      "stage": "grading",
+      "model": "qwen3.8-flash",
+      "request": "09-grade-9c69c07f66038607",
+      "prompt_tokens": 3282,
+      "completion_tokens": 3243,
+      "total_tokens": 6525
+    },
+    {
+      "stage": "grading",
+      "model": "qwen3.8-flash",
+      "request": "10-grade-649e7311ea2e2b7e",
+      "prompt_tokens": 3285,
+      "completion_tokens": 2690,
+      "total_tokens": 5975
+    },
+    {
+      "stage": "grading",
+      "model": "qwen3.8-flash",
+      "request": "11-grade-c95afa3453b16ab9",
+      "prompt_tokens": 3281,
+      "completion_tokens": 2679,
+      "total_tokens": 5960
+    },
+    {
+      "stage": "grading",
+      "model": "qwen3.8-flash",
+      "request": "12-grade-2c9a393c9ccf7724",
+      "prompt_tokens": 3281,
+      "completion_tokens": 2769,
+      "total_tokens": 6050
+    },
+    {
+      "stage": "grading",
+      "model": "qwen3.8-flash",
+      "request": "13-grade-d29377325f2b18bc",
+      "prompt_tokens": 3280,
+      "completion_tokens": 1824,
+      "total_tokens": 5104
+    },
+    {
+      "stage": "grading",
+      "model": "qwen3.8-flash",
+      "request": "14-grade-26d6c5c2e66e3cee",
+      "prompt_tokens": 3281,
+      "completion_tokens": 2068,
+      "total_tokens": 5349
+    },
+    {
+      "stage": "grading",
+      "model": "qwen3.8-flash",
+      "request": "15-grade-b55fd159452dd4fb",
+      "prompt_tokens": 3279,
+      "completion_tokens": 2684,
+      "total_tokens": 5963
+    },
+    {
+      "stage": "grading",
+      "model": "qwen3.8-flash",
+      "request": "16-grade-90bd8804e9431d1a",
+      "prompt_tokens": 3277,
+      "completion_tokens": 1922,
+      "total_tokens": 5199
+    },
+    {
+      "stage": "grading",
+      "model": "qwen3.8-flash",
+      "request": "17-grade-016c86880bcf7215",
+      "prompt_tokens": 3279,
+      "completion_tokens": 3034,
+      "total_tokens": 6313
+    },
+    {
+      "stage": "grading",
+      "model": "qwen3.8-flash",
+      "request": "18-grade-09575797db5c329f",
+      "prompt_tokens": 3279,
+      "completion_tokens": 2946,
+      "total_tokens": 6225
+    },
+    {
+      "stage": "grading",
+      "model": "qwen3.8-flash",
+      "request": "19-grade-d3f179d75137965d",
+      "prompt_tokens": 3281,
+      "completion_tokens": 3416,
+      "total_tokens": 6697
+    },
+    {
+      "stage": "grading",
+      "model": "qwen3.8-flash",
+      "request": "20-grade-18e020fa0cb06520",
+      "prompt_tokens": 3285,
+      "completion_tokens": 2878,
+      "total_tokens": 6163
+    },
+    {
+      "stage": "grading",
+      "model": "qwen3.8-flash",
+      "request": "21-grade-c40d5e0e119dedee",
+      "prompt_tokens": 3284,
+      "completion_tokens": 2751,
+      "total_tokens": 6035
+    },
+    {
+      "stage": "grading",
+      "model": "qwen3.8-flash",
+      "request": "22-grade-a5e42da800f4d702",
+      "prompt_tokens": 3272,
+      "completion_tokens": 2196,
+      "total_tokens": 5468
+    },
+    {
+      "stage": "grading",
+      "model": "qwen3.8-flash",
+      "request": "23-grade-55c5bf0fa5b36771",
+      "prompt_tokens": 3280,
+      "completion_tokens": 1626,
+      "total_tokens": 4906
+    },
+    {
+      "stage": "grading",
+      "model": "qwen3.8-flash",
+      "request": "24-grade-669d5e381f388346",
+      "prompt_tokens": 3278,
+      "completion_tokens": 2718,
+      "total_tokens": 5996
+    },
+    {
+      "stage": "student_ocr",
+      "model": "qwen3.8-flash",
+      "request": "live-2026-11-01/diff-2col",
+      "prompt_tokens": 3696,
+      "completion_tokens": 626,
+      "total_tokens": 4322,
+      "image_tokens": 3140,
+      "note": "生产提示词 + 两栏差分图（生产输入形态）",
+      "form": "production"
+    },
+    {
+      "stage": "student_ocr",
+      "model": "qwen3.8-flash",
+      "request": "live-2026-11-01/raw-1page",
+      "prompt_tokens": 3052,
+      "completion_tokens": 625,
+      "total_tokens": 3677,
+      "image_tokens": 2496,
+      "note": "同一句话配整页原图，仅作对照",
+      "form": "control"
+    },
+    {
+      "stage": "template_coarse_locator",
+      "model": "qwen3.8-flash",
+      "request": "03-template-coarse-locator-v1",
+      "prompt_tokens": 3364,
+      "completion_tokens": 4698,
+      "total_tokens": 8062
+    },
+    {
+      "stage": "template_hierarchy",
+      "model": "qwen3.8-flash",
+      "request": "02-template-hierarchy-v1",
+      "prompt_tokens": 3502,
+      "completion_tokens": 2153,
+      "total_tokens": 5655
+    },
+    {
+      "stage": "template_max_solve",
+      "model": "qwen3.8-max",
+      "request": "06-template-max-fullsolve-v1",
+      "prompt_tokens": 9105,
+      "completion_tokens": 5274,
+      "total_tokens": 14379
+    },
+    {
+      "stage": "template_transcribe",
+      "model": "qwen3.8-flash",
+      "request": "04-template-flash-transcribe-v1",
+      "prompt_tokens": 9151,
+      "completion_tokens": 1020,
+      "total_tokens": 10171
+    }
+  ]
+}

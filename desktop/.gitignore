@@ -1,0 +1,11 @@
+/node_modules/
+/src-tauri/target/
+/src-tauri/gen/schemas/
+/.venv-build/
+/.pyinstaller-cache/
+**/.pytest_cache/
+**/__pycache__/
+**/*.egg-info/
+/worker/build/
+/worker/dist/
+/src-tauri/binaries/*.exe

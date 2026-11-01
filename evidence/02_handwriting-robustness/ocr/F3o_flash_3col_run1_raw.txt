@@ -1,0 +1,10 @@
+{
+  "columns": [
+    {
+      "index": 1,
+      "label": "左栏",
+      "transcription": "姓名：S02\n\n一、选择题\n（涂卡区）\n\n二、填空题\n13. 743\n14. 1\n15. 2\n16. 4π\n\n三、解答题\n17.\n解：已知 \\frac{1}{\\sin A} + \\frac{\\sin A}{\\sin B \\sin C} = \\frac{\\sin B}{\\sin A \\sin C} + \\frac{\\sin C}{\\sin A \\sin B}\n\\sin B \\sin C + \\sin^2 A = \\sin^2 B + \\sin^2 C\nbc + a^2 = b^2 + c^2\n\\cos A = \\frac{b^2 + c^2 - a^2}{2bc} = \\frac{1}{2}\n∵ ∠A ∈ (0, π)\n∴ ∠A = \\frac{π}{3}"
+    }
+  ],
+  "uncertain": []
+}

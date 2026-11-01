@@ -1,0 +1,612 @@
+{
+  "verified_at_utc": "2026-09-14T12:09:54.049464+00:00",
+  "artifact": "courseware/catalog_v4.json",
+  "counts": {
+    "primary": 17,
+    "junior": 20,
+    "senior": 21,
+    "total": 58,
+    "inline_scripts_syntax_checked": 421,
+    "static_copy_matches": 58,
+    "no_external_assets": 58,
+    "accessibility_feedback": 58,
+    "pointer_input": 58,
+    "keyboard_input": 58,
+    "reduced_motion": 58,
+    "edge_headless_initial_load": 58,
+    "archive_byte_matches": 58
+  },
+  "scope": {
+    "passed": "All imported final HTML files were copied to both project and frontend static directories; catalog hashes, byte equality, dependency scan, inline JavaScript syntax, and Edge headless initial DOM load passed.",
+    "not_claimed": [
+      "Windows/Edge file double-click on the users desktop",
+      "hardware WebGL/GPU rendering",
+      "physical touch or pen",
+      "other browsers",
+      "specified textbook line-by-line review",
+      "long-running classroom performance"
+    ]
+  },
+  "files": [
+    {
+      "code": "P01",
+      "source_sha256": "7a28db39945e32995eaba586bade25ab7be9913d856788c40ca4c20fc78b79f5",
+      "public_copy_match": true,
+      "no_external_assets": true,
+      "aria_live": true,
+      "pointer_input": true,
+      "keyboard_input": true,
+      "reduced_motion": true
+    },
+    {
+      "code": "P02",
+      "source_sha256": "a9d571faa42fe722610d51e9ba4c125c5bca17ef6fb70b02c3dfbb823b915b83",
+      "public_copy_match": true,
+      "no_external_assets": true,
+      "aria_live": true,
+      "pointer_input": true,
+      "keyboard_input": true,
+      "reduced_motion": true
+    },
+    {
+      "code": "P03",
+      "source_sha256": "92b5305f9b934e5e2326b3a122b2994e7f62f8718de5fdb736b063ba41d3b519",
+      "public_copy_match": true,
+      "no_external_assets": true,
+      "aria_live": true,
+      "pointer_input": true,
+      "keyboard_input": true,
+      "reduced_motion": true
+    },
+    {
+      "code": "P04",
+      "source_sha256": "1f32e94a65063a94c4625d6f4aa27d9af9d718159791ecb59cf4546b6c5c9eec",
+      "public_copy_match": true,
+      "no_external_assets": true,
+      "aria_live": true,
+      "pointer_input": true,
+      "keyboard_input": true,
+      "reduced_motion": true
+    },
+    {
+      "code": "P05",
+      "source_sha256": "97b76f6c124f899b57bc4ca387bc6ec572b113650ffcd536a3d2d990cf10048d",
+      "public_copy_match": true,
+      "no_external_assets": true,
+      "aria_live": true,
+      "pointer_input": true,
+      "keyboard_input": true,
+      "reduced_motion": true
+    },
+    {
+      "code": "P06",
+      "source_sha256": "659c8ad09f084e51cad34ed41452ea311c156b4330054dcde2d4fe7bcafb5fb3",
+      "public_copy_match": true,
+      "no_external_assets": true,
+      "aria_live": true,
+      "pointer_input": true,
+      "keyboard_input": true,
+      "reduced_motion": true
+    },
+    {
+      "code": "P07",
+      "source_sha256": "7d9d2f718a7009732ddce1dbc5c44587c3e04a69b9ef8fe8f0180502c642b47b",
+      "public_copy_match": true,
+      "no_external_assets": true,
+      "aria_live": true,
+      "pointer_input": true,
+      "keyboard_input": true,
+      "reduced_motion": true
+    },
+    {
+      "code": "P08",
+      "source_sha256": "bcea0bc846ff4d1a3cfb54e4bc6152ee42c06ed73b38a0024d65bb820109d69b",
+      "public_copy_match": true,
+      "no_external_assets": true,
+      "aria_live": true,
+      "pointer_input": true,
+      "keyboard_input": true,
+      "reduced_motion": true
+    },
+    {
+      "code": "P09",
+      "source_sha256": "1472ededc78d671a6947e7d756485c0b108e87477222fd9c2cc47fdaf3a21f44",
+      "public_copy_match": true,
+      "no_external_assets": true,
+      "aria_live": true,
+      "pointer_input": true,
+      "keyboard_input": true,
+      "reduced_motion": true
+    },
+    {
+      "code": "P10",
+      "source_sha256": "ec24326537bbc21f1bda797b4d2415dea066e36b26870445111fed16fcbf5f0e",
+      "public_copy_match": true,
+      "no_external_assets": true,
+      "aria_live": true,
+      "pointer_input": true,
+      "keyboard_input": true,
+      "reduced_motion": true
+    },
+    {
+      "code": "P11",
+      "source_sha256": "a947511d9003e2d27f557b87067b67fc75b88b9587c051d14eaeb184540df3ee",
+      "public_copy_match": true,
+      "no_external_assets": true,
+      "aria_live": true,
+      "pointer_input": true,
+      "keyboard_input": true,
+      "reduced_motion": true
+    },
+    {
+      "code": "P12",
+      "source_sha256": "b3ad9e29143041f2ffa989ca227942cef5df67bc0c34288150cf183119cac6ce",
+      "public_copy_match": true,
+      "no_external_assets": true,
+      "aria_live": true,
+      "pointer_input": true,
+      "keyboard_input": true,
+      "reduced_motion": true
+    },
+    {
+      "code": "P13",
+      "source_sha256": "c864ab25fb393229e4a5f59cb867a55f5e0a49f8275c4aaf6b6c2253eeacb109",
+      "public_copy_match": true,
+      "no_external_assets": true,
+      "aria_live": true,
+      "pointer_input": true,
+      "keyboard_input": true,
+      "reduced_motion": true
+    },
+    {
+      "code": "P14",
+      "source_sha256": "809bf0aafc6a52db2d104cc796a0f4c38562493d9759b9bb145a8f04d13d1ae9",
+      "public_copy_match": true,
+      "no_external_assets": true,
+      "aria_live": true,
+      "pointer_input": true,
+      "keyboard_input": true,
+      "reduced_motion": true
+    },
+    {
+      "code": "P15",
+      "source_sha256": "a1b3143ad1a3e6f70fa366289550b5265f0a168b2c3a5669c51d54985fe76dea",
+      "public_copy_match": true,
+      "no_external_assets": true,
+      "aria_live": true,
+      "pointer_input": true,
+      "keyboard_input": true,
+      "reduced_motion": true
+    },
+    {
+      "code": "P16",
+      "source_sha256": "53048224581f78e6d064caab0d44946ce6fb533e219bed8e0ab229c7e753ad1b",
+      "public_copy_match": true,
+      "no_external_assets": true,
+      "aria_live": true,
+      "pointer_input": true,
+      "keyboard_input": true,
+      "reduced_motion": true
+    },
+    {
+      "code": "P17",
+      "source_sha256": "6a9393ad1f887d452354d99419c73e45eaa2d98df6a289d569e25dbe57fc9d03",
+      "public_copy_match": true,
+      "no_external_assets": true,
+      "aria_live": true,
+      "pointer_input": true,
+      "keyboard_input": true,
+      "reduced_motion": true
+    },
+    {
+      "code": "J01",
+      "source_sha256": "6d24845af4b69e64529ca8f45a2db4a00bc6884fec17db43f7983d2300c04f53",
+      "public_copy_match": true,
+      "no_external_assets": true,
+      "aria_live": true,
+      "pointer_input": true,
+      "keyboard_input": true,
+      "reduced_motion": true
+    },
+    {
+      "code": "J02",
+      "source_sha256": "03ae786280c028802cd99c23a4a8d2f390712ffe7d0794d4c665c28394d2b9d2",
+      "public_copy_match": true,
+      "no_external_assets": true,
+      "aria_live": true,
+      "pointer_input": true,
+      "keyboard_input": true,
+      "reduced_motion": true
+    },
+    {
+      "code": "J03",
+      "source_sha256": "40974fb6bfb7f56872f8dd568d2df10267b0fe5ab3c9cbb924a8d9ea3ad0cbfb",
+      "public_copy_match": true,
+      "no_external_assets": true,
+      "aria_live": true,
+      "pointer_input": true,
+      "keyboard_input": true,
+      "reduced_motion": true
+    },
+    {
+      "code": "J04",
+      "source_sha256": "633052bb63fd5a8e7eec190dc7d028c35ed8c30e8b372d5e4713cec14e1af771",
+      "public_copy_match": true,
+      "no_external_assets": true,
+      "aria_live": true,
+      "pointer_input": true,
+      "keyboard_input": true,
+      "reduced_motion": true
+    },
+    {
+      "code": "J05",
+      "source_sha256": "c0060d94d0615a0a5ac54b399649e41e403530ff7f8bb87c48cc875ab94efd38",
+      "public_copy_match": true,
+      "no_external_assets": true,
+      "aria_live": true,
+      "pointer_input": true,
+      "keyboard_input": true,
+      "reduced_motion": true
+    },
+    {
+      "code": "J06",
+      "source_sha256": "58eabc95a8c5742609eb53ca8e2549a191eeb4781458c8e54454b6d33626f9ab",
+      "public_copy_match": true,
+      "no_external_assets": true,
+      "aria_live": true,
+      "pointer_input": true,
+      "keyboard_input": true,
+      "reduced_motion": true
+    },
+    {
+      "code": "J07",
+      "source_sha256": "471010119b6558eca7ff48ee6b8d3071750c0b272fdb41331fe43e358713a204",
+      "public_copy_match": true,
+      "no_external_assets": true,
+      "aria_live": true,
+      "pointer_input": true,
+      "keyboard_input": true,
+      "reduced_motion": true
+    },
+    {
+      "code": "J08",
+      "source_sha256": "a167b49bead289e509392f8325ea43b2c4acce66a1fa63643c47fc646231e22f",
+      "public_copy_match": true,
+      "no_external_assets": true,
+      "aria_live": true,
+      "pointer_input": true,
+      "keyboard_input": true,
+      "reduced_motion": true
+    },
+    {
+      "code": "J09",
+      "source_sha256": "670c20f3f9c1e6b6eb86b79553a05f716b3845a99965c5d070595430ca6a383d",
+      "public_copy_match": true,
+      "no_external_assets": true,
+      "aria_live": true,
+      "pointer_input": true,
+      "keyboard_input": true,
+      "reduced_motion": true
+    },
+    {
+      "code": "J10",
+      "source_sha256": "8f279a2217bf82e9136fef7c251f717a81a1e803e3700f2987026a82638a444f",
+      "public_copy_match": true,
+      "no_external_assets": true,
+      "aria_live": true,
+      "pointer_input": true,
+      "keyboard_input": true,
+      "reduced_motion": true
+    },
+    {
+      "code": "J11",
+      "source_sha256": "15dbcada93aa83ab3ac64321d6c149fc518e5c59d47741030bbcedd9ae328028",
+      "public_copy_match": true,
+      "no_external_assets": true,
+      "aria_live": true,
+      "pointer_input": true,
+      "keyboard_input": true,
+      "reduced_motion": true
+    },
+    {
+      "code": "J12",
+      "source_sha256": "e8d0e7f666673171d828136b949ee334a1aece5fba389c30319d197ced42aece",
+      "public_copy_match": true,
+      "no_external_assets": true,
+      "aria_live": true,
+      "pointer_input": true,
+      "keyboard_input": true,
+      "reduced_motion": true
+    },
+    {
+      "code": "J13",
+      "source_sha256": "f85560bec40c22fd88896ecf1cb54a72f236c2be0c5b401b103ec8a926893a25",
+      "public_copy_match": true,
+      "no_external_assets": true,
+      "aria_live": true,
+      "pointer_input": true,
+      "keyboard_input": true,
+      "reduced_motion": true
+    },
+    {
+      "code": "J14",
+      "source_sha256": "2b381880ae5c1eb62da93ee166fefd3f9dd2ff48410ea87cdca7cf81d1d6ffd3",
+      "public_copy_match": true,
+      "no_external_assets": true,
+      "aria_live": true,
+      "pointer_input": true,
+      "keyboard_input": true,
+      "reduced_motion": true
+    },
+    {
+      "code": "J15",
+      "source_sha256": "ccfdf9a7e7418379953b56e25d0e236ed0c65c2b46123008703d0993a9f5177b",
+      "public_copy_match": true,
+      "no_external_assets": true,
+      "aria_live": true,
+      "pointer_input": true,
+      "keyboard_input": true,
+      "reduced_motion": true
+    },
+    {
+      "code": "J16",
+      "source_sha256": "982e55b7b5be00b5de3ae96a1d27cf7a137bf7fbeb839c0c415d0e995c4a3702",
+      "public_copy_match": true,
+      "no_external_assets": true,
+      "aria_live": true,
+      "pointer_input": true,
+      "keyboard_input": true,
+      "reduced_motion": true
+    },
+    {
+      "code": "J17",
+      "source_sha256": "4ec001cb9a30728ab64cb2080e3c2c8d1ad02a98b6384bb76f7fb857b5cb1d5d",
+      "public_copy_match": true,
+      "no_external_assets": true,
+      "aria_live": true,
+      "pointer_input": true,
+      "keyboard_input": true,
+      "reduced_motion": true
+    },
+    {
+      "code": "J18",
+      "source_sha256": "3c9f0ec9177ab0bb65e421dfe328871ce9851a4bf77b8e1a790fdd5ed06a2807",
+      "public_copy_match": true,
+      "no_external_assets": true,
+      "aria_live": true,
+      "pointer_input": true,
+      "keyboard_input": true,
+      "reduced_motion": true
+    },
+    {
+      "code": "J19",
+      "source_sha256": "b6a9263e1dbb8db776da535eb9a20b39d330227cf63271d0a6e4872a7e7a5dcd",
+      "public_copy_match": true,
+      "no_external_assets": true,
+      "aria_live": true,
+      "pointer_input": true,
+      "keyboard_input": true,
+      "reduced_motion": true
+    },
+    {
+      "code": "J20",
+      "source_sha256": "069fdcb8048d4e631e13992e84e389e95748dd129e6a342cf8d85491459cc677",
+      "public_copy_match": true,
+      "no_external_assets": true,
+      "aria_live": true,
+      "pointer_input": true,
+      "keyboard_input": true,
+      "reduced_motion": true
+    },
+    {
+      "code": "H01",
+      "source_sha256": "3522e45412f474c555052cce4620bc2ea6bc287a162bfa90ed89bab76d9c05c6",
+      "public_copy_match": true,
+      "no_external_assets": true,
+      "aria_live": true,
+      "pointer_input": true,
+      "keyboard_input": true,
+      "reduced_motion": true
+    },
+    {
+      "code": "H02",
+      "source_sha256": "f345e1a47d8020b0e3fb0fd9f5f590df6893342a5e3cf2c81779ebd106995fe3",
+      "public_copy_match": true,
+      "no_external_assets": true,
+      "aria_live": true,
+      "pointer_input": true,
+      "keyboard_input": true,
+      "reduced_motion": true
+    },
+    {
+      "code": "H03",
+      "source_sha256": "c5f66d930065a1e7b7f113b7d9fade6114b3cbc3bfec30b5972e472453deca99",
+      "public_copy_match": true,
+      "no_external_assets": true,
+      "aria_live": true,
+      "pointer_input": true,
+      "keyboard_input": true,
+      "reduced_motion": true
+    },
+    {
+      "code": "H04",
+      "source_sha256": "3a4cbe549877e3aa63e30269766fc0a6b66e40714a6a6308dd5567bff9b0dac1",
+      "public_copy_match": true,
+      "no_external_assets": true,
+      "aria_live": true,
+      "pointer_input": true,
+      "keyboard_input": true,
+      "reduced_motion": true
+    },
+    {
+      "code": "H05",
+      "source_sha256": "7adde606d4298a969bd4cee6efa956688adba2aa23014078cc4fa998ff9d219d",
+      "public_copy_match": true,
+      "no_external_assets": true,
+      "aria_live": true,
+      "pointer_input": true,
+      "keyboard_input": true,
+      "reduced_motion": true
+    },
+    {
+      "code": "H06",
+      "source_sha256": "e45614797ae5093083570b4dac27b687a20043ef7e4c18597d6a46046374b271",
+      "public_copy_match": true,
+      "no_external_assets": true,
+      "aria_live": true,
+      "pointer_input": true,
+      "keyboard_input": true,
+      "reduced_motion": true
+    },
+    {
+      "code": "H07",
+      "source_sha256": "dc09c83e2ed069ed02b92e44fe8cde12ada27ffd0b90e5aead88edb832cc0291",
+      "public_copy_match": true,
+      "no_external_assets": true,
+      "aria_live": true,
+      "pointer_input": true,
+      "keyboard_input": true,
+      "reduced_motion": true
+    },
+    {
+      "code": "H08",
+      "source_sha256": "bba4080184b3a1061ccaa0520dc77c0b1ae387d62e344aecb056cac74c081ec3",
+      "public_copy_match": true,
+      "no_external_assets": true,
+      "aria_live": true,
+      "pointer_input": true,
+      "keyboard_input": true,
+      "reduced_motion": true
+    },
+    {
+      "code": "H09",
+      "source_sha256": "3b23e21fa1fc583d64f6c78e05454afc2a9793fa436acdf83503b7937e94b257",
+      "public_copy_match": true,
+      "no_external_assets": true,
+      "aria_live": true,
+      "pointer_input": true,
+      "keyboard_input": true,
+      "reduced_motion": true
+    },
+    {
+      "code": "H10",
+      "source_sha256": "60401c7ae679b6059f1513ad1742be5b0e1180a5f29c2c6ce0beb71e6978a604",
+      "public_copy_match": true,
+      "no_external_assets": true,
+      "aria_live": true,
+      "pointer_input": true,
+      "keyboard_input": true,
+      "reduced_motion": true
+    },
+    {
+      "code": "H11",
+      "source_sha256": "0acfad40e2c4d3c0dc9602345e7620ad3c5312927df8536e6ccfb636053f8d99",
+      "public_copy_match": true,
+      "no_external_assets": true,
+      "aria_live": true,
+      "pointer_input": true,
+      "keyboard_input": true,
+      "reduced_motion": true
+    },
+    {
+      "code": "H12",
+      "source_sha256": "521d0b9ba63f2f61f50ae53601e639826bc23a998905f7dd8bc35120f6474fcc",
+      "public_copy_match": true,
+      "no_external_assets": true,
+      "aria_live": true,
+      "pointer_input": true,
+      "keyboard_input": true,
+      "reduced_motion": true
+    },
+    {
+      "code": "H13",
+      "source_sha256": "2162fb95d22a09414dcb4b22881c0d954d097abefe7b5b32b2bb9e5f880dbcee",
+      "public_copy_match": true,
+      "no_external_assets": true,
+      "aria_live": true,
+      "pointer_input": true,
+      "keyboard_input": true,
+      "reduced_motion": true
+    },
+    {
+      "code": "H14",
+      "source_sha256": "f424581ef155309070ab39f4710e161eb67a2b9ea42994274d00fd7af67303e0",
+      "public_copy_match": true,
+      "no_external_assets": true,
+      "aria_live": true,
+      "pointer_input": true,
+      "keyboard_input": true,
+      "reduced_motion": true
+    },
+    {
+      "code": "H15",
+      "source_sha256": "8de97cca53740d2c5f1f8673798386d9c634966f889bce07f8050b57daa01a0e",
+      "public_copy_match": true,
+      "no_external_assets": true,
+      "aria_live": true,
+      "pointer_input": true,
+      "keyboard_input": true,
+      "reduced_motion": true
+    },
+    {
+      "code": "H16",
+      "source_sha256": "6e73664ead0cc4dfa17e96d5097ed3ec48a4758456e76a4555857cd7bc6ff782",
+      "public_copy_match": true,
+      "no_external_assets": true,
+      "aria_live": true,
+      "pointer_input": true,
+      "keyboard_input": true,
+      "reduced_motion": true
+    },
+    {
+      "code": "H17",
+      "source_sha256": "68e3ad20cd3ef791a8c440f01a036e0be84df2f6d5848a2187b82c8d80686249",
+      "public_copy_match": true,
+      "no_external_assets": true,
+      "aria_live": true,
+      "pointer_input": true,
+      "keyboard_input": true,
+      "reduced_motion": true
+    },
+    {
+      "code": "H18",
+      "source_sha256": "219d2b3baa956c91b53af9c69d5f08d922558f7caf6b945d9eb1b57786a73afd",
+      "public_copy_match": true,
+      "no_external_assets": true,
+      "aria_live": true,
+      "pointer_input": true,
+      "keyboard_input": true,
+      "reduced_motion": true
+    },
+    {
+      "code": "H19",
+      "source_sha256": "ab6a27b78d4423359342e5ff6783e2e9671c9987be215a6b3c1dcb5dfa555e7c",
+      "public_copy_match": true,
+      "no_external_assets": true,
+      "aria_live": true,
+      "pointer_input": true,
+      "keyboard_input": true,
+      "reduced_motion": true
+    },
+    {
+      "code": "H20",
+      "source_sha256": "550fae77b50b99a76e5ee1db2f0f718c1d2af403ed08fd84aed383fa048bb812",
+      "public_copy_match": true,
+      "no_external_assets": true,
+      "aria_live": true,
+      "pointer_input": true,
+      "keyboard_input": true,
+      "reduced_motion": true
+    },
+    {
+      "code": "H21",
+      "source_sha256": "9d292524a476ba7c7203d6a5bc3a53643f91a02c9af323a19246ea85f06d14cc",
+      "public_copy_match": true,
+      "no_external_assets": true,
+      "aria_live": true,
+      "pointer_input": true,
+      "keyboard_input": true,
+      "reduced_motion": true
+    }
+  ]
+}

@@ -1,0 +1,41 @@
+name: tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  backend-smoke:
+    name: 后端冒烟测试
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: 安装依赖
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest==8.3.4
+
+      - name: 语法检查（全量 Python 文件可编译）
+        run: python -m compileall -q app.py config.py routers services database.py
+
+      - name: 鉴权与安全回归
+        # 只跑不依赖外部模型/网络的用例：认证、短信限流、连接测试、安全加固。
+        # 完整套件需要模型与 Redis，留给本地 venv 执行。
+        run: |
+          pytest -q \
+            tests/test_auth.py \
+            tests/test_security_hardening.py \
+            tests/test_security_report_fixes.py \
+            tests/test_sms_send_guard.py \
+            tests/test_settings_test_connection.py
+
+      - name: 依赖一致性
+        run: pip check

@@ -1,0 +1,1328 @@
+{
+  "schema_version": 1,
+  "stage": "senior",
+  "subject": "math",
+  "version": "2026-09-09.v1",
+  "review_status": "core_content_checked_2025_reprints",
+  "coverage_note": "高中必修与选择性必修主干已对照2020官方课标及2025日常修订学校公开转载正文印刷页9–50核对；未宣称取得教育部2025原始发布文件。部分选修沿用已核对的2020依据，所有选修、全册教材及全文教学评价仍待专门核查。core含必修和选择性必修，具体course单独标注，不代表全体高中学生都必须学习。",
+  "modules": [
+    {
+      "id": "senior.math.sets_logic",
+      "chapter": "集合与常用逻辑用语",
+      "domain": "预备知识",
+      "source_refs": [
+        {
+          "source_id": "moe-senior-2020",
+          "locator": "印刷页 15–16、64–65"
+        },
+        {
+          "source_id": "senior-2025-school-reprint",
+          "locator": "印刷页 14–16（必修主干；选修逻辑联结词仍据2020正文）"
+        }
+      ],
+      "topics": [
+        {
+          "id": "senior.math.sets_logic.01",
+          "name": "集合的概念与表示",
+          "scope": "core",
+          "course": "compulsory",
+          "aliases": [
+            "集合的概念"
+          ]
+        },
+        {
+          "id": "senior.math.sets_logic.02",
+          "name": "集合间的基本关系",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "senior.math.sets_logic.03",
+          "name": "集合的基本运算",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "senior.math.sets_logic.04",
+          "name": "充分条件与必要条件",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "senior.math.sets_logic.05",
+          "name": "充要条件",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "senior.math.sets_logic.06",
+          "name": "全称量词与存在量词",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "senior.math.sets_logic.07",
+          "name": "量词命题的否定",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "senior.math.sets_logic.08",
+          "name": "逻辑联结词",
+          "scope": "extension",
+          "course": "elective",
+          "note": "在 2020 课标选修 C 类逻辑推理初步中核对；不作为必修普遍考试要求。"
+        }
+      ]
+    },
+    {
+      "id": "senior.math.inequalities",
+      "chapter": "方程不等式与二次函数",
+      "domain": "预备知识",
+      "source_refs": [
+        {
+          "source_id": "moe-senior-2020",
+          "locator": "印刷页 16–17"
+        },
+        {
+          "source_id": "senior-2025-school-reprint",
+          "locator": "印刷页 16–17"
+        }
+      ],
+      "topics": [
+        {
+          "id": "senior.math.inequalities.01",
+          "name": "等式与不等式的性质",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "senior.math.inequalities.02",
+          "name": "基本不等式",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "senior.math.inequalities.03",
+          "name": "二次函数与一元二次方程",
+          "scope": "core",
+          "course": "compulsory",
+          "aliases": [
+            "一元二次函数与方程"
+          ]
+        },
+        {
+          "id": "senior.math.inequalities.04",
+          "name": "一元二次不等式",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "senior.math.inequalities.05",
+          "name": "函数方程与不等式的联系",
+          "scope": "core",
+          "course": "compulsory"
+        }
+      ]
+    },
+    {
+      "id": "senior.math.functions",
+      "chapter": "函数的概念与性质",
+      "domain": "函数",
+      "source_refs": [
+        {
+          "source_id": "moe-senior-2020",
+          "locator": "印刷页 19–24"
+        },
+        {
+          "source_id": "senior-2025-school-reprint",
+          "locator": "印刷页 18–23"
+        }
+      ],
+      "topics": [
+        {
+          "id": "senior.math.functions.01",
+          "name": "函数的概念与表示",
+          "scope": "core",
+          "course": "compulsory",
+          "aliases": [
+            "函数的概念"
+          ]
+        },
+        {
+          "id": "senior.math.functions.02",
+          "name": "函数的定义域",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "senior.math.functions.03",
+          "name": "函数的值域与最值",
+          "scope": "core",
+          "course": "compulsory",
+          "aliases": [
+            "函数的最值"
+          ]
+        },
+        {
+          "id": "senior.math.functions.04",
+          "name": "分段函数",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "senior.math.functions.05",
+          "name": "函数的单调性",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "senior.math.functions.06",
+          "name": "函数的奇偶性",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "senior.math.functions.07",
+          "name": "函数的周期性",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "senior.math.functions.08",
+          "name": "函数图象与变换",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "senior.math.functions.09",
+          "name": "函数的零点与二分法",
+          "scope": "core",
+          "course": "compulsory",
+          "note": "包含二分法求近似解及相应程序框图；2025转载正文印刷页22明确提及。不是独立的全学科编程能力分类。"
+        },
+        {
+          "id": "senior.math.functions.10",
+          "name": "函数模型及其应用",
+          "scope": "core",
+          "course": "compulsory"
+        }
+      ]
+    },
+    {
+      "id": "senior.math.elementary_functions",
+      "chapter": "幂函数指数函数与对数函数",
+      "domain": "函数",
+      "source_refs": [
+        {
+          "source_id": "moe-senior-2020",
+          "locator": "印刷页 20–24"
+        },
+        {
+          "source_id": "senior-2025-school-reprint",
+          "locator": "印刷页 19–23"
+        }
+      ],
+      "topics": [
+        {
+          "id": "senior.math.elementary_functions.01",
+          "name": "幂函数",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "senior.math.elementary_functions.02",
+          "name": "指数幂及运算",
+          "scope": "core",
+          "course": "compulsory",
+          "aliases": [
+            "指数"
+          ]
+        },
+        {
+          "id": "senior.math.elementary_functions.03",
+          "name": "指数函数",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "senior.math.elementary_functions.04",
+          "name": "对数及运算",
+          "scope": "core",
+          "course": "compulsory",
+          "aliases": [
+            "对数"
+          ]
+        },
+        {
+          "id": "senior.math.elementary_functions.05",
+          "name": "对数函数",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "senior.math.elementary_functions.06",
+          "name": "指数函数与对数函数的反函数关系",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "senior.math.elementary_functions.07",
+          "name": "不同函数增长的比较",
+          "scope": "core",
+          "course": "compulsory"
+        }
+      ]
+    },
+    {
+      "id": "senior.math.trigonometry",
+      "chapter": "三角函数与恒等变换",
+      "domain": "函数",
+      "source_refs": [
+        {
+          "source_id": "moe-senior-2020",
+          "locator": "印刷页 21–22"
+        },
+        {
+          "source_id": "senior-2025-school-reprint",
+          "locator": "印刷页 20–21"
+        }
+      ],
+      "topics": [
+        {
+          "id": "senior.math.trigonometry.01",
+          "name": "任意角与弧度制",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "senior.math.trigonometry.02",
+          "name": "三角函数的概念",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "senior.math.trigonometry.03",
+          "name": "同角三角函数的基本关系",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "senior.math.trigonometry.04",
+          "name": "诱导公式",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "senior.math.trigonometry.05",
+          "name": "三角函数的图象与性质",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "senior.math.trigonometry.06",
+          "name": "两角和与差公式",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "senior.math.trigonometry.07",
+          "name": "二倍角公式",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "senior.math.trigonometry.08",
+          "name": "三角恒等变换",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "senior.math.trigonometry.09",
+          "name": "半角与和差化积公式的推导",
+          "scope": "core",
+          "course": "compulsory",
+          "aliases": [
+            "半角公式",
+            "和差化积与积化和差"
+          ]
+        },
+        {
+          "id": "senior.math.trigonometry.10",
+          "name": "函数y=Asin(ωx+φ)",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "senior.math.trigonometry.11",
+          "name": "三角函数的应用",
+          "scope": "core",
+          "course": "compulsory"
+        }
+      ]
+    },
+    {
+      "id": "senior.math.plane_vectors",
+      "chapter": "平面向量及其应用",
+      "domain": "几何与代数",
+      "source_refs": [
+        {
+          "source_id": "moe-senior-2020",
+          "locator": "印刷页 25–26"
+        },
+        {
+          "source_id": "senior-2025-school-reprint",
+          "locator": "印刷页 24–26"
+        }
+      ],
+      "topics": [
+        {
+          "id": "senior.math.plane_vectors.01",
+          "name": "平面向量的概念",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "senior.math.plane_vectors.02",
+          "name": "平面向量的线性运算",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "senior.math.plane_vectors.03",
+          "name": "平面向量基本定理",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "senior.math.plane_vectors.04",
+          "name": "平面向量的坐标表示",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "senior.math.plane_vectors.05",
+          "name": "平面向量的数量积",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "senior.math.plane_vectors.06",
+          "name": "平面向量的投影",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "senior.math.plane_vectors.07",
+          "name": "平面向量的共线与垂直",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "senior.math.plane_vectors.08",
+          "name": "平面向量的应用",
+          "scope": "core",
+          "course": "compulsory"
+        }
+      ]
+    },
+    {
+      "id": "senior.math.solve_triangles",
+      "chapter": "解三角形",
+      "domain": "几何与代数",
+      "source_refs": [
+        {
+          "source_id": "moe-senior-2020",
+          "locator": "印刷页 26"
+        },
+        {
+          "source_id": "senior-2025-school-reprint",
+          "locator": "印刷页 25–26"
+        }
+      ],
+      "topics": [
+        {
+          "id": "senior.math.solve_triangles.01",
+          "name": "正弦定理",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "senior.math.solve_triangles.02",
+          "name": "余弦定理",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "senior.math.solve_triangles.03",
+          "name": "三角形面积与边角关系",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "senior.math.solve_triangles.04",
+          "name": "解三角形的实际应用",
+          "scope": "core",
+          "course": "compulsory"
+        }
+      ]
+    },
+    {
+      "id": "senior.math.complex",
+      "chapter": "复数",
+      "domain": "几何与代数",
+      "source_refs": [
+        {
+          "source_id": "moe-senior-2020",
+          "locator": "印刷页 27"
+        },
+        {
+          "source_id": "senior-2025-school-reprint",
+          "locator": "印刷页 26"
+        }
+      ],
+      "topics": [
+        {
+          "id": "senior.math.complex.01",
+          "name": "复数的概念",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "senior.math.complex.02",
+          "name": "复数的几何意义",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "senior.math.complex.03",
+          "name": "复数的四则运算",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "senior.math.complex.04",
+          "name": "复数的三角形式",
+          "scope": "extension",
+          "course": "optional",
+          "note": "2020 课标印刷页 27 标星选学。"
+        }
+      ]
+    },
+    {
+      "id": "senior.math.solid_geometry",
+      "chapter": "立体几何初步",
+      "domain": "几何与代数",
+      "source_refs": [
+        {
+          "source_id": "moe-senior-2020",
+          "locator": "印刷页 27–30"
+        },
+        {
+          "source_id": "senior-2025-school-reprint",
+          "locator": "印刷页 26–29"
+        }
+      ],
+      "topics": [
+        {
+          "id": "senior.math.solid_geometry.01",
+          "name": "基本立体图形与组合体",
+          "scope": "core",
+          "course": "compulsory",
+          "aliases": [
+            "基本立体图形"
+          ]
+        },
+        {
+          "id": "senior.math.solid_geometry.02",
+          "name": "立体图形的直观图",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "senior.math.solid_geometry.03",
+          "name": "空间点线面的位置关系",
+          "scope": "core",
+          "course": "compulsory",
+          "aliases": [
+            "空间点、直线、平面之间的位置关系"
+          ]
+        },
+        {
+          "id": "senior.math.solid_geometry.04",
+          "name": "空间直线的平行与垂直",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "senior.math.solid_geometry.05",
+          "name": "直线与平面的平行",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "senior.math.solid_geometry.06",
+          "name": "平面与平面的平行",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "senior.math.solid_geometry.07",
+          "name": "直线与平面的垂直",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "senior.math.solid_geometry.08",
+          "name": "平面与平面的垂直",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "senior.math.solid_geometry.09",
+          "name": "空间几何体的表面积与体积",
+          "scope": "core",
+          "course": "compulsory"
+        }
+      ]
+    },
+    {
+      "id": "senior.math.statistics",
+      "chapter": "统计基础",
+      "domain": "概率与统计",
+      "source_refs": [
+        {
+          "source_id": "moe-senior-2020",
+          "locator": "印刷页 31–34"
+        },
+        {
+          "source_id": "senior-2025-school-reprint",
+          "locator": "印刷页 31–34"
+        }
+      ],
+      "topics": [
+        {
+          "id": "senior.math.statistics.01",
+          "name": "总体样本与数据获取",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "senior.math.statistics.02",
+          "name": "简单随机抽样",
+          "scope": "core",
+          "course": "compulsory",
+          "aliases": [
+            "随机抽样"
+          ]
+        },
+        {
+          "id": "senior.math.statistics.03",
+          "name": "分层随机抽样",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "senior.math.statistics.04",
+          "name": "统计图表",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "senior.math.statistics.05",
+          "name": "样本均值与集中趋势",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "senior.math.statistics.06",
+          "name": "方差标准差与离散程度",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "senior.math.statistics.07",
+          "name": "百分位数",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "senior.math.statistics.08",
+          "name": "用样本估计总体",
+          "scope": "core",
+          "course": "compulsory"
+        }
+      ]
+    },
+    {
+      "id": "senior.math.probability",
+      "chapter": "概率基础",
+      "domain": "概率与统计",
+      "source_refs": [
+        {
+          "source_id": "moe-senior-2020",
+          "locator": "印刷页 31–34"
+        },
+        {
+          "source_id": "senior-2025-school-reprint",
+          "locator": "印刷页 29–31"
+        }
+      ],
+      "topics": [
+        {
+          "id": "senior.math.probability.01",
+          "name": "随机事件与样本空间",
+          "scope": "core",
+          "course": "compulsory",
+          "aliases": [
+            "随机事件与概率"
+          ]
+        },
+        {
+          "id": "senior.math.probability.02",
+          "name": "事件的关系与运算",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "senior.math.probability.03",
+          "name": "古典概型",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "senior.math.probability.04",
+          "name": "概率的基本性质",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "senior.math.probability.05",
+          "name": "频率与概率",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "senior.math.probability.06",
+          "name": "事件的独立性",
+          "scope": "core",
+          "course": "compulsory"
+        }
+      ]
+    },
+    {
+      "id": "senior.math.space_vectors",
+      "chapter": "空间向量与立体几何",
+      "domain": "几何与代数",
+      "source_refs": [
+        {
+          "source_id": "moe-senior-2020",
+          "locator": "印刷页 42–43"
+        },
+        {
+          "source_id": "senior-2025-school-reprint",
+          "locator": "印刷页 41–42"
+        }
+      ],
+      "topics": [
+        {
+          "id": "senior.math.space_vectors.01",
+          "name": "空间直角坐标系与距离公式",
+          "scope": "core",
+          "course": "selective_required"
+        },
+        {
+          "id": "senior.math.space_vectors.02",
+          "name": "空间向量及其运算",
+          "scope": "core",
+          "course": "selective_required"
+        },
+        {
+          "id": "senior.math.space_vectors.03",
+          "name": "空间向量基本定理",
+          "scope": "core",
+          "course": "selective_required"
+        },
+        {
+          "id": "senior.math.space_vectors.04",
+          "name": "空间向量的坐标运算",
+          "scope": "core",
+          "course": "selective_required"
+        },
+        {
+          "id": "senior.math.space_vectors.05",
+          "name": "直线的方向向量与平面的法向量",
+          "scope": "core",
+          "course": "selective_required"
+        },
+        {
+          "id": "senior.math.space_vectors.06",
+          "name": "空间平行与垂直的向量证明",
+          "scope": "core",
+          "course": "selective_required"
+        },
+        {
+          "id": "senior.math.space_vectors.07",
+          "name": "空间角的计算",
+          "scope": "core",
+          "course": "selective_required"
+        },
+        {
+          "id": "senior.math.space_vectors.08",
+          "name": "空间距离的计算",
+          "scope": "core",
+          "course": "selective_required"
+        },
+        {
+          "id": "senior.math.space_vectors.09",
+          "name": "空间向量的投影",
+          "scope": "core",
+          "course": "selective_required",
+          "aliases": [
+            "投影向量"
+          ],
+          "note": "2025转载正文印刷页41的空间向量投影概念及投影向量意义；不据此增加超出题目约定的评分要求。"
+        }
+      ]
+    },
+    {
+      "id": "senior.math.lines_circles",
+      "chapter": "直线与圆的方程",
+      "domain": "几何与代数",
+      "source_refs": [
+        {
+          "source_id": "moe-senior-2020",
+          "locator": "印刷页 43–44"
+        },
+        {
+          "source_id": "senior-2025-school-reprint",
+          "locator": "印刷页 42–44"
+        }
+      ],
+      "topics": [
+        {
+          "id": "senior.math.lines_circles.01",
+          "name": "直线的倾斜角与斜率",
+          "scope": "core",
+          "course": "selective_required"
+        },
+        {
+          "id": "senior.math.lines_circles.02",
+          "name": "直线的方程",
+          "scope": "core",
+          "course": "selective_required"
+        },
+        {
+          "id": "senior.math.lines_circles.03",
+          "name": "两直线的平行与垂直",
+          "scope": "core",
+          "course": "selective_required"
+        },
+        {
+          "id": "senior.math.lines_circles.04",
+          "name": "直线的交点",
+          "scope": "core",
+          "course": "selective_required"
+        },
+        {
+          "id": "senior.math.lines_circles.05",
+          "name": "平面距离公式",
+          "scope": "core",
+          "course": "selective_required",
+          "aliases": [
+            "点到直线的距离",
+            "两点间距离"
+          ]
+        },
+        {
+          "id": "senior.math.lines_circles.06",
+          "name": "圆的方程",
+          "scope": "core",
+          "course": "selective_required"
+        },
+        {
+          "id": "senior.math.lines_circles.07",
+          "name": "直线与圆的位置关系",
+          "scope": "core",
+          "course": "selective_required"
+        },
+        {
+          "id": "senior.math.lines_circles.08",
+          "name": "圆与圆的位置关系",
+          "scope": "core",
+          "course": "selective_required"
+        },
+        {
+          "id": "senior.math.lines_circles.09",
+          "name": "直线与圆的综合应用",
+          "scope": "core",
+          "course": "selective_required"
+        }
+      ]
+    },
+    {
+      "id": "senior.math.conics",
+      "chapter": "圆锥曲线与方程",
+      "domain": "几何与代数",
+      "source_refs": [
+        {
+          "source_id": "moe-senior-2020",
+          "locator": "印刷页 43–45"
+        },
+        {
+          "source_id": "senior-2025-school-reprint",
+          "locator": "印刷页 43–44"
+        }
+      ],
+      "topics": [
+        {
+          "id": "senior.math.conics.01",
+          "name": "曲线与方程",
+          "scope": "core",
+          "course": "selective_required"
+        },
+        {
+          "id": "senior.math.conics.02",
+          "name": "椭圆",
+          "scope": "core",
+          "course": "selective_required"
+        },
+        {
+          "id": "senior.math.conics.03",
+          "name": "双曲线",
+          "scope": "core",
+          "course": "selective_required"
+        },
+        {
+          "id": "senior.math.conics.04",
+          "name": "抛物线",
+          "scope": "core",
+          "course": "selective_required"
+        },
+        {
+          "id": "senior.math.conics.05",
+          "name": "圆锥曲线的几何性质",
+          "scope": "core",
+          "course": "selective_required"
+        },
+        {
+          "id": "senior.math.conics.06",
+          "name": "直线与圆锥曲线的位置关系",
+          "scope": "core",
+          "course": "selective_required"
+        },
+        {
+          "id": "senior.math.conics.07",
+          "name": "圆锥曲线的综合应用",
+          "scope": "core",
+          "course": "selective_required"
+        }
+      ]
+    },
+    {
+      "id": "senior.math.sequences",
+      "chapter": "数列",
+      "domain": "函数",
+      "source_refs": [
+        {
+          "source_id": "moe-senior-2020",
+          "locator": "印刷页 37–40"
+        },
+        {
+          "source_id": "senior-2025-school-reprint",
+          "locator": "印刷页 36–40"
+        }
+      ],
+      "topics": [
+        {
+          "id": "senior.math.sequences.01",
+          "name": "数列的概念与表示",
+          "scope": "core",
+          "course": "selective_required",
+          "aliases": [
+            "数列的概念"
+          ]
+        },
+        {
+          "id": "senior.math.sequences.02",
+          "name": "等差数列",
+          "scope": "core",
+          "course": "selective_required"
+        },
+        {
+          "id": "senior.math.sequences.03",
+          "name": "等比数列",
+          "scope": "core",
+          "course": "selective_required"
+        },
+        {
+          "id": "senior.math.sequences.04",
+          "name": "通项公式与前n项和的关系",
+          "scope": "core",
+          "course": "selective_required"
+        },
+        {
+          "id": "senior.math.sequences.05",
+          "name": "数列求和",
+          "scope": "core",
+          "course": "selective_required"
+        },
+        {
+          "id": "senior.math.sequences.06",
+          "name": "数列的综合应用",
+          "scope": "core",
+          "course": "selective_required"
+        },
+        {
+          "id": "senior.math.sequences.07",
+          "name": "数学归纳法",
+          "scope": "extension",
+          "course": "optional",
+          "note": "2020 课标印刷页 38 标星选学。"
+        }
+      ]
+    },
+    {
+      "id": "senior.math.derivatives",
+      "chapter": "导数及其应用",
+      "domain": "函数",
+      "source_refs": [
+        {
+          "source_id": "moe-senior-2020",
+          "locator": "印刷页 39–41"
+        },
+        {
+          "source_id": "senior-2025-school-reprint",
+          "locator": "印刷页 37–40"
+        }
+      ],
+      "topics": [
+        {
+          "id": "senior.math.derivatives.01",
+          "name": "导数的概念与变化率",
+          "scope": "core",
+          "course": "selective_required",
+          "aliases": [
+            "导数的概念"
+          ]
+        },
+        {
+          "id": "senior.math.derivatives.02",
+          "name": "导数的几何意义",
+          "scope": "core",
+          "course": "selective_required"
+        },
+        {
+          "id": "senior.math.derivatives.03",
+          "name": "导数的运算",
+          "scope": "core",
+          "course": "selective_required"
+        },
+        {
+          "id": "senior.math.derivatives.04",
+          "name": "简单复合函数求导",
+          "scope": "core",
+          "course": "selective_required"
+        },
+        {
+          "id": "senior.math.derivatives.05",
+          "name": "导数与函数的单调性",
+          "scope": "core",
+          "course": "selective_required"
+        },
+        {
+          "id": "senior.math.derivatives.06",
+          "name": "导数与函数的极值最值",
+          "scope": "core",
+          "course": "selective_required",
+          "aliases": [
+            "导数与函数的极值、最值"
+          ]
+        },
+        {
+          "id": "senior.math.derivatives.07",
+          "name": "导数的综合应用",
+          "scope": "core",
+          "course": "selective_required"
+        }
+      ]
+    },
+    {
+      "id": "senior.math.counting",
+      "chapter": "计数原理",
+      "domain": "概率与统计",
+      "source_refs": [
+        {
+          "source_id": "moe-senior-2020",
+          "locator": "印刷页 46–47"
+        },
+        {
+          "source_id": "senior-2025-school-reprint",
+          "locator": "印刷页 45"
+        }
+      ],
+      "topics": [
+        {
+          "id": "senior.math.counting.01",
+          "name": "分类加法计数原理与分步乘法计数原理",
+          "scope": "core",
+          "course": "selective_required"
+        },
+        {
+          "id": "senior.math.counting.02",
+          "name": "排列",
+          "scope": "core",
+          "course": "selective_required"
+        },
+        {
+          "id": "senior.math.counting.03",
+          "name": "组合",
+          "scope": "core",
+          "course": "selective_required"
+        },
+        {
+          "id": "senior.math.counting.04",
+          "name": "计数原理的综合应用",
+          "scope": "core",
+          "course": "selective_required",
+          "aliases": [
+            "两个计数原理的综合应用"
+          ]
+        },
+        {
+          "id": "senior.math.counting.05",
+          "name": "二项式定理",
+          "scope": "core",
+          "course": "selective_required"
+        }
+      ]
+    },
+    {
+      "id": "senior.math.distributions",
+      "chapter": "随机变量及其分布",
+      "domain": "概率与统计",
+      "source_refs": [
+        {
+          "source_id": "moe-senior-2020",
+          "locator": "印刷页 47–48"
+        },
+        {
+          "source_id": "senior-2025-school-reprint",
+          "locator": "印刷页 46"
+        }
+      ],
+      "topics": [
+        {
+          "id": "senior.math.distributions.01",
+          "name": "条件概率",
+          "scope": "core",
+          "course": "selective_required"
+        },
+        {
+          "id": "senior.math.distributions.02",
+          "name": "概率的乘法公式",
+          "scope": "core",
+          "course": "selective_required"
+        },
+        {
+          "id": "senior.math.distributions.03",
+          "name": "全概率公式",
+          "scope": "core",
+          "course": "selective_required"
+        },
+        {
+          "id": "senior.math.distributions.04",
+          "name": "离散型随机变量及其分布列",
+          "scope": "core",
+          "course": "selective_required"
+        },
+        {
+          "id": "senior.math.distributions.05",
+          "name": "离散型随机变量的数字特征",
+          "scope": "core",
+          "course": "selective_required"
+        },
+        {
+          "id": "senior.math.distributions.06",
+          "name": "伯努利试验与二项分布",
+          "scope": "core",
+          "course": "selective_required"
+        },
+        {
+          "id": "senior.math.distributions.07",
+          "name": "超几何分布",
+          "scope": "core",
+          "course": "selective_required"
+        },
+        {
+          "id": "senior.math.distributions.08",
+          "name": "正态分布",
+          "scope": "core",
+          "course": "selective_required"
+        },
+        {
+          "id": "senior.math.distributions.09",
+          "name": "贝叶斯公式",
+          "scope": "extension",
+          "course": "optional",
+          "note": "2020 课标印刷页 47 标星选学；不得与主干全概率公式合为同一必学点。"
+        }
+      ]
+    },
+    {
+      "id": "senior.math.paired_data",
+      "chapter": "成对数据的统计分析",
+      "domain": "概率与统计",
+      "source_refs": [
+        {
+          "source_id": "moe-senior-2020",
+          "locator": "印刷页 48–49"
+        },
+        {
+          "source_id": "senior-2025-school-reprint",
+          "locator": "印刷页 47–48"
+        }
+      ],
+      "topics": [
+        {
+          "id": "senior.math.paired_data.01",
+          "name": "成对数据的相关关系",
+          "scope": "core",
+          "course": "selective_required"
+        },
+        {
+          "id": "senior.math.paired_data.02",
+          "name": "样本相关系数",
+          "scope": "core",
+          "course": "selective_required"
+        },
+        {
+          "id": "senior.math.paired_data.03",
+          "name": "一元线性回归模型",
+          "scope": "core",
+          "course": "selective_required"
+        },
+        {
+          "id": "senior.math.paired_data.04",
+          "name": "最小二乘估计",
+          "scope": "core",
+          "course": "selective_required"
+        },
+        {
+          "id": "senior.math.paired_data.05",
+          "name": "列联表与独立性检验",
+          "scope": "core",
+          "course": "selective_required",
+          "aliases": [
+            "独立性检验"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "senior.math.modeling",
+      "chapter": "数学建模与数学探究",
+      "domain": "数学建模与探究",
+      "source_refs": [
+        {
+          "source_id": "moe-senior-2020",
+          "locator": "印刷页 34–36、50"
+        },
+        {
+          "source_id": "senior-2025-school-reprint",
+          "locator": "印刷页 33–35、49"
+        }
+      ],
+      "topics": [
+        {
+          "id": "senior.math.modeling.01",
+          "name": "数学建模的基本过程",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "senior.math.modeling.02",
+          "name": "数学模型的选择与参数",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "senior.math.modeling.03",
+          "name": "模型求解检验与改进",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "senior.math.modeling.04",
+          "name": "数学探究与论证表达",
+          "scope": "core",
+          "course": "compulsory"
+        }
+      ]
+    },
+    {
+      "id": "senior.math.extension_calculus",
+      "chapter": "拓展：微积分与代数",
+      "domain": "选修拓展",
+      "source_refs": [
+        {
+          "source_id": "moe-senior-2020",
+          "locator": "印刷页 51–55"
+        }
+      ],
+      "topics": [
+        {
+          "id": "senior.math.extension_calculus.01",
+          "name": "数列极限",
+          "scope": "extension",
+          "course": "elective"
+        },
+        {
+          "id": "senior.math.extension_calculus.02",
+          "name": "函数极限与连续",
+          "scope": "extension",
+          "course": "elective"
+        },
+        {
+          "id": "senior.math.extension_calculus.03",
+          "name": "二阶导数与函数性质",
+          "scope": "extension",
+          "course": "elective",
+          "aliases": [
+            "函数的凹凸性与拐点"
+          ]
+        },
+        {
+          "id": "senior.math.extension_calculus.04",
+          "name": "微分与中值定理",
+          "scope": "extension",
+          "course": "elective"
+        },
+        {
+          "id": "senior.math.extension_calculus.05",
+          "name": "定积分及其应用",
+          "scope": "extension",
+          "course": "elective"
+        },
+        {
+          "id": "senior.math.extension_calculus.06",
+          "name": "空间向量外积与线性相关",
+          "scope": "extension",
+          "course": "elective"
+        },
+        {
+          "id": "senior.math.extension_calculus.07",
+          "name": "矩阵与行列式",
+          "scope": "extension",
+          "course": "elective"
+        },
+        {
+          "id": "senior.math.extension_calculus.08",
+          "name": "线性方程组的矩阵方法",
+          "scope": "extension",
+          "course": "elective"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,287 @@
+/* MathAgent lesson flow v1 — presentation only (see lesson-flow.js). */
+:root{--lf-motivate:#843f05;--lf-motivate-bg:#fff5e8;--lf-explore:#174f8f;--lf-explore-bg:#edf4fc;--lf-formalize:#0b5a53;--lf-formalize-bg:#e9f5f2;--lf-practice:#4f2398;--lf-practice-bg:#f3effb;--lf-ink:#10292a;--lf-soft:#33494a;--lf-line:#d3dfda}
+body{--lf-c:var(--lf-motivate);--lf-bg:var(--lf-motivate-bg)}
+body[data-lf-stage=explore]{--lf-c:var(--lf-explore);--lf-bg:var(--lf-explore-bg)}
+body[data-lf-stage=formalize]{--lf-c:var(--lf-formalize);--lf-bg:var(--lf-formalize-bg)}
+body[data-lf-stage=practice]{--lf-c:var(--lf-practice);--lf-bg:var(--lf-practice-bg)}
+/* Projector type scale: 1280 px wide ≈ the minimums; grows to a 1920 px whiteboard.
+   「大字」 (the chapter's own projector toggle) adds one more step. */
+body.lf-on{--lf-t-read:clamp(19px,1.1vw + 5px,25px);--lf-t-key:clamp(21px,1.2vw + 6px,28px);--lf-t-eq:clamp(30px,1.7vw + 8px,40px);--lf-t-title:clamp(26px,1.4vw + 8px,34px);--lf-t-sub:clamp(17px,.8vw + 7px,21px);--lf-t-ui:clamp(15px,.6vw + 7px,18px)}
+body.lf-on.projector,body.lf-on.large,body.lf-on.presentation{--lf-t-read:clamp(22px,1.3vw + 6px,29px);--lf-t-key:clamp(24px,1.4vw + 7px,32px);--lf-t-eq:clamp(34px,2vw + 9px,46px);--lf-t-sub:clamp(19px,.9vw + 8px,23px)}
+
+/* Rail: four steps · prev/next · overview · help */
+.lf-rail{position:relative;display:flex;align-items:center;gap:8px;flex-wrap:nowrap;justify-content:flex-end;margin-left:auto;flex:none}
+.lf-steps{display:flex;gap:4px;list-style:none;margin:0;padding:3px;border:1px solid var(--lf-line);border-radius:999px;background:#fff}
+.lf-steps li{margin:0}
+.lf-step{display:flex;align-items:center;gap:6px;border:0!important;background:transparent!important;box-shadow:none!important;border-radius:999px!important;padding:5px 12px 5px 6px!important;min-height:36px;font-size:var(--lf-t-ui,16px);font-weight:650;color:var(--lf-soft)!important;white-space:nowrap}
+.lf-step b{display:inline-grid;place-items:center;width:24px;height:24px;border-radius:50%;font-size:13px;background:#e8eeeb;color:var(--lf-soft)}
+.lf-step[data-lf-stage=motivate]{--c:var(--lf-motivate)}.lf-step[data-lf-stage=explore]{--c:var(--lf-explore)}.lf-step[data-lf-stage=formalize]{--c:var(--lf-formalize)}.lf-step[data-lf-stage=practice]{--c:var(--lf-practice)}
+.lf-step:hover{background:#f1f5f3!important}
+.lf-step.active{background:var(--c)!important;color:#fff!important}
+.lf-step.active b{background:#fff;color:var(--c)}
+.lf-move{display:flex;gap:6px}
+.lf-move button,.lf-overview,.lf-help{min-height:40px;font-size:var(--lf-t-ui,15px);font-weight:650;border-radius:10px;padding:7px 13px;white-space:nowrap}
+.lf-prev{width:6.9em}
+.lf-next{background:var(--lf-c)!important;border-color:var(--lf-c)!important;color:#fff!important;width:14.4em;display:inline-flex;align-items:center;justify-content:center;gap:4px}
+.lf-next span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.lf-next:disabled{background:#e9eeeb!important;border-color:#d7e0db!important;color:#33494a!important;opacity:1}
+.lf-help{width:40px;padding:0!important;font-weight:800}
+.lf-help-panel{position:absolute;right:0;top:calc(100% + 8px);z-index:40;width:min(470px,92vw);background:#fff;color:var(--lf-ink);border:1px solid var(--lf-line);border-radius:14px;box-shadow:0 18px 44px #10292a33;padding:16px 18px;font-size:16px;line-height:1.6;text-align:left}
+.lf-help-panel strong{display:block;font-size:17px;margin-bottom:6px;outline:none}
+.lf-help-panel ul{margin:0;padding-left:20px}.lf-help-panel li{margin:4px 0}
+.lf-help-panel kbd{font:600 13px ui-monospace,monospace;border:1px solid #c5d2cc;border-bottom-width:2px;border-radius:5px;padding:0 5px;background:#f6f8f7}
+
+/* Stage card head (inside the existing side panel) */
+.lf-card-head{display:none}
+body.lf-on .lf-card-head{display:flex;gap:12px;align-items:center;padding:11px 16px;border-radius:14px;background:var(--lf-bg);border:1px solid #d9e2de;border:1px solid color-mix(in srgb,var(--lf-c) 28%,#fff);border-left:6px solid var(--lf-c)}
+.lf-num{flex:none;display:grid;place-items:center;width:34px;height:34px;border-radius:50%;background:var(--lf-c);color:#fff;font-size:19px;font-weight:800}
+.lf-cue-line{margin:0!important;font-size:var(--lf-t-read)!important;line-height:1.45!important;color:var(--lf-ink)!important}
+.lf-title{font-size:1.06em;color:var(--lf-c);margin-right:.55em;letter-spacing:.04em}
+.lf-hint{display:none}
+body.lf-on .lf-hint{display:block;font-size:14px;color:var(--lf-soft);margin-left:auto;margin-right:8px;text-align:right;line-height:1.3}
+
+/* Controls inside the stage card never drop below 16 px on a projector. */
+body.lf-on .lf-card button:not(.token){font-size:max(16px,var(--lf-t-ui));min-height:38px}
+/* Data tables shown in a stage card are key content: reading size. */
+body.lf-on .lf-card table th,body.lf-on .lf-card table td{font-size:var(--lf-t-read)}
+/* Formula annotations (small/sub/sup labels) stay readable: 16 px, dark ink. */
+body.lf-on .lf-card small{font-size:16px;font-weight:600;color:var(--lf-soft)}
+
+/* Calm, legible transitions; reduced motion removes them entirely. */
+@keyframes lf-in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+body.lf-on .lf-card.lf-enter>*{animation:lf-in .24s ease-out both}
+@media (prefers-reduced-motion:reduce){body.lf-on .lf-card.lf-enter>*{animation:none!important}}
+body.low-motion .lf-card.lf-enter>*,body.reduced .lf-card.lf-enter>*,body.lf-reduce .lf-card.lf-enter>*{animation:none!important}
+
+/* Folding: hidden blocks leave the layout, except keep-layout ones (parameter
+   bars) which collapse to zero height and are inert, so in-figure editors that
+   list "visible" source controls keep working in every stage. */
+body.lf-on .lf-fold:not(.lf-keep){display:none!important}
+body.lf-on .lf-keep.lf-fold{height:0!important;min-height:0!important;padding:0!important;margin:0!important;border:0!important;overflow:hidden!important;opacity:0;box-shadow:none!important}
+body.lf-on .lf-tools{display:block}
+body.lf-on:not(.lf-tools-open) .lf-tools{height:0;overflow:hidden;opacity:0}
+.lf-tools-toggle{display:none}
+body.lf-on .lf-tools-toggle{display:inline-flex;align-items:center;min-height:34px;font-size:14px;padding:4px 11px}
+
+/* ---------- primary runtime (小学) ---------- */
+/* Same hues as the chapter's A/B/C/R colour coding, darkened for projector contrast (≥6:1 on white). */
+body.lf-on[data-lf-family=primary]{--muted:#3f5657;--a:#1f5f99;--b:#93530a;--c:#6a44a0;--teal:#0f6558}
+/* Stacked fractions are key mathematics: full size in lesson mode (runtime default is .85em). */
+body.lf-on[data-lf-family=primary] .frac{font-size:1em}
+/* Tokens coloured inline with the runtime's teal (#147c69) get the same darker teal. */
+body.lf-on[data-lf-family=primary] .token[style*="147c69"]{color:#0f6558!important}
+body.lf-on[data-lf-family=primary] .topbar{padding:7px 18px}
+body.lf-on[data-lf-family=primary] .brand-icon{width:32px;height:32px;font-size:19px}
+body.lf-on[data-lf-family=primary] .eyebrow{display:none}
+body.lf-on[data-lf-family=primary] .brand h1{font-size:21px}
+body.lf-on[data-lf-family=primary] .scene-nav{padding:0 18px 7px}
+body.lf-on[data-lf-family=primary] .scene-nav a{font-size:15px;padding:5px 11px}
+body.lf-on[data-lf-family=primary] main{padding:7px 18px 20px}
+body.lf-on[data-lf-family=primary] .scene-heading{align-items:center;margin:0 0 7px;gap:8px 14px}
+body.lf-on[data-lf-family=primary] .scene-heading>div:first-child{flex:1;min-width:0}
+body.lf-on[data-lf-family=primary] .scene-heading h2{font-size:var(--lf-t-title);line-height:1.25}
+body.lf-on[data-lf-family=primary] .scene-heading p{font-size:var(--lf-t-sub);color:var(--lf-soft);margin-top:2px}
+body.lf-on[data-lf-family=primary] #scene-code{display:none}
+body.lf-on[data-lf-family=primary] .workbench{grid-template-columns:minmax(0,1.78fr) minmax(300px,1fr);gap:14px}
+body.lf-on[data-lf-family=primary] .model-top{padding:3px 12px;min-height:36px}
+body.lf-on[data-lf-family=primary] .model-top .right-label{display:none}
+body.lf-on[data-lf-family=primary] .model-top strong{font-size:16px}
+body.lf-on[data-lf-family=primary] .timeline{padding:4px 12px;gap:8px}
+body.lf-on[data-lf-family=primary] .timeline-caption{font-size:15px;color:var(--lf-soft)}
+/* --lf-fig-h is measured by lesson-flow.js: the height left under the figure's
+   real top edge in the first screen, so the whole model is visible. */
+body.lf-on[data-lf-family=primary] #diagram{width:min(100%,calc(var(--lf-fig-h,440px) * 1.7021));margin-inline:auto}
+body.lf-on[data-lf-family=primary] #diagram text{font-size:23px}
+body.lf-on[data-lf-family=primary] #diagram .small{font-size:19px;fill:#3f5657}
+body.lf-on[data-lf-family=primary] #diagram .tiny{font-size:17px;fill:#3f5657}
+body.lf-on[data-lf-family=primary] #diagram .label{font-size:23px}
+body.lf-on[data-lf-family=primary] #diagram .big{font-size:30px}
+/* The fallback warning is pinned directly under the figure title so the
+   degradation is never below the fold (honest 2D path). */
+body.lf-on[data-lf-family=primary] .model-panel{display:flex;flex-direction:column}
+body.lf-on[data-lf-family=primary] .model-panel>*{order:2}
+body.lf-on[data-lf-family=primary] .model-panel>.model-top{order:0}
+body.lf-on[data-lf-family=primary] .model-panel>#fallback-warning{order:1;font-size:14px;line-height:1.4;padding:5px 12px;font-weight:650;border-bottom:1px solid #f0dcb4}
+body.lf-on[data-lf-family=primary] .engine-badge{font-size:13px;font-weight:700;color:#23393a;background:#fffffff0;border:1px solid #cfdcd6;padding:3px 8px}
+body.lf-on[data-lf-family=primary] .info-panel{gap:10px;align-self:stretch}
+body.lf-on[data-lf-family=primary] .info-panel>.info-block{border-radius:14px;padding:13px 17px}
+body.lf-on[data-lf-family=primary] .info-block h3{font-size:14px;color:var(--lf-soft)}
+body.lf-on[data-lf-family=primary] .info-block p{font-size:var(--lf-t-key)}
+body.lf-on[data-lf-family=primary] .info-block .plain,body.lf-on[data-lf-family=primary] .meaning-row{font-size:var(--lf-t-read);color:var(--lf-ink)}
+body.lf-on[data-lf-family=primary] .info-block.current{background:#fff;border-color:var(--lf-line)}
+body.lf-on[data-lf-family=primary][data-lf-stage=formalize] .info-block.current{background:var(--lf-formalize-bg);border-color:#bfe0d9}
+body.lf-on[data-lf-family=primary] .equation{font-size:var(--lf-t-eq)}
+body.lf-on[data-lf-family=primary] .math-note{font-size:max(18px,calc(var(--lf-t-read) - 1px))!important;color:var(--lf-ink)!important}
+body.lf-on[data-lf-family=primary] .feedback-message{font-size:17px}
+body.lf-on[data-lf-family=primary] .info-panel>#controls{display:flex;flex-wrap:wrap;gap:10px 14px;padding:13px 16px;border:1px solid var(--lf-line);border-radius:14px;background:#fbfcfb}
+body.lf-on[data-lf-family=primary] .info-panel>#controls .control{font-size:16px;color:var(--lf-ink)}
+body.lf-on[data-lf-family=primary] .info-panel>#controls input[type=number]{width:78px;height:42px;font-size:19px}
+body.lf-on[data-lf-family=primary] .info-panel>#controls select{height:42px;font-size:17px}
+body.lf-on[data-lf-family=primary] .info-panel>#figure-note{font-size:17px;color:var(--lf-soft);padding:2px 4px;min-height:0}
+body.lf-on[data-lf-family=primary] .info-panel>#exercise{border:1px solid #d5c9ef;border-radius:14px;background:#fff;padding:14px 17px}
+body.lf-on[data-lf-family=primary] .info-panel>#exercise summary{font-size:17px;font-weight:700;color:var(--lf-practice)}
+body.lf-on[data-lf-family=primary] .info-panel>#exercise .detail-content{font-size:var(--lf-t-read);color:var(--lf-ink)}
+body.lf-on[data-lf-family=primary] .info-panel>#exercise input{font-size:19px;height:44px}
+body.lf-on[data-lf-family=primary] .info-panel>#exercise .exercise-answer{font-size:var(--lf-t-read)}
+body.lf-on[data-lf-family=primary] .info-panel>#exercise .exercise-answer:empty{display:none}
+body.lf-on[data-lf-family=primary] .auxiliary{grid-template-columns:1fr}
+@media (max-width:1180px){body.lf-on[data-lf-family=primary] .scene-heading{flex-wrap:wrap}body.lf-on[data-lf-family=primary] .scene-heading>div:first-child{flex-basis:100%}.lf-rail{margin-left:0;justify-content:flex-start}}
+@media (max-width:960px){body.lf-on[data-lf-family=primary] .workbench{grid-template-columns:1fr}.lf-rail{flex-wrap:wrap}}
+@media (max-width:800px){.lf-step{font-size:14px;padding:5px 9px 5px 5px!important}.lf-next{width:auto}.lf-prev{width:auto}}
+@media print{.lf-rail,.lf-card-head,.lf-tools-toggle{display:none!important}}
+
+/* ---------- junior runtime (初中) ---------- */
+/* The junior plot measures itself on each render and draws at 1:1 CSS px (labels
+   stay 20 px), so lesson mode keeps its native size and moves side blocks only. */
+body.lf-on[data-lf-family=junior]{--muted:#3f5a60}
+body.lf-on[data-lf-family=junior] .scene-nav{padding-bottom:8px}
+body.lf-on[data-lf-family=junior] .scene-nav button{padding:6px 10px}
+body.lf-on[data-lf-family=junior] .scene-heading{padding:8px 0 8px;gap:8px 14px}
+body.lf-on[data-lf-family=junior] .scene-heading>div:first-child{flex:1;min-width:0}
+body.lf-on[data-lf-family=junior] #entryLabel{display:none}
+body.lf-on[data-lf-family=junior] .scene-heading h2{font-size:var(--lf-t-title)}
+body.lf-on[data-lf-family=junior] .scene-heading p{font-size:var(--lf-t-sub);color:var(--lf-soft)}
+body.lf-on[data-lf-family=junior] .workspace{grid-template-columns:minmax(0,1.62fr) minmax(300px,1fr);gap:14px}
+body.lf-on[data-lf-family=junior] aside.reading{display:flex;flex-direction:column;gap:10px;padding:12px 14px}
+body.lf-on[data-lf-family=junior] aside.reading>*{margin:0}
+body.lf-on[data-lf-family=junior] aside.reading>.eyebrow{font-size:14px;color:var(--lf-soft);margin-bottom:-4px}
+body.lf-on[data-lf-family=junior] .definition{font-size:var(--lf-t-key);color:var(--lf-ink)}
+body.lf-on[data-lf-family=junior] .mapping{font-size:var(--lf-t-read);color:var(--lf-ink)}
+body.lf-on[data-lf-family=junior] .formula{font-size:var(--lf-t-eq);border-top:0;padding:4px 0}
+body.lf-on[data-lf-family=junior] .formula .second{font-size:var(--lf-t-read);color:var(--lf-soft)}
+body.lf-on[data-lf-family=junior] .readings{margin:0}
+body.lf-on[data-lf-family=junior] .readings dt{font-size:15px;color:var(--lf-soft)}
+body.lf-on[data-lf-family=junior] .feedback{font-size:var(--lf-t-read)}
+body.lf-on[data-lf-family=junior] .selected-note{font-size:var(--lf-t-read);color:#6b4a12}
+body.lf-on[data-lf-family=junior] .gesture-hint{font-size:15px;color:#1f5a51}
+body.lf-on[data-lf-family=junior] .diagram-caption{font-size:16px;color:var(--lf-soft)}
+body.lf-on[data-lf-family=junior] aside.reading>.controls-card{box-shadow:none;padding:10px 12px;display:flex;flex-direction:column;gap:8px}
+body.lf-on[data-lf-family=junior] aside.reading>.controls-card .controls{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+body.lf-on[data-lf-family=junior] aside.reading>.controls-card .control-heading>strong{display:none}
+body.lf-on[data-lf-family=junior] aside.reading>section.timeline{box-shadow:none;padding:8px 10px;gap:8px}
+body.lf-on[data-lf-family=junior] aside.reading>section.timeline strong{min-width:0}
+body.lf-on[data-lf-family=junior] aside.reading>#counterexample,body.lf-on[data-lf-family=junior] aside.reading>#snapshot{align-self:flex-start}
+body.lf-on[data-lf-family=junior] aside.reading>#exerciseDetails{border:1px solid #d5c9ef;border-radius:14px;background:#fff;padding:12px 16px}
+body.lf-on[data-lf-family=junior] aside.reading>#exerciseDetails summary{font-size:17px;font-weight:700;color:var(--lf-practice);cursor:pointer}
+body.lf-on[data-lf-family=junior] aside.reading>#exerciseDetails .extra-body,body.lf-on[data-lf-family=junior] aside.reading>#exerciseDetails p{font-size:var(--lf-t-read);color:var(--lf-ink)}
+body.lf-on[data-lf-family=junior] aside.reading>#exerciseDetails .answer{font-size:var(--lf-t-read)}
+body.lf-on[data-lf-family=junior] .top-tools .lf-pin{font-size:14px}
+@media (max-width:1180px){body.lf-on[data-lf-family=junior] .scene-heading{flex-wrap:wrap}body.lf-on[data-lf-family=junior] .scene-heading>div:first-child{flex-basis:100%}}
+@media (max-width:960px){body.lf-on[data-lf-family=junior] .workspace{grid-template-columns:1fr}}
+body.lf-on[data-lf-family=junior] header.top{padding-top:6px;padding-bottom:4px}
+body.lf-on[data-lf-family=junior] header.top .brand{display:none}
+body.lf-on[data-lf-family=junior] header.top h1{font-size:24px;margin:0}
+body.lf-on[data-lf-family=junior] .figure-head{padding-top:6px;padding-bottom:6px}
+body.lf-on[data-lf-family=junior] .figure-card>.fallback-warning{font-size:14px;font-weight:650;line-height:1.4;padding:5px 12px}
+body.lf-on[data-lf-family=junior] .engine-badge{font-size:13px;font-weight:700}
+
+/* ---------- senior runtime (高中) ---------- */
+/* The senior painter also measures its SVG on each render (1:1 px), so the plot
+   keeps the runtime's height; lesson mode re-sequences the side sections only. */
+body.lf-on[data-lf-family=senior]{--muted:#3d5752}
+body.lf-on[data-lf-family=senior] .head{padding-top:4px;padding-bottom:2px}
+body.lf-on[data-lf-family=senior] .head .eyebrow{display:none}
+body.lf-on[data-lf-family=senior] .head h1{font-size:24px}
+body.lf-on[data-lf-family=senior] .tabs{margin:8px 0 8px}
+body.lf-on[data-lf-family=senior] .scenehead{margin-bottom:8px;gap:8px 14px}
+body.lf-on[data-lf-family=senior] .scenehead>h2{flex:1;min-width:0;font-size:var(--lf-t-title)}
+body.lf-on[data-lf-family=senior] .scenehead>small{display:none}
+body.lf-on[data-lf-family=senior] .bench{grid-template-columns:minmax(0,1.62fr) minmax(300px,1fr);gap:14px}
+body.lf-on[data-lf-family=senior] aside.lesson{display:flex;flex-direction:column;gap:10px;border-left:0;padding-left:0}
+body.lf-on[data-lf-family=senior] aside.lesson>.sect{margin:0;padding:12px 16px;border:1px solid var(--lf-line);border-radius:14px;background:#fff}
+body.lf-on[data-lf-family=senior][data-lf-stage=formalize] aside.lesson>.sect[data-lf-block=definition]{background:var(--lf-formalize-bg);border-color:#bfe0d9}
+body.lf-on[data-lf-family=senior] .sect .label{font-size:14px;color:var(--lf-soft)}
+body.lf-on[data-lf-family=senior] #definition{font-size:var(--lf-t-key);color:var(--lf-ink);margin:0}
+body.lf-on[data-lf-family=senior] #formula{font-size:var(--lf-t-eq)}
+body.lf-on[data-lf-family=senior] #correspondence{font-size:var(--lf-t-read);color:var(--lf-ink)}
+body.lf-on[data-lf-family=senior] #selection{font-size:17px;color:var(--lf-soft)}
+body.lf-on[data-lf-family=senior] #feedback{font-size:var(--lf-t-read)}
+body.lf-on[data-lf-family=senior] #why{font-size:var(--lf-t-read);color:var(--lf-ink)}
+body.lf-on[data-lf-family=senior] .boardnote{font-size:16px;color:var(--lf-soft)}
+body.lf-on[data-lf-family=senior] #plot text{font-size:18px}
+body.lf-on[data-lf-family=senior] aside.lesson>#metrics{border:1px solid var(--lf-line);border-radius:12px;overflow:hidden;grid-template-columns:repeat(2,minmax(0,1fr))}
+body.lf-on[data-lf-family=senior] aside.lesson>#controls{margin:0;grid-template-columns:repeat(2,minmax(0,1fr))}
+body.lf-on[data-lf-family=senior] aside.lesson>section.animation{margin:0;padding:8px 10px;border:1px solid var(--lf-line);border-radius:12px;background:#fff}
+body.lf-on[data-lf-family=senior] aside.lesson>section.animation small{font-size:15px;color:var(--lf-soft)}
+body.lf-on[data-lf-family=senior] aside.lesson>#exercise{border:1px solid #d5c9ef;border-radius:14px;background:#fff;padding:12px 16px}
+body.lf-on[data-lf-family=senior] aside.lesson>#exercise summary{font-size:17px;font-weight:700;color:var(--lf-practice);cursor:pointer}
+body.lf-on[data-lf-family=senior] aside.lesson>#exercise .detailsbody,body.lf-on[data-lf-family=senior] aside.lesson>#exercise p{font-size:var(--lf-t-read);color:var(--lf-ink)}
+body.lf-on[data-lf-family=senior] aside.lesson>#exercise .answer{font-size:var(--lf-t-read)}
+body.lf-on[data-lf-family=senior] .fallback-warning{font-size:14px;font-weight:650;line-height:1.4}
+body.lf-on[data-lf-family=senior] .engine-badge{font-size:13px;font-weight:700}
+@media (max-width:1180px){body.lf-on[data-lf-family=senior] .scenehead{flex-wrap:wrap}body.lf-on[data-lf-family=senior] .scenehead>h2{flex-basis:100%}}
+@media (max-width:960px){body.lf-on[data-lf-family=senior] .bench{grid-template-columns:1fr}}
+
+/* ---------- H16 runtime (高中 · 导数) ---------- */
+body.lf-on[data-lf-family=h16] .header .eyebrow{display:none}
+body.lf-on[data-lf-family=h16] .header h1{font-size:24px}
+body.lf-on[data-lf-family=h16] .scene-line{gap:8px 14px;align-items:center}
+body.lf-on[data-lf-family=h16] .scene-line>div:first-child{flex:1;min-width:0}
+body.lf-on[data-lf-family=h16] #sceneTitle{font-size:var(--lf-t-title)}
+body.lf-on[data-lf-family=h16] .scene-line .question{font-size:var(--lf-t-sub);color:var(--lf-soft)}
+body.lf-on[data-lf-family=h16] #knowledgeBadge{display:none}
+body.lf-on[data-lf-family=h16] .workbench{grid-template-columns:minmax(0,1.62fr) minmax(300px,1fr);gap:14px}
+body.lf-on[data-lf-family=h16] aside.lesson{display:flex;flex-direction:column;gap:10px}
+body.lf-on[data-lf-family=h16] aside.lesson>.lesson-section{margin:0;padding:12px 16px;border:1px solid var(--lf-line);border-radius:14px;background:#fff}
+body.lf-on[data-lf-family=h16][data-lf-stage=formalize] aside.lesson>.lesson-section[data-lf-block=definition]{background:var(--lf-formalize-bg);border-color:#bfe0d9}
+body.lf-on[data-lf-family=h16] .section-label{font-size:14px;color:var(--lf-soft)}
+body.lf-on[data-lf-family=h16] .definition{font-size:var(--lf-t-key);color:var(--lf-ink)}
+body.lf-on[data-lf-family=h16] .formula{font-size:var(--lf-t-eq)}
+body.lf-on[data-lf-family=h16] aside.lesson .explain,body.lf-on[data-lf-family=h16] aside.lesson .facts{font-size:var(--lf-t-read);color:var(--lf-ink)}
+body.lf-on[data-lf-family=h16] .selection-info{font-size:17px;color:var(--lf-soft)}
+body.lf-on[data-lf-family=h16] .graph-note{font-size:16px;color:var(--lf-soft)}
+body.lf-on[data-lf-family=h16] aside.lesson>#metrics{border:1px solid var(--lf-line);border-radius:12px;overflow:hidden}
+body.lf-on[data-lf-family=h16] aside.lesson>#controls{margin:0}
+body.lf-on[data-lf-family=h16] aside.lesson>section.animation{margin:0;padding:8px 10px;border:1px solid var(--lf-line);border-radius:12px;background:#fff}
+body.lf-on[data-lf-family=h16] aside.lesson>#exercise{border:1px solid #d5c9ef;border-radius:14px;background:#fff;padding:12px 16px}
+body.lf-on[data-lf-family=h16] aside.lesson>#exercise summary{font-size:17px;font-weight:700;color:var(--lf-practice);cursor:pointer}
+body.lf-on[data-lf-family=h16] aside.lesson>#exercise .details-body,body.lf-on[data-lf-family=h16] aside.lesson>#exercise p{font-size:var(--lf-t-read);color:var(--lf-ink)}
+body.lf-on[data-lf-family=h16] aside.lesson>#exercise .answer{font-size:var(--lf-t-read)}
+@media (max-width:1180px){body.lf-on[data-lf-family=h16] .scene-line{flex-wrap:wrap}body.lf-on[data-lf-family=h16] .scene-line>div:first-child{flex-basis:100%}}
+@media (max-width:960px){body.lf-on[data-lf-family=h16] .workbench{grid-template-columns:1fr}}
+/* H16 colour tokens: same hues, ≥6:1 on white; card tokens bold like the other families. */
+body.lf-on[data-lf-family=h16]{--green:#066a58;--orange:#9a4a10;--blue:#1f5f99;--purple:#6a44a0;--muted:#3d5760}
+body.lf-on[data-lf-family=h16] .lf-card .token{font-weight:700}
+/* W3 senior chapters: keep the engine badge clear of the fallback warning bar. */
+body.lf-on[data-lf-family=senior] .board:has(>#fallback-warning:not([hidden])) .engine-badge{top:84px}
+
+/* ---------- single-scene 3D demo (高中/空间几何关系) ---------- */
+.lf-sr{position:absolute!important;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+body.lf-on[data-lf-family=space] main{max-width:1200px;padding:10px 16px}
+body.lf-on[data-lf-family=space] main>section{padding:12px 20px;margin-bottom:10px}
+body.lf-on[data-lf-family=space] main>section:first-child>.tag{font-size:15px}
+body.lf-on[data-lf-family=space] main>section:first-child>h1{margin:0;font-size:var(--lf-t-title)}
+body.lf-on[data-lf-family=space] main>section:first-child>p{margin:0 0 6px;font-size:var(--lf-t-sub);color:#3d5566}
+body.lf-on[data-lf-family=space] main>section:nth-child(2)>p:first-child{margin:0 0 6px;font-size:17px;color:#3d5566}
+/* figure left, the step's own controls in a column on the right */
+body.lf-on[data-lf-family=space] .board.lf-card{display:grid;grid-template-columns:minmax(0,1fr) 172px 172px;grid-template-rows:auto repeat(14,min-content) 1fr;column-gap:18px;row-gap:6px;align-items:start;margin-top:6px;padding:12px}
+body.lf-on[data-lf-family=space] .board.lf-card>*{grid-column:2/4;justify-self:start;margin:0}
+/* paired buttons share a row: 锁定/重置视角, 先猜一下/显示规律 */
+body.lf-on[data-lf-family=space] .board.lf-card>#lock,body.lf-on[data-lf-family=space] .board.lf-card>#guess{grid-column:2;justify-self:stretch}
+body.lf-on[data-lf-family=space] .board.lf-card>#reset,body.lf-on[data-lf-family=space] .board.lf-card>#show{grid-column:3;justify-self:stretch}
+body.lf-on[data-lf-family=space] .board.lf-card>.lf-card-head{grid-column:1/-1;grid-row:1;justify-self:stretch}
+body.lf-on[data-lf-family=space] .board.lf-card>canvas{grid-column:1;grid-row:2/-1;justify-self:stretch;height:var(--lf-fig-h,420px)}
+body.lf-on[data-lf-family=space] .board.lf-card>.fallback-warning{order:-1;justify-self:stretch;font-size:15px;font-weight:650;line-height:1.45;border-radius:9px}
+body.lf-on[data-lf-family=space] .board.lf-card>.svg-fallback,body.lf-on[data-lf-family=space] .board.lf-card>[data-sd=overlay]{grid-column:auto}
+body.lf-on[data-lf-family=space] .board.lf-card>.engine-badge{grid-column:auto;font-size:13px;font-weight:700;color:#203548}
+body.lf-on[data-lf-family=space] .board .group{display:flex;flex-wrap:wrap;gap:6px;margin:0}
+body.lf-on[data-lf-family=space] .board .group{align-items:center}
+body.lf-on[data-lf-family=space] .board .group b{min-width:2.4em;font-size:17px;color:#203548}
+body.lf-on[data-lf-family=space] .board button{font-size:17px;font-weight:650;min-height:44px;padding:8px 12px;margin:0}
+body.lf-on[data-lf-family=space] .board button.active{background:#1f5572;outline:3px solid #f0a53a;outline-offset:2px}
+body.lf-on[data-lf-family=space] .board button:focus-visible{outline:3px solid #b35a00;outline-offset:2px}
+body.lf-on[data-lf-family=space] #legend{font-size:18px;font-weight:650;gap:18px;color:#203548}
+body.lf-on[data-lf-family=space] #legend .l1{color:#b8433a}
+body.lf-on[data-lf-family=space] #legend .l2{color:#1d64a8}
+body.lf-on[data-lf-family=space] #o{font-size:var(--lf-t-key);font-weight:750;color:#203548;justify-self:stretch}
+body.lf-on[data-lf-family=space] #a{font-size:18px;color:#1f5a43;justify-self:stretch}
+body.lf-on[data-lf-family=space] #a:empty{display:none}
+body.lf-on[data-lf-family=space] .board:not(.lf-card){margin-top:0;padding:12px 18px;font-size:var(--lf-t-read)}
+body.lf-on[data-lf-family=space] .board:not(.lf-card) summary{font-size:18px;font-weight:700;color:var(--lf-practice);cursor:pointer}
+body.lf-on[data-lf-family=space] .board:not(.lf-card) .answer{font-size:18px}
+@media (max-width:959px){
+body.lf-on[data-lf-family=space] .board.lf-card{display:block}
+body.lf-on[data-lf-family=space] .board.lf-card>canvas{height:min(var(--lf-fig-h,420px),52vh)}
+body.lf-on[data-lf-family=space] .board.lf-card>.lf-card-head,body.lf-on[data-lf-family=space] .board.lf-card>.group,body.lf-on[data-lf-family=space] .board.lf-card>#o,body.lf-on[data-lf-family=space] .board.lf-card>#a,body.lf-on[data-lf-family=space] .board.lf-card>.board{margin:8px 0}
+body.lf-on[data-lf-family=space] .board.lf-card>button{margin:6px 6px 0 0}
+}

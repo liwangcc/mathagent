@@ -1,0 +1,122 @@
+{
+  "schema_version": 1,
+  "stage": "junior",
+  "subject": "math",
+  "base_version": "2026-09-09.v1",
+  "version": "2026-10-08.s1",
+  "review_status": "editorial_supplement_not_source_verified",
+  "coverage_note": "在冻结的初中基础目录之外，按现行常见教材课题与中考常见考查内容追加的扩展知识点。全部标为extension，不改变基础目录的核心范围。未逐页核对来源；仅用于减少分类失败，不表示属于课程标准核心要求。",
+  "topics": [
+    {
+      "module_id": "junior.math.numbers",
+      "id": "junior.math.numbers.s01",
+      "name": "实数的混合运算",
+      "scope": "extension",
+      "course": "compulsory",
+      "basis": "textbook",
+      "note": "实数章节中含根式、绝对值、零指数幂等的混合运算，中考常见计算题。",
+      "aliases": [
+        "实数的运算",
+        "实数运算"
+      ]
+    },
+    {
+      "module_id": "junior.math.polynomials",
+      "id": "junior.math.polynomials.s01",
+      "name": "整式的除法",
+      "scope": "extension",
+      "course": "compulsory",
+      "basis": "textbook",
+      "note": "人教版八年级上册“整式的乘法与因式分解”章节。",
+      "aliases": [
+        "单项式除以单项式",
+        "多项式除以单项式"
+      ]
+    },
+    {
+      "module_id": "junior.math.factorization",
+      "id": "junior.math.factorization.s01",
+      "name": "十字相乘法",
+      "scope": "extension",
+      "course": "compulsory",
+      "basis": "textbook",
+      "note": "人教版八年级上册因式分解章节的“阅读与思考”拓展。",
+      "aliases": [
+        "十字相乘法因式分解"
+      ]
+    },
+    {
+      "module_id": "junior.math.quadratic_functions",
+      "id": "junior.math.quadratic_functions.s01",
+      "name": "二次函数与几何综合",
+      "scope": "extension",
+      "course": "compulsory",
+      "basis": "exam_practice",
+      "note": "中考常见的二次函数与三角形、四边形等图形的综合问题。",
+      "aliases": [
+        "二次函数综合题"
+      ]
+    },
+    {
+      "module_id": "junior.math.transformations",
+      "id": "junior.math.transformations.s01",
+      "name": "最短路径问题",
+      "scope": "extension",
+      "course": "compulsory",
+      "basis": "textbook",
+      "note": "人教版八年级上册轴对称章节“课题学习 最短路径问题”。",
+      "aliases": [
+        "将军饮马"
+      ]
+    },
+    {
+      "module_id": "junior.math.transformations",
+      "id": "junior.math.transformations.s02",
+      "name": "黄金分割",
+      "scope": "extension",
+      "course": "compulsory",
+      "basis": "textbook",
+      "note": "部分版本教材（如北师大版）图形的相似单元内容。"
+    },
+    {
+      "module_id": "junior.math.circles",
+      "id": "junior.math.circles.s01",
+      "name": "圆锥的侧面积和全面积",
+      "scope": "extension",
+      "course": "compulsory",
+      "basis": "textbook",
+      "note": "人教版九年级上册“弧长和扇形面积”一节。",
+      "aliases": [
+        "圆锥的侧面展开图"
+      ]
+    }
+  ],
+  "aliases": {
+    "junior.math.fractions.03": [
+      "分式的化简求值",
+      "分式的混合运算"
+    ],
+    "junior.math.numbers.05": [
+      "有理数的混合运算"
+    ],
+    "junior.math.triangles.08": [
+      "勾股定理",
+      "勾股定理的逆定理"
+    ],
+    "junior.math.triangles.01": [
+      "三角形的外角"
+    ],
+    "junior.math.quadratic_equations.05": [
+      "根的判别式"
+    ],
+    "junior.math.quadratic_functions.02": [
+      "二次函数图象的平移"
+    ],
+    "junior.math.statistics.04": [
+      "频率分布直方图"
+    ],
+    "junior.math.geometry_basics.08": [
+      "尺规作图"
+    ]
+  }
+}

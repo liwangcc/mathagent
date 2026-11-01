@@ -1,0 +1,26 @@
+﻿题号,题型,标准答案,差分第1次,差分第2次,差分第3次,原图第1次,原图第2次,原图第3次,两路一致
+1,choice,D,C,C,C,C,C,C,是
+2,choice,D,C,C,C,C,C,C,是
+3,choice,D,C,C,C,C,C,C,是
+4,choice,C,D,D,D,D,D,D,是
+5,choice,A,B,B,B,B,B,B,是
+6,choice,A,B,B,B,B,B,B,是
+7,choice,B,A,A,A,A,A,A,是
+8,choice,B,A,A,A,A,A,A,是
+9,choice,B,A,A,A,A,A,A,是
+10,choice,D,A,A,A,A,A,A,是
+11,choice,B,C,C,C,C,C,C,是
+12,choice,B,C,C,C,C,C,C,是
+13,choice,D,C,C,C,C,C,C,是
+14,choice,B,C,C,C,C,C,C,是
+15,choice,B,C,C,C,C,C,C,是
+16,fill,若 ab≤0， 则 a≤0 或 b≤0,a>0且b>0，ab>0,a>0且b>0，ab>0,a>0且b>0，ab>0,a>0且b>0， ab>0,a>0且b>0，ab>0,a>0且b>0，ab>0,是
+17,fill,{x/0<x≤2}（即 (0，2]）,x>3,x>3,x>3,x>3,x>3,x>3,是
+18,fill,奇函数,偶函数,偶函数,偶函数,偶函数,偶函数,偶函数,是
+19,fill,4,8,8,8,8,8,8,是
+20,fill,3,6,6,6,6,6,6,是
+21,fill,4/5,3,3,3,3,3,3,是
+22,fill,4,3,3,3,3,3,3,是
+23,fill,-1,3,3,3,3,3,3,是
+24,fill,7,3,3,3,3,3,3,是
+25,fill,(1，3),2,2,2,2,2,2,是

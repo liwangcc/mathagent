@@ -1,0 +1,1307 @@
+{
+  "schema_version": 1,
+  "stage": "junior",
+  "subject": "math",
+  "version": "2026-09-09.v1",
+  "review_status": "core_content_checked_2025_reprints",
+  "coverage_note": "初中主干已对照2022官方课标及2025日常修订公开转载正文印刷页53–79核对，2025转载来源与局限见sources.json；未宣称取得教育部2025原始发布文件。所有教材全册、五四学制衔接及全文教学评价要求仍待专门核查。core是分类主干，不替代考试范围；extension不默认属于全体学生必学。",
+  "modules": [
+    {
+      "id": "junior.math.numbers",
+      "chapter": "有理数与实数",
+      "domain": "数与代数",
+      "source_refs": [
+        {
+          "source_id": "moe-junior-2022",
+          "locator": "印刷页 54–55、58"
+        },
+        {
+          "source_id": "junior-2025-public-reprint",
+          "locator": "印刷页 54–55、58"
+        }
+      ],
+      "topics": [
+        {
+          "id": "junior.math.numbers.01",
+          "name": "正数与负数",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "junior.math.numbers.02",
+          "name": "有理数与数轴",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "junior.math.numbers.03",
+          "name": "相反数与绝对值",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "junior.math.numbers.04",
+          "name": "有理数大小比较",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "junior.math.numbers.05",
+          "name": "有理数四则与乘方混合运算",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "junior.math.numbers.06",
+          "name": "有理数的实际应用",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "junior.math.numbers.07",
+          "name": "平方根与算术平方根",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "junior.math.numbers.08",
+          "name": "立方根",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "junior.math.numbers.09",
+          "name": "无理数与实数",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "junior.math.numbers.10",
+          "name": "实数的估算与大小比较",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "junior.math.numbers.11",
+          "name": "近似数与精确度",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "junior.math.numbers.12",
+          "name": "科学记数法",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "junior.math.numbers.13",
+          "name": "二次根式的概念与性质",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "junior.math.numbers.14",
+          "name": "二次根式的四则运算",
+          "scope": "core",
+          "course": "compulsory"
+        }
+      ]
+    },
+    {
+      "id": "junior.math.polynomials",
+      "chapter": "代数式与整式",
+      "domain": "数与代数",
+      "source_refs": [
+        {
+          "source_id": "moe-junior-2022",
+          "locator": "印刷页 55、59"
+        },
+        {
+          "source_id": "junior-2025-public-reprint",
+          "locator": "印刷页 55、58–59、144–145（例66）"
+        }
+      ],
+      "topics": [
+        {
+          "id": "junior.math.polynomials.01",
+          "name": "用字母表示数与数量关系",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "junior.math.polynomials.02",
+          "name": "代数式求值",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "junior.math.polynomials.03",
+          "name": "探索与表达数量规律",
+          "scope": "core",
+          "course": "compulsory",
+          "aliases": [
+            "找规律"
+          ]
+        },
+        {
+          "id": "junior.math.polynomials.04",
+          "name": "整式的概念",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "junior.math.polynomials.05",
+          "name": "合并同类项与去括号",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "junior.math.polynomials.06",
+          "name": "整式的加减",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "junior.math.polynomials.07",
+          "name": "整数指数幂及运算",
+          "scope": "core",
+          "course": "compulsory",
+          "aliases": [
+            "同底数幂的乘除",
+            "幂的乘方与积的乘方"
+          ]
+        },
+        {
+          "id": "junior.math.polynomials.08",
+          "name": "整式的乘法",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "junior.math.polynomials.09",
+          "name": "平方差公式",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "junior.math.polynomials.10",
+          "name": "完全平方公式",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "junior.math.polynomials.11",
+          "name": "代数推理",
+          "scope": "core",
+          "course": "compulsory"
+        }
+      ]
+    },
+    {
+      "id": "junior.math.factorization",
+      "chapter": "因式分解",
+      "domain": "数与代数",
+      "source_refs": [
+        {
+          "source_id": "moe-junior-2022",
+          "locator": "印刷页 55、59"
+        },
+        {
+          "source_id": "junior-2025-public-reprint",
+          "locator": "印刷页 55、59"
+        }
+      ],
+      "topics": [
+        {
+          "id": "junior.math.factorization.01",
+          "name": "因式分解的概念",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "junior.math.factorization.02",
+          "name": "提公因式法",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "junior.math.factorization.03",
+          "name": "公式法因式分解",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "junior.math.factorization.04",
+          "name": "因式分解的简单应用",
+          "scope": "core",
+          "course": "compulsory"
+        }
+      ]
+    },
+    {
+      "id": "junior.math.fractions",
+      "chapter": "分式与分式方程",
+      "domain": "数与代数",
+      "source_refs": [
+        {
+          "source_id": "moe-junior-2022",
+          "locator": "印刷页 55–56、59"
+        },
+        {
+          "source_id": "junior-2025-public-reprint",
+          "locator": "印刷页 55–56、59"
+        }
+      ],
+      "topics": [
+        {
+          "id": "junior.math.fractions.01",
+          "name": "分式的概念与基本性质",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "junior.math.fractions.02",
+          "name": "分式的约分与通分",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "junior.math.fractions.03",
+          "name": "分式的四则运算",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "junior.math.fractions.04",
+          "name": "分式方程及验根",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "junior.math.fractions.05",
+          "name": "分式方程的实际应用",
+          "scope": "core",
+          "course": "compulsory"
+        }
+      ]
+    },
+    {
+      "id": "junior.math.linear_equations",
+      "chapter": "一次方程与方程组",
+      "domain": "数与代数",
+      "source_refs": [
+        {
+          "source_id": "moe-junior-2022",
+          "locator": "印刷页 56、59"
+        },
+        {
+          "source_id": "junior-2025-public-reprint",
+          "locator": "印刷页 55–56、59"
+        }
+      ],
+      "topics": [
+        {
+          "id": "junior.math.linear_equations.01",
+          "name": "等式性质与方程的解",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "junior.math.linear_equations.02",
+          "name": "一元一次方程的解法",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "junior.math.linear_equations.03",
+          "name": "一元一次方程的实际应用",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "junior.math.linear_equations.04",
+          "name": "二元一次方程组的解法",
+          "scope": "core",
+          "course": "compulsory",
+          "aliases": [
+            "代入消元法",
+            "加减消元法"
+          ]
+        },
+        {
+          "id": "junior.math.linear_equations.05",
+          "name": "二元一次方程组的实际应用",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "junior.math.linear_equations.06",
+          "name": "三元一次方程组",
+          "scope": "extension",
+          "course": "optional",
+          "note": "2022 课标印刷页 56 标星选学，不作为普遍考试要求。"
+        }
+      ]
+    },
+    {
+      "id": "junior.math.quadratic_equations",
+      "chapter": "一元二次方程",
+      "domain": "数与代数",
+      "source_refs": [
+        {
+          "source_id": "moe-junior-2022",
+          "locator": "印刷页 56、59"
+        },
+        {
+          "source_id": "junior-2025-public-reprint",
+          "locator": "印刷页 56、59"
+        }
+      ],
+      "topics": [
+        {
+          "id": "junior.math.quadratic_equations.01",
+          "name": "一元二次方程的概念",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "junior.math.quadratic_equations.02",
+          "name": "配方法",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "junior.math.quadratic_equations.03",
+          "name": "公式法解一元二次方程",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "junior.math.quadratic_equations.04",
+          "name": "因式分解法解一元二次方程",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "junior.math.quadratic_equations.05",
+          "name": "一元二次方程根的判别式",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "junior.math.quadratic_equations.06",
+          "name": "一元二次方程根与系数的关系",
+          "scope": "core",
+          "course": "compulsory",
+          "aliases": [
+            "韦达定理"
+          ]
+        },
+        {
+          "id": "junior.math.quadratic_equations.07",
+          "name": "一元二次方程的实际应用",
+          "scope": "core",
+          "course": "compulsory"
+        }
+      ]
+    },
+    {
+      "id": "junior.math.inequalities",
+      "chapter": "不等式与不等式组",
+      "domain": "数与代数",
+      "source_refs": [
+        {
+          "source_id": "moe-junior-2022",
+          "locator": "印刷页 56、60"
+        },
+        {
+          "source_id": "junior-2025-public-reprint",
+          "locator": "印刷页 56–57、60"
+        }
+      ],
+      "topics": [
+        {
+          "id": "junior.math.inequalities.01",
+          "name": "不等式的概念与性质",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "junior.math.inequalities.02",
+          "name": "一元一次不等式的解法",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "junior.math.inequalities.03",
+          "name": "不等式解集的数轴表示",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "junior.math.inequalities.04",
+          "name": "一元一次不等式组",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "junior.math.inequalities.05",
+          "name": "一元一次不等式的实际应用",
+          "scope": "core",
+          "course": "compulsory"
+        }
+      ]
+    },
+    {
+      "id": "junior.math.linear_functions",
+      "chapter": "函数基础与一次函数",
+      "domain": "数与代数",
+      "source_refs": [
+        {
+          "source_id": "moe-junior-2022",
+          "locator": "印刷页 57–61"
+        },
+        {
+          "source_id": "junior-2025-public-reprint",
+          "locator": "印刷页 57–61"
+        }
+      ],
+      "topics": [
+        {
+          "id": "junior.math.linear_functions.01",
+          "name": "常量变量与函数的概念",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "junior.math.linear_functions.02",
+          "name": "函数的表示方法",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "junior.math.linear_functions.03",
+          "name": "自变量取值范围与函数值",
+          "scope": "core",
+          "course": "compulsory",
+          "aliases": [
+            "函数的定义域初步"
+          ]
+        },
+        {
+          "id": "junior.math.linear_functions.04",
+          "name": "函数图象信息读取",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "junior.math.linear_functions.05",
+          "name": "正比例函数",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "junior.math.linear_functions.06",
+          "name": "一次函数的表达式",
+          "scope": "core",
+          "course": "compulsory",
+          "aliases": [
+            "待定系数法求一次函数"
+          ]
+        },
+        {
+          "id": "junior.math.linear_functions.07",
+          "name": "一次函数的图象与性质",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "junior.math.linear_functions.08",
+          "name": "一次函数与方程不等式的关系",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "junior.math.linear_functions.09",
+          "name": "一次函数的实际应用",
+          "scope": "core",
+          "course": "compulsory"
+        }
+      ]
+    },
+    {
+      "id": "junior.math.inverse_proportion",
+      "chapter": "反比例函数",
+      "domain": "数与代数",
+      "source_refs": [
+        {
+          "source_id": "moe-junior-2022",
+          "locator": "印刷页 57–58、61"
+        },
+        {
+          "source_id": "junior-2025-public-reprint",
+          "locator": "印刷页 57–58、61"
+        }
+      ],
+      "topics": [
+        {
+          "id": "junior.math.inverse_proportion.01",
+          "name": "反比例函数的概念",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "junior.math.inverse_proportion.02",
+          "name": "反比例函数的表达式",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "junior.math.inverse_proportion.03",
+          "name": "反比例函数的图象与性质",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "junior.math.inverse_proportion.04",
+          "name": "反比例函数的实际应用",
+          "scope": "core",
+          "course": "compulsory"
+        }
+      ]
+    },
+    {
+      "id": "junior.math.quadratic_functions",
+      "chapter": "二次函数",
+      "domain": "数与代数",
+      "source_refs": [
+        {
+          "source_id": "moe-junior-2022",
+          "locator": "印刷页 57、61"
+        },
+        {
+          "source_id": "junior-2025-public-reprint",
+          "locator": "印刷页 57–58、61"
+        }
+      ],
+      "topics": [
+        {
+          "id": "junior.math.quadratic_functions.01",
+          "name": "二次函数的概念与表达式",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "junior.math.quadratic_functions.02",
+          "name": "二次函数的图象与性质",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "junior.math.quadratic_functions.03",
+          "name": "二次函数的顶点与对称轴",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "junior.math.quadratic_functions.04",
+          "name": "二次函数的最值",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "junior.math.quadratic_functions.05",
+          "name": "二次函数与一元二次方程",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "junior.math.quadratic_functions.06",
+          "name": "二次函数的实际应用",
+          "scope": "core",
+          "course": "compulsory"
+        }
+      ]
+    },
+    {
+      "id": "junior.math.geometry_basics",
+      "chapter": "几何基础与相交平行线",
+      "domain": "图形与几何",
+      "source_refs": [
+        {
+          "source_id": "moe-junior-2022",
+          "locator": "印刷页 63–64、67–68"
+        },
+        {
+          "source_id": "junior-2025-public-reprint",
+          "locator": "印刷页 63–64、67–68"
+        }
+      ],
+      "topics": [
+        {
+          "id": "junior.math.geometry_basics.01",
+          "name": "点线面与几何体",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "junior.math.geometry_basics.02",
+          "name": "直线射线线段与中点",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "junior.math.geometry_basics.03",
+          "name": "角的度量与运算",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "junior.math.geometry_basics.04",
+          "name": "相交线与垂线",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "junior.math.geometry_basics.05",
+          "name": "余角补角与对顶角",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "junior.math.geometry_basics.06",
+          "name": "平行线的判定",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "junior.math.geometry_basics.07",
+          "name": "平行线的性质",
+          "scope": "core",
+          "course": "compulsory",
+          "note": "平行线性质的理解和使用属于主干；性质定理Ⅰ（同位角相等）的证明另列选学点，不混同为全体学生统一证明要求。"
+        },
+        {
+          "id": "junior.math.geometry_basics.08",
+          "name": "基本尺规作图",
+          "scope": "core",
+          "course": "compulsory",
+          "aliases": [
+            "作角平分线",
+            "作线段垂直平分线"
+          ]
+        },
+        {
+          "id": "junior.math.geometry_basics.09",
+          "name": "命题定理与证明",
+          "scope": "core",
+          "course": "compulsory",
+          "aliases": [
+            "定义公理与推理"
+          ]
+        },
+        {
+          "id": "junior.math.geometry_basics.10",
+          "name": "反例与反证法",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "junior.math.geometry_basics.11",
+          "name": "平行线性质定理Ⅰ的证明",
+          "scope": "extension",
+          "course": "optional",
+          "note": "2025转载正文印刷页64以星号标注了解该定理的证明；性质本身仍在核心目录。"
+        }
+      ]
+    },
+    {
+      "id": "junior.math.triangles",
+      "chapter": "三角形与全等",
+      "domain": "图形与几何",
+      "source_refs": [
+        {
+          "source_id": "moe-junior-2022",
+          "locator": "印刷页 65–66"
+        },
+        {
+          "source_id": "junior-2025-public-reprint",
+          "locator": "印刷页 64–65"
+        }
+      ],
+      "topics": [
+        {
+          "id": "junior.math.triangles.01",
+          "name": "三角形的边角关系",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "junior.math.triangles.02",
+          "name": "三角形中的重要线段与重心",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "junior.math.triangles.03",
+          "name": "全等三角形的性质",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "junior.math.triangles.04",
+          "name": "全等三角形的判定",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "junior.math.triangles.05",
+          "name": "角平分线与垂直平分线的性质",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "junior.math.triangles.06",
+          "name": "等腰三角形与等边三角形",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "junior.math.triangles.07",
+          "name": "直角三角形的性质与判定",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "junior.math.triangles.08",
+          "name": "勾股定理及其逆定理",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "junior.math.triangles.09",
+          "name": "三角形尺规作图",
+          "scope": "core",
+          "course": "compulsory"
+        }
+      ]
+    },
+    {
+      "id": "junior.math.quadrilaterals",
+      "chapter": "四边形与多边形",
+      "domain": "图形与几何",
+      "source_refs": [
+        {
+          "source_id": "moe-junior-2022",
+          "locator": "印刷页 66–67"
+        },
+        {
+          "source_id": "junior-2025-public-reprint",
+          "locator": "印刷页 65–66"
+        }
+      ],
+      "topics": [
+        {
+          "id": "junior.math.quadrilaterals.01",
+          "name": "多边形内角和与外角和",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "junior.math.quadrilaterals.02",
+          "name": "平行四边形的性质与判定",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "junior.math.quadrilaterals.03",
+          "name": "矩形的性质与判定",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "junior.math.quadrilaterals.04",
+          "name": "菱形的性质与判定",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "junior.math.quadrilaterals.05",
+          "name": "正方形的性质与判定",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "junior.math.quadrilaterals.06",
+          "name": "三角形中位线",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "junior.math.quadrilaterals.07",
+          "name": "梯形的概念与四边形关系",
+          "scope": "core",
+          "course": "compulsory"
+        }
+      ]
+    },
+    {
+      "id": "junior.math.circles",
+      "chapter": "圆",
+      "domain": "图形与几何",
+      "source_refs": [
+        {
+          "source_id": "moe-junior-2022",
+          "locator": "印刷页 67"
+        },
+        {
+          "source_id": "junior-2025-public-reprint",
+          "locator": "印刷页 66–67"
+        }
+      ],
+      "topics": [
+        {
+          "id": "junior.math.circles.01",
+          "name": "圆弧弦与圆心角",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "junior.math.circles.02",
+          "name": "垂径定理",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "junior.math.circles.03",
+          "name": "圆周角定理及其推论",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "junior.math.circles.04",
+          "name": "点与圆的位置关系",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "junior.math.circles.05",
+          "name": "直线与圆的位置关系",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "junior.math.circles.06",
+          "name": "圆的切线",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "junior.math.circles.07",
+          "name": "三角形内心与外心",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "junior.math.circles.08",
+          "name": "圆与正多边形",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "junior.math.circles.09",
+          "name": "弧长与扇形面积",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "junior.math.circles.10",
+          "name": "与圆有关的尺规作图",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "junior.math.circles.11",
+          "name": "过圆外一点作圆的切线",
+          "scope": "extension",
+          "course": "optional",
+          "note": "2022 课标印刷页 67 标星选学，不作为普遍考试要求。"
+        },
+        {
+          "id": "junior.math.circles.12",
+          "name": "切线长定理",
+          "scope": "extension",
+          "course": "optional",
+          "note": "2022 课标印刷页 67 标星选学，不作为普遍考试要求。"
+        }
+      ]
+    },
+    {
+      "id": "junior.math.transformations",
+      "chapter": "图形变换与相似",
+      "domain": "图形与几何",
+      "source_refs": [
+        {
+          "source_id": "moe-junior-2022",
+          "locator": "印刷页 68–70"
+        },
+        {
+          "source_id": "junior-2025-public-reprint",
+          "locator": "印刷页 68–70"
+        }
+      ],
+      "topics": [
+        {
+          "id": "junior.math.transformations.01",
+          "name": "轴对称与轴对称图形",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "junior.math.transformations.02",
+          "name": "旋转与中心对称",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "junior.math.transformations.03",
+          "name": "平移",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "junior.math.transformations.04",
+          "name": "图形变换与图案设计",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "junior.math.transformations.05",
+          "name": "比例线段与平行线分线段成比例",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "junior.math.transformations.06",
+          "name": "相似三角形的判定",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "junior.math.transformations.07",
+          "name": "相似三角形的性质",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "junior.math.transformations.08",
+          "name": "相似多边形与相似比",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "junior.math.transformations.09",
+          "name": "位似",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "junior.math.transformations.10",
+          "name": "相似的实际应用",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "junior.math.transformations.11",
+          "name": "相似三角形判定定理的证明",
+          "scope": "extension",
+          "course": "optional",
+          "note": "2022 课标印刷页 69 的证明要求标星选学；判定定理的使用属于主干。"
+        }
+      ]
+    },
+    {
+      "id": "junior.math.right_triangle_trig",
+      "chapter": "锐角三角函数与解直角三角形",
+      "domain": "图形与几何",
+      "source_refs": [
+        {
+          "source_id": "moe-junior-2022",
+          "locator": "印刷页 69"
+        },
+        {
+          "source_id": "junior-2025-public-reprint",
+          "locator": "印刷页 69"
+        }
+      ],
+      "topics": [
+        {
+          "id": "junior.math.right_triangle_trig.01",
+          "name": "锐角三角函数的概念",
+          "scope": "core",
+          "course": "compulsory",
+          "aliases": [
+            "锐角三角比"
+          ]
+        },
+        {
+          "id": "junior.math.right_triangle_trig.02",
+          "name": "特殊锐角的三角函数值",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "junior.math.right_triangle_trig.03",
+          "name": "解直角三角形",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "junior.math.right_triangle_trig.04",
+          "name": "解直角三角形的实际应用",
+          "scope": "core",
+          "course": "compulsory",
+          "aliases": [
+            "仰角俯角与坡度"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "junior.math.coordinates_views",
+      "chapter": "坐标与投影视图",
+      "domain": "图形与几何",
+      "source_refs": [
+        {
+          "source_id": "moe-junior-2022",
+          "locator": "印刷页 69–70"
+        },
+        {
+          "source_id": "junior-2025-public-reprint",
+          "locator": "印刷页 69–70"
+        }
+      ],
+      "topics": [
+        {
+          "id": "junior.math.coordinates_views.01",
+          "name": "平面直角坐标系",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "junior.math.coordinates_views.02",
+          "name": "用坐标表示位置与图形",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "junior.math.coordinates_views.03",
+          "name": "图形运动与坐标变化",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "junior.math.coordinates_views.04",
+          "name": "位似与坐标变化",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "junior.math.coordinates_views.05",
+          "name": "用方向和距离表示位置",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "junior.math.coordinates_views.06",
+          "name": "中心投影与平行投影",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "junior.math.coordinates_views.07",
+          "name": "三视图",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "junior.math.coordinates_views.08",
+          "name": "简单几何体的展开图",
+          "scope": "core",
+          "course": "compulsory"
+        }
+      ]
+    },
+    {
+      "id": "junior.math.statistics",
+      "chapter": "统计与数据分析",
+      "domain": "统计与概率",
+      "source_refs": [
+        {
+          "source_id": "moe-junior-2022",
+          "locator": "印刷页 73–76"
+        },
+        {
+          "source_id": "junior-2025-public-reprint",
+          "locator": "印刷页 73–76"
+        }
+      ],
+      "topics": [
+        {
+          "id": "junior.math.statistics.01",
+          "name": "全面调查与抽样调查",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "junior.math.statistics.02",
+          "name": "简单随机抽样",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "junior.math.statistics.03",
+          "name": "数据的收集整理与描述",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "junior.math.statistics.04",
+          "name": "统计图表与频数直方图",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "junior.math.statistics.05",
+          "name": "平均数中位数与众数",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "junior.math.statistics.06",
+          "name": "加权平均数",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "junior.math.statistics.07",
+          "name": "方差与数据离散程度",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "junior.math.statistics.08",
+          "name": "用样本估计总体",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "junior.math.statistics.09",
+          "name": "四分位数与箱线图",
+          "scope": "core",
+          "course": "compulsory",
+          "aliases": [
+            "数据的四分位数"
+          ]
+        },
+        {
+          "id": "junior.math.statistics.10",
+          "name": "数据分组与组内离差平方和",
+          "scope": "core",
+          "course": "compulsory",
+          "aliases": [
+            "数据的分组"
+          ]
+        },
+        {
+          "id": "junior.math.statistics.11",
+          "name": "统计结论与趋势判断",
+          "scope": "core",
+          "course": "compulsory"
+        }
+      ]
+    },
+    {
+      "id": "junior.math.probability",
+      "chapter": "概率初步",
+      "domain": "统计与概率",
+      "source_refs": [
+        {
+          "source_id": "moe-junior-2022",
+          "locator": "印刷页 75–76"
+        },
+        {
+          "source_id": "junior-2025-public-reprint",
+          "locator": "印刷页 74–76"
+        }
+      ],
+      "topics": [
+        {
+          "id": "junior.math.probability.01",
+          "name": "随机事件与概率的意义",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "junior.math.probability.02",
+          "name": "列表法与树状图求概率",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "junior.math.probability.03",
+          "name": "频率与概率",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "junior.math.probability.04",
+          "name": "简单概率的实际应用",
+          "scope": "core",
+          "course": "compulsory"
+        }
+      ]
+    },
+    {
+      "id": "junior.math.practice",
+      "chapter": "综合与实践",
+      "domain": "综合与实践",
+      "source_refs": [
+        {
+          "source_id": "moe-junior-2022",
+          "locator": "印刷页 77–79"
+        },
+        {
+          "source_id": "junior-2025-public-reprint",
+          "locator": "印刷页 76–79"
+        }
+      ],
+      "topics": [
+        {
+          "id": "junior.math.practice.01",
+          "name": "实际情境中的数学问题提出",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "junior.math.practice.02",
+          "name": "数量关系与图形的综合建模",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "junior.math.practice.03",
+          "name": "数据调查与统计项目",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "junior.math.practice.04",
+          "name": "模型求解检验与结果解释",
+          "scope": "core",
+          "course": "compulsory"
+        }
+      ]
+    }
+  ]
+}

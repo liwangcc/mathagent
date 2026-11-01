@@ -1,0 +1,23 @@
+{
+  "sample": "S03（同一份 25 题试卷，23 题错/2 题对为人工 oracle 的近似：全部判错压力样本）",
+  "difference_algorithm": "difference-v2-cleaner（现行生产链路，TemplateEvidenceMatcher 生成）",
+  "model": "qwen3.8-flash（enable_thinking=False, reasoning_effort=none, temperature=0）",
+  "runs": 3,
+  "seconds": {
+    "diff": [
+      8.5,
+      8.6,
+      7.9
+    ],
+    "raw": [
+      21.6,
+      18.6,
+      19.1
+    ]
+  },
+  "std_hits": {
+    "diff": 0,
+    "raw": 0
+  },
+  "identical_questions": 25
+}

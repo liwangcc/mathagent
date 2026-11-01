@@ -1,0 +1,107 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+*.egg
+/.cache/
+/frontend/dist-desktop/
+/releases/
+/showcase-*.tar.gz
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Environment
+.env
+.env.*
+!.env.example
+!.env.production.example
+!.env.test.example
+
+# 本机部署目标（服务器地址与密钥路径）
+.deploy.local
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+*.db-journal
+*.db-wal
+*.db-shm
+
+# Redis 仅在容器部署里使用，只存易失状态，可随时丢弃
+redis-data/
+
+# Uploads & user data
+uploads/
+output/
+outputs/
+data/
+static/
+.hermes/desktop-attachments/
+.hermes_mathagent/
+学生档案/
+批阅失败/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+NUL
+
+# Claude
+.claude/
+
+# Config backups
+config_backup_*.py
+backups/
+logs/
+venv_local/
+frame-review-v9/
+scripts/change_admin_password.py
+
+# Agent scratch & personal artifacts (resume, box-check renders, experiment notes)
+.codex-temp/
+*.db.bak
+/.local/
+/.pytest_cache/
+/.mypy_cache/
+/.codex-test-tmp/
+
+# Local model probes may contain student images and provider request/response data.
+/live_blank_probe_*/
+/live_marked_probe_*/
+/live_template_probe_*/
+/live_blank_template_*/
+/live_desktop_binding_fix_20260909/
+/qwen37_acceptance_*/
+/20260902_exercise_probe/
+/20260902_layout_probe/
+/blank_probe_frame0.png
+/student_probe_frame0.png
+/blank_probe_server.py
+/run_blank_qwen38_direct_user_prompt.py
+/run_blank_template_qwen38_only.py
+/run_blank_template_qwen38_remote.py
+/route.diff
+
+# Generated archives and office exports
+*.zip
+*.tar
+*.tar.gz
+*.7z
+*.rar
+*.bak
+*.docx
+*.xlsx
+*.pdf

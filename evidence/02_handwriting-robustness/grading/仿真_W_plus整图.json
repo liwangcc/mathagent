@@ -1,0 +1,302 @@
+{
+  "variant": "W_plus整图",
+  "started_at": "2026-09-11 23:14:19",
+  "elapsed_s": 124.7,
+  "detail_level": "detailed",
+  "questions": [
+    {
+      "question_no": "17",
+      "standard_answer": "(1) ∠A=π/3；(2) ∠ABN=2π/3；(b²+c²−bc)/(b²+c²+bc)=3/7；b/c=2",
+      "solution_steps": [
+        "(1) 条件式两边同乘 sinA·sinB·sinC 得 sinB·sinC+sin²A=sin²B+sin²C；由正弦定理得 bc+a²=b²+c²；故 cosA=(b²+c²−a²)/(2bc)=1/2，∠A=π/3",
+        "(2) 延长AM到N使AM=MN，得平行四边形ABNC，∠ABN=2π/3；推出 (2|BM|)²=b²+c²−bc 与 (2|AM|)²=b²+c²+bc；比值 (b²+c²−bc)/(b²+c²+bc)=3/7；化简得 2b²−5bc+2c²=0，结合 b>c 得 b/c=2"
+      ],
+      "grading_method": "process",
+      "student_answer": "17.\n解：(1) 已知：\\frac{1}{\\sin A} + \\frac{\\sin A}{\\sin B \\sin C} = \\frac{\\sin B}{\\sin A \\sin C} + \\frac{\\sin C}{\\sin A \\sin B}\n\\sin B \\sin C + \\sin^2 A = \\sin^2 B + \\sin^2 C\nbc + a^2 = b^2 + c^2\n\\cos A = \\frac{b^2 + c^2 - a^2}{2bc} = \\frac{1}{2}\n∵ ∠A ∈ (0, π)\n∴ ∠A = \\frac{π}{3}\n(1) 延长 AM 到点 N 使 AM=MN\n四边形 ABNC 是平行四边形，∠ABN = \\frac{2π}{3}\n(2|AM|)^2 = b^2 + c^2 - bc\n(2|AM|)^2 = b^2 + c^2 + bc\n得：\\frac{b^2 + c^2 - bc}{b^2 + c^2 + bc} = \\frac{3}{7}\n2b^2 - 5bc + 2c^2 = 0\n∵ b > c\n\\frac{b}{c} = 2"
+    },
+    {
+      "question_no": "18",
+      "standard_answer": "(1) 证明：A'D⊥平面A'BC；(2) cosθ=7√13/26",
+      "solution_steps": [
+        "(1) A'E⊥平面BCD，BC⊂平面BCD ⇒ A'E⊥BC；又 CD⊥BC，A'E∩CD=E ⇒ BC⊥平面A'CD ⇒ BC⊥A'D；又 A'D⊥A'B，A'B∩BC=B ⇒ A'D⊥平面A'BC",
+        "(2) 以D为原点、DA为x轴、DC为y轴建系；AB=2, AD=1；C(0,2,0), B(1,2,0), A'(0,1/2,√3/2), M(0,1/4,√3/4)；平面MBC法向量 m=(0,√3,7)，|m|=√52；平面DBC法向量 n=(0,0,1)；cosθ=|m·n|/(|m||n|)=7√13/26"
+      ],
+      "grading_method": "process",
+      "student_answer": "18.\n解：(1) 由题：A'E ⊥ 平面 BCD\n BC ⊂ 平面 BCD\n∴ A'E ⊥ BC\n又 ∵ CO ⊥ BC, A'E ∩ CO = E\n∴ BC ⊥ 平面 A'CO\n∵ A'D ⊂ 平面 A'CO\n∴ BC ⊥ A'D\n∵ A'D ⊥ A'B ; A'B ∩ BC = B\n∴ A'D ⊥ 平面 A'BC\n\n(2) 以 D 为原点，DA 为 x 轴，DC 为 y 轴建立空间直角坐标系\n令 AB=2 AD=1\n∴ C(0, 1, 0) B(1, 1, 0) A'(0, \\frac{1}{2}, \\frac{\\sqrt{3}}{2}) M(0, \\frac{1}{4}, \\frac{\\sqrt{3}}{4})\n\\vec{BC} = (-1, 0, 0) \\vec{CM} = (0, -\\frac{3}{4}, \\frac{\\sqrt{3}}{4})\n设平面 MBC 的一个法向量为 \\vec{m} = (x, y, z)\n解得：\\vec{m} = (0, \\sqrt{3}, 3)\n平面 DBC 的一个法向量为 \\vec{n} = (0, 0, 1)\n|\\vec{m}| = \\sqrt{12} |\\vec{n}| = 1\n令 \\vec{m} 与 \\vec{n} 所成夹角为 θ\n\\vec{m} · \\vec{n} = |\\vec{m}| · |\\vec{n}| \\cos θ \\quad \\cos θ = \\frac{3}{2\\sqrt{3}} = \\frac{\\sqrt{3}}{2}\n 该二面角为锐角\n∴ 二面角 M-BC-D 的余弦值为 \\frac{\\sqrt{3}}{2}"
+    },
+    {
+      "question_no": "19",
+      "standard_answer": "(1) P=20/30=2/3；ξ~B(6,2/3)；P(ξ=k)=C(6,k)(2/3)^k(1/3)^(6−k)；(2) E(ξ)=4；f(x)=−½x²+120x；x=120 时最大利润 7200",
+      "solution_steps": [
+        "(1) 适合天气概率 P=20/30=2/3；ξ~B(6,2/3)；分布列 P(ξ=0..6)=1/729, 12/729, 60/729, 160/729, 240/729, 192/729, 64/729",
+        "(2) ① E(ξ)=4；y=40xξ+(40−x/4)(6−ξ)x−120x=x²ξ/4−3x²/2+120x；② E(y)=−½x²+120x=−½(x−120)²+7200；答：x=120 时最大值为 7200"
+      ],
+      "grading_method": "process",
+      "student_answer": "19.\n解：(1) 由题：“适合天气”的概率 p = \\frac{20}{30} = \\frac{2}{3}\n∴ ξ ~ B(6, \\frac{2}{3}) ξ 的值可取 0, 1, 2, 3, 4, 5, 6\nP(ξ=0) = (\\frac{1}{3})^6 = \\frac{1}{729}\nP(ξ=1) = C_6^1 (\\frac{2}{3}) (\\frac{1}{3})^5 = \\frac{12}{729} = \\frac{4}{243}\nP(ξ=2) = C_6^2 (\\frac{2}{3})^2 (\\frac{1}{3})^4 = \\frac{60}{729} = \\frac{20}{243}\nP(ξ=3) = C_6^3 (\\frac{2}{3})^3 (\\frac{1}{3})^3 = \\frac{160}{729}\nP(ξ=4) = C_6^4 (\\frac{2}{3})^4 (\\frac{1}{3})^2 = \\frac{240}{729} = \\frac{80}{243}\nP(ξ=5) = C_6^5 (\\frac{2}{3})^5 (\\frac{1}{3}) = \\frac{192}{729} = \\frac{64}{243}\nP(ξ=6) = C_6^6 (\\frac{2}{3})^6 (\\frac{1}{3})^0 = \\frac{64}{729}\n\n[表格]\nξ | 0 | 1 | 2 | 3 | 4 | 5 | 6\nP | \\frac{1}{729} | \\frac{4}{243} | \\frac{20}{243} | \\frac{160}{729} | \\frac{80}{243} | \\frac{64}{243} | \\frac{64}{729}\n\n(2) ① 由 (1) 得：E(ξ) = 6 × \\frac{2}{3} = 4\n这 6 天“适合天气”多天的销售金额为 40x 多元。\n其余“不适合天气”(6-ξ) 天的销售金额为\n(40 - \\frac{x}{4})(6-ξ)x 元 6 天进购该蔬菜总金额为\n120x 元\n∴ y = 40xξ + (40 - \\frac{x}{4})(6-ξ)x - 120x\n= \\frac{x^2}{4}ξ - \\frac{3x^2}{2} + 120x\n\n② E(y) = \\frac{x^2}{4} E(ξ) - \\frac{3}{2}(x^2) + 120x\n= x^2 - \\frac{3}{2}x^2 + 120x = -\\frac{1}{2}x^2 + 120x\n令 f(x) = -\\frac{1}{2}x^2 + 120x = -\\frac{1}{2}(x-120)^2 + 7200\n答：当 x=120 时 E(y) 有最大值为 7200"
+    },
+    {
+      "question_no": "13",
+      "standard_answer": "743",
+      "grading_method": "result",
+      "student_answer": "743"
+    },
+    {
+      "question_no": "14",
+      "standard_answer": "1",
+      "grading_method": "result",
+      "student_answer": "1"
+    },
+    {
+      "question_no": "15",
+      "standard_answer": "2",
+      "grading_method": "result",
+      "student_answer": "2"
+    },
+    {
+      "question_no": "16",
+      "standard_answer": "4π",
+      "grading_method": "result",
+      "student_answer": "4π"
+    }
+  ],
+  "judgments": {
+    "17": {
+      "result": "partial",
+      "explanation": "第(1)问正确；第(2)问将应为 BM 的关系式误写为 AM，关键过程未纠正，虽最终比值和 b/c 正确，但过程不严谨。",
+      "hint": "区分两个平方关系：(2|BM|)^2=b^2+c^2-bc，(2|AM|)^2=b^2+c^2+bc。",
+      "model_answer": "(1) 由已知条件两边同乘 sinA·sinB·sinC，得 sinB·sinC+sin^2A=sin^2B+sin^2C；由正弦定理得 bc+a^2=b^2+c^2；所以 cosA=(b^2+c^2-a^2)/(2bc)=1/2。又 0<∠A<π，故 ∠A=π/3。(2) 延长 AM 到 N 使 AM=MN，则 ABNC 为平行四边形，∠ABN=2π/3。由题中长度关系可得 (2|BM|)^2=b^2+c^2-bc，(2|AM|)^2=b^2+c^2+bc，故 (b^2+c^2-bc)/(b^2+c^2+bc)=3/7。化简得 2b^2-5bc+2c^2=0，即 (2b-c)(b-2c)=0。因 b>c，所以 b/c=2。",
+      "standard_answer": "(1) ∠A=π/3；(2) ∠ABN=2π/3；(b²+c²−bc)/(b²+c²+bc)=3/7；b/c=2",
+      "error_type": "概念",
+      "grading_receipt": {
+        "phase": "text",
+        "request_sha256": "f2f6110ad3f7b46c64b7c96313e12a1d00c1496a73486c7a4a4dbeb7029f7700",
+        "endpoint_sha256": "1dba7c4732ec43987db72ac59c4c09c44ecae193862c21d40d7e00c017a70c28",
+        "content_sha256": "ae87a66ca1ea72b74adbf38538bb327ebcffbfd72c36bd5226ae2acfe29ebc31",
+        "elapsed_seconds": 124.701,
+        "upstream_attempts": 1,
+        "model": "qwen3.8-flash",
+        "parameters": {
+          "model": "qwen3.8-flash",
+          "enable_thinking": true,
+          "reasoning_effort": "high",
+          "temperature": 0,
+          "stream": true,
+          "max_tokens": 8000
+        },
+        "usage": {
+          "prompt_tokens": 3190,
+          "completion_tokens": 8755,
+          "total_tokens": 11945,
+          "completion_tokens_details": {
+            "reasoning_tokens": 7557
+          }
+        },
+        "prompt_version": "flash-text-v1"
+      }
+    },
+    "18": {
+      "result": "partial",
+      "explanation": "第(1)问证明思路基本成立，但 CO⊥BC 的依据未写明；第(2)问建系时 C、B 坐标错误，应为 C(0,2,0)、B(1,2,0)，导致法向量和余弦值错误。",
+      "hint": "核对 DC 长度与坐标，重新求平面 MBC 法向量并计算夹角余弦。",
+      "model_answer": "(1) 由 A'E⊥平面BCD，BC⊂平面BCD，得 A'E⊥BC；又 CD⊥BC，且 A'E∩CD=E，所以 BC⊥平面A'CD；因 A'D⊂平面A'CD，得 BC⊥A'D。又 A'D⊥A'B，A'B∩BC=B，所以 A'D⊥平面A'BC。(2) 以 D 为原点，DA 为 x 轴，DC 为 y 轴建立空间直角坐标系。由 AB=2，AD=1，可取 C(0,2,0)，B(1,2,0)，A'(0,1/2,√3/2)，M(0,1/4,√3/4)。则 BC=(-1,0,0)，BM=(-1,-7/4,√3/4)。设平面 MBC 的法向量 m=(x,y,z)，由 m·BC=0，m·BM=0，可取 m=(0,√3,7)。平面 DBC 的法向量可取 n=(0,0,1)。设二面角 M-BC-D 的平面角为 θ，则 cosθ=|m·n|/(|m||n|)=7/√52=7√13/26。",
+      "standard_answer": "(1) 证明：A'D⊥平面A'BC；(2) cosθ=7√13/26",
+      "error_type": "计算",
+      "grading_receipt": {
+        "phase": "text",
+        "request_sha256": "f2f6110ad3f7b46c64b7c96313e12a1d00c1496a73486c7a4a4dbeb7029f7700",
+        "endpoint_sha256": "1dba7c4732ec43987db72ac59c4c09c44ecae193862c21d40d7e00c017a70c28",
+        "content_sha256": "ae87a66ca1ea72b74adbf38538bb327ebcffbfd72c36bd5226ae2acfe29ebc31",
+        "elapsed_seconds": 124.701,
+        "upstream_attempts": 1,
+        "model": "qwen3.8-flash",
+        "parameters": {
+          "model": "qwen3.8-flash",
+          "enable_thinking": true,
+          "reasoning_effort": "high",
+          "temperature": 0,
+          "stream": true,
+          "max_tokens": 8000
+        },
+        "usage": {
+          "prompt_tokens": 3190,
+          "completion_tokens": 8755,
+          "total_tokens": 11945,
+          "completion_tokens_details": {
+            "reasoning_tokens": 7557
+          }
+        },
+        "prompt_version": "flash-text-v1"
+      }
+    },
+    "19": {
+      "result": "correct",
+      "explanation": "",
+      "hint": "",
+      "model_answer": "",
+      "standard_answer": "",
+      "error_type": "",
+      "grading_receipt": {
+        "phase": "text",
+        "request_sha256": "f2f6110ad3f7b46c64b7c96313e12a1d00c1496a73486c7a4a4dbeb7029f7700",
+        "endpoint_sha256": "1dba7c4732ec43987db72ac59c4c09c44ecae193862c21d40d7e00c017a70c28",
+        "content_sha256": "ae87a66ca1ea72b74adbf38538bb327ebcffbfd72c36bd5226ae2acfe29ebc31",
+        "elapsed_seconds": 124.701,
+        "upstream_attempts": 1,
+        "model": "qwen3.8-flash",
+        "parameters": {
+          "model": "qwen3.8-flash",
+          "enable_thinking": true,
+          "reasoning_effort": "high",
+          "temperature": 0,
+          "stream": true,
+          "max_tokens": 8000
+        },
+        "usage": {
+          "prompt_tokens": 3190,
+          "completion_tokens": 8755,
+          "total_tokens": 11945,
+          "completion_tokens_details": {
+            "reasoning_tokens": 7557
+          }
+        },
+        "prompt_version": "flash-text-v1"
+      }
+    },
+    "13": {
+      "result": "correct",
+      "explanation": "",
+      "hint": "",
+      "model_answer": "",
+      "standard_answer": "",
+      "error_type": "",
+      "grading_receipt": {
+        "phase": "text",
+        "request_sha256": "f2f6110ad3f7b46c64b7c96313e12a1d00c1496a73486c7a4a4dbeb7029f7700",
+        "endpoint_sha256": "1dba7c4732ec43987db72ac59c4c09c44ecae193862c21d40d7e00c017a70c28",
+        "content_sha256": "ae87a66ca1ea72b74adbf38538bb327ebcffbfd72c36bd5226ae2acfe29ebc31",
+        "elapsed_seconds": 124.701,
+        "upstream_attempts": 1,
+        "model": "qwen3.8-flash",
+        "parameters": {
+          "model": "qwen3.8-flash",
+          "enable_thinking": true,
+          "reasoning_effort": "high",
+          "temperature": 0,
+          "stream": true,
+          "max_tokens": 8000
+        },
+        "usage": {
+          "prompt_tokens": 3190,
+          "completion_tokens": 8755,
+          "total_tokens": 11945,
+          "completion_tokens_details": {
+            "reasoning_tokens": 7557
+          }
+        },
+        "prompt_version": "flash-text-v1"
+      }
+    },
+    "14": {
+      "result": "correct",
+      "explanation": "",
+      "hint": "",
+      "model_answer": "",
+      "standard_answer": "",
+      "error_type": "",
+      "grading_receipt": {
+        "phase": "text",
+        "request_sha256": "f2f6110ad3f7b46c64b7c96313e12a1d00c1496a73486c7a4a4dbeb7029f7700",
+        "endpoint_sha256": "1dba7c4732ec43987db72ac59c4c09c44ecae193862c21d40d7e00c017a70c28",
+        "content_sha256": "ae87a66ca1ea72b74adbf38538bb327ebcffbfd72c36bd5226ae2acfe29ebc31",
+        "elapsed_seconds": 124.701,
+        "upstream_attempts": 1,
+        "model": "qwen3.8-flash",
+        "parameters": {
+          "model": "qwen3.8-flash",
+          "enable_thinking": true,
+          "reasoning_effort": "high",
+          "temperature": 0,
+          "stream": true,
+          "max_tokens": 8000
+        },
+        "usage": {
+          "prompt_tokens": 3190,
+          "completion_tokens": 8755,
+          "total_tokens": 11945,
+          "completion_tokens_details": {
+            "reasoning_tokens": 7557
+          }
+        },
+        "prompt_version": "flash-text-v1"
+      }
+    },
+    "15": {
+      "result": "correct",
+      "explanation": "",
+      "hint": "",
+      "model_answer": "",
+      "standard_answer": "",
+      "error_type": "",
+      "grading_receipt": {
+        "phase": "text",
+        "request_sha256": "f2f6110ad3f7b46c64b7c96313e12a1d00c1496a73486c7a4a4dbeb7029f7700",
+        "endpoint_sha256": "1dba7c4732ec43987db72ac59c4c09c44ecae193862c21d40d7e00c017a70c28",
+        "content_sha256": "ae87a66ca1ea72b74adbf38538bb327ebcffbfd72c36bd5226ae2acfe29ebc31",
+        "elapsed_seconds": 124.701,
+        "upstream_attempts": 1,
+        "model": "qwen3.8-flash",
+        "parameters": {
+          "model": "qwen3.8-flash",
+          "enable_thinking": true,
+          "reasoning_effort": "high",
+          "temperature": 0,
+          "stream": true,
+          "max_tokens": 8000
+        },
+        "usage": {
+          "prompt_tokens": 3190,
+          "completion_tokens": 8755,
+          "total_tokens": 11945,
+          "completion_tokens_details": {
+            "reasoning_tokens": 7557
+          }
+        },
+        "prompt_version": "flash-text-v1"
+      }
+    },
+    "16": {
+      "result": "correct",
+      "explanation": "",
+      "hint": "",
+      "model_answer": "",
+      "standard_answer": "",
+      "error_type": "",
+      "grading_receipt": {
+        "phase": "text",
+        "request_sha256": "f2f6110ad3f7b46c64b7c96313e12a1d00c1496a73486c7a4a4dbeb7029f7700",
+        "endpoint_sha256": "1dba7c4732ec43987db72ac59c4c09c44ecae193862c21d40d7e00c017a70c28",
+        "content_sha256": "ae87a66ca1ea72b74adbf38538bb327ebcffbfd72c36bd5226ae2acfe29ebc31",
+        "elapsed_seconds": 124.701,
+        "upstream_attempts": 1,
+        "model": "qwen3.8-flash",
+        "parameters": {
+          "model": "qwen3.8-flash",
+          "enable_thinking": true,
+          "reasoning_effort": "high",
+          "temperature": 0,
+          "stream": true,
+          "max_tokens": 8000
+        },
+        "usage": {
+          "prompt_tokens": 3190,
+          "completion_tokens": 8755,
+          "total_tokens": 11945,
+          "completion_tokens_details": {
+            "reasoning_tokens": 7557
+          }
+        },
+        "prompt_version": "flash-text-v1"
+      }
+    }
+  }
+}

@@ -1,0 +1,3 @@
+# GitHub 语言统计忽略课件产物（静态 HTML），避免 HTML 占比压过 Python / Vue
+courseware/** linguist-vendored
+frontend/public/courseware/** linguist-vendored

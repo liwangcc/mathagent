@@ -1,0 +1,482 @@
+{
+ "chapters": {
+  "H01": {
+   "base_origin": "working-tree",
+   "base_sha256": "3522e45412f474c555052cce4620bc2ea6bc287a162bfa90ed89bab76d9c05c6",
+   "catalog": true,
+   "path": "courseware/高中/H01_集合与常用逻辑用语.html",
+   "sha256": "e4d65e199bba06ba0daccda238f24242b32a897dc51ace5c54b06228fc8db219",
+   "solid_depth": false
+  },
+  "H02": {
+   "base_origin": "working-tree",
+   "base_sha256": "f345e1a47d8020b0e3fb0fd9f5f590df6893342a5e3cf2c81779ebd106995fe3",
+   "catalog": true,
+   "path": "courseware/高中/H02_方程不等式与二次函数.html",
+   "sha256": "13c33cc816ac919275b72e0a785e912fcf8b6b6e1451e1fd97d9c82ad41e1cb6",
+   "solid_depth": false
+  },
+  "H03": {
+   "base_origin": "working-tree",
+   "base_sha256": "c5f66d930065a1e7b7f113b7d9fade6114b3cbc3bfec30b5972e472453deca99",
+   "catalog": true,
+   "path": "courseware/高中/H03_函数的概念与性质.html",
+   "sha256": "d7c8c11fe640a3cf39f1eb2364e3ca0620ac15e94d60a8d12f0e580d8ef79945",
+   "solid_depth": false
+  },
+  "H04": {
+   "base_origin": "working-tree",
+   "base_sha256": "3a4cbe549877e3aa63e30269766fc0a6b66e40714a6a6308dd5567bff9b0dac1",
+   "catalog": true,
+   "path": "courseware/高中/H04_幂函数指数函数与对数函数.html",
+   "sha256": "f2722b639bb8662206ac74239d80f747bbe7f7d8dc90f561941cda3155ef46ee",
+   "solid_depth": false
+  },
+  "H05": {
+   "base_origin": "working-tree",
+   "base_sha256": "5ee8e5c146ccf992df8890edfb44393d7912cd267af04012a06139800b0c0102",
+   "catalog": true,
+   "path": "courseware/高中/H05_三角函数与恒等变换.html",
+   "sha256": "ab0ad072d96cb3482d0454502474fc9773ac54c604a985b78a150c23d7b4baa5",
+   "solid_depth": false
+  },
+  "H06": {
+   "base_origin": "working-tree",
+   "base_sha256": "e45614797ae5093083570b4dac27b687a20043ef7e4c18597d6a46046374b271",
+   "catalog": true,
+   "path": "courseware/高中/H06_平面向量及其应用.html",
+   "sha256": "c5d2219f600ac80872eaff76bce3bc96187711b6e883f69c74f1bc6c9c81583d",
+   "solid_depth": false
+  },
+  "H07": {
+   "base_origin": "working-tree",
+   "base_sha256": "dc09c83e2ed069ed02b92e44fe8cde12ada27ffd0b90e5aead88edb832cc0291",
+   "catalog": true,
+   "path": "courseware/高中/H07_解三角形.html",
+   "sha256": "a63621215aec36ccc66f5f9f2b97b1b0a6cd257767ef748292c88c2095ed80b8",
+   "solid_depth": false
+  },
+  "H08": {
+   "base_origin": "working-tree",
+   "base_sha256": "bba4080184b3a1061ccaa0520dc77c0b1ae387d62e344aecb056cac74c081ec3",
+   "catalog": true,
+   "path": "courseware/高中/H08_复数.html",
+   "sha256": "58d08e7a4c324b8d9791bb0ba91bd295afa8ebfdb03c694193db46f41f1b2af5",
+   "solid_depth": false
+  },
+  "H09": {
+   "base_origin": "catalog-verified rebuild: v4 archive entry 高中数学交互课件_完整版_v4/课件/H09_立体几何初步.html + recorded W3 WebGL recipe (.codex-temp/3d-upgrade-20260915/build_3d_asset.py; inline three.js identical to P10)",
+   "base_sha256": "3eff80857ba1e32a3133bad381ccc33825c8e0cf459fc8a8805dd955640bbe40",
+   "catalog": true,
+   "path": "courseware/高中/H09_立体几何初步.html",
+   "sha256": "be9a9cba745c853f86f315bba91fcb6ed011f285f135a9231accd330b01ec858",
+   "solid_depth": true
+  },
+  "H10": {
+   "base_origin": "working-tree",
+   "base_sha256": "60401c7ae679b6059f1513ad1742be5b0e1180a5f29c2c6ce0beb71e6978a604",
+   "catalog": true,
+   "path": "courseware/高中/H10_统计基础.html",
+   "sha256": "668be88160a5dee5786b08e6ffcaa666d2984c3b1e4b75d8be2c3c49547ca286",
+   "solid_depth": false
+  },
+  "H11": {
+   "base_origin": "working-tree",
+   "base_sha256": "0acfad40e2c4d3c0dc9602345e7620ad3c5312927df8536e6ccfb636053f8d99",
+   "catalog": true,
+   "path": "courseware/高中/H11_概率基础.html",
+   "sha256": "3b3e311a46e52fdc17681fceb1e3e84e578d5002d794c7dffc6e545f44ad6b9a",
+   "solid_depth": false
+  },
+  "H12": {
+   "base_origin": "catalog-verified rebuild: v4 archive entry 高中数学交互课件_完整版_v4/课件/H12_空间向量与立体几何.html + recorded W3 WebGL recipe (.codex-temp/3d-upgrade-20260915/build_3d_asset.py; inline three.js identical to P10)",
+   "base_sha256": "fa8d2a93997793c891150c24b1aacef79a952401438e33e2b857b50729cca256",
+   "catalog": true,
+   "path": "courseware/高中/H12_空间向量与立体几何.html",
+   "sha256": "2753064cfe43768d867fc823109865c63d64c9f3b3d66e121e815256510a0ce9",
+   "solid_depth": true
+  },
+  "H13": {
+   "base_origin": "working-tree",
+   "base_sha256": "2162fb95d22a09414dcb4b22881c0d954d097abefe7b5b32b2bb9e5f880dbcee",
+   "catalog": true,
+   "path": "courseware/高中/H13_直线与圆的方程.html",
+   "sha256": "5237f484808d39616d301c428d04d5b5cbef1004d8c53c38639ab763e0d1e0c2",
+   "solid_depth": false
+  },
+  "H14": {
+   "base_origin": "working-tree",
+   "base_sha256": "f424581ef155309070ab39f4710e161eb67a2b9ea42994274d00fd7af67303e0",
+   "catalog": true,
+   "path": "courseware/高中/H14_圆锥曲线与方程.html",
+   "sha256": "0b27d6a4798ff283b467fd0713b6fc15301dfe34229e61ca2608e26611b21304",
+   "solid_depth": false
+  },
+  "H15": {
+   "base_origin": "working-tree",
+   "base_sha256": "8de97cca53740d2c5f1f8673798386d9c634966f889bce07f8050b57daa01a0e",
+   "catalog": true,
+   "path": "courseware/高中/H15_数列.html",
+   "sha256": "1d4c40cd8470506a114a620aec6e116ee9e479b30eb05f8187f309f278fb48f3",
+   "solid_depth": false
+  },
+  "H16": {
+   "base_origin": "working-tree",
+   "base_sha256": "6e73664ead0cc4dfa17e96d5097ed3ec48a4758456e76a4555857cd7bc6ff782",
+   "catalog": true,
+   "path": "courseware/高中/H16_导数及其应用.html",
+   "sha256": "bfc275e991dcf9e08728e75e91636f606ead4df54d27814e3bd87e2cb647516e",
+   "solid_depth": true
+  },
+  "H17": {
+   "base_origin": "working-tree",
+   "base_sha256": "68e3ad20cd3ef791a8c440f01a036e0be84df2f6d5848a2187b82c8d80686249",
+   "catalog": true,
+   "path": "courseware/高中/H17_计数原理.html",
+   "sha256": "6d78407b69513dadc7868c61a87d7121d8fa7f60402451d2753bb2cf6165d907",
+   "solid_depth": false
+  },
+  "H18": {
+   "base_origin": "working-tree",
+   "base_sha256": "219d2b3baa956c91b53af9c69d5f08d922558f7caf6b945d9eb1b57786a73afd",
+   "catalog": true,
+   "path": "courseware/高中/H18_随机变量及其分布.html",
+   "sha256": "cd285b96fbfed50ede292442dacc83f03072d0b8768194db53f2e46ef2f19055",
+   "solid_depth": false
+  },
+  "H19": {
+   "base_origin": "working-tree",
+   "base_sha256": "ab6a27b78d4423359342e5ff6783e2e9671c9987be215a6b3c1dcb5dfa555e7c",
+   "catalog": true,
+   "path": "courseware/高中/H19_成对数据的统计分析.html",
+   "sha256": "caf019a4f4aa9057030bdf96f4bbe8ae97a57e48255dbc701b6c5a188f5c042a",
+   "solid_depth": false
+  },
+  "H20": {
+   "base_origin": "working-tree",
+   "base_sha256": "550fae77b50b99a76e5ee1db2f0f718c1d2af403ed08fd84aed383fa048bb812",
+   "catalog": true,
+   "path": "courseware/高中/H20_数学建模与数学探究.html",
+   "sha256": "4c25ccc33bea1d8053eff96d0ef18efb023466bd4e5c150f2e97112024da8d39",
+   "solid_depth": false
+  },
+  "H21": {
+   "base_origin": "working-tree",
+   "base_sha256": "5dd05ec7170a8942a1e5c84ef4e864e26ef3efcb1edd501613701f92e9649f2a",
+   "catalog": true,
+   "path": "courseware/高中/H21_拓展_微积分与代数.html",
+   "sha256": "65c70619c33590b12bff64d9935dc6c361953b920e408e1a73c7d23e22f60181",
+   "solid_depth": true
+  },
+  "J01": {
+   "base_origin": "working-tree",
+   "base_sha256": "6d24845af4b69e64529ca8f45a2db4a00bc6884fec17db43f7983d2300c04f53",
+   "catalog": true,
+   "path": "courseware/初中/J01_有理数与实数.html",
+   "sha256": "7828e678ce1dd831fabd1e9a00cbc868c2823b1d6608d3bf42bb63be51f06c36",
+   "solid_depth": false
+  },
+  "J02": {
+   "base_origin": "working-tree",
+   "base_sha256": "03ae786280c028802cd99c23a4a8d2f390712ffe7d0794d4c665c28394d2b9d2",
+   "catalog": true,
+   "path": "courseware/初中/J02_代数式与整式.html",
+   "sha256": "409fa2b0ae316856ff9afde83b983a8c66be960ba3e6e7252433434b9928e47d",
+   "solid_depth": false
+  },
+  "J03": {
+   "base_origin": "working-tree",
+   "base_sha256": "40974fb6bfb7f56872f8dd568d2df10267b0fe5ab3c9cbb924a8d9ea3ad0cbfb",
+   "catalog": true,
+   "path": "courseware/初中/J03_因式分解.html",
+   "sha256": "5b79b5efe3e00cfc687d3e2cb0b737c26e9d6870a8ed1f786c7cc668776ec64b",
+   "solid_depth": false
+  },
+  "J04": {
+   "base_origin": "working-tree",
+   "base_sha256": "633052bb63fd5a8e7eec190dc7d028c35ed8c30e8b372d5e4713cec14e1af771",
+   "catalog": true,
+   "path": "courseware/初中/J04_分式与分式方程.html",
+   "sha256": "e520785c45dcb06c9dce3e775ca1654bd2785ed67bce0d4ff8c7bbddf8ac5d6d",
+   "solid_depth": false
+  },
+  "J05": {
+   "base_origin": "working-tree",
+   "base_sha256": "c0060d94d0615a0a5ac54b399649e41e403530ff7f8bb87c48cc875ab94efd38",
+   "catalog": true,
+   "path": "courseware/初中/J05_一次方程与方程组.html",
+   "sha256": "d3edc9553652694a33721b8792010132e363f6a1102f90dea7883d45c038765b",
+   "solid_depth": false
+  },
+  "J06": {
+   "base_origin": "working-tree",
+   "base_sha256": "58eabc95a8c5742609eb53ca8e2549a191eeb4781458c8e54454b6d33626f9ab",
+   "catalog": true,
+   "path": "courseware/初中/J06_一元二次方程.html",
+   "sha256": "bd888f5b75a43be85f1add2c3a81436806ebc96f9dd04a9f37f026378703e752",
+   "solid_depth": false
+  },
+  "J07": {
+   "base_origin": "working-tree",
+   "base_sha256": "471010119b6558eca7ff48ee6b8d3071750c0b272fdb41331fe43e358713a204",
+   "catalog": true,
+   "path": "courseware/初中/J07_不等式与不等式组.html",
+   "sha256": "0ddf0be9adc246952b27798fae86c5e192df031cdbc006aadb0543f700de6152",
+   "solid_depth": false
+  },
+  "J08": {
+   "base_origin": "working-tree",
+   "base_sha256": "a167b49bead289e509392f8325ea43b2c4acce66a1fa63643c47fc646231e22f",
+   "catalog": true,
+   "path": "courseware/初中/J08_函数基础与一次函数.html",
+   "sha256": "ed6df6bce3c08a3f1182f14ec90fe0c124aaabe9ee23c745381ee5a300c50f35",
+   "solid_depth": false
+  },
+  "J09": {
+   "base_origin": "working-tree",
+   "base_sha256": "670c20f3f9c1e6b6eb86b79553a05f716b3845a99965c5d070595430ca6a383d",
+   "catalog": true,
+   "path": "courseware/初中/J09_反比例函数.html",
+   "sha256": "c76c1126f8db15838472c8a48b63a19c50ea754fb2f4d37e592bb87b7d12a299",
+   "solid_depth": false
+  },
+  "J10": {
+   "base_origin": "working-tree",
+   "base_sha256": "8f279a2217bf82e9136fef7c251f717a81a1e803e3700f2987026a82638a444f",
+   "catalog": true,
+   "path": "courseware/初中/J10_二次函数.html",
+   "sha256": "7aad52de2161be2b2304495bfb4cde8acb99d53abc028cd167f9c396bf7e48b4",
+   "solid_depth": false
+  },
+  "J11": {
+   "base_origin": "working-tree",
+   "base_sha256": "15dbcada93aa83ab3ac64321d6c149fc518e5c59d47741030bbcedd9ae328028",
+   "catalog": true,
+   "path": "courseware/初中/J11_几何基础与相交平行线.html",
+   "sha256": "74ef478837e0d486a040e11da399b7ecc9bf05c0bda5362b4956d171d879f463",
+   "solid_depth": false
+  },
+  "J12": {
+   "base_origin": "working-tree",
+   "base_sha256": "e8d0e7f666673171d828136b949ee334a1aece5fba389c30319d197ced42aece",
+   "catalog": true,
+   "path": "courseware/初中/J12_三角形与全等.html",
+   "sha256": "77b45b1aae00fb35f402f111d2d594c65ec15e5dde44dd2664deeea6c543a109",
+   "solid_depth": false
+  },
+  "J13": {
+   "base_origin": "working-tree",
+   "base_sha256": "f85560bec40c22fd88896ecf1cb54a72f236c2be0c5b401b103ec8a926893a25",
+   "catalog": true,
+   "path": "courseware/初中/J13_四边形与多边形.html",
+   "sha256": "223c1bebefe488856fe90961534fbe992a898c71aa76386445847966e507f7d6",
+   "solid_depth": false
+  },
+  "J14": {
+   "base_origin": "working-tree",
+   "base_sha256": "2b381880ae5c1eb62da93ee166fefd3f9dd2ff48410ea87cdca7cf81d1d6ffd3",
+   "catalog": true,
+   "path": "courseware/初中/J14_圆.html",
+   "sha256": "f4334b59623719fc68952c510e8efdef0edc60ccc12e4e1d87c51f2216054010",
+   "solid_depth": false
+  },
+  "J15": {
+   "base_origin": "working-tree",
+   "base_sha256": "ccfdf9a7e7418379953b56e25d0e236ed0c65c2b46123008703d0993a9f5177b",
+   "catalog": true,
+   "path": "courseware/初中/J15_图形变换与相似.html",
+   "sha256": "cff29a48b5f9eaad9a8f2a68359d2a3070430bd94b04bc5455baf2a8408710c1",
+   "solid_depth": false
+  },
+  "J16": {
+   "base_origin": "working-tree",
+   "base_sha256": "982e55b7b5be00b5de3ae96a1d27cf7a137bf7fbeb839c0c415d0e995c4a3702",
+   "catalog": true,
+   "path": "courseware/初中/J16_锐角三角函数与解直角三角形.html",
+   "sha256": "510ee38957869c9860d5019bf3b20c54370a81f358349d27fa36f814e9d7a50e",
+   "solid_depth": false
+  },
+  "J17": {
+   "base_origin": "working-tree; 2026-10-01 reviewed scene rendering/presentation wrap-up",
+   "base_sha256": "c9ed7929b824615957a0a625ff1ee4cdd71235b5f6e6572e3b179adc236b7cce",
+   "catalog": true,
+   "path": "courseware/初中/J17_坐标与投影视图.html",
+   "sha256": "f936650fc0a52c1e96d2df7eecc884c86c0068f8d15e42e8d5a6b8bf79416096",
+   "solid_depth": true
+  },
+  "J18": {
+   "base_origin": "working-tree",
+   "base_sha256": "3c9f0ec9177ab0bb65e421dfe328871ce9851a4bf77b8e1a790fdd5ed06a2807",
+   "catalog": true,
+   "path": "courseware/初中/J18_统计与数据分析.html",
+   "sha256": "5d11fc25d9de6e02b8f71c424286b663c1bd1bc738c51ffd03096f0775851bd2",
+   "solid_depth": false
+  },
+  "J19": {
+   "base_origin": "working-tree",
+   "base_sha256": "b6a9263e1dbb8db776da535eb9a20b39d330227cf63271d0a6e4872a7e7a5dcd",
+   "catalog": true,
+   "path": "courseware/初中/J19_概率初步.html",
+   "sha256": "cfe52894f682e93afa76b9b84f3a7d08b670a648dfd85480b5f22bb9e21c27a8",
+   "solid_depth": false
+  },
+  "J20": {
+   "base_origin": "working-tree",
+   "base_sha256": "069fdcb8048d4e631e13992e84e389e95748dd129e6a342cf8d85491459cc677",
+   "catalog": true,
+   "path": "courseware/初中/J20_综合与实践.html",
+   "sha256": "1562b038f7bbc2cd904ac55ba7ea063f6a182325f9855810bcfe35ff1f4b2c20",
+   "solid_depth": false
+  },
+  "P01": {
+   "base_origin": "working-tree",
+   "base_sha256": "7a28db39945e32995eaba586bade25ab7be9913d856788c40ca4c20fc78b79f5",
+   "catalog": true,
+   "path": "courseware/小学/P01_整数的认识.html",
+   "sha256": "ba797598e6dca4a5d5d59882b6514f8fe015b6b4c1dc7e315c352d9c0e093597",
+   "solid_depth": false
+  },
+  "P02": {
+   "base_origin": "working-tree",
+   "base_sha256": "a9d571faa42fe722610d51e9ba4c125c5bca17ef6fb70b02c3dfbb823b915b83",
+   "catalog": true,
+   "path": "courseware/小学/P02_整数四则运算.html",
+   "sha256": "c4fe642053c74ade58041e60e01b37e63d1640d76400f40b49b6cee1ceba24d7",
+   "solid_depth": false
+  },
+  "P03": {
+   "base_origin": "working-tree",
+   "base_sha256": "92b5305f9b934e5e2326b3a122b2994e7f62f8718de5fdb736b063ba41d3b519",
+   "catalog": true,
+   "path": "courseware/小学/P03_因数与倍数.html",
+   "sha256": "6ab9aa55a4bc94da5bd105df3fcb0180f8c5918a08bab16f549b7dcf352a99ec",
+   "solid_depth": false
+  },
+  "P04": {
+   "base_origin": "working-tree",
+   "base_sha256": "1f32e94a65063a94c4625d6f4aa27d9af9d718159791ecb59cf4546b6c5c9eec",
+   "catalog": true,
+   "path": "courseware/小学/P04_小数的认识与运算.html",
+   "sha256": "a8f1b4225b6550ff7e3488f46cc9c88b8b214c38e39772dc510edac2c910f888",
+   "solid_depth": false
+  },
+  "P05": {
+   "base_origin": "working-tree",
+   "base_sha256": "97b76f6c124f899b57bc4ca387bc6ec572b113650ffcd536a3d2d990cf10048d",
+   "catalog": true,
+   "path": "courseware/小学/P05_分数的认识与运算.html",
+   "sha256": "b0d2ac735f97d30f99543859c58e5de81459c35646ff334b732d6e3d583993fc",
+   "solid_depth": false
+  },
+  "P06": {
+   "base_origin": "working-tree",
+   "base_sha256": "659c8ad09f084e51cad34ed41452ea311c156b4330054dcde2d4fe7bcafb5fb3",
+   "catalog": true,
+   "path": "courseware/小学/P06_数量关系与规律.html",
+   "sha256": "9ad72a7122d640b4ed9baf0d89e6f73c865f52faafce7a0c52ce9bd79003c994",
+   "solid_depth": false
+  },
+  "P07": {
+   "base_origin": "working-tree",
+   "base_sha256": "7d9d2f718a7009732ddce1dbc5c44587c3e04a69b9ef8fe8f0180502c642b47b",
+   "catalog": true,
+   "path": "courseware/小学/P07_比与正比例.html",
+   "sha256": "a1f19bc9c68511bdd6f82d8cda3e4cc1fd556c9232d31197e4fee6a9cad6804c",
+   "solid_depth": false
+  },
+  "P08": {
+   "base_origin": "working-tree",
+   "base_sha256": "bcea0bc846ff4d1a3cfb54e4bc6152ee42c06ed73b38a0024d65bb820109d69b",
+   "catalog": true,
+   "path": "courseware/小学/P08_平面图形的认识.html",
+   "sha256": "499394c010ff10fd68d7ed62335fe8d2deecff4acc9866483eefa9ee59e6885e",
+   "solid_depth": false
+  },
+  "P09": {
+   "base_origin": "working-tree",
+   "base_sha256": "1472ededc78d671a6947e7d756485c0b108e87477222fd9c2cc47fdaf3a21f44",
+   "catalog": true,
+   "path": "courseware/小学/P09_长度、周长与面积.html",
+   "sha256": "e6ef68b22402b03bd0b025115395e6991492e818bc2c1516503c1f8a6b214991",
+   "solid_depth": false
+  },
+  "P10": {
+   "base_origin": "archive:MathAgent_小学数学交互课件_完整版_v4.zip!MathAgent_Primary_Complete_v4/dist/P10_立体图形与体积.html",
+   "base_sha256": "ec24326537bbc21f1bda797b4d2415dea066e36b26870445111fed16fcbf5f0e",
+   "catalog": true,
+   "path": "courseware/小学/P10_立体图形与体积.html",
+   "sha256": "a60253b25ef3e25dd5b37a1f702b423485a1682ce77f1c62095b4f840796255e",
+   "solid_depth": true
+  },
+  "P11": {
+   "base_origin": "working-tree; 2026-10-01 reviewed scene rendering/presentation wrap-up",
+   "base_sha256": "04c70fe943c5d434fff5673b5798cd6f10d751b4713e0e9fffa6bf6fba2dd6e6",
+   "catalog": true,
+   "path": "courseware/小学/P11_位置、方向与图形运动.html",
+   "sha256": "c4cebd1843b2835569767acb8688e2a90007aa4d99789fe6ff1d368856637127",
+   "solid_depth": false
+  },
+  "P12": {
+   "base_origin": "working-tree",
+   "base_sha256": "b3ad9e29143041f2ffa989ca227942cef5df67bc0c34288150cf183119cac6ce",
+   "catalog": true,
+   "path": "courseware/小学/P12_统计与数据分析.html",
+   "sha256": "97ab3d626c663df22906cbe7268b9f1ec172515f7a1f60570d4af4cfcab6ed4c",
+   "solid_depth": false
+  },
+  "P13": {
+   "base_origin": "working-tree",
+   "base_sha256": "c864ab25fb393229e4a5f59cb867a55f5e0a49f8275c4aaf6b6c2253eeacb109",
+   "catalog": true,
+   "path": "courseware/小学/P13_百分数及其应用.html",
+   "sha256": "c0197231c7cefc0407e3066fe6b78b2f7b8474a5456dd173ef234837494cf445",
+   "solid_depth": false
+  },
+  "P14": {
+   "base_origin": "working-tree",
+   "base_sha256": "809bf0aafc6a52db2d104cc796a0f4c38562493d9759b9bb145a8f04d13d1ae9",
+   "catalog": true,
+   "path": "courseware/小学/P14_可能性.html",
+   "sha256": "a0376716ad9c1cc60a625ddbaf775eddcfb2ff4024dd1f37cd1a2eaee6447433",
+   "solid_depth": false
+  },
+  "P15": {
+   "base_origin": "working-tree",
+   "base_sha256": "a1b3143ad1a3e6f70fa366289550b5265f0a168b2c3a5669c51d54985fe76dea",
+   "catalog": true,
+   "path": "courseware/小学/P15_常见的量与单位.html",
+   "sha256": "fd9680323a226202ddeb3c8a1f195d06b55d77f5afa9b0dace0446436249f81a",
+   "solid_depth": false
+  },
+  "P16": {
+   "base_origin": "working-tree",
+   "base_sha256": "53048224581f78e6d064caab0d44946ce6fb533e219bed8e0ab229c7e753ad1b",
+   "catalog": true,
+   "path": "courseware/小学/P16_生活中的负数.html",
+   "sha256": "7d979045cbc6842810aa44c170be91dc4b7168a3ff35c60a1cf62a9d69ff87e5",
+   "solid_depth": false
+  },
+  "P17": {
+   "base_origin": "working-tree",
+   "base_sha256": "6a9393ad1f887d452354d99419c73e45eaa2d98df6a289d569e25dbe57fc9d03",
+   "catalog": true,
+   "path": "courseware/小学/P17_综合应用与实践.html",
+   "sha256": "58accdbf4d725eea191c18313f0f1c22b874f11806708cfbb64baa1c9f19cbb6",
+   "solid_depth": false
+  },
+  "SPACE": {
+   "base_origin": "working-tree",
+   "base_sha256": "b1986ad89ad1f5cdf92d07946ac5aa8801d992af224405019b1366dec04954c4",
+   "catalog": false,
+   "path": "courseware/高中/空间几何关系.html",
+   "sha256": "1994848b19b82f5c68008d9ea5d808a445b873d4540aab6741782801c253de49",
+   "solid_depth": true
+  }
+ },
+ "layer": {
+  "css_sha256": "540b81746dce59a222541d0c0ebe5957033f824acb2e5f0ca91e6c5766b56ab8",
+  "js_sha256": "4f60f6127b0bf75c05cd5dce2295d0f50ed581e36ef64c5a849135551fbffa32",
+  "solid_depth_sha256": "61bb6e79e1cf5e63e7fda0688a92c86169fdb3d8aabfa5bff7480366e1b34dbe",
+  "version": 1
+ }
+}

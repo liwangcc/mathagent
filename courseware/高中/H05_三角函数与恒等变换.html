@@ -1,0 +1,938 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light"><title>三角函数与恒等变换 · MathAgent 高中数学</title><style>:root{--ink:#19333b;--muted:#526b73;--accent:#0a7965;--line:#d7e2dd;--paper:#fffefb;--soft:#eef5ef;--orange:#b45e28;--blue:#286da8;--purple:#8058a2;color-scheme:light}*{box-sizing:border-box}body{margin:0;background:#f1f4ee;color:var(--ink);font:20px/1.55 system-ui,-apple-system,'Segoe UI','Microsoft YaHei',sans-serif}button,input,select,textarea{font:inherit;color:inherit}button{cursor:pointer;border:1px solid var(--line);border-radius:9px;padding:7px 12px;min-height:40px;background:var(--paper);line-height:1.4}button:hover{background:#e9f3ec;border-color:var(--accent)}button:active{background:#d9ece2}button[aria-pressed=true],button.active{background:var(--accent);color:white;border-color:var(--accent)}button:disabled{opacity:.4;cursor:default}button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible,a:focus-visible,svg:focus-visible{outline:3px solid #ce8545;outline-offset:3px}a{color:var(--accent)}h1,h2,h3,p{margin:0}h1{font-size:30px;line-height:1.25}h2{font-size:25px;line-height:1.3}h3{font-size:21px}main{max-width:1860px;margin:auto;padding:16px 24px 30px}.head{display:flex;align-items:center;justify-content:space-between;gap:20px}.brand{display:flex;gap:13px;align-items:center}.brandmark{font:italic 32px Georgia;border-radius:14px;background:var(--accent);color:white;width:49px;height:49px;display:grid;place-items:center}.eyebrow{font-size:12px;letter-spacing:.15em;color:var(--accent);font-weight:800;margin-bottom:3px}.headtools{display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-end;font-size:15px}.headtools a{font-size:15px;padding:7px}.tabs{display:flex;gap:7px;overflow-x:auto;margin:15px 0 12px;padding-bottom:5px}.tabs button{flex:1 0 auto;font-size:17px;text-align:left;display:flex;align-items:center;gap:9px}.tabs small{font-size:12px;opacity:.65}.scenehead{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px}.scenehead small{font-size:14px;color:var(--muted)}.bench{display:grid;grid-template-columns:minmax(0,1.75fr) minmax(340px,1fr);gap:22px;align-items:start}.visual{min-width:0}.board{border:1px solid var(--line);border-radius:16px;overflow:hidden;background:var(--paper);box-shadow:0 6px 20px #2038300a}.boardtop{padding:9px 15px;display:flex;justify-content:space-between;gap:10px;align-items:center;font-size:14px;color:var(--muted);min-height:39px}.boardtop strong{font-weight:650;color:var(--ink)}#plot{display:block;width:100%;height:490px;touch-action:none;user-select:none;-webkit-user-select:none;cursor:grab;background:linear-gradient(150deg,#fffefb,#f6faf7)}#plot.dragging{cursor:grabbing}#plot text{font-family:system-ui,'Microsoft YaHei',sans-serif;font-size:16px;fill:var(--ink);paint-order:stroke;stroke:#fffefb;stroke-width:4px;stroke-linejoin:round;pointer-events:none}#plot .handle{cursor:grab;stroke:#fff;stroke-width:3px;filter:drop-shadow(0 2px 2px #1d353329)}#plot .handle:hover,#plot .handle.chosen{stroke:#cc8438;stroke-width:4px}#plot .item{cursor:pointer}#plot .selected{stroke:#da8537!important;stroke-width:3.5px!important}.boardnote{font-size:14px;color:var(--muted);padding:0 15px 10px}.metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border-top:1px solid var(--line);background:#edf5ed}.metric{padding:10px 14px;overflow-wrap:anywhere}.metric+.metric{border-left:1px solid var(--line)}.metric span{font-size:14px;color:var(--muted);display:block}.metric strong{font-size:25px;font-weight:750;line-height:1.4}.metric small{font-size:15px;font-weight:500}.lesson{border-left:1px solid #cad9d1;padding-left:20px;min-width:0}.sect{margin-bottom:16px}.label{font-size:13px;color:var(--accent);font-weight:800;letter-spacing:.08em;margin-bottom:7px;display:flex;align-items:center;gap:7px}.label:before{content:'';height:15px;width:4px;border-radius:3px;background:var(--accent)}#definition{font-size:22px;line-height:1.65}#formula{font:26px/1.65 Georgia,'Times New Roman','Microsoft YaHei',serif;margin-top:8px;overflow-wrap:anywhere}#correspondence{font-size:19px;line-height:1.65}#feedback{padding:12px 14px;background:#e7f2e9;border-left:4px solid var(--accent);border-radius:9px;font-size:21px;line-height:1.55;overflow-wrap:anywhere}#why{font-size:18px;margin-top:10px;line-height:1.7}#selection{font-size:15px;color:var(--muted);margin-top:9px;padding-top:8px;border-top:1px dashed var(--line)}.controls{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 18px;padding:13px 15px;margin-top:12px;background:var(--paper);border:1px solid var(--line);border-radius:13px}.ctrl{min-width:0}.ctrl label{display:block;font-size:15px;font-weight:650;margin-bottom:4px}.ctrl .row{display:flex;align-items:center;gap:9px}.ctrl input[type=range]{min-width:0;flex:1;width:80px;accent-color:var(--accent)}.ctrl input[type=number]{width:85px;min-width:0;border:1px solid #aebeb5;border-radius:6px;padding:5px;font-size:17px;min-height:38px}.ctrl select{width:100%;border:1px solid var(--line);background:white;padding:6px;border-radius:7px;font-size:17px;min-height:39px}.ctrl.wide{grid-column:1/-1}.actions{display:flex;flex-wrap:wrap;gap:7px;grid-column:1/-1}.actions button{font-size:16px}.warning{color:#a45020!important}.animation{display:flex;gap:7px;align-items:center;flex-wrap:wrap;margin:11px 0;font-size:14px}.animation button{font-size:15px}.animation input[type=range]{flex:1;min-width:80px;accent-color:var(--accent)}.animation small{width:100%;font-size:13px;color:var(--muted)}.lower{display:grid;grid-template-columns:1.5fr 1fr;gap:20px;margin-top:12px}details{border:1px solid var(--line);border-radius:12px;padding:0 15px;background:var(--paper);min-width:0}summary{padding:12px 0;cursor:pointer;font-size:18px;font-weight:650}.detailsbody{padding:0 0 15px;font-size:18px;line-height:1.7;overflow-wrap:anywhere}.detailsbody p+p{margin-top:9px}.answer{background:#e7f2e9;border-left:3px solid var(--accent);border-radius:6px;padding:10px 13px;margin-top:10px}.detailsbody button{font-size:16px;margin-top:9px}.factsrow{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}.factsrow button{font-size:15px}.teacher{font-size:16px;border:1px solid var(--line);border-radius:12px;background:var(--paper);padding:14px;margin-top:10px}.teacher label{display:inline-flex;gap:7px;margin-right:15px}.teacher input{accent-color:var(--accent)}.teacher button{font-size:15px}.teacher p{margin-top:8px;color:var(--muted)}.teacher textarea{width:100%;min-height:80px;border:1px solid var(--line);border-radius:8px;font-size:17px;margin-top:10px;padding:10px}footer{display:flex;justify-content:space-between;gap:15px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-top:17px}.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:#173d34;color:#fff;padding:10px 17px;border-radius:10px;font-size:16px;box-shadow:0 5px 20px #0002;max-width:92vw;z-index:50;pointer-events:none}.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}.table{width:100%;border-collapse:collapse;font-size:17px}.table td,.table th{text-align:left;border-bottom:1px solid var(--line);padding:7px 10px}.table th{font-size:14px;color:var(--muted)}.token{border:0;border-bottom:2px solid var(--accent);background:none;color:var(--accent);padding:0 2px;font:inherit;min-height:0;border-radius:3px}.canvasfocus .board{position:fixed;inset:8px;z-index:40;display:flex;flex-direction:column;box-shadow:0 0 0 15px #eef4ed}.canvasfocus #plot{flex:1;height:auto;min-height:0}.canvasfocus .metrics{flex:0 0 auto}.canvasfocus .boardnote{padding-top:5px}.canvasfocus .boardtop button{display:inline-block!important}.large #definition,.large #feedback{font-size:25px}.large #formula{font-size:30px}.large #correspondence,.large #why{font-size:22px}.large #plot{height:530px}[hidden]{display:none!important}@media(min-width:1650px){body{font-size:23px}#definition{font-size:25px}#correspondence{font-size:22px}#formula{font-size:30px}#feedback{font-size:24px}#why{font-size:21px}#plot{height:540px}.controls{grid-template-columns:repeat(3,minmax(0,1fr))}}@media(max-width:1050px){main{padding:12px 15px}.bench{grid-template-columns:minmax(0,1.4fr) minmax(315px,1fr);gap:15px}.headtools{max-width:420px}.lesson{padding-left:14px}.brandmark{display:none}.tabs button{font-size:16px}#plot{height:455px}}@media(max-width:820px){.bench,.lower{grid-template-columns:1fr}.lesson{border:0;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:16px}.lesson .sect:last-child{grid-column:1/-1}.head{align-items:flex-start}.headtools{max-width:340px}#plot{height:470px}}@media(max-width:560px){body{font-size:18px}main{padding:10px}.head{display:block}h1{font-size:27px}.headtools{justify-content:flex-start;max-width:none;margin-top:10px}.headtools button,.headtools a{font-size:13px;padding:6px 8px}.tabs{margin-top:10px}.tabs button{font-size:15px}.scenehead h2{font-size:23px}.scenehead small{display:none}.bench{display:flex;flex-direction:column;gap:12px}.visual,.lesson{display:contents}.sect{order:5;width:100%;margin:0}.sect:first-child{order:0}.board{order:1;width:100%}.controls{order:2;width:100%;grid-template-columns:1fr;margin:0}.animation{order:3;width:100%;margin:0}#plot{height:405px}.metrics{grid-template-columns:1fr}.metric{display:flex;align-items:baseline;justify-content:space-between;padding:6px 11px;gap:12px}.metric+.metric{border-left:0;border-top:1px solid var(--line)}.metric strong{font-size:23px}.metric span{font-size:15px}#definition{font-size:21px}#formula{font-size:25px}#correspondence{font-size:19px}#feedback{font-size:21px}.boardnote{font-size:13px}.boardtop{font-size:12px;align-items:flex-start;padding:8px 10px}.lower{gap:12px}.canvasfocus .metrics{display:none}.canvasfocus #plot{height:calc(100vh - 90px)}.large #plot{height:440px}}@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}@media print{.headtools,.tabs,.controls,.animation,.teacher,.toast,.factsrow{display:none!important}.bench{display:grid;grid-template-columns:1.5fr 1fr}.lesson{display:block}.board{break-inside:avoid}#plot{height:350px}main{padding:0}body{background:white}}
+
+/* Linked unit-circle and displacement panels retain usable drawing height. */
+body:has([data-scene="H05-S01"].active) #plot{height:570px}body:has([data-scene="H05-S01"].active) #plot text{font-size:18px}body:has([data-scene="H05-S03"].active) #plot{height:530px}@media(max-width:600px){body:has([data-scene="H05-S01"].active) #plot{height:620px}body:has([data-scene="H05-S03"].active) #plot{height:570px}}
+</style><style id="lesson-flow-style">/* MathAgent lesson flow v1 — presentation only (see lesson-flow.js). */
+:root{--lf-motivate:#843f05;--lf-motivate-bg:#fff5e8;--lf-explore:#174f8f;--lf-explore-bg:#edf4fc;--lf-formalize:#0b5a53;--lf-formalize-bg:#e9f5f2;--lf-practice:#4f2398;--lf-practice-bg:#f3effb;--lf-ink:#10292a;--lf-soft:#33494a;--lf-line:#d3dfda}
+body{--lf-c:var(--lf-motivate);--lf-bg:var(--lf-motivate-bg)}
+body[data-lf-stage=explore]{--lf-c:var(--lf-explore);--lf-bg:var(--lf-explore-bg)}
+body[data-lf-stage=formalize]{--lf-c:var(--lf-formalize);--lf-bg:var(--lf-formalize-bg)}
+body[data-lf-stage=practice]{--lf-c:var(--lf-practice);--lf-bg:var(--lf-practice-bg)}
+/* Projector type scale: 1280 px wide ≈ the minimums; grows to a 1920 px whiteboard.
+   「大字」 (the chapter's own projector toggle) adds one more step. */
+body.lf-on{--lf-t-read:clamp(19px,1.1vw + 5px,25px);--lf-t-key:clamp(21px,1.2vw + 6px,28px);--lf-t-eq:clamp(30px,1.7vw + 8px,40px);--lf-t-title:clamp(26px,1.4vw + 8px,34px);--lf-t-sub:clamp(17px,.8vw + 7px,21px);--lf-t-ui:clamp(15px,.6vw + 7px,18px)}
+body.lf-on.projector,body.lf-on.large,body.lf-on.presentation{--lf-t-read:clamp(22px,1.3vw + 6px,29px);--lf-t-key:clamp(24px,1.4vw + 7px,32px);--lf-t-eq:clamp(34px,2vw + 9px,46px);--lf-t-sub:clamp(19px,.9vw + 8px,23px)}
+
+/* Rail: four steps · prev/next · overview · help */
+.lf-rail{position:relative;display:flex;align-items:center;gap:8px;flex-wrap:nowrap;justify-content:flex-end;margin-left:auto;flex:none}
+.lf-steps{display:flex;gap:4px;list-style:none;margin:0;padding:3px;border:1px solid var(--lf-line);border-radius:999px;background:#fff}
+.lf-steps li{margin:0}
+.lf-step{display:flex;align-items:center;gap:6px;border:0!important;background:transparent!important;box-shadow:none!important;border-radius:999px!important;padding:5px 12px 5px 6px!important;min-height:36px;font-size:var(--lf-t-ui,16px);font-weight:650;color:var(--lf-soft)!important;white-space:nowrap}
+.lf-step b{display:inline-grid;place-items:center;width:24px;height:24px;border-radius:50%;font-size:13px;background:#e8eeeb;color:var(--lf-soft)}
+.lf-step[data-lf-stage=motivate]{--c:var(--lf-motivate)}.lf-step[data-lf-stage=explore]{--c:var(--lf-explore)}.lf-step[data-lf-stage=formalize]{--c:var(--lf-formalize)}.lf-step[data-lf-stage=practice]{--c:var(--lf-practice)}
+.lf-step:hover{background:#f1f5f3!important}
+.lf-step.active{background:var(--c)!important;color:#fff!important}
+.lf-step.active b{background:#fff;color:var(--c)}
+.lf-move{display:flex;gap:6px}
+.lf-move button,.lf-overview,.lf-help{min-height:40px;font-size:var(--lf-t-ui,15px);font-weight:650;border-radius:10px;padding:7px 13px;white-space:nowrap}
+.lf-prev{width:6.9em}
+.lf-next{background:var(--lf-c)!important;border-color:var(--lf-c)!important;color:#fff!important;width:14.4em;display:inline-flex;align-items:center;justify-content:center;gap:4px}
+.lf-next span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.lf-next:disabled{background:#e9eeeb!important;border-color:#d7e0db!important;color:#33494a!important;opacity:1}
+.lf-help{width:40px;padding:0!important;font-weight:800}
+.lf-help-panel{position:absolute;right:0;top:calc(100% + 8px);z-index:40;width:min(470px,92vw);background:#fff;color:var(--lf-ink);border:1px solid var(--lf-line);border-radius:14px;box-shadow:0 18px 44px #10292a33;padding:16px 18px;font-size:16px;line-height:1.6;text-align:left}
+.lf-help-panel strong{display:block;font-size:17px;margin-bottom:6px;outline:none}
+.lf-help-panel ul{margin:0;padding-left:20px}.lf-help-panel li{margin:4px 0}
+.lf-help-panel kbd{font:600 13px ui-monospace,monospace;border:1px solid #c5d2cc;border-bottom-width:2px;border-radius:5px;padding:0 5px;background:#f6f8f7}
+
+/* Stage card head (inside the existing side panel) */
+.lf-card-head{display:none}
+body.lf-on .lf-card-head{display:flex;gap:12px;align-items:center;padding:11px 16px;border-radius:14px;background:var(--lf-bg);border:1px solid #d9e2de;border:1px solid color-mix(in srgb,var(--lf-c) 28%,#fff);border-left:6px solid var(--lf-c)}
+.lf-num{flex:none;display:grid;place-items:center;width:34px;height:34px;border-radius:50%;background:var(--lf-c);color:#fff;font-size:19px;font-weight:800}
+.lf-cue-line{margin:0!important;font-size:var(--lf-t-read)!important;line-height:1.45!important;color:var(--lf-ink)!important}
+.lf-title{font-size:1.06em;color:var(--lf-c);margin-right:.55em;letter-spacing:.04em}
+.lf-hint{display:none}
+body.lf-on .lf-hint{display:block;font-size:14px;color:var(--lf-soft);margin-left:auto;margin-right:8px;text-align:right;line-height:1.3}
+
+/* Controls inside the stage card never drop below 16 px on a projector. */
+body.lf-on .lf-card button:not(.token){font-size:max(16px,var(--lf-t-ui));min-height:38px}
+/* Data tables shown in a stage card are key content: reading size. */
+body.lf-on .lf-card table th,body.lf-on .lf-card table td{font-size:var(--lf-t-read)}
+/* Formula annotations (small/sub/sup labels) stay readable: 16 px, dark ink. */
+body.lf-on .lf-card small{font-size:16px;font-weight:600;color:var(--lf-soft)}
+
+/* Calm, legible transitions; reduced motion removes them entirely. */
+@keyframes lf-in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+body.lf-on .lf-card.lf-enter>*{animation:lf-in .24s ease-out both}
+@media (prefers-reduced-motion:reduce){body.lf-on .lf-card.lf-enter>*{animation:none!important}}
+body.low-motion .lf-card.lf-enter>*,body.reduced .lf-card.lf-enter>*,body.lf-reduce .lf-card.lf-enter>*{animation:none!important}
+
+/* Folding: hidden blocks leave the layout, except keep-layout ones (parameter
+   bars) which collapse to zero height and are inert, so in-figure editors that
+   list "visible" source controls keep working in every stage. */
+body.lf-on .lf-fold:not(.lf-keep){display:none!important}
+body.lf-on .lf-keep.lf-fold{height:0!important;min-height:0!important;padding:0!important;margin:0!important;border:0!important;overflow:hidden!important;opacity:0;box-shadow:none!important}
+body.lf-on .lf-tools{display:block}
+body.lf-on:not(.lf-tools-open) .lf-tools{height:0;overflow:hidden;opacity:0}
+.lf-tools-toggle{display:none}
+body.lf-on .lf-tools-toggle{display:inline-flex;align-items:center;min-height:34px;font-size:14px;padding:4px 11px}
+
+/* ---------- primary runtime (小学) ---------- */
+/* Same hues as the chapter's A/B/C/R colour coding, darkened for projector contrast (≥6:1 on white). */
+body.lf-on[data-lf-family=primary]{--muted:#3f5657;--a:#1f5f99;--b:#93530a;--c:#6a44a0;--teal:#0f6558}
+/* Stacked fractions are key mathematics: full size in lesson mode (runtime default is .85em). */
+body.lf-on[data-lf-family=primary] .frac{font-size:1em}
+/* Tokens coloured inline with the runtime's teal (#147c69) get the same darker teal. */
+body.lf-on[data-lf-family=primary] .token[style*="147c69"]{color:#0f6558!important}
+body.lf-on[data-lf-family=primary] .topbar{padding:7px 18px}
+body.lf-on[data-lf-family=primary] .brand-icon{width:32px;height:32px;font-size:19px}
+body.lf-on[data-lf-family=primary] .eyebrow{display:none}
+body.lf-on[data-lf-family=primary] .brand h1{font-size:21px}
+body.lf-on[data-lf-family=primary] .scene-nav{padding:0 18px 7px}
+body.lf-on[data-lf-family=primary] .scene-nav a{font-size:15px;padding:5px 11px}
+body.lf-on[data-lf-family=primary] main{padding:7px 18px 20px}
+body.lf-on[data-lf-family=primary] .scene-heading{align-items:center;margin:0 0 7px;gap:8px 14px}
+body.lf-on[data-lf-family=primary] .scene-heading>div:first-child{flex:1;min-width:0}
+body.lf-on[data-lf-family=primary] .scene-heading h2{font-size:var(--lf-t-title);line-height:1.25}
+body.lf-on[data-lf-family=primary] .scene-heading p{font-size:var(--lf-t-sub);color:var(--lf-soft);margin-top:2px}
+body.lf-on[data-lf-family=primary] #scene-code{display:none}
+body.lf-on[data-lf-family=primary] .workbench{grid-template-columns:minmax(0,1.78fr) minmax(300px,1fr);gap:14px}
+body.lf-on[data-lf-family=primary] .model-top{padding:3px 12px;min-height:36px}
+body.lf-on[data-lf-family=primary] .model-top .right-label{display:none}
+body.lf-on[data-lf-family=primary] .model-top strong{font-size:16px}
+body.lf-on[data-lf-family=primary] .timeline{padding:4px 12px;gap:8px}
+body.lf-on[data-lf-family=primary] .timeline-caption{font-size:15px;color:var(--lf-soft)}
+/* --lf-fig-h is measured by lesson-flow.js: the height left under the figure's
+   real top edge in the first screen, so the whole model is visible. */
+body.lf-on[data-lf-family=primary] #diagram{width:min(100%,calc(var(--lf-fig-h,440px) * 1.7021));margin-inline:auto}
+body.lf-on[data-lf-family=primary] #diagram text{font-size:23px}
+body.lf-on[data-lf-family=primary] #diagram .small{font-size:19px;fill:#3f5657}
+body.lf-on[data-lf-family=primary] #diagram .tiny{font-size:17px;fill:#3f5657}
+body.lf-on[data-lf-family=primary] #diagram .label{font-size:23px}
+body.lf-on[data-lf-family=primary] #diagram .big{font-size:30px}
+/* The fallback warning is pinned directly under the figure title so the
+   degradation is never below the fold (honest 2D path). */
+body.lf-on[data-lf-family=primary] .model-panel{display:flex;flex-direction:column}
+body.lf-on[data-lf-family=primary] .model-panel>*{order:2}
+body.lf-on[data-lf-family=primary] .model-panel>.model-top{order:0}
+body.lf-on[data-lf-family=primary] .model-panel>#fallback-warning{order:1;font-size:14px;line-height:1.4;padding:5px 12px;font-weight:650;border-bottom:1px solid #f0dcb4}
+body.lf-on[data-lf-family=primary] .engine-badge{font-size:13px;font-weight:700;color:#23393a;background:#fffffff0;border:1px solid #cfdcd6;padding:3px 8px}
+body.lf-on[data-lf-family=primary] .info-panel{gap:10px;align-self:stretch}
+body.lf-on[data-lf-family=primary] .info-panel>.info-block{border-radius:14px;padding:13px 17px}
+body.lf-on[data-lf-family=primary] .info-block h3{font-size:14px;color:var(--lf-soft)}
+body.lf-on[data-lf-family=primary] .info-block p{font-size:var(--lf-t-key)}
+body.lf-on[data-lf-family=primary] .info-block .plain,body.lf-on[data-lf-family=primary] .meaning-row{font-size:var(--lf-t-read);color:var(--lf-ink)}
+body.lf-on[data-lf-family=primary] .info-block.current{background:#fff;border-color:var(--lf-line)}
+body.lf-on[data-lf-family=primary][data-lf-stage=formalize] .info-block.current{background:var(--lf-formalize-bg);border-color:#bfe0d9}
+body.lf-on[data-lf-family=primary] .equation{font-size:var(--lf-t-eq)}
+body.lf-on[data-lf-family=primary] .math-note{font-size:max(18px,calc(var(--lf-t-read) - 1px))!important;color:var(--lf-ink)!important}
+body.lf-on[data-lf-family=primary] .feedback-message{font-size:17px}
+body.lf-on[data-lf-family=primary] .info-panel>#controls{display:flex;flex-wrap:wrap;gap:10px 14px;padding:13px 16px;border:1px solid var(--lf-line);border-radius:14px;background:#fbfcfb}
+body.lf-on[data-lf-family=primary] .info-panel>#controls .control{font-size:16px;color:var(--lf-ink)}
+body.lf-on[data-lf-family=primary] .info-panel>#controls input[type=number]{width:78px;height:42px;font-size:19px}
+body.lf-on[data-lf-family=primary] .info-panel>#controls select{height:42px;font-size:17px}
+body.lf-on[data-lf-family=primary] .info-panel>#figure-note{font-size:17px;color:var(--lf-soft);padding:2px 4px;min-height:0}
+body.lf-on[data-lf-family=primary] .info-panel>#exercise{border:1px solid #d5c9ef;border-radius:14px;background:#fff;padding:14px 17px}
+body.lf-on[data-lf-family=primary] .info-panel>#exercise summary{font-size:17px;font-weight:700;color:var(--lf-practice)}
+body.lf-on[data-lf-family=primary] .info-panel>#exercise .detail-content{font-size:var(--lf-t-read);color:var(--lf-ink)}
+body.lf-on[data-lf-family=primary] .info-panel>#exercise input{font-size:19px;height:44px}
+body.lf-on[data-lf-family=primary] .info-panel>#exercise .exercise-answer{font-size:var(--lf-t-read)}
+body.lf-on[data-lf-family=primary] .info-panel>#exercise .exercise-answer:empty{display:none}
+body.lf-on[data-lf-family=primary] .auxiliary{grid-template-columns:1fr}
+@media (max-width:1180px){body.lf-on[data-lf-family=primary] .scene-heading{flex-wrap:wrap}body.lf-on[data-lf-family=primary] .scene-heading>div:first-child{flex-basis:100%}.lf-rail{margin-left:0;justify-content:flex-start}}
+@media (max-width:960px){body.lf-on[data-lf-family=primary] .workbench{grid-template-columns:1fr}.lf-rail{flex-wrap:wrap}}
+@media (max-width:800px){.lf-step{font-size:14px;padding:5px 9px 5px 5px!important}.lf-next{width:auto}.lf-prev{width:auto}}
+@media print{.lf-rail,.lf-card-head,.lf-tools-toggle{display:none!important}}
+
+/* ---------- junior runtime (初中) ---------- */
+/* The junior plot measures itself on each render and draws at 1:1 CSS px (labels
+   stay 20 px), so lesson mode keeps its native size and moves side blocks only. */
+body.lf-on[data-lf-family=junior]{--muted:#3f5a60}
+body.lf-on[data-lf-family=junior] .scene-nav{padding-bottom:8px}
+body.lf-on[data-lf-family=junior] .scene-nav button{padding:6px 10px}
+body.lf-on[data-lf-family=junior] .scene-heading{padding:8px 0 8px;gap:8px 14px}
+body.lf-on[data-lf-family=junior] .scene-heading>div:first-child{flex:1;min-width:0}
+body.lf-on[data-lf-family=junior] #entryLabel{display:none}
+body.lf-on[data-lf-family=junior] .scene-heading h2{font-size:var(--lf-t-title)}
+body.lf-on[data-lf-family=junior] .scene-heading p{font-size:var(--lf-t-sub);color:var(--lf-soft)}
+body.lf-on[data-lf-family=junior] .workspace{grid-template-columns:minmax(0,1.62fr) minmax(300px,1fr);gap:14px}
+body.lf-on[data-lf-family=junior] aside.reading{display:flex;flex-direction:column;gap:10px;padding:12px 14px}
+body.lf-on[data-lf-family=junior] aside.reading>*{margin:0}
+body.lf-on[data-lf-family=junior] aside.reading>.eyebrow{font-size:14px;color:var(--lf-soft);margin-bottom:-4px}
+body.lf-on[data-lf-family=junior] .definition{font-size:var(--lf-t-key);color:var(--lf-ink)}
+body.lf-on[data-lf-family=junior] .mapping{font-size:var(--lf-t-read);color:var(--lf-ink)}
+body.lf-on[data-lf-family=junior] .formula{font-size:var(--lf-t-eq);border-top:0;padding:4px 0}
+body.lf-on[data-lf-family=junior] .formula .second{font-size:var(--lf-t-read);color:var(--lf-soft)}
+body.lf-on[data-lf-family=junior] .readings{margin:0}
+body.lf-on[data-lf-family=junior] .readings dt{font-size:15px;color:var(--lf-soft)}
+body.lf-on[data-lf-family=junior] .feedback{font-size:var(--lf-t-read)}
+body.lf-on[data-lf-family=junior] .selected-note{font-size:var(--lf-t-read);color:#6b4a12}
+body.lf-on[data-lf-family=junior] .gesture-hint{font-size:15px;color:#1f5a51}
+body.lf-on[data-lf-family=junior] .diagram-caption{font-size:16px;color:var(--lf-soft)}
+body.lf-on[data-lf-family=junior] aside.reading>.controls-card{box-shadow:none;padding:10px 12px;display:flex;flex-direction:column;gap:8px}
+body.lf-on[data-lf-family=junior] aside.reading>.controls-card .controls{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+body.lf-on[data-lf-family=junior] aside.reading>.controls-card .control-heading>strong{display:none}
+body.lf-on[data-lf-family=junior] aside.reading>section.timeline{box-shadow:none;padding:8px 10px;gap:8px}
+body.lf-on[data-lf-family=junior] aside.reading>section.timeline strong{min-width:0}
+body.lf-on[data-lf-family=junior] aside.reading>#counterexample,body.lf-on[data-lf-family=junior] aside.reading>#snapshot{align-self:flex-start}
+body.lf-on[data-lf-family=junior] aside.reading>#exerciseDetails{border:1px solid #d5c9ef;border-radius:14px;background:#fff;padding:12px 16px}
+body.lf-on[data-lf-family=junior] aside.reading>#exerciseDetails summary{font-size:17px;font-weight:700;color:var(--lf-practice);cursor:pointer}
+body.lf-on[data-lf-family=junior] aside.reading>#exerciseDetails .extra-body,body.lf-on[data-lf-family=junior] aside.reading>#exerciseDetails p{font-size:var(--lf-t-read);color:var(--lf-ink)}
+body.lf-on[data-lf-family=junior] aside.reading>#exerciseDetails .answer{font-size:var(--lf-t-read)}
+body.lf-on[data-lf-family=junior] .top-tools .lf-pin{font-size:14px}
+@media (max-width:1180px){body.lf-on[data-lf-family=junior] .scene-heading{flex-wrap:wrap}body.lf-on[data-lf-family=junior] .scene-heading>div:first-child{flex-basis:100%}}
+@media (max-width:960px){body.lf-on[data-lf-family=junior] .workspace{grid-template-columns:1fr}}
+body.lf-on[data-lf-family=junior] header.top{padding-top:6px;padding-bottom:4px}
+body.lf-on[data-lf-family=junior] header.top .brand{display:none}
+body.lf-on[data-lf-family=junior] header.top h1{font-size:24px;margin:0}
+body.lf-on[data-lf-family=junior] .figure-head{padding-top:6px;padding-bottom:6px}
+body.lf-on[data-lf-family=junior] .figure-card>.fallback-warning{font-size:14px;font-weight:650;line-height:1.4;padding:5px 12px}
+body.lf-on[data-lf-family=junior] .engine-badge{font-size:13px;font-weight:700}
+
+/* ---------- senior runtime (高中) ---------- */
+/* The senior painter also measures its SVG on each render (1:1 px), so the plot
+   keeps the runtime's height; lesson mode re-sequences the side sections only. */
+body.lf-on[data-lf-family=senior]{--muted:#3d5752}
+body.lf-on[data-lf-family=senior] .head{padding-top:4px;padding-bottom:2px}
+body.lf-on[data-lf-family=senior] .head .eyebrow{display:none}
+body.lf-on[data-lf-family=senior] .head h1{font-size:24px}
+body.lf-on[data-lf-family=senior] .tabs{margin:8px 0 8px}
+body.lf-on[data-lf-family=senior] .scenehead{margin-bottom:8px;gap:8px 14px}
+body.lf-on[data-lf-family=senior] .scenehead>h2{flex:1;min-width:0;font-size:var(--lf-t-title)}
+body.lf-on[data-lf-family=senior] .scenehead>small{display:none}
+body.lf-on[data-lf-family=senior] .bench{grid-template-columns:minmax(0,1.62fr) minmax(300px,1fr);gap:14px}
+body.lf-on[data-lf-family=senior] aside.lesson{display:flex;flex-direction:column;gap:10px;border-left:0;padding-left:0}
+body.lf-on[data-lf-family=senior] aside.lesson>.sect{margin:0;padding:12px 16px;border:1px solid var(--lf-line);border-radius:14px;background:#fff}
+body.lf-on[data-lf-family=senior][data-lf-stage=formalize] aside.lesson>.sect[data-lf-block=definition]{background:var(--lf-formalize-bg);border-color:#bfe0d9}
+body.lf-on[data-lf-family=senior] .sect .label{font-size:14px;color:var(--lf-soft)}
+body.lf-on[data-lf-family=senior] #definition{font-size:var(--lf-t-key);color:var(--lf-ink);margin:0}
+body.lf-on[data-lf-family=senior] #formula{font-size:var(--lf-t-eq)}
+body.lf-on[data-lf-family=senior] #correspondence{font-size:var(--lf-t-read);color:var(--lf-ink)}
+body.lf-on[data-lf-family=senior] #selection{font-size:17px;color:var(--lf-soft)}
+body.lf-on[data-lf-family=senior] #feedback{font-size:var(--lf-t-read)}
+body.lf-on[data-lf-family=senior] #why{font-size:var(--lf-t-read);color:var(--lf-ink)}
+body.lf-on[data-lf-family=senior] .boardnote{font-size:16px;color:var(--lf-soft)}
+body.lf-on[data-lf-family=senior] #plot text{font-size:18px}
+body.lf-on[data-lf-family=senior] aside.lesson>#metrics{border:1px solid var(--lf-line);border-radius:12px;overflow:hidden;grid-template-columns:repeat(2,minmax(0,1fr))}
+body.lf-on[data-lf-family=senior] aside.lesson>#controls{margin:0;grid-template-columns:repeat(2,minmax(0,1fr))}
+body.lf-on[data-lf-family=senior] aside.lesson>section.animation{margin:0;padding:8px 10px;border:1px solid var(--lf-line);border-radius:12px;background:#fff}
+body.lf-on[data-lf-family=senior] aside.lesson>section.animation small{font-size:15px;color:var(--lf-soft)}
+body.lf-on[data-lf-family=senior] aside.lesson>#exercise{border:1px solid #d5c9ef;border-radius:14px;background:#fff;padding:12px 16px}
+body.lf-on[data-lf-family=senior] aside.lesson>#exercise summary{font-size:17px;font-weight:700;color:var(--lf-practice);cursor:pointer}
+body.lf-on[data-lf-family=senior] aside.lesson>#exercise .detailsbody,body.lf-on[data-lf-family=senior] aside.lesson>#exercise p{font-size:var(--lf-t-read);color:var(--lf-ink)}
+body.lf-on[data-lf-family=senior] aside.lesson>#exercise .answer{font-size:var(--lf-t-read)}
+body.lf-on[data-lf-family=senior] .fallback-warning{font-size:14px;font-weight:650;line-height:1.4}
+body.lf-on[data-lf-family=senior] .engine-badge{font-size:13px;font-weight:700}
+@media (max-width:1180px){body.lf-on[data-lf-family=senior] .scenehead{flex-wrap:wrap}body.lf-on[data-lf-family=senior] .scenehead>h2{flex-basis:100%}}
+@media (max-width:960px){body.lf-on[data-lf-family=senior] .bench{grid-template-columns:1fr}}
+
+/* ---------- H16 runtime (高中 · 导数) ---------- */
+body.lf-on[data-lf-family=h16] .header .eyebrow{display:none}
+body.lf-on[data-lf-family=h16] .header h1{font-size:24px}
+body.lf-on[data-lf-family=h16] .scene-line{gap:8px 14px;align-items:center}
+body.lf-on[data-lf-family=h16] .scene-line>div:first-child{flex:1;min-width:0}
+body.lf-on[data-lf-family=h16] #sceneTitle{font-size:var(--lf-t-title)}
+body.lf-on[data-lf-family=h16] .scene-line .question{font-size:var(--lf-t-sub);color:var(--lf-soft)}
+body.lf-on[data-lf-family=h16] #knowledgeBadge{display:none}
+body.lf-on[data-lf-family=h16] .workbench{grid-template-columns:minmax(0,1.62fr) minmax(300px,1fr);gap:14px}
+body.lf-on[data-lf-family=h16] aside.lesson{display:flex;flex-direction:column;gap:10px}
+body.lf-on[data-lf-family=h16] aside.lesson>.lesson-section{margin:0;padding:12px 16px;border:1px solid var(--lf-line);border-radius:14px;background:#fff}
+body.lf-on[data-lf-family=h16][data-lf-stage=formalize] aside.lesson>.lesson-section[data-lf-block=definition]{background:var(--lf-formalize-bg);border-color:#bfe0d9}
+body.lf-on[data-lf-family=h16] .section-label{font-size:14px;color:var(--lf-soft)}
+body.lf-on[data-lf-family=h16] .definition{font-size:var(--lf-t-key);color:var(--lf-ink)}
+body.lf-on[data-lf-family=h16] .formula{font-size:var(--lf-t-eq)}
+body.lf-on[data-lf-family=h16] aside.lesson .explain,body.lf-on[data-lf-family=h16] aside.lesson .facts{font-size:var(--lf-t-read);color:var(--lf-ink)}
+body.lf-on[data-lf-family=h16] .selection-info{font-size:17px;color:var(--lf-soft)}
+body.lf-on[data-lf-family=h16] .graph-note{font-size:16px;color:var(--lf-soft)}
+body.lf-on[data-lf-family=h16] aside.lesson>#metrics{border:1px solid var(--lf-line);border-radius:12px;overflow:hidden}
+body.lf-on[data-lf-family=h16] aside.lesson>#controls{margin:0}
+body.lf-on[data-lf-family=h16] aside.lesson>section.animation{margin:0;padding:8px 10px;border:1px solid var(--lf-line);border-radius:12px;background:#fff}
+body.lf-on[data-lf-family=h16] aside.lesson>#exercise{border:1px solid #d5c9ef;border-radius:14px;background:#fff;padding:12px 16px}
+body.lf-on[data-lf-family=h16] aside.lesson>#exercise summary{font-size:17px;font-weight:700;color:var(--lf-practice);cursor:pointer}
+body.lf-on[data-lf-family=h16] aside.lesson>#exercise .details-body,body.lf-on[data-lf-family=h16] aside.lesson>#exercise p{font-size:var(--lf-t-read);color:var(--lf-ink)}
+body.lf-on[data-lf-family=h16] aside.lesson>#exercise .answer{font-size:var(--lf-t-read)}
+@media (max-width:1180px){body.lf-on[data-lf-family=h16] .scene-line{flex-wrap:wrap}body.lf-on[data-lf-family=h16] .scene-line>div:first-child{flex-basis:100%}}
+@media (max-width:960px){body.lf-on[data-lf-family=h16] .workbench{grid-template-columns:1fr}}
+/* H16 colour tokens: same hues, ≥6:1 on white; card tokens bold like the other families. */
+body.lf-on[data-lf-family=h16]{--green:#066a58;--orange:#9a4a10;--blue:#1f5f99;--purple:#6a44a0;--muted:#3d5760}
+body.lf-on[data-lf-family=h16] .lf-card .token{font-weight:700}
+/* W3 senior chapters: keep the engine badge clear of the fallback warning bar. */
+body.lf-on[data-lf-family=senior] .board:has(>#fallback-warning:not([hidden])) .engine-badge{top:84px}
+
+/* ---------- single-scene 3D demo (高中/空间几何关系) ---------- */
+.lf-sr{position:absolute!important;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+body.lf-on[data-lf-family=space] main{max-width:1200px;padding:10px 16px}
+body.lf-on[data-lf-family=space] main>section{padding:12px 20px;margin-bottom:10px}
+body.lf-on[data-lf-family=space] main>section:first-child>.tag{font-size:15px}
+body.lf-on[data-lf-family=space] main>section:first-child>h1{margin:0;font-size:var(--lf-t-title)}
+body.lf-on[data-lf-family=space] main>section:first-child>p{margin:0 0 6px;font-size:var(--lf-t-sub);color:#3d5566}
+body.lf-on[data-lf-family=space] main>section:nth-child(2)>p:first-child{margin:0 0 6px;font-size:17px;color:#3d5566}
+/* figure left, the step's own controls in a column on the right */
+body.lf-on[data-lf-family=space] .board.lf-card{display:grid;grid-template-columns:minmax(0,1fr) 172px 172px;grid-template-rows:auto repeat(14,min-content) 1fr;column-gap:18px;row-gap:6px;align-items:start;margin-top:6px;padding:12px}
+body.lf-on[data-lf-family=space] .board.lf-card>*{grid-column:2/4;justify-self:start;margin:0}
+/* paired buttons share a row: 锁定/重置视角, 先猜一下/显示规律 */
+body.lf-on[data-lf-family=space] .board.lf-card>#lock,body.lf-on[data-lf-family=space] .board.lf-card>#guess{grid-column:2;justify-self:stretch}
+body.lf-on[data-lf-family=space] .board.lf-card>#reset,body.lf-on[data-lf-family=space] .board.lf-card>#show{grid-column:3;justify-self:stretch}
+body.lf-on[data-lf-family=space] .board.lf-card>.lf-card-head{grid-column:1/-1;grid-row:1;justify-self:stretch}
+body.lf-on[data-lf-family=space] .board.lf-card>canvas{grid-column:1;grid-row:2/-1;justify-self:stretch;height:var(--lf-fig-h,420px)}
+body.lf-on[data-lf-family=space] .board.lf-card>.fallback-warning{order:-1;justify-self:stretch;font-size:15px;font-weight:650;line-height:1.45;border-radius:9px}
+body.lf-on[data-lf-family=space] .board.lf-card>.svg-fallback,body.lf-on[data-lf-family=space] .board.lf-card>[data-sd=overlay]{grid-column:auto}
+body.lf-on[data-lf-family=space] .board.lf-card>.engine-badge{grid-column:auto;font-size:13px;font-weight:700;color:#203548}
+body.lf-on[data-lf-family=space] .board .group{display:flex;flex-wrap:wrap;gap:6px;margin:0}
+body.lf-on[data-lf-family=space] .board .group{align-items:center}
+body.lf-on[data-lf-family=space] .board .group b{min-width:2.4em;font-size:17px;color:#203548}
+body.lf-on[data-lf-family=space] .board button{font-size:17px;font-weight:650;min-height:44px;padding:8px 12px;margin:0}
+body.lf-on[data-lf-family=space] .board button.active{background:#1f5572;outline:3px solid #f0a53a;outline-offset:2px}
+body.lf-on[data-lf-family=space] .board button:focus-visible{outline:3px solid #b35a00;outline-offset:2px}
+body.lf-on[data-lf-family=space] #legend{font-size:18px;font-weight:650;gap:18px;color:#203548}
+body.lf-on[data-lf-family=space] #legend .l1{color:#b8433a}
+body.lf-on[data-lf-family=space] #legend .l2{color:#1d64a8}
+body.lf-on[data-lf-family=space] #o{font-size:var(--lf-t-key);font-weight:750;color:#203548;justify-self:stretch}
+body.lf-on[data-lf-family=space] #a{font-size:18px;color:#1f5a43;justify-self:stretch}
+body.lf-on[data-lf-family=space] #a:empty{display:none}
+body.lf-on[data-lf-family=space] .board:not(.lf-card){margin-top:0;padding:12px 18px;font-size:var(--lf-t-read)}
+body.lf-on[data-lf-family=space] .board:not(.lf-card) summary{font-size:18px;font-weight:700;color:var(--lf-practice);cursor:pointer}
+body.lf-on[data-lf-family=space] .board:not(.lf-card) .answer{font-size:18px}
+@media (max-width:959px){
+body.lf-on[data-lf-family=space] .board.lf-card{display:block}
+body.lf-on[data-lf-family=space] .board.lf-card>canvas{height:min(var(--lf-fig-h,420px),52vh)}
+body.lf-on[data-lf-family=space] .board.lf-card>.lf-card-head,body.lf-on[data-lf-family=space] .board.lf-card>.group,body.lf-on[data-lf-family=space] .board.lf-card>#o,body.lf-on[data-lf-family=space] .board.lf-card>#a,body.lf-on[data-lf-family=space] .board.lf-card>.board{margin:8px 0}
+body.lf-on[data-lf-family=space] .board.lf-card>button{margin:6px 6px 0 0}
+}</style></head><body><main><header class="head"><div class="brand"><div class="brandmark">ƒ</div><div><div class="eyebrow">MATHAGENT / 高中 H05</div><h1>三角函数与恒等变换</h1></div></div><div class="headtools"><a href="../index.html">全部章节</a><button id="undo">撤销</button><button id="resetView">恢复视图</button><button id="resetScene">重置场景</button><button id="focusCanvas">放大画布</button><button id="large">投屏大字</button><button id="teacherToggle">教师工具</button></div></header><section class="teacher" id="teacher" hidden><label><input type="checkbox" id="reduce">减少动态</label><button id="exportState">导出课堂状态</button> <button id="importState">导入课堂状态</button> <button onclick="window.print()">打印</button><input id="stateFile" type="file" accept=".json,application/json" hidden><p>图上实心控制点按住即可拖动；步长、范围、关联约束与参数栏一致。空白区二维平移／三维旋转，点击画布后滚轮缩放观察。固定对象不自由变形，增删仅在原场景允许的教学动作中开放。</p><textarea id="teacherNote" placeholder="教师备注：记录数据来源、假设或自己的解释。随课堂状态一起导出。" aria-label="教师备注"></textarea></section><nav class="tabs" id="tabs" role="tablist" aria-label="章节场景"></nav><div class="scenehead"><h2 id="sceneTitle"></h2><small id="scope"></small></div><div class="bench"><div class="visual"><section class="board"><div class="boardtop"><strong id="boardTitle"></strong><span id="viewHint"></span><button id="exitFocus" hidden>返回 · Esc</button></div><svg id="plot" tabindex="0" role="group" aria-label="交互数学画布"></svg><p class="boardnote" id="boardNote"></p><div class="metrics" id="metrics"></div></section><section class="controls" id="controls" aria-label="原教学参数与操作"></section><section class="animation"><button id="play">播放演示</button><button id="reverse">反向</button><button id="replay">重播</button><input id="progress" aria-label="演示进度" type="range" min="0" max="100" step="0.1" value="0"><span id="progressText">0%</span><small id="animationNote"></small></section></div><aside class="lesson"><section class="sect"><div class="label">定义与条件</div><p id="definition"></p><div id="formula"></div></section><section class="sect"><div class="label">图中对应的是</div><div id="correspondence"></div><p id="selection">点击图内对象或公式参数，查看对应关系。</p></section><section class="sect"><div class="label">当前事实与理由</div><div id="feedback"></div><div class="factsrow"><button id="boundary">边界／反例</button><button id="showWhy">收起解释</button></div><p id="why"></p></section></aside></div><div class="lower"><details id="details"><summary>推导、条件与原知识点</summary><div class="detailsbody" id="detailsBody"></div></details><details id="exercise"><summary>当前状态练习 · 可直接看答案</summary><div class="detailsbody"><p id="question"></p><button id="answerToggle">显示答案与理由</button><div id="answer" class="answer" hidden></div></div></details></div><footer><span id="revision"></span><span>可自由跳转 · 视图不改变数学 · 指定教材逐点审校待教师确认</span></footer></main><div id="toast" class="toast" hidden></div><div id="live" class="sr" role="status" aria-live="polite"></div><noscript>请启用 JavaScript 后运行交互课件。</noscript><script>/* MathAgent mathematical kernel. Pure functions; no DOM or animation state. */
+(function(root,factory){const api=factory();if(typeof module==='object'&&module.exports)module.exports=api;else root.M=api;})(globalThis,()=>{'use strict';
+const eps=1e-10, pi=Math.PI;
+const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
+const fmt=(x,d=4)=>x===null||!Number.isFinite(x)?'未定义':Math.abs(x)<1e-12?'0':Number(x.toPrecision(d)).toString().replace(/^-/, '−');
+const sum=a=>a.reduce((s,x)=>s+x,0),dot=(a,b)=>sum(a.map((x,i)=>x*b[i])),add=(a,b)=>a.map((x,i)=>x+b[i]),sub=(a,b)=>a.map((x,i)=>x-b[i]),mul=(a,t)=>a.map(x=>x*t),norm=a=>Math.hypot(...a);
+const cross=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];
+const dist=(a,b)=>norm(sub(a,b)), unit=a=>norm(a)>eps?mul(a,1/norm(a)):null;
+const rad=d=>d*pi/180, deg=r=>r*180/pi;
+const sin=d=>Math.abs(Math.sin(rad(d)))<eps?0:Math.sin(rad(d)),cos=d=>Math.abs(Math.cos(rad(d)))<eps?0:Math.cos(rad(d));
+function roots(a,b,c){if(Math.abs(a)<eps){if(Math.abs(b)<eps)return {type:Math.abs(c)<eps?'all':'none',roots:[],delta:null};return {type:'linear',roots:[-c/b],delta:null};}const delta=b*b-4*a*c;if(delta < -eps)return {type:'none',roots:[],delta};if(Math.abs(delta)<=eps)return {type:'double',roots:[-b/(2*a)],delta:0};const q=-.5*(b+Math.sign(b||1)*Math.sqrt(delta));return {type:'two',roots:[q/a,c/q].sort((a,b)=>a-b),delta};}
+function relation(v,op){return op==='>'?v>eps:op==='≥'?v>=-eps:op==='<'?v<-eps:op==='≤'?v<=eps:Math.abs(v)<eps;}
+function quadSet(a,b,c,op,left=-Infinity,right=Infinity){const r=roots(a,b,c),rs=r.roots.filter(x=>x>=left&&x<=right),breaks=[left,...rs.filter(x=>x>left&&x<right),right];const intervals=[],points=[];for(let i=0;i<breaks.length-1;i++){let l=breaks[i],h=breaks[i+1];if(l===h)continue;let m=!Number.isFinite(l)?h-1:!Number.isFinite(h)?l+1:(l+h)/2;if(!Number.isFinite(m))m=0;if(relation((a*m+b)*m+c,op))intervals.push({l,r:h,lc:Number.isFinite(l)&&relation((a*l+b)*l+c,op),rc:Number.isFinite(h)&&relation((a*h+b)*h+c,op)});}for(const x of [left,right,...rs].filter(Number.isFinite)){if(relation((a*x+b)*x+c,op)&&!intervals.some(i=>x>=i.l&&x<=i.r)&&!points.includes(x))points.push(x);}if(left===right&&relation((a*left+b)*left+c,op))return {intervals:[],points:[left],roots:r};return {intervals,points,roots:r};}
+function setText(s){const chunks=s.intervals.map(i=>`${i.lc?'[':'('}${Number.isFinite(i.l)?fmt(i.l):'−∞'}, ${Number.isFinite(i.r)?fmt(i.r):'+∞'}${i.rc?']':')'}`).concat(s.points.map(x=>'{'+fmt(x)+'}'));return chunks.join(' ∪ ')||'∅';}
+function choose(n,k){if(!Number.isInteger(n)||!Number.isInteger(k)||k<0||n<k) return 0n;k=Math.min(k,n-k);let v=1n;for(let i=1;i<=k;i++)v=v*BigInt(n-k+i)/BigInt(i);return v;}
+function perm(n,k){if(!Number.isInteger(n)||!Number.isInteger(k)||k<0||n<k)return 0n;let v=1n;for(let i=0;i<k;i++)v*=BigInt(n-i);return v;}
+function stats(xs){const n=xs.length;if(!n)return {n:0,mean:null,variance:null,sd:null,min:null,max:null,median:null};const mean=sum(xs)/n,variance=sum(xs.map(x=>(x-mean)**2))/n,s=[...xs].sort((a,b)=>a-b);return {n,mean,variance,sd:Math.sqrt(variance),min:s[0],max:s[n-1],median:n%2?s[(n-1)/2]:(s[n/2-1]+s[n/2])/2};}
+function percentile(xs,p){const a=[...xs].sort((a,b)=>a-b);if(!a.length)return null;const rank=clamp(Math.ceil(a.length*p/100),1,a.length);return {value:a[rank-1],rank,sorted:a};}
+function rng(seed){let s=seed>>>0;return ()=>{s=(Math.imul(1664525,s)+1013904223)>>>0;return s/4294967296;};}
+function sample(pop,n,seed=1){const a=[...pop],r=rng(seed);for(let i=a.length-1;i>0;i--){const j=Math.floor(r()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a.slice(0,Math.min(n,a.length));}
+function allocate(sizes,n){const N=sum(sizes),raw=sizes.map(x=>n*x/N),a=raw.map(Math.floor);const order=raw.map((x,i)=>({i,f:x-a[i]})).sort((a,b)=>b.f-a.f||a.i-b.i);let rem=n-sum(a);for(let j=0;j<rem;j++)a[order[j].i]++;return a;}
+function distribution(values,ps){const total=sum(ps),mean=sum(values.map((x,i)=>x*ps[i])),variance=sum(values.map((x,i)=>(x-mean)**2*ps[i]));return {values,ps,total,mean,variance};}
+function binomial(n,p){const v=Array.from({length:n+1},(_,i)=>i);return distribution(v,v.map(k=>Number(choose(n,k))*p**k*(1-p)**(n-k)));}
+function hyper(N,K,n){const lo=Math.max(0,n-(N-K)),hi=Math.min(n,K),v=Array.from({length:hi-lo+1},(_,i)=>i+lo);return distribution(v,v.map(k=>Number(choose(K,k)*choose(N-K,n-k))/Number(choose(N,n))));}
+function erf(x){const sg=Math.sign(x),z=Math.abs(x),t=1/(1+.3275911*z);return sg*(1-(((((1.061405429*t-1.453152027)*t)+1.421413741)*t-.284496736)*t+.254829592)*t*Math.exp(-z*z));}
+const cdf=(x,mu=0,sigma=1)=>sigma>0?.5*(1+erf((x-mu)/(sigma*Math.SQRT2))):null;
+function regression(data){const n=data.length,xm=sum(data.map(p=>p[0]))/n,ym=sum(data.map(p=>p[1]))/n,Sxx=sum(data.map(p=>(p[0]-xm)**2)),Syy=sum(data.map(p=>(p[1]-ym)**2)),Sxy=sum(data.map(p=>(p[0]-xm)*(p[1]-ym)));const b=Sxx>eps?Sxy/Sxx:null,a=b===null?null:ym-b*xm,r=Sxx*Syy>eps?Sxy/Math.sqrt(Sxx*Syy):null;return {a,b,r,xm,ym,Sxx,Syy,Sxy,sse:a===null?null:sum(data.map(p=>(p[1]-a-b*p[0])**2))};}
+function chi2(a,b,c,d){const n=a+b+c+d,rows=[a+b,c+d],cols=[a+c,b+d];const expected=[rows[0]*cols[0]/n,rows[0]*cols[1]/n,rows[1]*cols[0]/n,rows[1]*cols[1]/n];const value=expected.every(x=>x>0)?sum([a,b,c,d].map((o,i)=>(o-expected[i])**2/expected[i])):null;return {n,rows,cols,expected,value,applicable:n>=40&&expected.every(x=>x>=5)};}
+function sas(a,b,C){const c=Math.sqrt(Math.max(0,a*a+b*b-2*a*b*cos(C))),area=a*b*sin(C)/2;let A=c>eps?deg(Math.acos(clamp((b*b+c*c-a*a)/(2*b*c),-1,1))):null;return {a,b,c,A,B:A===null?null:180-C-A,C,area,h:b*sin(C)};}
+function ssa(a,b,A){if(a<=0||b<=0||A<=0||A>=180)return [];const s=b*sin(A)/a;if(s>1+eps||s<0)return [];let B0=deg(Math.asin(Math.abs(s-1)<eps?1:clamp(s,-1,1))),Bs=Math.abs(B0-90)<eps?[90]:[B0,180-B0];return Bs.filter(B=>B>0&&A+B<180-eps).map(B=>({a,b,A,B,C:180-A-B,c:a*sin(180-A-B)/sin(A)}));}
+function lineLine(P,u,Q,v){const w=sub(Q,P),c=cross(u,v),nu=norm(u),nv=norm(v);if(nu<eps||nv<eps)return {type:'invalid'};if(norm(c)<eps*nu*nv)return {type:norm(cross(w,u))<eps*nu*Math.max(1,norm(w))?'coincident':'parallel'};if(Math.abs(dot(w,c))>eps*norm(c)*Math.max(1,norm(w)))return {type:'skew',distance:Math.abs(dot(w,c))/norm(c)};const t=dot(cross(w,v),c)/dot(c,c);return {type:'intersect',point:add(P,mul(u,t)),perpendicular:Math.abs(dot(u,v))<eps*nu*nv};}
+function linePlane(P,u,Q,n){if(norm(u)<eps||norm(n)<eps)return {type:'invalid'};const c=dot(n,sub(P,Q)),d=dot(n,u);if(Math.abs(d)<eps*norm(n)*norm(u))return {type:Math.abs(c)<eps*norm(n)*Math.max(1,dist(P,Q))?'contained':'parallel',distance:Math.abs(c)/norm(n)};return {type:'intersect',point:add(P,mul(u,-c/d)),perpendicular:norm(cross(u,n))<eps*norm(u)*norm(n)};}
+function planePlane(P,n,Q,m){if(norm(n)<eps||norm(m)<eps)return {type:'invalid'};if(norm(cross(n,m))<eps*norm(n)*norm(m))return {type:Math.abs(dot(n,sub(P,Q)))<eps*norm(n)*Math.max(1,dist(P,Q))?'coincident':'parallel'};return {type:'intersect',perpendicular:Math.abs(dot(n,m))<eps*norm(n)*norm(m)};}
+function circleRel(r,R,d){if(d<eps&&Math.abs(r-R)<eps)return '重合（无穷多个公共点）';if(d<eps)return '同心内含（0 个公共点）';if(d>r+R+eps)return '外离（0 个公共点）';if(Math.abs(d-r-R)<eps)return '外切（1 个公共点）';if(d<Math.abs(r-R)-eps)return '内含（0 个公共点）';if(Math.abs(d-Math.abs(r-R))<eps)return '内切（1 个公共点）';return '相交（2 个公共点）';}
+function seq(a,d,q,n,type){const values=Array.from({length:n},(_,i)=>type==='geo'?a*q**i:a+i*d);return {values,an:values[n-1],sum:sum(values)};}
+function linear2(a,b,c,d,e,f){const det=a*d-b*c;if(Math.abs(det)>eps)return {type:'unique',det,x:(e*d-b*f)/det,y:(a*f-e*c)/det,rankA:2,rankB:2};const rankA=Math.abs(a)+Math.abs(b)+Math.abs(c)+Math.abs(d)<eps?0:1;let inconsistent=rankA===0?(Math.abs(e)+Math.abs(f)>eps):Math.abs(a*f-c*e)>eps||Math.abs(b*f-d*e)>eps||((Math.abs(a)+Math.abs(b)<eps)&&Math.abs(e)>eps)||((Math.abs(c)+Math.abs(d)<eps)&&Math.abs(f)>eps);return {type:inconsistent?'none':'infinite',det,rankA,rankB:inconsistent?rankA+1:rankA};}
+return {eps,pi,clamp,fmt,sum,dot,add,sub,mul,norm,cross,dist,unit,rad,deg,sin,cos,roots,relation,quadSet,setText,choose,perm,stats,percentile,rng,sample,allocate,distribution,binomial,hyper,erf,cdf,regression,chi2,sas,ssa,lineLine,linePlane,planePlane,circleRel,seq,linear2};});
+</script><script>/* Rendering uses ideal mathematical coordinates, never pixel geometry for a verdict. */
+const C={green:'#0b8068',blue:'#286faa',orange:'#bd652c',purple:'#8157a8',red:'#b64d4b',muted:'#667d82',line:'#dce6df',soft:'#e7f2eb'};
+const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+class Graph{
+ constructor(svg,view){this.svg=svg;this.view=view;const r=svg.getBoundingClientRect();this.w=Math.max(160,r.width);this.h=Math.max(100,r.height);svg.setAttribute('viewBox',`0 0 ${this.w} ${this.h}`);this.buf=[];this.controls=[];this.handlePositions=[];this.offscreenLabels=0;this.handles={};this.actions={};this.labels=[];this.items3=[];this.space=false;this.seq=0;this.range(-6,6,-4,4);this.buf.push(`<defs><clipPath id="frame"><rect x="1" y="1" width="${this.w-2}" height="${this.h-2}"/></clipPath><marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="context-stroke"/></marker><pattern id="hatch" width="7" height="7" patternUnits="userSpaceOnUse"><path d="M0 7L7 0" stroke="#b76f49" opacity=".3"/></pattern></defs><g clip-path="url(#frame)">`);}
+ range(xmin,xmax,ymin,ymax,equal=false){this.bounds=[xmin,xmax,ymin,ymax];this.margin=this.area?25:42;const area=this.area||[0,0,this.w,this.h];let sx=(area[2]-2*this.margin)/(xmax-xmin),sy=(area[3]-2*this.margin)/(ymax-ymin);if(equal)sx=sy=Math.min(sx,sy);const z=this.view.zoom||1;this.sx=sx*z;this.sy=sy*z;this.ox=area[0]+area[2]/2-(xmin+xmax)/2*this.sx+(this.view.x||0);this.oy=area[1]+area[3]/2+(ymin+ymax)/2*this.sy+(this.view.y||0);return this;}
+ panel(area,bounds,equal=false){this.area=area;return this.range(...bounds,equal);}
+ full(){this.area=null;return this;}
+ to(x,y){return [this.ox+x*this.sx,this.oy-y*this.sy];} from(x,y){return [(x-this.ox)/this.sx,(this.oy-y)/this.sy];}
+ raw(t){this.buf.push(t);return this;} line(x1,y1,x2,y2,color=C.green,width=2,dash='',arrow=false){return this.linePx(...this.to(x1,y1),...this.to(x2,y2),color,width,dash,arrow);}
+ linePx(x1,y1,x2,y2,color=C.green,width=2,dash='',arrow=false){if(![x1,y1,x2,y2].every(Number.isFinite))return;this.buf.push(`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${color}" stroke-width="${width}" ${dash?`stroke-dasharray="${dash}"`:''} ${arrow?'marker-end="url(#arrow)"':''}/>`);}
+ text(x,y,label,color=C.muted,anchor='start',offset=[8,-10]){const p=this.to(x,y);this.textPx(p[0]+offset[0],p[1]+offset[1],label,color,anchor);}
+ textPx(x,y,label,color=C.muted,anchor='start',size=16){if(!Number.isFinite(x+y))return;if(x < -20||x>this.w+20||y < -20||y>this.h+20){this.offscreenLabels++;return;}this.labels.push({x,y,label:String(label),color,anchor,size});}
+ dot(x,y,label='',color=C.green,options={}){const [X,Y]=this.to(x,y);if(!Number.isFinite(X+Y))return;const token=options.key||(label?'fixed:'+label:'');const attr=token?` data-token="${esc(token)}" class="item"`:'';this.buf.push(`<circle cx="${X}" cy="${Y}" r="${options.r||5}" fill="${options.open?'#fffefb':color}" stroke="${color}" stroke-width="2"${attr}/>`);if(label)this.text(x,y,label,color,'start',options.offset||[9,-10]);}
+ handle(x,y,key,drag,label='',color=C.green,extra={}){const [X,Y]=this.to(x,y);const sx=this.sx,sy=this.sy,ox=this.ox,oy=this.oy;return this.handlePx(X,Y,key,drag,label,color,{convert:(X,Y)=>[(X-ox)/sx,(oy-Y)/sy],...extra});}
+ handlePx(X,Y,key,drag,label='',color=C.green,extra={}){if(!Number.isFinite(X+Y))return;const anchor=[X,Y];let offset=[0,0];
+ // Separate coincident control targets, with leaders to the exact mathematical anchor.
+ if(this.handlePositions.some(p=>Math.hypot(p[0]-X,p[1]-Y)<29)){
+  const candidates=[36,52,70].flatMap(r=>Array.from({length:12},(_,i)=>[r*Math.cos(i*Math.PI/6),r*Math.sin(i*Math.PI/6)]));
+  const good=candidates.find(([dx,dy])=>X+dx>18&&X+dx<this.w-18&&Y+dy>18&&Y+dy<this.h-18&&this.handlePositions.every(p=>Math.hypot(p[0]-X-dx,p[1]-Y-dy)>=29));
+  if(good){offset=good;X+=good[0];Y+=good[1];this.controls.push(`<line x1="${anchor[0]}" y1="${anchor[1]}" x2="${X}" y2="${Y}" stroke="${color}" stroke-width="1.3" stroke-dasharray="3 2" pointer-events="none"/><circle cx="${anchor[0]}" cy="${anchor[1]}" r="3" fill="${color}" pointer-events="none"/>`);}
+ }
+ this.handlePositions.push([X,Y]);const id='h'+(++this.seq),convert=extra.convert;this.handles[id]={key,drag,...extra,convert:convert?((x,y)=>convert(x-offset[0],y-offset[1])):undefined};this.controls.push(`<circle cx="${X}" cy="${Y}" r="16" fill="transparent" data-handle="${id}" data-param="${esc(key)}" tabindex="0" role="slider" aria-label="${esc(label||key)}"/><circle cx="${X}" cy="${Y}" r="7" fill="${color}" class="handle" data-handle="${id}" data-param="${esc(key)}"/>`);if(label)this.textPx(X+10,Y-13,label,color);return id;}
+ action(x,y,text,run,label=''){let [X,Y]=this.to(x,y),id='a'+(++this.seq);this.actions[id]=run;this.buf.push(`<g class="item" data-action="${id}" role="button" tabindex="0" aria-label="${esc(label||text)}"><rect x="${X-18}" y="${Y-17}" width="36" height="34" rx="8" fill="${C.soft}" stroke="${C.green}"/><text x="${X}" y="${Y+6}" text-anchor="middle" style="font-size:22px;fill:${C.green};stroke:none">${esc(text)}</text></g>`);}
+ rect(x,y,w,h,fill=C.soft,stroke=C.green,opacity=1){const a=this.to(x,y),b=this.to(x+w,y+h);this.buf.push(`<rect x="${Math.min(a[0],b[0])}" y="${Math.min(a[1],b[1])}" width="${Math.abs(b[0]-a[0])}" height="${Math.abs(b[1]-a[1])}" fill="${fill}" stroke="${stroke}" fill-opacity="${opacity}" stroke-width="1.6"/>`);}
+ polygon(points,fill=C.soft,stroke=C.green,opacity=.65){const p=points.map(a=>this.to(...a));this.buf.push(`<polygon points="${p.map(a=>a.join(',')).join(' ')}" fill="${fill}" fill-opacity="${opacity}" stroke="${stroke}" stroke-width="2"/>`);}
+ circle(x,y,r,color=C.green,fill='none'){const p=this.to(x,y);this.buf.push(`<ellipse cx="${p[0]}" cy="${p[1]}" rx="${Math.abs(r*this.sx)}" ry="${Math.abs(r*this.sy)}" fill="${fill}" stroke="${color}" stroke-width="2.5"/>`);}
+ curve(fn,a=this.bounds[0],b=this.bounds[1],color=C.green,dash='',width=2.7){let d='',last=null;for(let i=0;i<=420;i++){const x=a+(b-a)*i/420,y=fn(x),p=this.to(x,y);if(!Number.isFinite(y)||p[1]<-this.h*4||p[1]>this.h*5){last=null;continue;}const move=!last||Math.abs(p[1]-last[1])>this.h*.9;d+=(move?'M':'L')+p[0].toFixed(2)+','+p[1].toFixed(2);last=p;}this.buf.push(`<path d="${d}" fill="none" stroke="${color}" stroke-width="${width}" ${dash?`stroke-dasharray="${dash}"`:''}/>`);}
+ param(fn,a,b,color=C.green,close=false){let d='';for(let i=0;i<=300;i++){const p=this.to(...fn(a+(b-a)*i/300));d+=(i?'L':'M')+p.join(',');}this.buf.push(`<path d="${d}${close?'Z':''}" fill="none" stroke="${color}" stroke-width="2.5"/>`);}
+ axes(xlabel='x',ylabel='y'){const ar=this.area||[0,0,this.w,this.h],X=ar[0],Y=ar[1],W=ar[2],H=ar[3];const bl=this.from(X+26,Y+H-26),tr=this.from(X+W-26,Y+26);const nice=(span,pixels)=>{let v=span/Math.max(2,pixels/75),e=10**Math.floor(Math.log10(v)),r=v/e;return (r<1.5?1:r<3?2:r<7?5:10)*e;};const dx=nice(tr[0]-bl[0],W),dy=nice(tr[1]-bl[1],H);for(let x=Math.ceil(bl[0]/dx)*dx;x<=tr[0]+dx*.01;x+=dx){this.line(x,bl[1],x,tr[1],C.line,1);if(Math.abs(x)>dx*.01){const p=this.to(x,0);this.textPx(p[0],M.clamp(p[1]+21,Y+22,Y+H-10),M.fmt(x,3),C.muted,'middle',14);}}for(let y=Math.ceil(bl[1]/dy)*dy;y<=tr[1]+dy*.01;y+=dy){this.line(bl[0],y,tr[0],y,C.line,1);if(Math.abs(y)>dy*.01){const p=this.to(0,y);this.textPx(M.clamp(p[0]-9,X+27,X+W-30),p[1]+5,M.fmt(y,3),C.muted,'end',14);}}this.line(bl[0],0,tr[0],0,C.muted,1.5,'',true);this.line(0,bl[1],0,tr[1],C.muted,1.5,'',true);const o=this.to(0,0);this.textPx(o[0]-8,o[1]+19,'O',C.muted,'end',14);this.textPx(X+W-12,M.clamp(o[1]-11,Y+20,Y+H-12),xlabel,C.muted,'end',15);this.textPx(M.clamp(o[0]+10,X+10,X+W-50),Y+19,ylabel,C.muted,'start',15);}
+
+ dim(a,b,label,color=C.green,offset=[0,-13]){this.line(...a,...b,color,1.5,'',true);this.text((a[0]+b[0])/2,(a[1]+b[1])/2,label,color,'middle',offset);}
+ bars(xs,values,color=C.green,width=.7){xs.forEach((x,i)=>{this.rect(x-width/2,0,width,values[i],color,color,.55);this.text(x,values[i],M.fmt(values[i],3),color,'middle',[0,values[i]>=0?-8:21]);});}
+ cards(items,cols=6){const gap=8,margin=25,cell=(this.w-2*margin-gap*(cols-1))/cols;const rows=Math.ceil(items.length/cols),h=Math.min(53,(this.h-65-(rows-1)*gap)/Math.max(1,rows));items.forEach((item,i)=>{const x=margin+(i%cols)*(cell+gap)+(this.view.x||0),y=30+Math.floor(i/cols)*(h+gap)+(this.view.y||0);const z=this.view.zoom||1,X=this.w/2+(x-this.w/2)*z,Y=this.h/2+(y-this.h/2)*z;const key=item.run?'a'+(++this.seq):'';if(key)this.actions[key]=item.run;this.buf.push(`<g ${key?`data-action="${key}" class="item" tabindex="0" role="button" aria-label="${esc(item.label)}"`:''}><rect x="${X}" y="${Y}" width="${cell*z}" height="${h*z}" rx="7" fill="${item.fill||'#eef4ef'}" stroke="${item.stroke||C.line}"/><text x="${X+cell*z/2}" y="${Y+h*z/2+6}" text-anchor="middle" style="font-size:${Math.min(18,cell*.38)}px;stroke:none;fill:${item.color||C.green}">${esc(item.label)}</text></g>`);});}
+ spaceStart(){this.space=true;return this;}
+ project(v){const yaw=this.view.yaw??.72,pitch=this.view.pitch??.45,cy=Math.cos(yaw),sy=Math.sin(yaw),cp=Math.cos(pitch),sp=Math.sin(pitch);const xr=v[0]*cy-v[1]*sy,yr=v[0]*sy+v[1]*cy;const scale=Math.min(this.w/12,this.h/10)*(this.view.zoom||1);return [this.w/2+xr*scale,this.h*.55+(sp*yr-cp*v[2])*scale,cp*yr+sp*v[2]];}
+ line3(a,b,color=C.green,width=3,dash='',label=''){this.items3.push({depth:(this.project(a)[2]+this.project(b)[2])/2,kind:'line',a,b,color,width,dash});if(label)this.label3(M.mul(M.add(a,b),.5),label,color);}
+ polygon3(points,color=C.green,opacity=.35){this.items3.push({depth:M.sum(points.map(p=>this.project(p)[2]))/points.length,kind:'poly',points,color,opacity});}
+ label3(p,label,color=C.muted){const a=this.project(p);this.textPx(a[0]+8,a[1]-8,label,color);}
+ dot3(p,label='',color=C.green){const a=this.project(p);this.items3.push({depth:a[2]+.01,kind:'dot',p,color});if(label)this.label3(p,label,color);}
+ axisHandle3(p,key,value,axis,label,color=C.green){const q=this.project(p),d=this.project(M.add(p,axis)),dx=d[0]-q[0],dy=d[1]-q[1];return this.handlePx(q[0],q[1],key,(pt,drag)=>({[key]:value+(dx*dx+dy*dy<1e-6?drag.dx/40:(drag.dx*dx+drag.dy*dy)/(dx*dx+dy*dy))}),label,color);}
+ axes3(len=4){this.line3([0,0,0],[len,0,0],C.orange,2,'','x');this.line3([0,0,0],[0,len,0],C.green,2,'','y');this.line3([0,0,0],[0,0,len],C.blue,2,'','z');this.dot3([0,0,0],'O');}
+ box3(l,w,h,origin=[-l/2,-w/2,0],open=false,fold=90){const [x,y,z]=origin;const v=[[x,y,z],[x+l,y,z],[x+l,y+w,z],[x,y+w,z],[x,y,z+h],[x+l,y,z+h],[x+l,y+w,z+h],[x,y+w,z+h]];const ids=[[0,1,2,3],[0,1,5,4],[1,2,6,5],[2,3,7,6],[3,0,4,7]];if(!open)ids.push([4,5,6,7]);ids.forEach((f,i)=>this.polygon3(f.map(j=>v[j]),[C.green,C.blue,C.orange,C.blue,C.green,C.purple][i],.48));return v;}
+ cylinder3(r,h,cone=false,origin=[0,0,0],closed=true){const o=origin,n=48;for(let i=0;i<n;i++){const a=2*Math.PI*i/n,b=2*Math.PI*(i+1)/n,P=[o[0]+r*Math.cos(a),o[1]+r*Math.sin(a),o[2]],Q=[o[0]+r*Math.cos(b),o[1]+r*Math.sin(b),o[2]],T=cone?[o[0],o[1],o[2]+h]:[Q[0],Q[1],Q[2]+h],S=cone?T:[P[0],P[1],P[2]+h];this.polygon3([P,Q,T,S],i<n/2?C.blue:C.green,.54);}if(closed||!cone)this.polygon3(Array.from({length:n},(_,i)=>[o[0]+r*Math.cos(i*2*Math.PI/n),o[1]+r*Math.sin(i*2*Math.PI/n),o[2]]),C.blue,.5);if(!cone&&closed)this.polygon3(Array.from({length:n},(_,i)=>[o[0]+r*Math.cos(i*2*Math.PI/n),o[1]+r*Math.sin(i*2*Math.PI/n),o[2]+h]),C.green,.5);}
+ sphere3(r){for(let j=0;j<14;j++)for(let i=0;i<28;i++){const a=-Math.PI/2+j*Math.PI/14,b=a+Math.PI/14,t=i*2*Math.PI/28,u=t+2*Math.PI/28;const f=(q,p)=>[r*Math.cos(q)*Math.cos(p),r*Math.cos(q)*Math.sin(p),r*Math.sin(q)];this.polygon3([f(a,t),f(a,u),f(b,u),f(b,t)],j<7?C.blue:C.green,.58);}}
+ finish(){if(this.space){const overlay=this.buf.splice(1);this.items3.sort((a,b)=>a.depth-b.depth).forEach(o=>{if(o.kind==='poly'){const p=o.points.map(v=>this.project(v));this.buf.push(`<polygon points="${p.map(v=>v.slice(0,2).join(',')).join(' ')}" fill="${o.color}" fill-opacity="${o.opacity}" stroke="${o.color}" stroke-opacity=".65" stroke-width="1.1"/>`);}else if(o.kind==='line'){const a=this.project(o.a),b=this.project(o.b);this.linePx(a[0],a[1],b[0],b[1],o.color,o.width,o.dash);}else{const p=this.project(o.p);this.buf.push(`<circle cx="${p[0]}" cy="${p[1]}" r="5" fill="${o.color}" stroke="white" stroke-width="2"/>`);}});this.buf.push(...overlay);}
+ // Label placement: keep labels inside, avoid overlap where a nearby offset suffices.
+ this.buf.push(...this.controls);const used=[];for(const l of this.labels){const chars=[...l.label].reduce((n,c)=>n+(c.charCodeAt(0)>255?1:.58),0),w=Math.min(this.w-16,chars*l.size),h=l.size+3;let x=l.x,y=l.y,anchor=l.anchor;let left=anchor==='middle'?x-w/2:anchor==='end'?x-w:x;left=M.clamp(left,7,this.w-w-7);y=M.clamp(y,h+3,this.h-8);let yy=y;for(let k=0;k<4;k++){if(!used.some(r=>left<r.x+r.w&&left+w>r.x&&yy-h<r.y+3&&yy>r.y-h))break;yy=M.clamp(y+(k%2?-1:1)*(Math.floor(k/2)+1)*(h+4),h+3,this.h-8);}used.push({x:left,y:yy,w,h});this.buf.push(`<text x="${left}" y="${yy}" text-anchor="start" style="font-size:${l.size}px;fill:${l.color}">${esc(l.label)}</text>`);}
+ this.buf.push('</g>');this.svg.innerHTML=this.buf.join('');this.svg.dataset.dimension=this.space&&!this.planar?'3':'2';this.svg.dataset.offscreenAnchors=this.offscreenLabels;return this;}
+}
+</script><script>const CHAPTER={"id": "H05", "title": "三角函数与恒等变换", "definition": "任意角的三角函数由终边点的坐标与半径比定义；单位圆上cosθ是横坐标，sinθ是纵坐标。曲线是把角作为横坐标记录投影值，不是圆被拉直。", "conditions": "θ=s/r（弧度）；sin²θ+cos²θ=1；tanθ=sinθ/cosθ须cosθ≠0；sin(α±β)、cos(α±β)给完整符号；A>0,ω>0默认时周期2π/ω，水平位移−φ/ω。", "state": "thetaRadians、turns、A,omega,phi、alpha,beta、functionChoice；角度显示可切换但内部统一弧度；tan断点按定义构建。", "labels": "圆心O、半径1、角弧θ；P(cosθ,sinθ)，水平蓝cos、垂直橙sin并有线型；波形点(θ,sinθ)，不要错写为P。", "anchors": "θπ/2时sin1cos0且tan无定义；sin²+cos²=1；A2,ω2周期π幅度2；半角根号±按象限。", "scenes": [{"id": "H05-S01", "title": "角、弧度与定义", "coverage": ["任意角与弧度制", "三角函数的概念"], "design": "逆时针积累多圈，弧长s与半径r相除；从圆点投到轴，再在另一图记录(θ,sinθ)，运动轨迹关联而不混坐标。"}, {"id": "H05-S02", "title": "基本关系与诱导", "coverage": ["同角三角函数的基本关系", "诱导公式"], "design": "直角投影三角形连到勾股，越象限仍保平方关系；对称点变换解释sin/cos符号而非只背口诀。"}, {"id": "H05-S03", "title": "图像与参数", "coverage": ["三角函数的图象与性质", "函数y=Asin(ωx+φ)", "三角函数的应用"], "design": "圆探针和sin/cos曲线同步；改A只改输出幅度，ω改角变化速度，φ引入−φ/ω水平位移；应用明确周期与单位。"}, {"id": "H05-S04", "title": "角和差与倍角", "coverage": ["两角和与差公式", "二倍角公式", "三角恒等变换"], "design": "旋转坐标或几何分解逐项指向公式四乘积，代入30°+45°验证；倍角令β=α而非另一个无来由动画。"}, {"id": "H05-S05", "title": "推导拓展", "coverage": ["半角与和差化积公式的推导"], "design": "半角符号由θ/2象限决定，和差化积给代换过程；保留原目录但按教材/拓展标记，不默认为所有班已学。"}], "knowledge": [{"id": "H05-K01", "name": "任意角与弧度制", "scene": "H05-S01"}, {"id": "H05-K02", "name": "三角函数的概念", "scene": "H05-S01"}, {"id": "H05-K03", "name": "同角三角函数的基本关系", "scene": "H05-S02"}, {"id": "H05-K04", "name": "诱导公式", "scene": "H05-S02"}, {"id": "H05-K05", "name": "三角函数的图象与性质", "scene": "H05-S03"}, {"id": "H05-K06", "name": "两角和与差公式", "scene": "H05-S04"}, {"id": "H05-K07", "name": "二倍角公式", "scene": "H05-S04"}, {"id": "H05-K08", "name": "三角恒等变换", "scene": "H05-S04"}, {"id": "H05-K09", "name": "半角与和差化积公式的推导", "scene": "H05-S05"}, {"id": "H05-K10", "name": "函数y=Asin(ωx+φ)", "scene": "H05-S03"}, {"id": "H05-K11", "name": "三角函数的应用", "scene": "H05-S03"}]};const SCENES={};const register=(id,s)=>{SCENES[id]=s;};
+const P=(key,label,min,max,step,value,unit='')=>({key,label,min,max,step,value,unit});const Q=(key,label,options,value)=>({key,label,options,value});
+const F=(x,d=4)=>M.fmt(x,d), T=(key,text)=>`<button class="token" data-select="${key}">${text}</button>`;const metrics=(...a)=>a;const metric=(label,value,unit='')=>({label,value,unit});const list=a=>a.map(x=>F(x)).join('，');const table=(heads,rows)=>`<table class="table"><thead><tr>${heads.map(x=>`<th>${x}</th>`).join('')}</tr></thead><tbody>${rows.map(r=>`<tr>${r.map(x=>`<td>${x}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
+(()=>{
+const angleDrag=(key,start,cx=0,cy=0)=>{let last=start;return ([x,y])=>{let raw=M.deg(Math.atan2(y-cy,x-cx));while(raw-last>180)raw-=360;while(raw-last<-180)raw+=360;last=raw;return {[key]:raw};};};
+const circle=(g,r,theta,key='theta')=>{const x=r*M.cos(theta),y=r*M.sin(theta);g.circle(0,0,r);g.line(0,0,x,y,C.green,3);g.line(x,0,x,y,C.orange,2,'4 4');g.line(0,0,x,0,C.blue,4);g.handle(x,y,key,angleDrag(key,theta),'P：拖动角度',C.green);g.dot(x,0,'投影 H',C.orange);return {x,y,sin:M.sin(theta),cos:M.cos(theta)};};
+register('H05-S01',{params:[P('theta','有向角 θ',-720,720,1,60,'°'),P('r','半径 r',.5,3,.1,1)],definition:'角的弧度数是有向弧长与半径的比 θ=s/r。任意角终边点 (x,y) 给 sinθ=y/r、cosθ=x/r；只有单位圆 r=1 时才直接等于坐标。',boundary:{theta:450,r:2},boundaryNote:'450° 与 90° 终边相同，三角函数值相同，但走过的有向弧长不同。',animate:{key:'theta',from:0,to:720,label:'终边转两圈，投影同时记录为正弦曲线上的点；圆不会被拉直。'},render(p,g){const wide=g.w>600;const circleBound=Math.max(1.35,p.r*1.28);if(wide)g.panel([0,0,g.w*.48,g.h],[-circleBound,circleBound,-circleBound,circleBound],true);else g.panel([0,0,g.w,g.h*.58],[-circleBound,circleBound,-circleBound,circleBound],true);g.axes('x','y');const v=circle(g,p.r,p.theta);g.handle(p.r,0,'r',([x])=>({r:x}),'r='+F(p.r),C.blue);const theta=M.rad(p.theta);if(wide)g.panel([g.w*.48,0,g.w*.52,g.h],[-4*Math.PI,4*Math.PI,-1.5,1.5]);else g.panel([0,g.h*.53,g.w,g.h*.47],[-4*Math.PI,4*Math.PI,-1.5,1.5]);g.axes('θ（rad）','sinθ');g.curve(Math.sin,-4*Math.PI,4*Math.PI,C.blue);g.handle(theta,v.sin,'theta',([x])=>({theta:M.deg(x)}),'(θ,sinθ)',C.orange);return {formula:`θ=${F(theta)} rad<br>sinθ=${F(v.y)}/${F(p.r)}=${F(v.sin)}<br>cosθ=${F(v.x)}/${F(p.r)}=${F(v.cos)}`,fact:`当前 ${p.theta}°，即 ${F(theta)} rad；有向弧长 s=${F(p.r*theta)}（长度单位）。改变 r 不改变 sin、cos。`,correspondence:'圆图以 (x,y) 定位终边点；曲线图以角 θ 为横坐标、sinθ 为纵坐标。两幅图记录同一角，却不是同一个坐标平面。',why:'圆上 x²+y²=r²，半径变化时坐标同比变化，坐标与半径的比保持不变。多转完整圈只改变累计角，不改变终边。',metrics:[metric('θ',F(theta),'rad'),metric('sinθ / cosθ',F(v.sin)+' / '+F(v.cos)),metric('有向弧长 s',F(p.r*theta))],answer:`sinθ=${F(v.sin)}，cosθ=${F(v.cos)}；有向弧长 s=rθ=${F(p.r*theta)}。θ 内部按弧度参与函数计算。`};}});
+register('H05-S02',{params:[P('theta','原角 θ',-180,180,1,30,'°'),Q('transform','诱导变换',[['negative','−θ'],['piMinus','180°−θ'],['piPlus','180°+θ'],['halfMinus','90°−θ']],'piMinus')],definition:'单位圆上投影直角三角形满足 sin²θ+cos²θ=1。诱导公式来自终边点的对称或旋转，符号随象限改变；tanθ=sinθ/cosθ 只在 cosθ≠0 时定义。',boundary:{theta:90},boundaryNote:'θ=90° 时 cosθ=0，sinθ=1，tanθ 未定义；不能把竖直方向的斜率画成有限数。',animate:{key:'theta',from:-180,to:180,label:'终边跨象限，平方和保持 1，三角函数符号随投影变化。'},render(p,g){g.range(-1.7,1.7,-1.7,1.7,true);g.axes('cosθ','sinθ');const v=circle(g,1,p.theta);const t=p.transform==='negative'?-p.theta:p.transform==='piMinus'?180-p.theta:p.transform==='piPlus'?180+p.theta:90-p.theta;const u=[M.cos(t),M.sin(t)];g.line(0,0,...u,C.blue,3);g.dot(...u,'变换后 P′',C.blue);g.line(v.x,v.y,...u,C.purple,1,'4 5');const form=p.transform==='negative'?'sin(−θ)=−sinθ；cos(−θ)=cosθ':p.transform==='piMinus'?'sin(π−θ)=sinθ；cos(π−θ)=−cosθ':p.transform==='piPlus'?'sin(π+θ)=−sinθ；cos(π+θ)=−cosθ':'sin(π/2−θ)=cosθ；cos(π/2−θ)=sinθ';return {formula:`sin²θ+cos²θ=1<br>${form}`,fact:`θ=${p.theta}°，变换后角 ${t}°。平方和=${F(v.sin*v.sin+v.cos*v.cos)}；tanθ=${v.cos===0?'未定义':F(v.sin/v.cos)}。`,correspondence:'绿色终边点是 P，蓝色是变换后的 P′；横、纵投影分别是 cos、sin。颜色之外仍保留名称和坐标方向。',why:'先找终边点怎样变换，再判断 x、y 坐标是保留、取反还是交换。平方和来自勾股关系，负坐标平方后仍非负。',metrics:[metric('sinθ',F(v.sin)),metric('cosθ',F(v.cos)),metric('tanθ',v.cos===0?'未定义':F(v.sin/v.cos))],answer:`${form}。当前 sin=${F(v.sin)}、cos=${F(v.cos)}，平方和为 1；tan 的定义要另外检查分母。`};}});
+register('H05-S03',{params:[P('A','振幅 A',.5,3,.1,2,'cm'),P('w','角频率 ω',.5,3,.1,2,'rad/s'),P('phi','相位 φ',-180,180,1,30,'°'),P('x','时间探针 t',-6,6,.1,1,'s')],definition:'y=A sin(ωt+φ) 在 A>0、ω>0 时，振幅为 A，周期为 2π/ω，水平位移为 −φ/ω。相位 φ 用弧度代入公式，单位不能混用。',boundary:{A:2,w:2,phi:0},boundaryNote:'A=2、ω=2 时振幅为 2，周期为 π 秒，不是 2π 秒。',animate:{key:'x',from:-6,to:6,label:'时间沿横轴推进，读数按当前 A、ω、φ 每帧重算。'},render(p,g){const phi=M.rad(p.phi),f=x=>p.A*Math.sin(p.w*x+phi),T0=2*Math.PI/p.w,shift=-phi/p.w,crest=(Math.PI/2-phi)/p.w;const psi=p.w*p.x+phi,wide=g.w>600;
+if(wide)g.panel([0,0,g.w*.33,g.h],[-1.5,1.5,-1.8,1.8],true);else g.panel([0,0,g.w,g.h*.42],[-1.5,1.5,-1.5,1.5],true);
+g.axes('cosψ','sinψ');g.circle(0,0,1,C.blue);g.line(0,0,Math.cos(psi),Math.sin(psi),C.green,3);g.line(Math.cos(psi),0,Math.cos(psi),Math.sin(psi),C.orange,2,'4 3');
+const phaseDrag=angleDrag('_phase',M.deg(psi));g.handle(Math.cos(psi),Math.sin(psi),'x',pt=>({x:(M.rad(phaseDrag(pt)._phase)-phi)/p.w}),'相位点：调同一 t',C.orange);g.text(-1.2,-1.4,'ψ=ωt+φ（rad）',C.blue);
+if(wide)g.panel([g.w*.33,0,g.w*.67,g.h],[-7,7,-3.8,3.8]);else g.panel([0,g.h*.44,g.w,g.h*.56],[-7,7,-3.8,3.8]);g.axes('t（s）','位移 y（cm）');g.curve(f,-7,7);g.curve(Math.sin,-7,7,C.muted,'5 5');g.handle(p.x,f(p.x),'x',([x])=>({x}),'当前位移',C.orange);g.handle(crest,p.A,'A',([x,y])=>({A:y}),'振幅 A',C.green);g.handle(shift,0,'phi',([x])=>({phi:M.deg(-p.w*x)}),'相位平移',C.blue);const wx=(2*Math.PI-phi)/p.w;g.handle(wx,-.4,'w',([x])=>({w:(2*Math.PI-phi)/Math.max(.1,x)}),'周期端：调 ω',C.purple);g.dim([shift,-3.2],[shift+T0,-3.2],`T=${F(T0)} s`,C.blue);return {formula:`y=${T('A',F(p.A))}sin(${T('w',F(p.w))}t+${F(phi)})<br>T=2π/ω=${F(T0)} s<br>平移 −φ/ω=${F(shift)} s`,fact:`振幅 ${F(p.A)} cm；周期 ${F(T0)} s。当前 t=${F(p.x)} s，y=${F(f(p.x))} cm。`,correspondence:'单位圆记录相位 ψ=ωt+φ，右侧（窄屏下方）曲线记录 (t,A sinψ)，两个橙色探针同步调同一个 t。绿色峰值柄调 A，蓝色零点柄调 φ，紫色周期端柄调 ω；不把曲线当软线随意捏形。',why:'周期要求相位增加 2π，所以 ωT=2π。将 ωt+φ 写成 ω(t+φ/ω)，才看出水平位移是 −φ/ω，而非直接 −φ。',metrics:[metric('当前位移',F(f(p.x)),'cm'),metric('周期',F(T0),'s'),metric('水平位移',F(shift),'s')],answer:`振幅 ${F(p.A)} cm，周期 ${F(T0)} s，平移 ${F(shift)} s。当前输出 ${F(f(p.x))} cm。`};}});
+register('H05-S04',{params:[P('alpha','旋转角 α',-180,180,1,30,'°'),{...P('beta','分解角 β',-180,180,1,45,'°'),hidden:p=>p.mode==='double'},Q('mode','和／差／倍角',[['sum','α+β'],['diff','α−β'],['double','2α：锁定 β=α']],'sum')],constrain:p=>{if(p.mode==='double')p.beta=p.alpha;return p;},definition:'旋转后坐标由原坐标在两条正交方向上的分量相加得到。角和差公式中的乘积项有明确的几何来源；倍角就是令两个角相等。',boundary:{alpha:90,beta:0,mode:'sum'},boundaryNote:'角和公式在象限边界仍成立；sin90°=1、cos90°=0 可直接核对每一项。',animate:{key:'alpha',from:0,to:180,label:'旋转基底方向，两个分解向量相加得到和角终边点。'},render(p,g){g.range(-1.8,1.8,-1.8,1.8,true);g.axes('x','y');g.circle(0,0,1);const B=p.mode==='diff'?-p.beta:p.beta,a=M.rad(p.alpha),b=M.rad(B),u=[Math.cos(a),Math.sin(a)],v=[-Math.sin(a),Math.cos(a)],p1=M.mul(u,Math.cos(b)),res=M.add(p1,M.mul(v,Math.sin(b)));g.line(0,0,...p1,C.green,4,'',true);g.line(...p1,...res,C.blue,4,'',true);g.line(0,0,...res,C.orange,3,'',true);g.handle(...u,'alpha',angleDrag('alpha',p.alpha),'α 方向',C.purple);if(p.mode!=='double')g.handle(M.cos(p.beta),M.sin(p.beta),'beta',angleDrag('beta',p.beta),'β 方向',C.blue);g.dot(...res,'和角点',C.orange);const cosTerms=[M.cos(p.alpha)*M.cos(B),-M.sin(p.alpha)*M.sin(B)],sinTerms=[M.sin(p.alpha)*M.cos(B),M.cos(p.alpha)*M.sin(B)];return {formula:`cos(α${p.mode==='diff'?'−':'+'}β)=cosα cosβ${p.mode==='diff'?'+':'−'}sinα sinβ<br>sin(α${p.mode==='diff'?'−':'+'}β)=sinα cosβ${p.mode==='diff'?'−':'+'}cosα sinβ${p.mode==='double'?'<br>sin2α=2sinαcosα；cos2α=cos²α−sin²α':''}`,fact:`合成角 ${p.alpha+B}°：横分量 ${F(cosTerms[0])}+(${F(cosTerms[1])})=${F(res[0])}；纵分量 ${F(sinTerms[0])}+(${F(sinTerms[1])})=${F(res[1])}。`,correspondence:'绿色向量是 cosβ(cosα,sinα)，蓝色接续向量是 sinβ(−sinα,cosα)，橙色是两向量之和。方向向量始终正交。',why:'把终边点在旋转后的两条单位基向量上分解，再逐坐标相加。差角将 β 换成 −β；倍角模式锁定 β=α，不引入另一套无关状态。',metrics:[metric('合成角',p.alpha+B,'°'),metric('cos 和／差角',F(res[0])),metric('sin 和／差角',F(res[1]))],answer:`本次 cos=${F(res[0])}，sin=${F(res[1])}。代数展开和向量分解是同一组乘积项。`};}});
+register('H05-S05',{params:[Q('mode','推导拓展',[['half','半角公式与符号'],['product','和差化积']],'half'),P('theta','原角 θ',-720,720,1,300,'°'),P('alpha','角 α',-180,180,1,60,'°'),P('beta','角 β',-180,180,1,20,'°')],definition:'半角公式从倍角公式求平方后开方得到，正负号由半角所在象限决定。和差化积通过 u=(α+β)/2、v=(α−β)/2 代换角和差公式。',boundary:{mode:'half',theta:540},boundaryNote:'θ=540° 时 θ/2=270°，sin(θ/2)=−1；不能永远取根号正值。本场景保留“推导拓展”身份。',animate:{patch:(t,p)=>p.mode==='half'?{theta:-720+1440*t}:{alpha:-180+360*t},label:'跟随角度检查半角象限，或检查代换后的乘积与和式。'},render(p,g){g.range(-1.7,1.7,-1.7,1.7,true);g.axes('x','y');let t=p.mode==='half'?p.theta/2:(p.alpha+p.beta)/2;g.circle(0,0,1);g.line(0,0,M.cos(t),M.sin(t),C.green,3);const halfDrag=angleDrag('_half',t);g.handle(M.cos(t),M.sin(t),p.mode==='half'?'theta':'alpha',pt=>{const q=halfDrag(pt)._half;return p.mode==='half'?{theta:2*q}:{alpha:2*q-p.beta};},'半角／平均角',C.green);const sh=M.sin(p.theta/2),ch=M.cos(p.theta/2),lhs=M.sin(p.alpha)+M.sin(p.beta),rhs=2*M.sin((p.alpha+p.beta)/2)*M.cos((p.alpha-p.beta)/2);return {formula:p.mode==='half'?`sin(θ/2)=±√[(1−cosθ)/2]<br>cos(θ/2)=±√[(1+cosθ)/2]`:`u=(α+β)/2，v=(α−β)/2<br>sinα+sinβ=2sin u cos v`,fact:p.mode==='half'?`半角 ${F(p.theta/2)}°，sin=${F(sh)}，cos=${F(ch)}。根号的非负值必须结合象限补上符号。`:`左侧 sinα+sinβ=${F(lhs)}；右侧 2sin u cos v=${F(rhs)}，两侧相同。`,correspondence:'单位圆上的点代表半角或平均角，不是原角 θ。横纵坐标直接指明半角余弦、正弦的符号。',why:p.mode==='half'?'cosθ=1−2sin²(θ/2)=2cos²(θ/2)−1。先解平方，再按半角象限取符号，零值单独理解。':'令 α=u+v、β=u−v，展开 sin(u+v)+sin(u−v)，相反项抵消，只剩 2sin u cos v。',metrics:p.mode==='half'?[metric('半角',F(p.theta/2),'°'),metric('sin 半角',F(sh)),metric('cos 半角',F(ch))]:[metric('u',F((p.alpha+p.beta)/2),'°'),metric('v',F((p.alpha-p.beta)/2),'°'),metric('两侧差值',F(lhs-rhs))],answer:p.mode==='half'?`sin(θ/2)=${F(sh)}，cos(θ/2)=${F(ch)}；由当前半角象限决定正负。`:`代换 u=${F((p.alpha+p.beta)/2)}°、v=${F((p.alpha-p.beta)/2)}° 后，两侧都为 ${F(lhs)}。`};}});
+})();
+
+/* A parameter outside the selected mathematical model is retained for switching back,
+   but not presented as a control that could change the current model. */
+(()=>{
+const rules={
+'H03-S01':{branch:p=>p.family!=='piece'},
+'H03-S05':{base:p=>p.mode!=='fare',rate:p=>p.mode!=='fare',initial:p=>p.mode!=='temperature'},
+'H05-S05':{theta:p=>p.mode!=='half',alpha:p=>p.mode!=='product',beta:p=>p.mode!=='product'},
+'H09-S01':{l:p=>['cylinder','cone','sphere'].includes(p.shape),w:p=>['cylinder','cone','sphere'].includes(p.shape),h:p=>p.shape==='sphere',r:p=>!['cylinder','cone','sphere'].includes(p.shape)},
+'H09-S05':{l:p=>p.shape!=='box',w:p=>p.shape!=='box',r:p=>p.shape==='box',h:p=>p.shape==='sphere',cap:p=>p.shape==='sphere',fold:p=>p.shape!=='box'||p.display!=='net',cut:p=>p.display!=='solid'&&p.shape!=='sphere'},
+'H11-S01':{threshold:p=>p.model!=='dice',selected:p=>p.model!=='dice'},
+'H12-S04':{half:p=>p.mode!=='pp'},
+'H14-S01':{k:p=>p.type==='parabola'},
+'H15-S01':{a:p=>p.rule==='alternating',d:p=>p.rule==='alternating'},
+'H15-S03':{a:p=>p.method==='telescope',d:p=>p.method!=='pair',q:p=>p.method!=='shift'},
+'H15-S04':{capital:p=>p.mode!=='savings',rate:p=>p.mode!=='savings',proof:p=>p.mode!=='induction'},
+'H17-S01':{overlap:p=>p.rule!=='sum'},
+'H18-S01':{ab:p=>p.b===0,anb:p=>p.b===1},
+'H18-S02':{p1:p=>p.prior===0,p2:p=>p.prior===1},
+'H20-S02':{extend:p=>p.model!=='piece'},
+'H20-S03':{l:p=>p.plan!=='manual',w:p=>p.plan!=='manual'},
+'H21-S02':{x:p=>p.kind==='infinity',at:p=>p.kind==='infinity'||p.defined==='no',defined:p=>p.kind==='infinity',epsilon:p=>p.kind==='jump',delta:p=>p.kind==='infinity',large:p=>p.kind!=='infinity'}
+};
+for(const [id,fields] of Object.entries(rules)){const s=SCENES[id];if(!s)continue;for(const p of s.params){const extra=fields[p.key];if(extra){const original=p.hidden;p.hidden=state=>!!original?.(state)||extra(state);}}}
+})();
+
+</script><script>/* All parameter changes (pointer, slider, numeric input, keyboard, preset, animation)
+   enter commit -> normalize -> validate -> derive -> render. View state is separate. */
+(()=>{'use strict';const $=id=>document.getElementById(id),clone=x=>JSON.parse(JSON.stringify(x));
+const entries=CHAPTER.scenes,math={},views={},history={},revisions={};let id=entries[0].id,graph=null,derived=null,drag=null,playing=false,reverse=false,progress=0,lastFrame=0,raf=0,answerOpen=false,selected='',showWhy=true,toastTimer;
+const defaultView=()=>({x:0,y:0,zoom:1,yaw:.72,pitch:.45});
+function spec(){return SCENES[id];}function state(){return math[id];}function animationSpec(){const a=spec().animate;if(!a||a.enabled&&!a.enabled(state()))return null;if(!a.patch){const f=typeof a.from==='function'?a.from(state()):a.from,t=typeof a.to==='function'?a.to(state()):a.to;if(f===t)return null;}return a;}function initial(s){return {...Object.fromEntries(s.params.map(p=>[p.key,p.value])),...clone(s.defaults||{})};}
+function limit(p,k,v){return typeof p[k]==='function'?p[k](v):p[k];}
+function normalize(s,source){let p=clone(source);for(let pass=0;pass<3;pass++){for(const c of s.params){if(c.options){if(!c.options.some(x=>(Array.isArray(x)?x[0]:x)===p[c.key]))throw Error(c.label+'：不允许的选项');continue;}const v=Number(p[c.key]);if(!Number.isFinite(v))throw Error(c.label+'必须是有限数');const lo=limit(c,'min',p),hi=limit(c,'max',p),step=limit(c,'step',p);if(!(hi>=lo&&step>0))throw Error(c.label+'的依赖约束不成立');p[c.key]=Number(M.clamp(lo+Math.round((M.clamp(v,lo,hi)-lo)/step)*step,lo,hi).toFixed(10));}if(s.constrain)p=s.constrain(p)||p;}
+ if(s.validate){const why=s.validate(p);if(why)throw Error(why);}return p;}
+for(const e of entries){const s=SCENES[e.id];if(!s)throw Error('缺少场景实现 '+e.id);math[e.id]=normalize(s,initial(s));views[e.id]=defaultView();history[e.id]=[];revisions[e.id]=0;}
+function announce(text){$('live').textContent=text;}
+function toast(text){$('toast').textContent=text;$('toast').hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('toast').hidden=true,2300);announce(text);}
+function remember(){history[id].push(clone(state()));if(history[id].length>80)history[id].shift();}
+function commit(patch,{save=true,source='parameter'}={}){try{const s=spec(),base=state();for(const k of Object.keys(patch))if(!Object.hasOwn(base,k))throw Error('拒绝未声明的数学参数 '+k);const p=normalize(s,{...base,...patch});if(JSON.stringify(p)===JSON.stringify(base)){const limited=Object.entries(patch).some(([k,v])=>{const c=s.params.find(a=>a.key===k);return c&&!c.options&&(v<limit(c,'min',base)||v>limit(c,'max',base));});if(limited){$('selection').textContent='已到合法参数范围边界；图形与参数栏使用相同限制。';if(source!=='pointer')toast('已到合法参数范围边界，数学状态保持不变。');}return false;}if(save)remember();math[id]=p;revisions[id]++;answerOpen=false;render();return true;}catch(e){toast(e.message);syncControls();return false;}}
+function stop(){playing=false;cancelAnimationFrame(raf);$('play').textContent='播放演示';$('play').setAttribute('aria-pressed','false');}
+function buildControls(){const s=spec();$('controls').innerHTML=s.params.map(c=>`<div class="ctrl" data-control="${esc(c.key)}"><label for="n-${c.key}">${esc(c.label)}${c.unit?' · '+esc(c.unit):''}</label>${c.options?`<select data-param="${c.key}" id="n-${c.key}">${c.options.map(v=>{const a=Array.isArray(v)?v:[v,v];return `<option value="${a[0]}">${esc(a[1])}</option>`;}).join('')}</select>`:`<div class="row"><input data-param="${c.key}" type="range" aria-label="${esc(c.label)}滑块"><input data-param="${c.key}" id="n-${c.key}" type="number" aria-label="${esc(c.label)}数值"></div>`}</div>`).join('')+`<div class="actions">${(s.actions||[]).map((a,i)=>`<button data-act="${i}">${esc(a.label)}</button>`).join('')}</div>`;
+ $('controls').querySelectorAll('input,select').forEach(el=>{el.addEventListener(el.type==='range'?'input':'change',()=>{stop();if(el.type==='number'&&!el.value.trim()){toast('空输入不改变数学状态');syncControls();return;}commit({[el.dataset.param]:el.tagName==='SELECT'?el.value:Number(el.value)});});});
+ $('controls').querySelectorAll('[data-act]').forEach(el=>el.onclick=()=>{stop();const a=spec().actions[+el.dataset.act];const p=a.run(clone(state()),derived);if(p)commit(p);});syncControls();}
+function syncControls(){const p=state();for(const c of spec().params){const box=$('controls').querySelector(`[data-control="${c.key}"]`);if(!box)continue;box.hidden=!!c.hidden?.(p);box.querySelectorAll('input,select').forEach(el=>{if(!c.options){el.min=limit(c,'min',p);el.max=limit(c,'max',p);el.step=limit(c,'step',p);}el.value=p[c.key];});} $('undo').disabled=history[id].length===0;}
+function render(){const focus=document.activeElement,focusHandle=$('plot').contains(focus)?focus?.closest('[data-handle]')?.dataset.handle:null;const p=state(),s=spec();graph=new Graph($('plot'),views[id]);derived=s.render(p,graph)||{};graph.finish();window.__graph=graph;
+ $('definition').textContent=derived.definition||s.definition; $('formula').innerHTML=derived.formula||s.formula||'';$('correspondence').innerHTML=derived.correspondence||s.correspondence||'';$('feedback').innerHTML=derived.fact||'';$('why').innerHTML=derived.why||s.why||'';$('why').hidden=!showWhy;
+ $('metrics').innerHTML=(derived.metrics||[]).map(m=>`<div class="metric"><span>${m.label}</span><strong>${m.value}<small>${m.unit?' '+m.unit:''}</small></strong></div>`).join('');
+ $('boardTitle').textContent=derived.boardTitle||s.boardTitle||entries.find(e=>e.id===id).title;$('viewHint').textContent=graph.space&&!graph.planar?'空白拖动旋转 · 滚轮观察缩放':'空白拖动平移 · 滚轮观察缩放';$('boardNote').textContent=derived.note||s.note||'实心操作点可直接拖动；参数栏同样可以精确调整。视图变化不改变数学量。';if(graph.offscreenLabels)$('boardNote').textContent+=' 部分标注超出当前视野，可缩小或平移观察。';
+ const info=entries.find(e=>e.id===id);$('detailsBody').innerHTML=`<p>${derived.detail||s.detail||derived.why||s.why||''}</p><p><b>条件与边界：</b>${s.boundaryNote||CHAPTER.conditions}</p><p><b>原知识点：</b>${info.coverage.join('；')}。</p><p>操作点只改变其标注的独立参数。由参数派生的尺寸、关系、概率或答案重新计算，不能被单独拖坏。图像采样只用于绘制，解析关系和定义条件另行判断。</p>`;
+ $('question').innerHTML=derived.question||s.question||'结合当前参数，说明图中结论成立的条件，并写出当前读数。';$('answer').innerHTML=derived.answer||derived.why||derived.fact||'';$('answer').hidden=!answerOpen;$('answerToggle').textContent=answerOpen?'收起答案':'显示答案与理由';
+ $('revision').textContent=`${id} · 数学 revision ${revisions[id]} · ${entries.length} 个独立场景`;
+ $('boundary').disabled=!s.boundary;const animate=animationSpec();$('play').disabled=!animate;$('reverse').disabled=!animate;$('replay').disabled=!animate;$('progress').disabled=!animate;$('animationNote').textContent=animate?.label||'本场景使用逐项选择；不添加无教学意义的自动运动。';
+ $('formula').querySelectorAll('[data-select]').forEach(e=>e.onclick=()=>select(e.dataset.select));syncControls();if(selected)select(selected,false);if(focusHandle)$('plot').querySelector(`[data-handle="${focusHandle}"][tabindex]`)?.focus({preventScroll:true});}
+function select(key,speak=true){selected=key;const c=spec().params.find(c=>c.key===key);const text=c?`${c.label} = ${state()[key]}${c.unit?' '+c.unit:''}；图上拖动和参数栏沿用同一范围与步长。`:(key.startsWith('fixed:')?key.slice(6)+'：':'')+'这是当前数学状态的派生对象，只可解释或整体观察，不开放独立变形。';$('selection').textContent=text;$('plot').querySelectorAll('[data-param]').forEach(e=>e.classList.toggle('selected',e.dataset.param===key));if(c)$('controls').querySelector(`[data-control="${key}"]`)?.setAttribute('data-selected','true');if(speak)announce(text);}
+function go(next,hash=true){if(!SCENES[next])return;stop();drag=null;id=next;selected='';$('selection').textContent='点击图中操作点或公式参数，查看对应关系。';answerOpen=false;progress=0;$('progress').value=0;$('progressText').textContent='0%';const info=entries.find(e=>e.id===id);$('sceneTitle').textContent=info.title;$('scope').textContent=`${id} · ${info.coverage.length} 个原知识点`;$('tabs').querySelectorAll('button').forEach(b=>{b.classList.toggle('active',b.dataset.scene===id);b.setAttribute('aria-selected',b.dataset.scene===id);});buildControls();render();if(hash){try{historyReplace(id);}catch{}}}
+function historyReplace(s){window.history.replaceState(null,'','#'+s);}
+$('tabs').innerHTML=entries.map((e,i)=>`<button data-scene="${e.id}" role="tab"><small>${String(i+1).padStart(2,'0')}</small>${esc(e.title)}</button>`).join('');$('tabs').querySelectorAll('button').forEach(b=>{b.onclick=()=>go(b.dataset.scene);b.onkeydown=e=>{if(!['ArrowRight','ArrowLeft','Home','End'].includes(e.key))return;e.preventDefault();let i=entries.findIndex(s=>s.id===id);i=e.key==='Home'?0:e.key==='End'?entries.length-1:(i+(e.key==='ArrowRight'?1:-1)+entries.length)%entries.length;go(entries[i].id);$('tabs').querySelector(`[data-scene="${id}"]`).focus();};});
+function position(e){const r=$('plot').getBoundingClientRect();return [(e.clientX-r.left)*graph.w/r.width,(e.clientY-r.top)*graph.h/r.height];}
+$('plot').addEventListener('pointerdown',e=>{if(e.button!==0)return;stop();$('plot').focus({preventScroll:true});const pos=position(e),target=e.target.closest('[data-handle],[data-action],[data-token]');const h=target?.dataset.handle?graph.handles[target.dataset.handle]:null;const action=target?.dataset.action?graph.actions[target.dataset.action]:null;drag={id:e.pointerId,x:pos[0],y:pos[1],view:clone(views[id]),h,action,token:target?.dataset.token,graph,start:clone(state()),moved:false,saved:false};$('plot').setPointerCapture(e.pointerId);if(h)select(h.key);});
+$('plot').addEventListener('pointermove',e=>{if(!drag||e.pointerId!==drag.id)return;const [x,y]=position(e),dx=x-drag.x,dy=y-drag.y;if(!drag.moved&&Math.hypot(dx,dy)<2)return;drag.moved=true;$('plot').classList.add('dragging');if(drag.h){if(!drag.saved){remember();drag.saved=true;}const p=drag.h.convert?drag.h.convert(x,y):drag.graph.from(x,y);let patch=drag.h.drag(p,{dx,dy,start:drag.start,screen:[x,y]});if(patch)commit(patch,{save:false,source:'pointer'});}else if(drag.action||drag.token){return;}else if(drag.graph.space&&!drag.graph.planar){views[id]={...drag.view,yaw:drag.view.yaw-dx*.008,pitch:M.clamp(drag.view.pitch+dy*.008,-1.35,1.35)};render();}else{views[id]={...drag.view,x:drag.view.x+dx,y:drag.view.y+dy};render();}});
+function release(e){if(!drag)return;const job=drag;drag=null;$('plot').classList.remove('dragging');try{$('plot').releasePointerCapture(job.id);}catch{}if(!job.moved){if(job.action){const patch=job.action(clone(state()));if(patch)commit(patch);}else if(job.token)select(job.token);}announce(job.h?$('feedback').textContent:'观察视图已调整，数学参数保持不变。');}
+$('plot').addEventListener('pointerup',release);$('plot').addEventListener('pointercancel',()=>{drag=null;$('plot').classList.remove('dragging');});$('plot').addEventListener('lostpointercapture',()=>{drag=null;$('plot').classList.remove('dragging');});window.addEventListener('blur',()=>{drag=null;$('plot').classList.remove('dragging');stop();});
+$('plot').addEventListener('wheel',e=>{if(document.activeElement!==$('plot')&&!$('plot').contains(document.activeElement))return;e.preventDefault();if(drag)return;const old=views[id],factor=Math.exp(-M.clamp(e.deltaY,-300,300)*.0015),zoom=M.clamp(old.zoom*factor,.22,7);if(!graph.space||graph.planar){const [x,y]=position(e),k=zoom/old.zoom;views[id]={...old,zoom,x:(old.x-(x-graph.w/2))*k+(x-graph.w/2),y:(old.y-(y-graph.h/2))*k+(y-graph.h/2)};}else views[id]={...old,zoom};render();},{passive:false});
+$('plot').addEventListener('keydown',e=>{const action=e.target.closest('[data-action]');if(action&&['Enter',' '].includes(e.key)){e.preventDefault();const a=graph.actions[action.dataset.action],patch=a?.(clone(state()));if(patch)commit(patch);return;}const h=e.target.closest('[data-param]'),key=h?.dataset.param||selected,c=spec().params.find(c=>c.key===key);if(c&&!c.options&&e.key.startsWith('Arrow')){e.preventDefault();const step=limit(c,'step',state()),sign=['ArrowUp','ArrowRight'].includes(e.key)?1:-1;commit({[key]:state()[key]+sign*step});return;}if(e.key.startsWith('Arrow')){e.preventDefault();let v=views[id];if(graph.space&&!graph.planar){v.yaw+=(e.key==='ArrowLeft'?.08:e.key==='ArrowRight'?-.08:0);v.pitch=M.clamp(v.pitch+(e.key==='ArrowUp'?.08:e.key==='ArrowDown'?-.08:0),-1.35,1.35);}else{v.x+=(e.key==='ArrowLeft'?20:e.key==='ArrowRight'?-20:0);v.y+=(e.key==='ArrowUp'?20:e.key==='ArrowDown'?-20:0);}render();}});
+$('undo').onclick=()=>{stop();if(history[id].length){math[id]=history[id].pop();revisions[id]++;answerOpen=false;render();}};$('resetView').onclick=()=>{views[id]=defaultView();render();};$('resetScene').onclick=()=>{stop();math[id]=normalize(spec(),initial(spec()));views[id]=defaultView();history[id]=[];revisions[id]++;selected='';$('selection').textContent='点击图中操作点或公式参数，查看对应关系。';answerOpen=false;progress=0;go(id);};$('boundary').onclick=()=>{stop();const patch=typeof spec().boundary==='function'?spec().boundary(clone(state())):spec().boundary;commit(patch);toast(spec().boundaryNote||'已载入边界参数；结论从当前数学状态重新计算。');};$('showWhy').onclick=()=>{showWhy=!showWhy;$('showWhy').textContent=showWhy?'收起解释':'显示解释';render();};$('answerToggle').onclick=()=>{answerOpen=!answerOpen;render();};
+function applyProgress(value,save=false){progress=value;$('progress').value=value;$('progressText').textContent=M.fmt(value,3)+'%';const a=animationSpec();if(!a)return;const patch=a.patch?a.patch(value/100,clone(state())):{[a.key]:(typeof a.from==='function'?a.from(state()):a.from)+((typeof a.to==='function'?a.to(state()):a.to)-(typeof a.from==='function'?a.from(state()):a.from))*value/100};commit(patch,{save,source:'animation'});}
+function tick(t){if(!playing)return;if(!lastFrame)lastFrame=t;progress+=Math.min(80,t-lastFrame)/1000*14*(reverse?-1:1);lastFrame=t;applyProgress(M.clamp(progress,0,100));if(progress>=100||progress<=0){stop();return;}raf=requestAnimationFrame(tick);}
+$('play').onclick=()=>{if(!animationSpec())return;if(playing){stop();return;}remember();if($('reduce').checked){applyProgress(reverse?0:100);toast('减少动态：直接显示同一终点数学状态。');return;}if((!reverse&&progress>=100)||(reverse&&progress<=0))progress=reverse?100:0;playing=true;lastFrame=0;$('play').textContent='暂停演示';$('play').setAttribute('aria-pressed','true');raf=requestAnimationFrame(tick);};$('reverse').onclick=()=>{reverse=!reverse;$('reverse').setAttribute('aria-pressed',reverse);};$('replay').onclick=()=>{stop();applyProgress(reverse?100:0,true);};$('progress').oninput=()=>{stop();applyProgress(+$('progress').value,true);};$('reduce').checked=matchMedia('(prefers-reduced-motion: reduce)').matches;$('reduce').onchange=()=>{if($('reduce').checked&&playing){stop();applyProgress(reverse?0:100);}};
+$('teacherToggle').onclick=()=>{$('teacher').hidden=!$('teacher').hidden;};function focusCanvas(on){document.body.classList.toggle('canvasfocus',on);$('exitFocus').hidden=!on;requestAnimationFrame(render);} $('focusCanvas').onclick=()=>focusCanvas(!document.body.classList.contains('canvasfocus'));$('exitFocus').onclick=()=>focusCanvas(false);document.addEventListener('keydown',e=>{if(e.key==='Escape')focusCanvas(false);});$('large').onclick=()=>{document.body.classList.toggle('large');requestAnimationFrame(render);};
+function exported(){return {format:'MathAgent-HighSchool-v4',chapter:CHAPTER.id,scene:id,math:clone(math),view:clone(views),teacherNote:$('teacherNote').value,currentResult:{title:entries.find(e=>e.id===id).title,definition:derived.definition||spec().definition,formula:derived.formula,fact:derived.fact,conditions:spec().boundaryNote||CHAPTER.conditions,metrics:derived.metrics,source:derived.source||'教学数学模型生成；真实来源请填写教师备注'},sourceScope:entries.map(s=>({id:s.id,knowledge:s.coverage}))};}
+$('exportState').onclick=()=>{const blob=new Blob([JSON.stringify(exported(),null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=CHAPTER.id+'_课堂状态.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);toast('导出包含数学参数、观察视图和教师备注，不包含学生数据。');};$('importState').onclick=()=>$('stateFile').click();$('stateFile').onchange=async()=>{const file=$('stateFile').files[0];if(!file)return;try{if(file.size>1000000)throw Error('课堂状态文件过大');const v=JSON.parse(await file.text());if(v.format!=='MathAgent-HighSchool-v4'||v.chapter!==CHAPTER.id)throw Error('文件版本或章节不匹配');const next={};for(const e of entries){const s=SCENES[e.id],p=v.math?.[e.id];if(!p||Object.keys(p).some(k=>!Object.hasOwn(initial(s),k)))throw Error('数学参数不完整或包含未知字段');next[e.id]=normalize(s,p);}for(const e of entries){math[e.id]=next[e.id];revisions[e.id]++;history[e.id]=[];views[e.id]=defaultView();const v0=v.view?.[e.id];if(v0&&['x','y','zoom','yaw','pitch'].every(k=>Number.isFinite(v0[k])))views[e.id]={x:M.clamp(v0.x,-3000,3000),y:M.clamp(v0.y,-3000,3000),zoom:M.clamp(v0.zoom,.22,7),yaw:v0.yaw,pitch:M.clamp(v0.pitch,-1.35,1.35)};}$('teacherNote').value=String(v.teacherNote||'').slice(0,10000);go(SCENES[v.scene]?v.scene:id);toast('课堂状态已恢复。');}catch(e){toast('未导入：'+e.message);}finally{$('stateFile').value='';}};
+window.addEventListener('hashchange',()=>{if(SCENES[location.hash.slice(1)])go(location.hash.slice(1),false);});let resizeTimer;new ResizeObserver(()=>{clearTimeout(resizeTimer);resizeTimer=setTimeout(()=>{if(!drag)render();},50);}).observe($('plot'));
+window.CourseApp={getState:()=>({scene:id,math:clone(math),view:clone(views),revisions:clone(revisions)}),getDerived:()=>JSON.parse(JSON.stringify(derived)),getParams:()=>spec().params.map(c=>({...c,min:c.options?null:limit(c,'min',state()),max:c.options?null:limit(c,'max',state()),step:c.options?null:limit(c,'step',state()),hidden:!!c.hidden?.(state())})),getCoverage:()=>clone(CHAPTER),getHandles:()=>Object.entries(graph.handles).map(([id,h])=>({id,key:h.key})),getExport:exported,version:'4.0'};
+go(SCENES[location.hash.slice(1)]?location.hash.slice(1):id,false);
+})();
+</script><script id="lesson-flow">/* MathAgent lesson flow v1 — presentation layer only.
+   Re-sequences the chapter's EXISTING blocks into a teacher-paced rhythm:
+   引入 → 探究 → 归纳 → 练习 (motivate → explore → formalize → practice).
+   It never writes mathematical state and never calls scene/model functions
+   except the runtime's own scene navigation. Every formula, definition and
+   answer shown in a stage is the node the chapter already rendered; the only
+   text added here is generic classroom guidance (stage names and prompts).
+   Stages are views, not gates: any stage and the full workbench (总览) are
+   one click or key away. Works identically for the WebGL and SVG paths.
+   Only nodes the runtime reaches by global id are moved; anything it finds
+   relative to a parent (e.g. a tool row's hint) is mirrored, never moved. */
+(function () {
+  'use strict';
+  if (window.LessonFlow) return;
+  const $ = (s, r = document) => r.querySelector(s);
+  const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+  const text = el => (el ? el.textContent.replace(/\s+/g, ' ').trim() : '');
+  const STAGES = [
+    { id: 'motivate', n: 1, name: '引入', cue: '先看图：说一说图中每种颜色、每个标注表示什么。' },
+    { id: 'explore', n: 2, name: '探究', cue: '动手试：改变一个量，看图、式子和数值怎样一起变。' },
+    { id: 'formalize', n: 3, name: '归纳', cue: '说规律：用定义把发现说完整，注意成立条件。' },
+    { id: 'practice', n: 4, name: '练习', cue: '试一试：先独立作答，再检查或看答案。' },
+  ];
+
+  /* Each adapter only names existing DOM of one runtime family.
+     blocks: key → { el, keep (fold in place of leaving layout), open (details) }
+     stages: stage → ordered block keys shown in the stage card
+     pins:   [element, destination] moved into always-visible chrome in lesson mode */
+  const ADAPTERS = {
+    primary: {
+      detect: () => !!(window.CW && window.CW.app && $('#scene-nav') && $('.info-panel')),
+      sceneCount: () => window.CW.app.scenes.length,
+      sceneIndex: () => window.CW.app.current,
+      sceneName: i => window.CW.app.scenes[i]?.title || '',
+      goScene: i => window.CW.app.go(i),
+      watch: () => [$('#scene-title')],
+      live: () => $('#announcer'),
+      heading: () => $('.scene-heading'),
+      card: () => $('.info-panel'),
+      figurePanel: () => $('.model-panel'),
+      math: () => { try { return JSON.stringify(window.CW.snapshot().state); } catch (_) { return null; } },
+      tools: () => [$('#fraction-tools'), $('#canvas-view-tools')].filter(Boolean),
+      toolsAnchor: () => $('.model-top'),
+      hint: () => $('#canvas-gesture-hint'),
+      hintAnchor: () => $('.model-top'),
+      // Figure keeps its aspect and is sized to the first screen under its real top edge.
+      fit: { el: '#diagram', below: ['#timeline'], min: 300 },
+      blocks: {
+        look: { el: () => $$('.info-panel > .info-block')[1] },
+        definition: { el: () => $$('.info-panel > .info-block')[0] },
+        current: { el: () => $('.info-panel > .info-block.current') },
+        controls: { el: () => $('#controls'), keep: true },
+        note: { el: () => $('#figure-note') },
+        exercise: { el: () => $('#exercise'), open: true },
+      },
+      stages: {
+        motivate: ['look'],
+        explore: ['controls', 'current', 'note'],
+        formalize: ['definition', 'current'],
+        practice: ['exercise'],
+      },
+    },
+    junior: {
+      detect: () => !!(window.MathAgent && $('#sceneNav [data-scene]') && $('aside.reading')),
+      nav: () => $$('#sceneNav [data-scene]'),
+      sceneCount() { return this.nav().length; },
+      sceneIndex() { return Math.max(0, this.nav().findIndex(b => b.classList.contains('active'))); },
+      sceneName(i) { return text(this.nav()[i]?.querySelector('.scene-name')) || text(this.nav()[i]); },
+      goScene(i) { this.nav()[i]?.click(); },
+      watch: () => [$('#sceneTitle')],
+      live: () => $('#live'),
+      heading: () => $('.scene-heading'),
+      card: () => $('aside.reading'),
+      figurePanel: () => $('.figure-card'),
+      math: () => { try { return JSON.stringify(window.MathAgent.mathState); } catch (_) { return null; } },
+      blocks: {
+        look: { el: () => $('#mapping') },
+        select: { el: () => $('#selectedNote') },
+        demo: { el: () => $('section.timeline') },
+        controls: { el: () => $('.controls-card'), keep: true },
+        label: { el: () => $('aside.reading > .eyebrow') },
+        definition: { el: () => $('#definition') },
+        formula: { el: () => $('#formula') },
+        readings: { el: () => $('#readings') },
+        feedback: { el: () => $('#feedback') },
+        boundary: { el: () => $('#counterexample') },
+        snapshot: { el: () => $('#snapshot') },
+        exercise: { el: () => $('#exerciseDetails'), open: true },
+      },
+      stages: {
+        motivate: ['look', 'select', 'demo'],
+        explore: ['controls', 'formula', 'readings', 'feedback', 'select', 'demo', 'snapshot'],
+        formalize: ['label', 'definition', 'formula', 'readings', 'boundary'],
+        practice: ['exercise'],
+      },
+      // 撤销 / 恢复本场景 stay one click away in every stage (they live below the fold otherwise).
+      pins: () => [[$('#undo'), $('.top-tools')], [$('#resetScene'), $('.top-tools')]],
+    },
+    senior: {
+      detect: () => !!(window.CourseApp && $('#tabs [data-scene]') && $('aside.lesson')),
+      nav: () => $$('#tabs [data-scene]'),
+      sceneCount() { return this.nav().length; },
+      sceneIndex() {
+        let id = null; try { id = window.CourseApp.getState().scene; } catch (_) {}
+        const i = this.nav().findIndex(b => (id ? b.dataset.scene === id : b.classList.contains('active')));
+        return Math.max(0, i);
+      },
+      sceneName(i) { const b = this.nav()[i]; if (!b) return ''; const c = b.cloneNode(true); c.querySelectorAll('small').forEach(x => x.remove()); return text(c); },
+      goScene(i) { this.nav()[i]?.click(); },
+      watch: () => [$('#sceneTitle')],
+      live: () => $('#live'),
+      heading: () => $('.scenehead'),
+      card: () => $('aside.lesson'),
+      figurePanel: () => $('section.board'),
+      math: () => { try { return JSON.stringify(window.CourseApp.getState().math); } catch (_) { return null; } },
+      blocks: {
+        definition: { el: () => $$('aside.lesson > .sect')[0] },
+        look: { el: () => $$('aside.lesson > .sect')[1] },
+        facts: { el: () => $$('aside.lesson > .sect')[2] },
+        metrics: { el: () => $('#metrics') },
+        controls: { el: () => $('#controls'), keep: true },
+        demo: { el: () => $('section.animation') },
+        exercise: { el: () => $('#exercise'), open: true },
+      },
+      stages: {
+        motivate: ['look', 'demo'],
+        explore: ['controls', 'metrics', 'facts', 'demo'],
+        formalize: ['definition', 'facts'],
+        practice: ['exercise'],
+      },
+    },
+    // H16 ships its own constrained runtime (window.H16Courseware) with the same lesson sections.
+    h16: {
+      detect: () => !!(window.H16Courseware && $('.tabs [data-scene]') && $('aside.lesson')),
+      nav: () => $$('.tabs [data-scene]'),
+      sceneCount() { return this.nav().length; },
+      sceneIndex() {
+        let id = null; try { id = window.H16Courseware.getState().scene; } catch (_) {}
+        return Math.max(0, this.nav().findIndex(b => (id ? b.dataset.scene === id : b.getAttribute('aria-selected') === 'true')));
+      },
+      sceneName(i) { return text(this.nav()[i]?.querySelector('span')) || text(this.nav()[i]); },
+      goScene(i) { this.nav()[i]?.click(); },
+      watch: () => [$('#sceneTitle')],
+      live: () => $('#live'),
+      heading: () => $('.scene-line'),
+      card: () => $('aside.lesson'),
+      figurePanel: () => $('section.board-card'),
+      math: () => { try { return JSON.stringify(window.H16Courseware.getState().math); } catch (_) { return null; } },
+      blocks: {
+        definition: { el: () => $$('aside.lesson > .lesson-section')[0] },
+        look: { el: () => $$('aside.lesson > .lesson-section')[1] },
+        facts: { el: () => $$('aside.lesson > .lesson-section')[2] },
+        metrics: { el: () => $('#metrics') },
+        controls: { el: () => $('#controls'), keep: true },
+        demo: { el: () => $('section.animation') },
+        exercise: { el: () => $('#exercise'), open: true },
+      },
+      stages: {
+        motivate: ['look', 'demo'],
+        explore: ['controls', 'metrics', 'facts', 'demo'],
+        formalize: ['definition', 'facts'],
+        practice: ['exercise'],
+      },
+    },
+    // Single-scene WebGL demo (高中/空间几何关系): the canvas stays put under the stage head;
+    // each step shows the page's own controls for that step below it.
+    space: {
+      detect: () => !!($('[data-rel]') && $('#s-fallback') && $('main .board')),
+      sceneCount: () => 1,
+      sceneIndex: () => 0,
+      sceneName: () => text($('main h1')),
+      goScene() {},
+      watch: () => [],
+      live: () => $('#lf-live'),
+      heading: () => $('main > section'),
+      card: () => $$('main .board')[0],
+      figurePanel: () => $$('main .board')[0],
+      math: () => JSON.stringify({ relation: ($('[data-rel].active') || {}).dataset?.rel || null }),
+      fit: { el: '#s', below: [], min: 320 },
+      cues: {
+        explore: '动手试：切换线线、线面、面面关系，拖动旋转，从不同角度看位置关系。',
+        formalize: '说规律：先猜一下，再显示规律，把位置关系说完整。',
+      },
+      blocks: {
+        look: { el: () => $('#legend') },
+        relation: { el: () => $('#o') },
+        lines: { el: () => $$('main .board .group')[0] },
+        lineplane: { el: () => $$('main .board .group')[1] },
+        planes: { el: () => $$('main .board .group')[2] },
+        lock: { el: () => $('#lock') },
+        reset: { el: () => $('#reset') },
+        guess: { el: () => $('#guess') },
+        show: { el: () => $('#show') },
+        rule: { el: () => $('#a') },
+        exercise: { el: () => $$('main .board')[1], openInside: 'details' },
+      },
+      stages: {
+        motivate: ['relation', 'look'],
+        explore: ['relation', 'lines', 'lineplane', 'planes', 'lock', 'reset'],
+        formalize: ['relation', 'guess', 'show', 'rule'],
+        practice: ['exercise'],
+      },
+    },
+  };
+
+  const LF = {
+    stages: STAGES, on: false, stage: 'motivate', family: null, a: null, parked: new Map(), pinned: [], sceneSeen: -1,
+    init() {
+      const fam = Object.keys(ADAPTERS).find(k => { try { return ADAPTERS[k].detect(); } catch (_) { return false; } });
+      if (!fam) return false;
+      this.family = fam; this.a = ADAPTERS[fam];
+      document.body.dataset.lfFamily = fam;
+      this.build();
+      let pref = null; try { pref = localStorage.getItem('mathagent.lessonflow'); } catch (_) {}
+      const q = new URLSearchParams(location.search).get('lesson');
+      this.setOn(q ? q !== 'off' : pref !== 'off', false);
+      const mo = new MutationObserver(() => this.sceneChanged());
+      this.a.watch().filter(Boolean).forEach(el => mo.observe(el, { childList: true, characterData: true, subtree: true }));
+      this.sceneChanged(true);
+      document.addEventListener('keydown', e => this.key(e));
+      window.addEventListener('resize', () => this.queueFit());
+      // The chapter's own 减少动态 switch also removes stage transitions (OS preference is handled in CSS).
+      const rc = $('#reduced') || $('#reduce') || $('#reduceMotion');
+      if (rc) { const sync = () => document.body.classList.toggle('lf-reduce', rc.checked); rc.addEventListener('change', sync); sync(); }
+      const fp = this.a.figurePanel && this.a.figurePanel();
+      if (fp) new MutationObserver(() => this.queueFit()).observe(fp, { attributes: true, attributeFilter: ['hidden'], subtree: true });
+      return true;
+    },
+    build() {
+      const a = this.a;
+      if (a.live && !a.live() && a.sceneCount() === 1) {
+        const l = document.createElement('p');
+        l.id = 'lf-live'; l.className = 'lf-sr'; l.setAttribute('role', 'status'); l.setAttribute('aria-live', 'polite');
+        document.body.append(l);
+      }
+      const card = a.card();
+      card.classList.add('lf-card');
+      const head = document.createElement('div');
+      head.className = 'lf-card-head'; head.id = 'lf-card-head';
+      head.innerHTML = '<span class="lf-num" aria-hidden="true"></span><p class="lf-cue-line"><strong class="lf-title"></strong><span class="lf-cue"></span></p>';
+      card.prepend(head);
+      this.head = head;
+      const rail = document.createElement('nav');
+      rail.className = 'lf-rail'; rail.id = 'lf-rail';
+      rail.setAttribute('aria-label', '课堂节奏：引入、探究、归纳、练习（翻页笔或 PageDown 下一步）');
+      rail.innerHTML = '<ol class="lf-steps">' +
+        STAGES.map(s => `<li><button type="button" class="lf-step" data-lf-stage="${s.id}" data-lf-n="${s.n}"><b>${s.n}</b>${s.name}</button></li>`).join('') +
+        '</ol><div class="lf-move"><button type="button" id="lf-prev" class="lf-prev">◀ 上一步</button><button type="button" id="lf-next" class="lf-next">下一步 ▶</button></div>' +
+        '<button type="button" id="lf-overview" class="lf-overview" aria-pressed="false" title="显示完整工作台：全部参数、定义与练习同屏">总览</button>' +
+        '<button type="button" id="lf-help" class="lf-help" aria-expanded="false" aria-controls="lf-help-panel" aria-label="课堂操作帮助">?</button>' +
+        '<div id="lf-help-panel" class="lf-help-panel" role="dialog" aria-label="课堂操作帮助" hidden><strong tabindex="-1">课堂节奏怎么用</strong><ul>' +
+        '<li><kbd>PageDown</kbd> / 翻页笔「下一页」：下一步；<kbd>PageUp</kbd>：上一步。练习之后自动进入下一个场景。</li>' +
+        '<li>数字键 <kbd>1</kbd>–<kbd>4</kbd>：直接跳到引入、探究、归纳、练习（输入框和图上不生效）。</li>' +
+        '<li>四个步骤随时可点，不设门槛；「总览」恢复完整工作台，再点一次回到课堂节奏。</li>' +
+        '<li>切换步骤只改变显示重点，不改变任何数学参数；图上拖动、方向键、滚轮缩放在每一步都可用。</li>' +
+        '<li><kbd>Esc</kbd> 关闭本帮助。</li></ul></div>';
+      a.heading().append(rail);
+      this.rail = rail;
+      rail.addEventListener('click', e => {
+        const b = e.target.closest('button'); if (!b) return;
+        if (b.dataset.lfStage) this.go(b.dataset.lfStage, true);
+        else if (b.id === 'lf-prev') this.prev();
+        else if (b.id === 'lf-next') this.next();
+        else if (b.id === 'lf-overview') this.setOn(!this.on, true);
+        else if (b.id === 'lf-help') this.help();
+      });
+      // Tool rows (zoom / free board) fold behind one toggle; folded rows stay
+      // laid out (inert, zero height) so in-figure editors keep every source.
+      const tools = a.tools ? a.tools() : [];
+      if (tools.length) {
+        const drawer = document.createElement('div');
+        drawer.className = 'lf-tools'; drawer.id = 'lf-tools';
+        tools[0].before(drawer);
+        tools.forEach(t => drawer.append(t));
+        const tbtn = document.createElement('button');
+        tbtn.type = 'button'; tbtn.id = 'lf-tools-toggle'; tbtn.className = 'lf-tools-toggle';
+        tbtn.setAttribute('aria-expanded', 'false'); tbtn.setAttribute('aria-controls', 'lf-tools');
+        tbtn.textContent = '缩放与工具 ▾';
+        tbtn.onclick = () => this.tools(!document.body.classList.contains('lf-tools-open'));
+        a.toolsAnchor()?.append(tbtn);
+        this.drawer = drawer; this.tbtn = tbtn;
+      }
+      // The runtime owns its gesture hint (and finds it relative to its tool
+      // row), so the hint is mirrored as text, never moved.
+      const hint = a.hint ? a.hint() : null;
+      if (hint) {
+        const mirror = document.createElement('span');
+        mirror.className = 'lf-hint'; mirror.setAttribute('aria-hidden', 'true');
+        const copy = () => { mirror.textContent = hint.textContent; };
+        copy(); new MutationObserver(copy).observe(hint, { childList: true, characterData: true, subtree: true });
+        (a.hintAnchor() || hint.parentNode).insertBefore(mirror, this.tbtn && this.tbtn.parentNode === a.hintAnchor() ? this.tbtn : null);
+      }
+      for (const [k, def] of Object.entries(a.blocks)) {
+        const el = def.el();
+        if (!el) continue;
+        el.dataset.lfBlock = k;
+        if (def.keep) el.classList.add('lf-keep');
+        const mark = document.createComment('lf:' + k);
+        el.before(mark);
+        this.parked.set(k, { el, mark, def });
+      }
+      for (const [el, to] of (a.pins ? a.pins() : [])) {
+        if (!el || !to) continue;
+        const mark = document.createComment('lf:pin');
+        el.before(mark);
+        this.pinned.push({ el, mark, to });
+      }
+    },
+    // an adapter may word a step's cue for its own controls (same four steps)
+    cue(s) { return (this.a.cues && this.a.cues[s.id]) || s.cue; },
+    queueFit() {
+      if (this.fitRaf) return;
+      this.fitRaf = requestAnimationFrame(() => { this.fitRaf = 0; this.fit(); });
+    },
+    fit() {
+      const f = this.a.fit, body = document.body;
+      if (!f || !this.on) { body.style.removeProperty('--lf-fig-h'); this.figH = 0; return; }
+      const el = $(f.el); if (!el) return;
+      let below = 8;
+      for (const sel of f.below || []) { const e = $(sel); if (e && !e.hidden && e.getClientRects().length) below += e.getBoundingClientRect().height; }
+      const top = el.getBoundingClientRect().top + window.scrollY;
+      const h = Math.max(f.min || 300, Math.floor(window.innerHeight - top - below));
+      if (h !== this.figH) { this.figH = h; body.style.setProperty('--lf-fig-h', h + 'px'); window.dispatchEvent(new Event('resize')); }
+    },
+    tools(open) {
+      document.body.classList.toggle('lf-tools-open', open);
+      this.tbtn?.setAttribute('aria-expanded', String(open));
+      if (this.drawer) this.drawer.inert = this.on && !open;
+      if (this.tbtn) this.tbtn.textContent = open ? '缩放与工具 ▴' : '缩放与工具 ▾';
+      this.queueFit();
+    },
+    setOn(on, user) {
+      this.on = on;
+      document.body.classList.toggle('lf-on', on);
+      $('#lf-overview')?.setAttribute('aria-pressed', String(!on));
+      if ($('#lf-overview')) $('#lf-overview').textContent = on ? '总览' : '课堂节奏';
+      if (user) { try { localStorage.setItem('mathagent.lessonflow', on ? 'on' : 'off'); } catch (_) {} }
+      for (const p of this.pinned) { if (on) p.to.append(p.el); else p.mark.after(p.el); p.el.classList.toggle('lf-pin', on); }
+      if (on) this.apply(); else this.restore();
+      this.tools(document.body.classList.contains('lf-tools-open'));
+      if (user) this.say(on ? `课堂节奏：第 ${this.cur().n} 步 ${this.cur().name}` : '总览：完整工作台已显示，数学状态不变。');
+      this.fit();
+      window.dispatchEvent(new Event('resize'));
+    },
+    restore() {
+      for (const p of this.parked.values()) {
+        p.mark.after(p.el);
+        p.el.classList.remove('lf-fold', 'lf-show'); p.el.inert = false;
+        if (p.def.open) p.el.open = false;
+        if (p.def.openInside) { const d = p.el.querySelector(p.def.openInside); if (d) d.open = false; }
+      }
+      document.body.removeAttribute('data-lf-stage');
+    },
+    cur() { return STAGES.find(s => s.id === this.stage); },
+    apply() {
+      if (!this.on) return;
+      const s = this.cur(), card = this.a.card(), shown = this.a.stages[s.id] || [];
+      document.body.dataset.lfStage = s.id;
+      for (const [k, p] of this.parked) {
+        if (shown.includes(k)) continue;
+        // keep-layout blocks fold inside the card (zero height, inert) instead of leaving the layout
+        if (p.def.keep) card.append(p.el); else p.mark.after(p.el);
+        p.el.classList.remove('lf-show'); p.el.classList.add('lf-fold');
+        p.el.inert = !!p.def.keep;
+        if (p.def.open) p.el.open = false;
+        if (p.def.openInside) { const d = p.el.querySelector(p.def.openInside); if (d) d.open = false; }
+      }
+      for (const k of shown) {
+        const p = this.parked.get(k); if (!p) continue;
+        card.append(p.el);
+        p.el.classList.add('lf-show'); p.el.classList.remove('lf-fold'); p.el.inert = false;
+        if (p.def.open) p.el.open = true;
+        if (p.def.openInside) { const d = p.el.querySelector(p.def.openInside); if (d) d.open = true; }
+      }
+      this.head.querySelector('.lf-num').textContent = s.n;
+      this.head.querySelector('.lf-title').textContent = s.name;
+      this.head.querySelector('.lf-cue').textContent = this.cue(s);
+      card.classList.remove('lf-enter'); void card.offsetWidth; card.classList.add('lf-enter');
+      this.syncRail();
+      this.queueFit();
+    },
+    syncRail() {
+      const s = this.cur(), i = this.a.sceneIndex();
+      $$('.lf-step', this.rail).forEach(b => {
+        const on = b.dataset.lfStage === s.id;
+        b.classList.toggle('active', on);
+        if (on) b.setAttribute('aria-current', 'step'); else b.removeAttribute('aria-current');
+      });
+      const next = this.nextTarget(), prev = this.prevTarget();
+      const nb = $('#lf-next'), pb = $('#lf-prev');
+      nb.disabled = !next; pb.disabled = !prev;
+      const nextName = !next ? '' : next.scene !== i ? `下一场景：${this.a.sceneName(next.scene)}` : `下一步：${STAGES.find(x => x.id === next.stage).name}`;
+      nb.innerHTML = !next ? '本章已完成' : `<span>${nextName.replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]))}</span> ▶`;
+      nb.title = nextName || '已是本章最后一步';
+      nb.setAttribute('aria-label', nextName || '本章已完成');
+      pb.textContent = !prev ? '◀ 上一步' : prev.scene !== i ? '◀ 上一场景' : `◀ ${STAGES.find(x => x.id === prev.stage).name}`;
+      pb.setAttribute('aria-label', !prev ? '上一步（已是第一步）' : prev.scene !== i ? `上一场景：${this.a.sceneName(prev.scene)}` : `上一步：${STAGES.find(x => x.id === prev.stage).name}`);
+    },
+    nextTarget() {
+      const k = STAGES.findIndex(s => s.id === this.stage), i = this.a.sceneIndex();
+      if (k < STAGES.length - 1) return { scene: i, stage: STAGES[k + 1].id };
+      if (i < this.a.sceneCount() - 1) return { scene: i + 1, stage: STAGES[0].id };
+      return null;
+    },
+    prevTarget() {
+      const k = STAGES.findIndex(s => s.id === this.stage), i = this.a.sceneIndex();
+      if (k > 0) return { scene: i, stage: STAGES[k - 1].id };
+      if (i > 0) return { scene: i - 1, stage: STAGES[STAGES.length - 1].id };
+      return null;
+    },
+    move(t) {
+      if (!t) return;
+      if (!this.on) this.setOn(true, true);
+      if (t.scene !== this.a.sceneIndex()) { this.pending = t.stage; this.a.goScene(t.scene); this.sceneChanged(); }
+      else this.go(t.stage, true);
+    },
+    next() { this.move(this.nextTarget()); },
+    prev() { this.move(this.prevTarget()); },
+    go(id, user) {
+      if (!STAGES.some(s => s.id === id)) return;
+      if (!this.on) this.setOn(true, !!user);
+      this.stage = id;
+      this.apply();
+      if (user) { const s = this.cur(); this.say(`第 ${s.n} 步 ${s.name}：${this.cue(s)}`); }
+    },
+    sceneChanged(first) {
+      const i = this.a.sceneIndex();
+      if (!first && i === this.sceneSeen) { this.syncRail(); return; }
+      this.sceneSeen = i;
+      this.stage = this.pending || 'motivate';
+      this.pending = null;
+      if (this.on) this.apply(); else this.syncRail();
+    },
+    say(msg) {
+      const live = this.a.live(); if (!live) return;
+      clearTimeout(this.sayTimer);
+      this.sayTimer = setTimeout(() => { live.textContent = msg; }, 60);
+    },
+    help(force) {
+      const p = $('#lf-help-panel'), b = $('#lf-help');
+      const open = force === undefined ? p.hidden : force;
+      p.hidden = !open; b.setAttribute('aria-expanded', String(open));
+      if (open) p.querySelector('strong').focus();
+    },
+    key(e) {
+      if (e.defaultPrevented || e.altKey || e.ctrlKey || e.metaKey) return;
+      const t = e.target;
+      if (e.key === 'Escape' && !$('#lf-help-panel').hidden) { this.help(false); $('#lf-help').focus(); return; }
+      const typing = t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName) || t.getAttribute?.('role') === 'slider');
+      if (typing) return;
+      if (e.key === 'PageDown') { e.preventDefault(); this.next(); }
+      else if (e.key === 'PageUp') { e.preventDefault(); this.prev(); }
+      else if (/^[1-4]$/.test(e.key) && !(t && t.closest && t.closest('svg, canvas, #figure-wrap, .plot-host, .board'))) {
+        e.preventDefault(); this.go(STAGES[+e.key - 1].id, true);
+      }
+    },
+    snapshot() {
+      const vis = el => !!el && el.getClientRects().length > 0 && getComputedStyle(el).visibility !== 'hidden' && !el.classList.contains('lf-fold');
+      return {
+        family: this.family, on: this.on, stage: this.stage, scene: this.a.sceneIndex(), scenes: this.a.sceneCount(),
+        next: $('#lf-next')?.textContent || '', shown: [...this.parked.keys()].filter(k => vis(this.parked.get(k).el)),
+        title: this.head?.querySelector('.lf-title')?.textContent || '', cue: this.head?.querySelector('.lf-cue')?.textContent || '', math: this.a.math(),
+      };
+    },
+  };
+  window.LessonFlow = LF;
+  const start = () => { if (!LF.init()) setTimeout(() => LF.init(), 300); };
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else setTimeout(start, 0);
+})();</script></body></html>

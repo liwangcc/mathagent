@@ -1,0 +1,48 @@
+[Unit]
+Description=MathAgent AI Math Grading System
+Wants=network-online.target redis-server.service
+After=network-online.target redis-server.service
+StartLimitIntervalSec=300
+StartLimitBurst=3
+
+[Service]
+Type=exec
+User=www-data
+Group=www-data
+WorkingDirectory=/opt/mathagent
+
+# Redis-backed grading is fail-closed in app.py. Redis remains a soft unit
+# dependency so the web UI can stay online and report grading unavailability.
+Environment="PATH=/opt/mathagent/venv/bin:/usr/bin"
+Environment="MPLCONFIGDIR=/opt/mathagent/.cache/matplotlib"
+# Model API requests stay on the public server. Opportunistic nodes are used
+# only for image preprocessing stages (CPU, GPU, and their working memory).
+Environment="OCR_API_EXECUTION_TARGET=server"
+# config.py defaults to the 4 GiB standard profile. Set
+# MATHAGENT_RESOURCE_PROFILE=low_memory in the protected environment for a
+# roughly 1.6 GiB host; explicit per-setting variables still take precedence.
+# These are process-local pressure valves only; Redis still owns provider-wide
+# quotas. Keep one worker until real SQLite/load measurements justify two.
+Environment="GUNICORN_WORKERS=1"
+ExecStart=/opt/mathagent/venv/bin/gunicorn -c /etc/mathagent/gunicorn.conf.py app:app
+ExecReload=/bin/kill -s HUP $MAINPID
+
+# 崩溃自动重启
+Restart=on-failure
+RestartSec=5
+OOMPolicy=stop
+
+# 安全加固
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ReadWritePaths=/opt/mathagent/uploads /opt/mathagent/backups /opt/mathagent/logs /opt/mathagent
+
+# 资源限制
+LimitNOFILE=65535
+MemoryHigh=2500M
+MemoryMax=3200M
+MemorySwapMax=512M
+
+[Install]
+WantedBy=multi-user.target

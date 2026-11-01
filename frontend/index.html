@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <link rel="icon" type="image/x-icon" href="/mathagent-client.ico" />
+    <title>MathAgent — AI数学批改</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600;700&display=swap" media="print" onload="this.media='all'" />
+    <script src="/ct4.js" defer></script>
+    <script>
+      (() => {
+        try {
+          const stored = localStorage.getItem('mathagent_color_mode')
+          const mode = ['light', 'dark', 'system'].includes(stored) ? stored : 'light'
+          document.documentElement.dataset.colorMode = mode
+          document.documentElement.dataset.startupLogin = String(location.pathname === '/login')
+          document.documentElement.style.colorScheme = mode === 'system' ? 'light dark' : mode
+        } catch {
+          document.documentElement.dataset.colorMode = 'light'
+        }
+      })()
+    </script>
+    <style>
+      :root { --startup-paper: #f3f1ea; --startup-raised: #fbfaf7; --startup-desk: #e9e4d8; --startup-ink: #1f1e1d; --startup-muted: #625c52; --startup-rule: rgba(31, 30, 29, .16); --startup-line: rgba(31, 30, 29, .1); --startup-hair: rgba(31, 30, 29, .07); --startup-fill: rgba(31, 30, 29, .05); --startup-moss: #3f6b4f; --startup-moss-deep: #2e5140; --startup-on-moss: #faf9f5; --startup-sheet: #fffdf7; background: var(--startup-paper); }
+      :root[data-color-mode='dark'] { --startup-paper: #20231f; --startup-raised: #282c26; --startup-desk: #2b2f28; --startup-ink: #eee9dc; --startup-muted: #b9b7a9; --startup-rule: rgba(238, 233, 220, .2); --startup-line: rgba(238, 233, 220, .12); --startup-hair: rgba(238, 233, 220, .08); --startup-fill: rgba(238, 233, 220, .07); --startup-moss: #9bb393; --startup-moss-deep: #bdd0b4; --startup-on-moss: #20231f; --startup-sheet: #f1ede2; }
+      @media (prefers-color-scheme: dark) {
+        :root[data-color-mode='system'] { --startup-paper: #20231f; --startup-raised: #282c26; --startup-desk: #2b2f28; --startup-ink: #eee9dc; --startup-muted: #b9b7a9; --startup-rule: rgba(238, 233, 220, .2); --startup-line: rgba(238, 233, 220, .12); --startup-hair: rgba(238, 233, 220, .08); --startup-fill: rgba(238, 233, 220, .07); --startup-moss: #9bb393; --startup-moss-deep: #bdd0b4; --startup-on-moss: #20231f; --startup-sheet: #f1ede2; }
+      }
+      :root[data-startup-login='true']:has(#mathagent-startup) { --startup-paper: #f3f1ea; --startup-raised: #fbfaf7; --startup-desk: #e9e4d8; --startup-ink: #1f1e1d; --startup-muted: #625c52; --startup-rule: rgba(31, 30, 29, .16); --startup-line: rgba(31, 30, 29, .1); --startup-hair: rgba(31, 30, 29, .07); --startup-fill: rgba(31, 30, 29, .05); --startup-moss: #3f6b4f; --startup-moss-deep: #2e5140; --startup-on-moss: #faf9f5; --startup-sheet: #fffdf7; color-scheme: light !important; }
+      body { margin: 0; background: var(--startup-paper); }
+      #mathagent-startup {
+        position: fixed; inset: 0; z-index: 2147483647; display: grid; place-items: center; padding: 24px 24px 8vh;
+        overflow: hidden; color: var(--startup-ink); background: var(--startup-paper);
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+        transition: opacity .32s ease, visibility .32s step-end;
+      }
+      #mathagent-startup.is-leaving { opacity: 0; visibility: hidden; pointer-events: none; }
+      /* The showcase hero's inked function, drawn once along the bottom. */
+      .startup-plot { position: absolute; inset: auto 0 0; width: 100%; height: 42%; pointer-events: none; }
+      .startup-plot .axis { stroke: var(--startup-rule); stroke-width: 1; vector-effect: non-scaling-stroke; }
+      .startup-plot .curve { fill: none; stroke: var(--startup-ink); stroke-width: 1.6; stroke-linecap: round; stroke-dasharray: 1; opacity: .5; vector-effect: non-scaling-stroke; animation: startup-draw 1.7s cubic-bezier(.22, .61, .36, 1) .15s both; }
+      .startup-plot .curve.is-faint { stroke: var(--startup-rule); stroke-dasharray: .006 .008; opacity: 1; animation: startup-fade 1s ease .3s both; }
+      .startup-plot .dot { fill: var(--startup-moss); animation: startup-fade .3s ease 1.55s both; }
+      /* The showcase's grading specimen in miniature: one sample page is read, marked and stamped. */
+      .startup-window {
+        position: relative; width: min(404px, 100%); overflow: hidden; border: 1px solid var(--startup-line); border-radius: 16px;
+        background: var(--startup-raised); box-shadow: 0 24px 60px -24px rgba(31, 30, 29, .3), 0 4px 12px rgba(31, 30, 29, .06);
+        animation: startup-rise .7s cubic-bezier(.16, 1, .3, 1) both;
+      }
+      .startup-chrome { display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-bottom: 1px solid var(--startup-line); }
+      .startup-logo { display: grid; place-items: center; width: 24px; height: 24px; flex: none; border-radius: 6px; background: var(--startup-moss); color: var(--startup-on-moss); font: italic 500 14px/1 Georgia, 'Times New Roman', serif; }
+      .startup-wordmark { margin: 0; font: 500 17px/1 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, serif; letter-spacing: -.01em; }
+      .startup-wordmark i { color: var(--startup-moss); font-style: normal; }
+      .startup-phases { display: flex; gap: 2px; margin: 0 0 0 auto; padding: 3px; border-radius: 9px; background: var(--startup-fill); list-style: none; }
+      .startup-phases li { display: flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 6px; color: var(--startup-muted); font-size: 12px; font-weight: 600; white-space: nowrap; }
+      .startup-phases li::before { content: ''; width: 5px; height: 5px; margin-left: -9px; border-radius: 50%; background: var(--startup-moss); opacity: 0; }
+      .startup-phases li:nth-child(1) { animation: startup-phase .55s .3s both; }
+      .startup-phases li:nth-child(2) { animation: startup-phase .45s .85s both; }
+      .startup-phases li:nth-child(3) { animation: startup-phase-on .3s 1.3s both; }
+      .startup-phases li:nth-child(1)::before { animation: startup-done .2s .85s both; }
+      .startup-phases li:nth-child(2)::before { animation: startup-done .2s 1.3s both; }
+      .startup-progress { display: flex; align-items: center; gap: 12px; padding: 8px 14px; border-bottom: 1px solid var(--startup-line); color: var(--startup-muted); font-size: 12px; }
+      .startup-progress i { position: relative; flex: 1; height: 3px; overflow: hidden; border-radius: 3px; background: var(--startup-fill); }
+      .startup-progress b { position: absolute; inset: 0; border-radius: inherit; background: var(--startup-moss); transform-origin: left center; animation: startup-fill 1.5s cubic-bezier(.65, 0, .35, 1) .2s both; }
+      .startup-desk { position: relative; padding: 18px 22px 22px 18px; background: var(--startup-desk); }
+      .startup-grid { position: absolute; inset: 0; width: 100%; height: 100%; }
+      .startup-grid path { fill: none; stroke: var(--startup-hair); stroke-width: 1; }
+      .startup-pile, .startup-pile::after { position: absolute; inset: 24px 16px 18px 26px; border: 1px solid rgba(31, 30, 29, .08); border-radius: 4px; background: #f7f4ec; transform: rotate(2deg); }
+      .startup-pile::after { content: ''; inset: -2px; background: #faf8f1; transform: rotate(-3deg); }
+      /* The page stays paper-white in both color modes: it is a scanned photo, not UI. */
+      .startup-sheet { position: relative; z-index: 1; border-radius: 4px; background: var(--startup-sheet); box-shadow: 0 0 0 1px rgba(31, 30, 29, .09), 0 1px 2px rgba(31, 30, 29, .06), 0 16px 32px -20px rgba(31, 30, 29, .4); transform: rotate(-.5deg); animation: startup-sheet .8s cubic-bezier(.16, 1, .3, 1) .08s both; }
+      .startup-sheet svg { display: block; width: 100%; height: auto; }
+      .sheet-print { fill: #2a2723; font-family: 'Noto Serif SC', 'Songti SC', SimSun, serif; }
+      .sheet-meta { fill: #6b655b; font-size: 8.5px; }
+      .sheet-hand { fill: #1f3a68; font-family: 'Kaiti SC', STKaiti, KaiTi, '楷体', serif; font-size: 11px; }
+      .sheet-rule { stroke: rgba(31, 30, 29, .12); }
+      .sheet-row { stroke: rgba(31, 30, 29, .1); stroke-dasharray: 3 3; }
+      .sheet-box { fill: none; stroke: #3f6b4f; stroke-width: 1; stroke-dasharray: 3 2; animation: startup-box 1s .5s both; }
+      .sheet-mark { fill: none; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 1; }
+      .sheet-mark.is-correct { stroke: #2f6b45; }
+      .sheet-mark.is-partial { stroke: #b7791f; }
+      .sheet-mark.m1 { animation: startup-draw .38s cubic-bezier(.22, .61, .36, 1) .98s both; }
+      .sheet-mark.m2 { animation: startup-draw .38s cubic-bezier(.22, .61, .36, 1) 1.14s both; }
+      .sheet-mark.m3 { animation: startup-draw .38s cubic-bezier(.22, .61, .36, 1) 1.3s both; }
+      .sheet-mark.m4 { animation: startup-draw .24s cubic-bezier(.22, .61, .36, 1) 1.52s both; }
+      .sheet-scan { opacity: 0; animation: startup-scan .8s cubic-bezier(.65, 0, .35, 1) .3s both; }
+      .sheet-scan rect:first-child { fill: rgba(63, 107, 79, .1); }
+      .sheet-scan rect:last-child { fill: rgba(63, 107, 79, .75); }
+      .startup-stamp { position: absolute; top: 12px; right: 14px; z-index: 2; display: flex; flex-direction: column; align-items: center; padding: 3px 8px 4px; border: 2px solid #3f6b4f; border-radius: 6px; color: #3f6b4f; line-height: 1.15; opacity: .92; transform: rotate(-9deg); animation: startup-stamp .5s cubic-bezier(.16, 1, .3, 1) 1.6s both; }
+      .startup-stamp strong { font: 600 13px/1.15 'Noto Serif SC', 'Songti SC', SimSun, serif; letter-spacing: .24em; text-indent: .24em; }
+      .startup-stamp span { font-size: 9px; font-weight: 600; letter-spacing: .3em; text-indent: .3em; }
+      .startup-status { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+      @keyframes startup-rise { from { opacity: 0; transform: translateY(12px); } }
+      @keyframes startup-sheet { from { opacity: 0; transform: translate(26px, 10px) rotate(3deg); } }
+      @keyframes startup-fill { from { transform: scaleX(.04); } }
+      @keyframes startup-fade { from { opacity: 0; } }
+      @keyframes startup-draw { from { stroke-dashoffset: 1; opacity: 0; } 1% { opacity: 1; } to { stroke-dashoffset: 0; } }
+      @keyframes startup-scan { 0% { opacity: 0; transform: translateY(-20px); } 12%, 88% { opacity: 1; } 100% { opacity: 0; transform: translateY(150px); } }
+      @keyframes startup-box { 0% { opacity: 0; } 20%, 60% { opacity: .6; stroke-dasharray: 3 2; } 100% { opacity: 1; stroke-dasharray: none; } }
+      @keyframes startup-stamp { from { opacity: 0; transform: rotate(-9deg) scale(1.5); } }
+      @keyframes startup-phase { 1%, 99% { background: var(--startup-raised); color: var(--startup-moss-deep); box-shadow: 0 1px 1px rgba(31, 30, 29, .06), 0 0 0 1px var(--startup-line); } }
+      @keyframes startup-phase-on { to { background: var(--startup-raised); color: var(--startup-moss-deep); box-shadow: 0 1px 1px rgba(31, 30, 29, .06), 0 0 0 1px var(--startup-line); } }
+      @keyframes startup-done { to { opacity: 1; margin-left: 0; } }
+      @media (max-width: 380px) { .startup-wordmark { display: none; } }
+      @media (prefers-reduced-motion: reduce) {
+        #mathagent-startup *, #mathagent-startup *::before { animation: none !important; }
+        .startup-phases li:nth-child(-n + 2)::before { opacity: 1; margin-left: 0; }
+        .startup-phases li:nth-child(3) { background: var(--startup-raised); color: var(--startup-moss-deep); }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="mathagent-startup" role="status" aria-live="polite" aria-label="MathAgent 正在启动">
+      <svg class="startup-plot" viewBox="0 0 1440 520" preserveAspectRatio="none" aria-hidden="true">
+        <line class="axis" x1="0" y1="496" x2="1440" y2="496" />
+        <path class="curve is-faint" pathLength="1" d="M0 470 C 320 470, 560 440, 760 420 S 1160 300, 1440 330" />
+        <path class="curve" pathLength="1" d="M0 508 C 420 508, 700 480, 900 380 S 1240 110, 1440 60" />
+        <circle class="dot" cx="900" cy="380" r="5" />
+      </svg>
+      <div class="startup-window" aria-hidden="true">
+        <div class="startup-chrome">
+          <span class="startup-logo">M</span>
+          <p class="startup-wordmark">MathAgent<i>.</i></p>
+          <ol class="startup-phases"><li>识别</li><li>判分</li><li>复核</li></ol>
+        </div>
+        <div class="startup-progress"><span>正在准备批阅环境</span><i><b></b></i></div>
+        <div class="startup-desk">
+          <svg class="startup-grid">
+            <defs><pattern id="startup-grid-cell" width="22" height="22" patternUnits="userSpaceOnUse"><path d="M22 0H0V22" /></pattern></defs>
+            <rect width="100%" height="100%" fill="url(#startup-grid-cell)" />
+          </svg>
+          <div class="startup-pile"></div>
+          <div class="startup-sheet">
+            <svg viewBox="0 0 260 172">
+              <text class="sheet-print" x="14" y="22" font-size="11" font-weight="600" letter-spacing=".5">高一数学 · 函数与数列练习</text>
+              <text class="sheet-meta" x="14" y="41">姓名</text>
+              <text class="sheet-hand" x="34" y="41.5">学生 A</text>
+              <rect class="sheet-box" x="9" y="31" width="64" height="15" rx="3" />
+              <line class="sheet-rule" x1="10" y1="52" x2="250" y2="52" />
+              <text class="sheet-print" x="14" y="72" font-size="9"><tspan font-weight="700">1.</tspan> 函数 y = log₂(x − 1) 的定义域为（<tspan class="sheet-hand">B</tspan>）</text>
+              <line class="sheet-row" x1="10" y1="86" x2="250" y2="86" />
+              <text class="sheet-print" x="14" y="106" font-size="9"><tspan font-weight="700">2.</tspan> 已知 sin α = 3/5，α 为锐角，则 cos α =</text>
+              <text class="sheet-hand" x="190" y="106.5">4/5</text>
+              <line class="sheet-row" x1="10" y1="120" x2="250" y2="120" />
+              <text class="sheet-print" x="14" y="140" font-size="9"><tspan font-weight="700">3.</tspan> 求 f(x) = x² − 2x − 3 的单调区间。</text>
+              <text class="sheet-hand" x="24" y="158">增区间 (1, +∞)</text>
+              <g transform="translate(216 58) scale(.9)"><path class="sheet-mark is-correct m1" pathLength="1" d="M5 17.5 C 8.5 20, 12 23.5, 14.5 27 C 19.5 18, 26 10, 35 3.5" /></g>
+              <g transform="translate(216 92) scale(.9)"><path class="sheet-mark is-correct m2" pathLength="1" d="M5 17.5 C 8.5 20, 12 23.5, 14.5 27 C 19.5 18, 26 10, 35 3.5" /></g>
+              <g transform="translate(216 128) scale(.9)"><path class="sheet-mark is-partial m3" pathLength="1" d="M5 17.5 C 8.5 20, 12 23.5, 14.5 27 C 19.5 18, 26 10, 35 3.5" /><path class="sheet-mark is-partial m4" pathLength="1" d="M19.5 9 C 22 13, 24.5 16.5, 27.5 20" /></g>
+              <g class="sheet-scan"><rect x="0" y="-8" width="260" height="22" /><rect x="0" y="13" width="260" height="2" /></g>
+            </svg>
+            <div class="startup-stamp"><strong>已复核</strong><span>可入档</span></div>
+          </div>
+        </div>
+      </div>
+      <p class="startup-status">正在准备批阅环境</p>
+    </div>
+    <div id="app"></div>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

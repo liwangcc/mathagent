@@ -1,0 +1,73 @@
+{
+  "design": "同一份S01试卷（25 题，人工真值），qwen3.8-flash、同提示词、enable_thinking=false、temperature=0，每路 10 次",
+  "truth_note": "Q16 学生作答=正确答案（逆否命题）但印刷题干含 'ab'；Q21 教师故意写 4√5（标准答案 4/5），用于检测改答案",
+  "scoring": "归一化后比对（LaTeX/全半角/空格），a·b 与 ab 视为等价；a,b 与 ab 不等价",
+  "inputs": {
+    "raw": "S01.jpg 原卷整张（含印刷题干与选项）",
+    "diff": "现行 difference-v2-cleaner 两栏差分图（productive 现状）",
+    "diff_nodash": "同上，但抹除残留的印刷答题虚线（原型修复，未进生产）"
+  },
+  "results": {
+    "raw": {
+      "correct": 243,
+      "total": 250,
+      "pct": 97.2,
+      "perfect_runs": 4,
+      "mean_sec": 18.6,
+      "errors": {
+        "21": 6,
+        "16": 1
+      }
+    },
+    "diff": {
+      "correct": 245,
+      "total": 250,
+      "pct": 98.0,
+      "perfect_runs": 5,
+      "mean_sec": 8.2,
+      "errors": {
+        "16": 5
+      }
+    },
+    "diff_nodash": {
+      "correct": 249,
+      "total": 250,
+      "pct": 99.6,
+      "perfect_runs": 9,
+      "mean_sec": 7.5,
+      "errors": {
+        "16": 1
+      }
+    }
+  },
+  "q16_readings": {
+    "truth": "若ab≤0,则a≤0或b≤0",
+    "raw": {
+      "若ab≤0，则a≤0或b≤0": 9,
+      "若a≤0或b≤0，则ab≤0": 1
+    },
+    "diff": {
+      "若a,b≤0,则a≤0或b≤0": 5,
+      "若a·b≤0，则a≤0或b≤0": 4,
+      "若ab≤0，则a≤0或b≤0": 1
+    },
+    "diff_nodash": {
+      "若a·b≤0，则a≤0或b≤0": 6,
+      "若ab≤0，则a≤0或b≤0": 3,
+      "若a,b≤0,则a≤0或b≤0": 1
+    }
+  },
+  "q21_readings": {
+    "truth": "4√5",
+    "raw": {
+      "4√5/5": 6,
+      "4√5": 4
+    },
+    "diff": {
+      "4√5": 10
+    },
+    "diff_nodash": {
+      "4√5": 10
+    }
+  }
+}

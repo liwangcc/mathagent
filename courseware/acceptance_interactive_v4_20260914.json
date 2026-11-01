@@ -1,0 +1,858 @@
+{
+ "artifact": "courseware/catalog_v4.json（三大压缩包 58 章最终单文件 HTML，小学17/初中20/高中21）",
+ "runner": "Hermes / browser-use 本地浏览器（真实鼠标拖拽、真实键盘、CDP 事件；只读观测器采集异常与资源请求）",
+ "phase1_load_reload": {
+  "chapters": 58,
+  "by_stage": {
+   "primary": 17,
+   "junior": 20,
+   "senior": 21
+  },
+  "pass": 58,
+  "fails": [],
+  "js_errors_total": 0,
+  "external_refs_total": 0,
+  "overflow_cases": 0,
+  "missing_aria_live": 0,
+  "missing_svg": 0,
+  "reload_ok": 58
+ },
+ "phase2_interactions": {
+  "P05_scene01": {
+   "drags": [
+    {
+     "from": [
+      162.9,
+      353.2
+     ],
+     "to": [
+      232.9,
+      353.2
+     ],
+     "rect": {
+      "x": 151.4706268310547,
+      "y": 341.71942138671875,
+      "w": 22.885108947753906,
+      "h": 22.88512420654297,
+      "tag": "g",
+      "type": "",
+      "id": "",
+      "val": null
+     }
+    },
+    {
+     "from": [
+      221.0,
+      353.2
+     ],
+     "to": [
+      -19.0,
+      353.2
+     ],
+     "rect": {
+      "x": 209.57736206054688,
+      "y": 341.71942138671875,
+      "w": 22.88509178161621,
+      "h": 22.88512420654297,
+      "tag": "g",
+      "type": "",
+      "id": "",
+      "val": null
+     }
+    }
+   ],
+   "nA_seq": [
+    "3",
+    "5",
+    "0",
+    "3"
+   ],
+   "aria_seq": [
+    "3",
+    "5",
+    "0",
+    "3"
+   ],
+   "eq_seq": [
+    "3 × 1 8 = 3 8",
+    "5 × 1 8 = 5 8",
+    "0 × 1 8 = 0",
+    "3 × 1 8 = 3 8"
+   ],
+   "step_names": [
+    "initial",
+    "after_drag_right",
+    "after_drag_left",
+    "after_reset"
+   ]
+  },
+  "P05_scene02": {
+   "eq_seq": [
+    "3 8 < 5 8",
+    "3 8 ? 5 8",
+    "3 8 < 5 8",
+    "3 8 < 5 8",
+    "3 8 < 5 8",
+    "3 8 < 5 8",
+    "3 8 < 5 8"
+   ],
+   "exercise_results": [
+    "",
+    "",
+    "",
+    "",
+    "✓ 当前回答正确。 差是 1/4，要先统一单位与分数单位。",
+    "差是 1/4，要先统一单位与分数单位。",
+    ""
+   ],
+   "steps": [
+    "initial",
+    "hidden_conclusion",
+    "guess_lt_reveal",
+    "guess_gt_reveal",
+    "check_correct",
+    "show_answer",
+    "after_reset"
+   ]
+  },
+  "J08_params": {
+   "k_seq": [
+    "2",
+    "3",
+    "-3",
+    "-3",
+    "-3",
+    "-3",
+    "2"
+   ],
+   "b_seq": [
+    "1",
+    "1",
+    "1",
+    "-4",
+    "2",
+    "1",
+    "1"
+   ],
+   "formula_seq": [
+    "y=2x + 1 输入范围：x∈[−2, 3]",
+    "y=3x + 1 输入范围：x∈[−2, 3]",
+    "y=−3x + 1 输入范围：x∈[−2, 3]",
+    "y=−3x − 4 输入范围：x∈[−2, 3]",
+    "y=−3x + 2 输入范围：x∈[−2, 3]",
+    "y=−3x + 1 输入范围：x∈[−2, 3]",
+    "y=2x + 1 输入范围：x∈[−2, 3]"
+   ],
+   "steps": [
+    "initial",
+    "drag_k_right",
+    "drag_k_negative",
+    "drag_b",
+    "key_b_right4",
+    "key_b_left2",
+    "after_reset"
+   ]
+  },
+  "J08_scene03_precise": {
+   "keyboard": {
+    "b_before": "0",
+    "after_one_ArrowRight": "0.1",
+    "after_one_ArrowLeft": "0",
+    "focus": "r-b"
+   },
+   "k_seq": [
+    "2",
+    "2",
+    "4",
+    "-4",
+    "-4",
+    "2"
+   ],
+   "steps": [
+    "s3_initial",
+    "kbd_single_steps",
+    "drag_k_right",
+    "drag_k_negative",
+    "drag_input_bead",
+    "after_reset"
+   ]
+  },
+  "J08_graph_drags": {
+   "s1_bead": {
+    "x0": "1",
+    "x1": "3.4",
+    "readings0": "当前输入 x 1 当前输出 3 整个范围内是函数吗 是，每个输入唯一输出",
+    "readings1": "当前输入 x 3.4 当前输出 不在研究范围 整个范围内是函数吗 是，每个输入唯一输出",
+    "drag": {
+     "from": [
+      295.4,
+      352.9
+     ],
+     "to": [
+      385.4,
+      352.9
+     ],
+     "rect": {
+      "x": 271.42315673828125,
+      "y": 328.8667297363281,
+      "w": 48.00001907348633,
+      "h": 48.000003814697266,
+      "tag": "g",
+      "type": "",
+      "id": "",
+      "val": null
+     }
+    },
+    "shot": "D:/MathAgent/courseware/acceptance_v4_20260914/shots/J08_s1_bead.png"
+   },
+   "s3_slope": {
+    "k0": "2",
+    "k1": "-3.5",
+    "b0": "1",
+    "b1": "1",
+    "formula": "y = −3.5x + 1 k=Δy/Δx=−3.5/1=−3.5",
+    "drag": {
+     "from": [
+      273.8,
+      353.3
+     ],
+     "to": [
+      333.8,
+      443.3
+     ],
+     "rect": {
+      "x": 249.78677368164062,
+      "y": 329.2500305175781,
+      "w": 48.00001907348633,
+      "h": 48.000003814697266,
+      "tag": "g",
+      "type": "",
+      "id": "",
+      "val": null
+     }
+    },
+    "shot": "D:/MathAgent/courseware/acceptance_v4_20260914/shots/J08_s3_slope_drag.png"
+   },
+   "s3_intercept": {
+    "b1": "1",
+    "b2": "6",
+    "formula": "y = −3.5x + 6 k=Δy/Δx=−3.5/1=−3.5",
+    "drag": {
+     "from": [
+      235.0,
+      353.1
+     ],
+     "to": [
+      195.0,
+      243.1
+     ],
+     "rect": {
+      "x": 210.9685821533203,
+      "y": 329.0500183105469,
+      "w": 48.000003814697266,
+      "h": 48.000003814697266,
+      "tag": "g",
+      "type": "",
+      "id": "",
+      "val": null
+     }
+    },
+    "shot": "D:/MathAgent/courseware/acceptance_v4_20260914/shots/J08_s3_intercept_drag.png"
+   }
+  },
+  "J10": {
+   "a": [
+    "1",
+    "3",
+    "-3",
+    "0",
+    "0",
+    "0",
+    "0.75",
+    "1"
+   ],
+   "p": [
+    "2",
+    "2",
+    "2",
+    "2",
+    "2",
+    "2",
+    "2",
+    "2"
+   ],
+   "q": [
+    "-1",
+    "-1",
+    "-1",
+    "-1",
+    "-1",
+    "-1",
+    "-1",
+    "-1"
+   ],
+   "formula": [
+    "y = 1 × (x − 2)² − 1 一般式：y = x² − 4x + 3",
+    "y = 3 × (x − 2)² − 1 一般式：y = 3x² − 12x + 11",
+    "y = −3 × (x − 2)² − 1 一般式：y = −3x² + 12x − 13",
+    "y = −1 a=0：退化为常函数，不再是二次函数 一般式：y = −1",
+    "y = −1 a=0：退化为常函数，不再是二次函数 一般式：y = −1",
+    "y = −1 a=0：退化为常函数，不再是二次函数 一般式：y = −1",
+    "y = 0.75 × (x − 2)² − 1 一般式：y = 0.75x² − 3x + 2",
+    "y = 1 × (x − 2)² − 1 一般式：y = x² − 4x + 3"
+   ],
+   "feedback": [
+    "b=−2ap=−4，c=ap²+q=3。两种表达式逐项等价，不是两条不同曲线。",
+    "b=−2ap=−12，c=ap²+q=11。两种表达式逐项等价，不是两条不同曲线。",
+    "b=−2ap=12，c=ap²+q=−13。两种表达式逐项等价，不是两条不同曲线。",
+    "最高二次项已消失，必须改称常函数；不能继续套二次函数的顶点和求根公式。",
+    "最高二次项已消失，必须改称常函数；不能继续套二次函数的顶点和求根公式。",
+    "最高二次项已消失，必须改称常函数；不能继续套二次函数的顶点和求根公式。",
+    "b=−2ap=−3，c=ap²+q=2。两种表达式逐项等价，不是两条不同曲线。",
+    "b=−2ap=−4，c=ap²+q=3。两种表达式逐项等价，不是两条不同曲线。"
+   ],
+   "steps": [
+    "initial",
+    "drag_a_up",
+    "drag_a_negative",
+    "typed_a_zero",
+    "preset_a0",
+    "drag_vertex",
+    "kbd_a",
+    "after_reset"
+   ]
+  },
+  "H05_quadrants": {
+   "theta": [
+    "448",
+    "45",
+    "135",
+    "225",
+    "315",
+    "60"
+   ],
+   "metrics": [
+    "θ 7.819 rad sinθ / cosθ 0.9994 / 0.0349 有向弧长 s 7.819",
+    "θ 0.7854 rad sinθ / cosθ 0.7071 / 0.7071 有向弧长 s 0.7854",
+    "θ 2.356 rad sinθ / cosθ 0.7071 / −0.7071 有向弧长 s 2.356",
+    "θ 3.927 rad sinθ / cosθ −0.7071 / −0.7071 有向弧长 s 3.927",
+    "θ 5.498 rad sinθ / cosθ −0.7071 / 0.7071 有向弧长 s 5.498",
+    "θ 1.047 rad sinθ / cosθ 0.866 / 0.5 有向弧长 s 1.047"
+   ],
+   "steps": [
+    "initial_60",
+    "q1_45",
+    "q2_135",
+    "q3_225",
+    "q4_315",
+    "after_reset"
+   ]
+  },
+  "H05_identity": {
+   "metrics": [
+    "sinθ 0.5 cosθ 0.866 tanθ 0.5774",
+    "sinθ 0.5 cosθ −0.866 tanθ −0.5774",
+    "sinθ 0 cosθ −1 tanθ 0"
+   ],
+   "formula": [
+    "sin²θ+cos²θ=1 sin(π−θ)=sinθ；cos(π−θ)=−cosθ",
+    "sin²θ+cos²θ=1 sin(π−θ)=sinθ；cos(π−θ)=−cosθ",
+    "sin²θ+cos²θ=1 sin(π−θ)=sinθ；cos(π−θ)=−cosθ"
+   ]
+  },
+  "H06": {
+   "u": [
+    [
+     "3",
+     "2"
+    ],
+    [
+     "5",
+     "5"
+    ],
+    [
+     "-5",
+     "-0.8"
+    ],
+    [
+     "0.1",
+     "-0.8"
+    ],
+    [
+     "0.1",
+     "-0.8"
+    ],
+    [
+     "3",
+     "2"
+    ]
+   ],
+   "v": [
+    [
+     "1",
+     "3"
+    ],
+    [
+     "1",
+     "3"
+    ],
+    [
+     "1",
+     "3"
+    ],
+    [
+     "1",
+     "3"
+    ],
+    [
+     "-5",
+     "-1.4"
+    ],
+    [
+     "1",
+     "3"
+    ]
+   ],
+   "metrics": [
+    "|u| 3.606 |v| 3.162 合向量 (4,5)",
+    "|u| 7.071 |v| 3.162 合向量 (6,8)",
+    "|u| 5.064 |v| 3.162 合向量 (−4,2.2)",
+    "|u| 0.8062 |v| 3.162 合向量 (1.1,2.2)",
+    "|u| 0.8062 |v| 5.192 合向量 (−4.9,−2.2)",
+    "|u| 3.606 |v| 3.162 合向量 (4,5)"
+   ],
+   "kbd": {
+    "ux0": "0",
+    "after_2right": "0.2",
+    "after_1left": "0.1"
+   },
+   "steps": [
+    "initial",
+    "drag_u_endpoint",
+    "drag_u_negative",
+    "kbd_ux",
+    "drag_v_endpoint",
+    "after_reset"
+   ]
+  },
+  "extras": {
+   "H06_s3": {
+    "initial": "数量积 12 有向投影长度 3 夹角 53.13 °",
+    "after": "数量积 19.6 有向投影长度 4.9 夹角 45.58 °"
+   },
+   "J10_vertex": {
+    "before": [
+     "2",
+     "-1"
+    ],
+    "after": [
+     "4",
+     "1.9"
+    ]
+   }
+  }
+ },
+ "phase3_responsive_a11y": {
+  "viewport_A": {
+   "P05_1366x768": {
+    "inner": {
+     "iw": 1366,
+     "ih": 768,
+     "sw": 1351,
+     "cw": 1351
+    },
+    "overflowX": false,
+    "controls_visible": true,
+    "plot_visible": true,
+    "slider_visible": true,
+    "tab_to_slider": null,
+    "arrow": null
+   },
+   "P05_1024x768": {
+    "inner": {
+     "iw": 1024,
+     "ih": 768,
+     "sw": 1009,
+     "cw": 1009
+    },
+    "overflowX": false,
+    "controls_visible": true,
+    "plot_visible": true,
+    "slider_visible": true,
+    "tab_to_slider": null,
+    "arrow": null
+   },
+   "P05_390x844": {
+    "inner": {
+     "iw": 390,
+     "ih": 844,
+     "sw": 375,
+     "cw": 375
+    },
+    "overflowX": false,
+    "controls_visible": true,
+    "plot_visible": true,
+    "slider_visible": true,
+    "tab_to_slider": null,
+    "arrow": null
+   },
+   "J08_1366x768": {
+    "inner": {
+     "iw": 1366,
+     "ih": 768,
+     "sw": 1351,
+     "cw": 1351
+    },
+    "overflowX": false,
+    "controls_visible": true,
+    "plot_visible": true,
+    "slider_visible": true,
+    "tab_to_slider": 21,
+    "arrow": {
+     "val_before": "1",
+     "val_after": "2",
+     "live_before": "已进入 J08-S01 什么是函数。场景可自由跳转，未改变无关模型参数。",
+     "live_after": "b · 当前规则中的常量 已更新；图形、公式和已显示的练习答案同步重算。"
+    }
+   },
+   "J08_1024x768": {
+    "inner": {
+     "iw": 1024,
+     "ih": 768,
+     "sw": 1009,
+     "cw": 1009
+    },
+    "overflowX": false,
+    "controls_visible": true,
+    "plot_visible": true,
+    "slider_visible": true,
+    "tab_to_slider": 21,
+    "arrow": {
+     "val_before": "1",
+     "val_after": "2",
+     "live_before": "已进入 J08-S01 什么是函数。场景可自由跳转，未改变无关模型参数。",
+     "live_after": "b · 当前规则中的常量 已更新；图形、公式和已显示的练习答案同步重算。"
+    }
+   },
+   "J08_390x844": {
+    "inner": {
+     "iw": 390,
+     "ih": 844,
+     "sw": 375,
+     "cw": 375
+    },
+    "overflowX": false,
+    "controls_visible": true,
+    "plot_visible": true,
+    "slider_visible": true,
+    "tab_to_slider": 21,
+    "arrow": {
+     "val_before": "1",
+     "val_after": "2",
+     "live_before": "已进入 J08-S01 什么是函数。场景可自由跳转，未改变无关模型参数。",
+     "live_after": "b · 当前规则中的常量 已更新；图形、公式和已显示的练习答案同步重算。"
+    }
+   }
+  },
+  "viewport_B": {
+   "H05_1366x768": {
+    "inner": {
+     "iw": 1366,
+     "ih": 768,
+     "sw": 1351,
+     "cw": 1351
+    },
+    "overflowX": false,
+    "controls": true,
+    "plot": true,
+    "theta_visible": true,
+    "clipped": false,
+    "tab_to_theta": {
+     "tab_count": 16,
+     "focus": {
+      "tag": "INPUT",
+      "id": "",
+      "dp": "theta",
+      "aria": "有向角 θ滑块",
+      "val": "60"
+     }
+    },
+    "arrow": {
+     "before": "60",
+     "after": "63",
+     "live_before": "",
+     "live_after": ""
+    }
+   },
+   "H05_1024x768": {
+    "inner": {
+     "iw": 1024,
+     "ih": 768,
+     "sw": 1009,
+     "cw": 1009
+    },
+    "overflowX": false,
+    "controls": true,
+    "plot": true,
+    "theta_visible": true,
+    "clipped": false,
+    "tab_to_theta": {
+     "tab_count": 16,
+     "focus": {
+      "tag": "INPUT",
+      "id": "",
+      "dp": "theta",
+      "aria": "有向角 θ滑块",
+      "val": "60"
+     }
+    },
+    "arrow": {
+     "before": "60",
+     "after": "63",
+     "live_before": "",
+     "live_after": ""
+    }
+   },
+   "H05_390x844": {
+    "inner": {
+     "iw": 390,
+     "ih": 844,
+     "sw": 375,
+     "cw": 375
+    },
+    "overflowX": false,
+    "controls": true,
+    "plot": true,
+    "theta_visible": true,
+    "clipped": false,
+    "tab_to_theta": {
+     "tab_count": 16,
+     "focus": {
+      "tag": "INPUT",
+      "id": "",
+      "dp": "theta",
+      "aria": "有向角 θ滑块",
+      "val": "60"
+     }
+    },
+    "arrow": {
+     "before": "60",
+     "after": "63",
+     "live_before": "",
+     "live_after": ""
+    }
+   }
+  },
+  "aria_live": {
+   "P05": {
+    "live_sel": "#announcer",
+    "before": "",
+    "after_drag_sequence": [
+     "已按图中边界更新当前数量；公式、读数与练习答案已同步。"
+    ],
+    "nA": "5"
+   },
+   "J08": {
+    "live_sel": "#live",
+    "before": "已进入 J08-S01 什么是函数。场景可自由跳转，未改变无关模型参数。",
+    "after_drag_sequence": [
+     "已进入 J08-S01 什么是函数。场景可自由跳转，未改变无关模型参数。",
+     "k · 当前规则中的常量 已更新；图形、公式和已显示的练习答案同步重算。"
+    ],
+    "k": "2.5"
+   },
+   "H05": {
+    "live_sel": "#live",
+    "before": "",
+    "after_drag_sequence": [],
+    "theta": "135"
+   }
+  },
+  "P05_keyboard": {
+   "found": {
+    "tab_count": 44,
+    "focus": {
+     "tag": "g",
+     "id": "",
+     "role": "slider",
+     "aria": "A分子，直接拖动边界或用方向键",
+     "type": "",
+     "val": null
+    }
+   },
+   "arrow": {
+    "before": {
+     "nA": "3",
+     "aria_now": "3",
+     "live": ""
+    },
+    "after": {
+     "nA": "5",
+     "aria_now": "5",
+     "live": ""
+    }
+   },
+   "focus_tail": [
+    {
+     "tag": "rect",
+     "id": "",
+     "role": "button",
+     "aria": "A：点选15份；按住拖动整条",
+     "type": "",
+     "val": null
+    },
+    {
+     "tag": "rect",
+     "id": "",
+     "role": "button",
+     "aria": "A：点选16份；按住拖动整条",
+     "type": "",
+     "val": null
+    },
+    {
+     "tag": "g",
+     "id": "",
+     "role": "slider",
+     "aria": "A分子，直接拖动边界或用方向键",
+     "type": "",
+     "val": null
+    }
+   ],
+   "shot": "D:/MathAgent/courseware/acceptance_v4_20260914/shots/ph3_P05_kbd.png"
+  },
+  "H05_live_drag": {
+   "theta": "97",
+   "live_after_pointerup": [
+    "当前 97°，即 1.693 rad；有向弧长 s=1.693（长度单位）。改变 r 不改变 sin、cos。"
+   ],
+   "metrics": "θ 1.693 rad sinθ / cosθ 0.9925 / −0.1219 有向弧长 s 1.693",
+   "shot": "D:/MathAgent/courseware/acceptance_v4_20260914/shots/ph3_H05_live_drag2.png"
+  }
+ },
+ "phase4_library_preview_download": {
+  "preview": {
+   "dialog": {
+    "visible": true,
+    "title": "P05 · 分数的认识与运算",
+    "ctx": "分数的认识与运算 · P05 全章交互\n目标：围绕分数的认识与运算观察、操作并解释章节中的数学规律",
+    "hasIframe": true,
+    "loading": false,
+    "iframeTitle": "P05 · 分数的认识与运算交互预览",
+    "srcdocLen": 121408
+   },
+   "compare": {
+    "srcdoc_len": 121408,
+    "repo_len": 121408,
+    "exact_equal": true,
+    "equal_after_eol_normalize": true,
+    "sha256_srcdoc": "97b76f6c124f899b",
+    "sha256_repo": "97b76f6c124f899b",
+    "repo_file_sha256_prefix": "97b76f6c124f899b"
+   }
+  },
+  "download": {
+   "filename": "P05_分数的认识与运算.html",
+   "api": {
+    "status": 200,
+    "len": 133752,
+    "cd": "attachment; filename*=utf-8''P05_%E5%88%86%E6%95%B0%E7%9A%84%E8%AE%A4%E8%AF%86%E4%B8%8E%E8%BF%90%E7%AE%97.html",
+    "ct": "text/html; charset=utf-8"
+   },
+   "bytes_compare": {
+    "api_sha256": "97b76f6c124f899b57bc4ca387bc6ec572b113650ffcd536a3d2d990cf10048d",
+    "repo_sha256": "97b76f6c124f899b57bc4ca387bc6ec572b113650ffcd536a3d2d990cf10048d",
+    "equal": true,
+    "api_len": 133752,
+    "repo_len": 133752
+   },
+   "toast": [
+    "已下载离线课件"
+   ],
+   "browser_disk_write": "FAIL（环境限制：Hermes 托管浏览器不落盘，见 probe 实验）"
+  },
+  "reopen": {
+   "before": {
+    "nA": "5",
+    "aria": "5",
+    "eq": "5 × 1 8 = 5 8",
+    "live": "已按图中边界更新当前数量；公式、读数与练习答案已同步。"
+   },
+   "after_reset": {
+    "nA": "3",
+    "aria": "3",
+    "eq": "3 × 1 8 = 3 8",
+    "live": "已按图中边界更新当前数量；公式、读数与练习答案已同步。"
+   },
+   "shot": "fail: Page.captureScreenshot timed out after 5s waiting for the daemon"
+  },
+  "shots": [
+   "D:/MathAgent/courseware/acceptance_v4_20260914/shots/ph4_library_page.png",
+   "D:/MathAgent/courseware/acceptance_v4_20260914/shots/ph4_preview_dialog_p05.png",
+   "D:/MathAgent/courseware/acceptance_v4_20260914/shots/ph4_reopen_file_page.png"
+  ],
+  "interaction_on_reopened": {
+   "viewport_fix": true,
+   "handle": {
+    "xy": [
+     255,
+     410
+    ],
+    "y": 117,
+    "rect": [
+     243,
+     398,
+     24,
+     24
+    ],
+    "hit": "circle|"
+   },
+   "before": {
+    "nA": "3",
+    "aria": "3",
+    "eq": "3 × 1 8 = 3 8"
+   },
+   "after": {
+    "nA": "5",
+    "aria": "5",
+    "eq": "5 × 1 8 = 5 8"
+   }
+  },
+  "probe_browser_download": {
+   "Browser.setDownloadBehavior": "ok",
+   "Page.setDownloadBehavior": "ok",
+   "anchor_test": [],
+   "toast": []
+  }
+ },
+ "known_caveats": [
+  "浏览器落盘下载不可用（Hermes 托管会话）；下载项以接口 Content-Disposition 文件名 + 字节比对为凭据，重开用同字节流重建文件（明确标注）",
+  "P05 等旧样例文件（无 P*_ 前缀）仍带「先猜一下/显示规律」按钮；v4 章节课件用「猜 < = >」+「显示 / 暂藏比较结论」实现同一功能（命名差异已记录）",
+  "H05 的 aria-live 只在拖动圆点/场景切换等事件更新，滑块输入不播报（现状行为记录，非验收失败）",
+  "浏览器会话期间崩溃/重启过一次，截图一度超时（后经 _response_timeout=60 修复）；阶段一至三截图完整"
+ ],
+ "webgl_verification": {
+  "结论": "本机 WebGL 可用且为硬件加速；v4 课件确有 3D 章节并实测正常",
+  "探针": {
+   "webgl2": true,
+   "renderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4060 Laptop GPU, D3D11)",
+   "real_draw_test": "通过（readPixels 读回 [51,204,102,255]）",
+   "max_texture": 16384,
+   "lose_context_ext": true,
+   "gpu_driver": "32.0.15.9174 (2025-12-30), 状态 OK"
+  },
+  "真WebGL章节": [
+   "P10 立体图形与体积（Three.js，canvas 1072x630，WebGL 上下文建立，截图见 shots/webgl_check_p10.png）",
+   "J17 坐标与投影视图（Three.js）"
+  ],
+  "三维投影章节（SVG 实时重投影，可旋转，非 WebGL）": [
+   "H09 立体几何初步（实测拖动后 5/8 图元坐标变化）",
+   "H12 空间向量与立体几何（实测 3/8 图元坐标变化）"
+  ],
+  "二维主题章节": "其余 54 章为平面/代数/统计主题，2D 呈现正确",
+  "待升级清单（“能 3D 就 3D”口径）": [
+   "H09",
+   "H12"
+  ],
+  "更正": "此前报告写的“课件未用 WebGL / 真实 GPU 未验证”不成立：P10 与 J17 使用 WebGL，本次已实测通过。"
+ }
+}

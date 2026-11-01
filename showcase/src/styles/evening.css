@@ -1,0 +1,583 @@
+/* The evening plate: the old night-work video, redrawn in ink and driven by scroll. */
+
+.evening {
+  --ev-dusk: #f0d9b0;
+  --ev-dusk-low: #eebb85;
+  --ev-sun: #e09552;
+  --ev-night-sky: #252b2f;
+  --ev-city: #b9a27f;
+  --ev-night-city: #15191b;
+  --ev-moon: #f5f0e1;
+  --ev-star: #f8f2df;
+  --ev-window: #f2cf7a;
+  --ev-glow: #fbf0c9;
+  --ev-cone: #f3d27c;
+  --ev-dim: #131a26;
+  --ev-screen-accent: var(--moss);
+  position: relative;
+  height: 340vh;
+  border-top: 1px solid var(--line);
+}
+
+:root[data-color-mode="dark"] .evening {
+  --ev-dusk: #b4916a;
+  --ev-dusk-low: #b9794b;
+  --ev-city: #5d5243;
+  --ev-dim: #000;
+  --ev-screen-accent: #3f6b4f;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root[data-color-mode="system"] .evening {
+    --ev-dusk: #b4916a;
+    --ev-dusk-low: #b9794b;
+    --ev-city: #5d5243;
+    --ev-dim: #000;
+    --ev-screen-accent: #3f6b4f;
+  }
+}
+
+.evening-sticky {
+  position: sticky;
+  top: 0;
+  display: flex;
+  align-items: center;
+  height: 100vh;
+  height: 100svh;
+  padding-top: calc(var(--nav-h) + env(safe-area-inset-top, 0px));
+  overflow: hidden;
+}
+
+.evening-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+  align-items: center;
+  gap: clamp(32px, 5vw, 80px);
+}
+
+.evening-copy {
+  min-width: 0;
+}
+
+.evening-kicker {
+  max-width: 340px;
+}
+
+.evening-steps {
+  position: relative;
+  display: grid;
+  margin: 34px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Steps share one grid cell so the column never changes height as they cross-fade. */
+.evening-step {
+  grid-area: 1 / 1;
+  opacity: 0;
+  transform: translateY(14px);
+  transition:
+    opacity 420ms var(--ease-out),
+    transform 640ms var(--ease-emphasized);
+  pointer-events: none;
+}
+
+.evening-step.is-current {
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
+}
+
+.evening-time {
+  display: block;
+  color: var(--moss);
+  font-family: var(--font-serif);
+  font-size: clamp(40px, 4.6vw, 68px);
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: -0.01em;
+  font-variant-numeric: lining-nums tabular-nums;
+}
+
+.evening-time.is-word {
+  font-size: clamp(32px, 3.4vw, 50px);
+  line-height: 1.04;
+}
+
+.evening-title span {
+  display: block;
+}
+
+.evening-title {
+  margin: 18px 0 0;
+  color: var(--ink);
+  font-family: var(--font-serif);
+  font-size: clamp(24px, 2.4vw, 34px);
+  font-weight: 500;
+  line-height: 1.3;
+}
+
+.evening-body {
+  max-width: 30em;
+  margin: 14px 0 0;
+  color: var(--ink-muted);
+  font-size: 16px;
+  line-height: 1.85;
+  text-wrap: pretty;
+}
+
+.evening-rail {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  max-width: 420px;
+  margin-top: 40px;
+  color: var(--ink-faint);
+  font-family: var(--font-serif);
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+
+.evening-rail i {
+  position: relative;
+  flex: 1;
+  height: 2px;
+  overflow: hidden;
+  border-radius: 2px;
+  background: var(--line);
+}
+
+.evening-rail b {
+  position: absolute;
+  inset: 0;
+  background: var(--moss);
+  transform: scaleX(var(--p, 0));
+  transform-origin: left center;
+}
+
+.evening-plate {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-xl);
+  background: var(--paper-raised);
+  box-shadow: var(--shadow-md);
+}
+
+.evening-plate svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/* ── Plate inks ── */
+.ev-plate {
+  fill: var(--paper-raised);
+}
+
+.ev-line {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.ev-thin {
+  stroke-width: 1.4;
+}
+
+.ev-dusk {
+  fill: var(--ev-dusk);
+}
+
+.ev-dusk-low {
+  fill: var(--ev-dusk-low);
+  opacity: 0.55;
+}
+
+.ev-sun {
+  fill: var(--ev-sun);
+}
+
+.ev-night-sky {
+  fill: var(--ev-night-sky);
+}
+
+.ev-city {
+  fill: var(--ev-city);
+}
+
+.ev-night-city {
+  fill: var(--ev-night-city);
+}
+
+.ev-sill {
+  fill: var(--paper-deep);
+}
+
+.ev-leaf {
+  fill: var(--moss);
+  stroke: var(--ink);
+  stroke-width: 1.3;
+}
+
+.ev-flower {
+  fill: #e0a24a;
+  stroke: var(--ink);
+  stroke-width: 1.2;
+}
+
+.ev-flower.is-alt {
+  fill: #d9774b;
+}
+
+.ev-pot {
+  fill: var(--kraft);
+  stroke: var(--ink);
+  stroke-width: 2;
+  stroke-linejoin: round;
+}
+
+.ev-face {
+  fill: var(--paper-raised);
+}
+
+.ev-tick {
+  stroke: var(--ink);
+  stroke-width: 1.5;
+  stroke-linecap: round;
+}
+
+.ev-tick.is-major {
+  stroke-width: 3;
+}
+
+.ev-hand {
+  stroke: var(--ink);
+  stroke-width: 2.4;
+  stroke-linecap: round;
+}
+
+.ev-hand.is-hour {
+  stroke-width: 4.5;
+}
+
+.ev-pin {
+  fill: var(--moss);
+}
+
+.ev-pin.is-note {
+  fill: #b5372a;
+}
+
+.ev-clock-text {
+  fill: var(--ink);
+  font-family: var(--font-serif);
+  font-size: 22px;
+  letter-spacing: 0.04em;
+  font-variant-numeric: tabular-nums;
+}
+
+.ev-note {
+  fill: var(--paper);
+  stroke: var(--ink);
+  stroke-width: 1.6;
+}
+
+.ev-note-grid {
+  fill: none;
+  stroke: var(--line);
+  stroke-width: 1;
+}
+
+.ev-note-curve {
+  fill: none;
+  stroke: var(--moss);
+  stroke-width: 2.4;
+  stroke-linecap: round;
+}
+
+.ev-floor {
+  stroke: var(--rule);
+  stroke-width: 1.5;
+}
+
+.ev-desk,
+.ev-apron,
+.ev-leg,
+.ev-laptop,
+.ev-laptop-base,
+.ev-tray,
+.ev-sill {
+  fill: var(--paper-deep);
+}
+
+.ev-label {
+  fill: var(--ink-muted);
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.ev-book.bk-1 {
+  fill: var(--kraft);
+}
+
+.ev-book.bk-2 {
+  fill: var(--sage);
+}
+
+.ev-book.bk-3 {
+  fill: var(--paper-deep);
+}
+
+.ev-book.bk-4 {
+  fill: var(--moss-soft);
+}
+
+.ev-lamp-base {
+  fill: var(--ink-soft);
+}
+
+.ev-arm {
+  stroke-width: 3.2;
+}
+
+.ev-joint {
+  fill: var(--paper-raised);
+}
+
+.ev-shade {
+  fill: var(--moss);
+}
+
+.ev-dim {
+  fill: var(--ev-dim);
+}
+
+.ev-cone {
+  fill: var(--ev-cone);
+}
+
+.ev-star {
+  fill: var(--ev-star);
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.ev-moon {
+  fill: var(--ev-moon);
+}
+
+.ev-city-lights rect {
+  fill: var(--ev-window);
+}
+
+/* The laptop screen shows a light app in both color modes, so its inks are fixed. */
+.ev-screen-day {
+  fill: #f6f3ea;
+}
+
+.ev-screen-night {
+  fill: var(--ev-glow);
+}
+
+.ev-ui-logo,
+.ev-ui-bar {
+  fill: var(--ev-screen-accent);
+}
+
+.ev-ui-title {
+  fill: #1f1e1d;
+  font-family: var(--font-serif);
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.ev-ui-row,
+.ev-ui-track {
+  fill: rgba(31, 30, 29, 0.12);
+}
+
+.ev-ui-label {
+  fill: #3d3a35;
+  font-family: var(--font-body);
+  font-size: 10px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.ev-mug {
+  fill: var(--moss-soft);
+}
+
+.ev-mug-handle {
+  stroke-width: 2.6;
+}
+
+.ev-steam {
+  fill: none;
+  stroke: var(--ink-faint);
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-dasharray: 9 6;
+  opacity: 0.55;
+}
+
+.ev-sheet rect {
+  fill: #fffdf7;
+  stroke: #1f1e1d;
+  stroke-width: 1.4;
+  vector-effect: non-scaling-stroke;
+}
+
+.ev-sheet-lines {
+  fill: none;
+  stroke: #cfc8b9;
+  stroke-width: 4;
+  stroke-linecap: round;
+}
+
+.ev-sheet-mark {
+  opacity: 0;
+  transition: opacity var(--dur-3) var(--ease-out);
+}
+
+.ev-sheet.is-checked .ev-sheet-mark {
+  opacity: 1;
+}
+
+path.ev-sheet-mark {
+  fill: none;
+  stroke: #2f6b45;
+  stroke-width: 4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.ev-sheet-mark circle {
+  fill: none;
+  stroke: #a8640c;
+  stroke-width: 2.6;
+}
+
+.ev-sheet-mark text {
+  fill: #a8640c;
+  font-family: var(--font-serif);
+  font-size: 15px;
+  font-weight: 700;
+}
+
+/* Ambient motion runs only while the plate is on screen. */
+.evening.is-active .ev-star {
+  animation: twinkle 3.4s ease-in-out infinite;
+}
+
+.evening.is-active .ev-steam {
+  animation: steam 3.2s linear infinite;
+}
+
+.evening.is-active .ev-steam.is-late {
+  animation-delay: -1.4s;
+}
+
+@keyframes twinkle {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.45;
+    transform: scale(0.72);
+  }
+}
+
+@keyframes steam {
+  from {
+    stroke-dashoffset: 0;
+  }
+  to {
+    stroke-dashoffset: -30;
+  }
+}
+
+/* Reduced motion: no pinning — the finished evening and all three beats, read top to bottom. */
+.evening.is-static {
+  height: auto;
+}
+
+.evening.is-static .evening-sticky {
+  position: relative;
+  height: auto;
+  padding-block: clamp(88px, 12vw, 152px);
+}
+
+.evening.is-static .evening-steps {
+  gap: 34px;
+}
+
+.evening.is-static .evening-step {
+  grid-area: auto;
+  opacity: 1;
+  transform: none;
+}
+
+.evening.is-static .evening-time {
+  font-size: clamp(30px, 3vw, 44px);
+}
+
+.evening.is-static .evening-rail {
+  display: none;
+}
+
+@media (max-width: 900px) {
+  .evening {
+    height: 300vh;
+  }
+
+  .evening-layout {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 22px;
+  }
+
+  .evening-plate {
+    order: -1;
+    width: 100%;
+    max-width: min(100%, calc((100svh - var(--nav-h)) * 0.42 * 1.5));
+    margin-inline: auto;
+  }
+
+  .evening-kicker {
+    display: none;
+  }
+
+  .evening-steps {
+    margin-top: 0;
+  }
+
+  .evening-time {
+    font-size: clamp(30px, 8vw, 44px);
+  }
+
+  .evening-title {
+    margin-top: 10px;
+    font-size: clamp(20px, 5.4vw, 26px);
+  }
+
+  .evening-body {
+    margin-top: 8px;
+    font-size: 14.5px;
+    line-height: 1.75;
+  }
+
+  .evening-rail {
+    margin-top: 20px;
+  }
+
+  .evening.is-static .evening-kicker {
+    display: flex;
+  }
+}

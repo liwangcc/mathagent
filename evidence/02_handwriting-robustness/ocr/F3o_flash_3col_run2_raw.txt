@@ -1,0 +1,10 @@
+{
+  "columns": [
+    {
+      "index": 2,
+      "label": "中栏",
+      "transcription": "(2) 延长AM到点N使AM=MN\n四边形ABNC是平行四边形，∠ABN=\\frac{2π}{3}\n(\\frac{1}{2}|BN|)^2 = b^2+c^2-bc\n(\\frac{1}{2}|AM|)^2 = b^2+c^2+bc\n得：\\frac{b^2+c^2-bc}{b^2+c^2+bc} = \\frac{3}{7}\n2b^2-5bc+2c^2=0\n∵ b>c\n\\frac{b}{c}=2.\n\n18. 解：(1) 由题：A'E⊥平面BCD\n∵ BC  平面BCD\n∴ A'E⊥BC\n又∵ CD⊥BC, A'E ∩ CD=E\n∴ BC⊥平面A'CD\n∵ A'D ⊂ 平面A'CD\n∴ BCA'D\n∵ A'D⊥A'B ; A'B ∩ BC=B\n∴ A'D⊥平面A'BC\n(2) 以D为原点，DA为x轴，DC为y轴建立空间直角坐标系\n令AB=2 AD=1\n∴ C(0,2,0) B(1,2,0) A'(0,\\frac{1}{2},\\frac{\\sqrt{3}}{2}) M(0,\\frac{1}{4},\\frac{\\sqrt{3}}{4})\n\\vec{BC}=(-1,0,0) \\vec{CM}=(0,-\\frac{7}{4},\\frac{\\sqrt{3}}{4})\n设平面MBC的一个法向量为 \\vec{m}=(x,y,z)\n解得：\\vec{m}=(0,\\sqrt{3},7)\n平面DBC的一个法向量为 \\vec{n}=(0,0,1)\n|\\vec{m}|=\\sqrt{52} |\\vec{n}|=1\n令\\vec{m}与\\vec{n}所成夹角为θ\n\\vec{m}·\\vec{n} = |\\vec{m}|·|\\vec{n}|cosθ cosθ=\\frac{7\\sqrt{13}}{26}\n∵ 该二面角为锐角\n∴ 二面角M-BC-D的余弦值为 \\frac{7\\sqrt{13}}{26}"
+    }
+  ],
+  "uncertain": []
+}

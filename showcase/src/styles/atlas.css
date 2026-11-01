@@ -1,0 +1,366 @@
+/* 墨迹星图: a night plate in the trust band's inks. The canvases fill the sticky stage; the
+ * captions sit in the left column (top on phones) above them. */
+
+.atlas {
+  --atlas-bg: var(--night);
+  --atlas-ink: var(--night-ink);
+  --atlas-muted: var(--night-muted);
+  --atlas-rule: var(--night-rule);
+  --atlas-accent: var(--night-accent);
+  --atlas-dim: #8e8b80;
+  --atlas-pen: #1d2942;
+  --atlas-paper: #f3f1ea;
+  --atlas-paper-ink: #625c52;
+  --atlas-paper-rule: rgba(31, 30, 29, 0.14);
+  --atlas-correct: #7fb27a;
+  --atlas-partial: #d9a441;
+  --atlas-wrong: #e3735f;
+  --atlas-pending: #a9b2d6;
+
+  position: relative;
+  height: 760vh;
+  background: var(--atlas-bg);
+  color: var(--atlas-ink);
+}
+
+.atlas-stage {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  height: 100svh;
+  overflow: hidden;
+}
+
+.atlas-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.atlas-layout {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  height: 100%;
+  padding-top: calc(var(--nav-h) + env(safe-area-inset-top, 0px));
+  pointer-events: none;
+}
+
+.atlas-copy {
+  width: min(360px, 32vw);
+  pointer-events: auto;
+}
+
+.atlas-kicker {
+  border-color: var(--atlas-rule);
+  color: var(--atlas-muted);
+}
+
+.atlas-kicker .kicker-num {
+  color: var(--atlas-accent);
+}
+
+/* Steps share one grid cell so the column never changes height as they cross-fade. */
+.atlas-steps {
+  display: grid;
+  margin: 30px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.atlas-step {
+  grid-area: 1 / 1;
+  opacity: 0;
+  transform: translateY(14px);
+  transition:
+    opacity 420ms var(--ease-out),
+    transform 640ms var(--ease-emphasized);
+  pointer-events: none;
+}
+
+.atlas-step.is-current {
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
+}
+
+.atlas-mark {
+  display: block;
+  color: var(--atlas-accent);
+  font-family: var(--font-serif);
+  font-size: clamp(48px, 5vw, 72px);
+  font-weight: 400;
+  line-height: 1;
+}
+
+.atlas-title {
+  margin: 18px 0 0;
+  color: var(--atlas-ink);
+  font-family: var(--font-serif);
+  font-size: clamp(23px, 2.2vw, 31px);
+  font-weight: 500;
+  line-height: 1.32;
+}
+
+.atlas-title span {
+  display: block;
+}
+
+.atlas-body {
+  margin: 14px 0 0;
+  color: var(--atlas-muted);
+  font-size: 15px;
+  line-height: 1.85;
+  text-wrap: pretty;
+}
+
+.atlas-metrics {
+  display: grid;
+  gap: 4px;
+  margin: 16px 0 0;
+  padding-top: 12px;
+  border-top: 1px solid var(--atlas-rule);
+  color: var(--atlas-ink);
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  font-variant-numeric: tabular-nums;
+}
+
+.atlas-metrics span + span {
+  color: var(--atlas-muted);
+}
+
+.atlas-rail {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 30px;
+}
+
+.atlas-rail button {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border: 1px solid var(--atlas-rule);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--atlas-muted);
+  font-family: var(--font-serif);
+  font-size: 14px;
+  cursor: pointer;
+  transition:
+    color var(--dur-2) var(--ease-out),
+    border-color var(--dur-2) var(--ease-out),
+    background var(--dur-2) var(--ease-out);
+}
+
+.atlas-rail button:hover {
+  border-color: var(--atlas-muted);
+  color: var(--atlas-ink);
+}
+
+.atlas-rail button.is-current {
+  border-color: var(--atlas-accent);
+  background: var(--atlas-accent);
+  color: var(--atlas-bg);
+}
+
+.atlas-rail button:focus-visible,
+.atlas-tour:focus-visible,
+.atlas-skip:focus-visible {
+  outline: 2px solid var(--atlas-accent);
+  outline-offset: 3px;
+}
+
+.atlas-rail i {
+  position: relative;
+  flex: 1;
+  height: 2px;
+  margin-left: 6px;
+  overflow: hidden;
+  border-radius: 2px;
+  background: var(--atlas-rule);
+}
+
+.atlas-rail b {
+  position: absolute;
+  inset: 0;
+  background: var(--atlas-accent);
+  transform: scaleX(var(--p, 0));
+  transform-origin: left center;
+}
+
+.atlas-controls {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  margin-top: 18px;
+}
+
+.atlas-tour {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 34px;
+  padding: 0 14px;
+  border: 1px solid var(--atlas-rule);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--atlas-ink);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.atlas-tour:hover {
+  border-color: var(--atlas-muted);
+}
+
+.atlas-tour svg,
+.atlas-skip svg {
+  width: 14px;
+  height: 14px;
+}
+
+.atlas-skip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--atlas-muted);
+  font-size: 13px;
+  text-decoration: none;
+}
+
+.atlas-skip:hover {
+  color: var(--atlas-ink);
+}
+
+.atlas-hud {
+  position: absolute;
+  right: var(--gutter);
+  bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  z-index: 1;
+  margin: 0;
+  color: var(--atlas-muted);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.02em;
+  opacity: 0.72;
+  pointer-events: none;
+}
+
+/* Phones and narrow windows: captions on top, the plate below them. */
+@media (max-width: 899px) {
+  .atlas {
+    height: 680vh;
+  }
+
+  .atlas-layout {
+    align-items: flex-start;
+    padding-top: calc(var(--nav-h) + 14px + env(safe-area-inset-top, 0px));
+  }
+
+  .atlas-copy {
+    width: 100%;
+  }
+
+  .atlas-kicker {
+    display: none;
+  }
+
+  .atlas-steps {
+    margin-top: 0;
+  }
+
+  .atlas-step {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    column-gap: 14px;
+    align-items: start;
+  }
+
+  .atlas-mark {
+    grid-row: span 3;
+    font-size: 40px;
+  }
+
+  .atlas-title {
+    margin-top: 0;
+    font-size: 19px;
+  }
+
+  .atlas-body {
+    margin-top: 6px;
+    font-size: 13px;
+    line-height: 1.7;
+  }
+
+  .atlas-metrics {
+    margin-top: 8px;
+    padding-top: 8px;
+    font-size: 11px;
+  }
+
+  .atlas-rail {
+    margin-top: 12px;
+  }
+
+  .atlas-rail button {
+    width: 26px;
+    height: 26px;
+    font-size: 12px;
+  }
+
+  .atlas-controls {
+    display: none;
+  }
+
+  .atlas-hud {
+    left: var(--gutter);
+    right: auto;
+  }
+}
+
+/* Without WebGL the section is a short, readable list of the five steps. */
+.atlas.is-fallback {
+  height: auto;
+}
+
+.atlas.is-fallback .atlas-stage {
+  position: relative;
+  height: auto;
+  padding-block: calc(var(--nav-h) + 40px) 80px;
+}
+
+.atlas.is-fallback .atlas-canvas,
+.atlas.is-fallback .atlas-rail,
+.atlas.is-fallback .atlas-controls,
+.atlas.is-fallback .atlas-hud {
+  display: none;
+}
+
+.atlas.is-fallback .atlas-layout {
+  height: auto;
+  padding-top: 0;
+}
+
+.atlas.is-fallback .atlas-copy {
+  width: min(620px, 100%);
+}
+
+.atlas.is-fallback .atlas-steps {
+  gap: 40px;
+}
+
+.atlas.is-fallback .atlas-step {
+  grid-area: auto;
+  opacity: 1;
+  transform: none;
+}
+
+.atlas.is-static .atlas-step {
+  transition: none;
+}

@@ -1,0 +1,981 @@
+{
+  "schema_version": 1,
+  "stage": "primary",
+  "subject": "math",
+  "version": "2026-09-09.v1",
+  "review_status": "core_content_checked_2022_official",
+  "coverage_note": "依据教育部义务教育数学课程标准2022年版最终修订链接，逐页核对小学部分印刷页17–53，形成跨教材主干分类目录；分类名称是MathAgent的概括，不是教育部官方知识点编号或逐年级教学要求。未核对小学2025日常修订正文、全部审定教材全册、五四学制专门映射和竞赛拓展；未将简易方程、反比例等未经本轮教材核验的内容冒充2022小学主干。",
+  "modules": [
+    {
+      "id": "primary.math.numbers",
+      "chapter": "整数的认识",
+      "domain": "数与代数",
+      "source_refs": [
+        {
+          "source_id": "moe-primary-2022-final",
+          "locator": "印刷页 18–22（PDF页序号为印刷页码加7）；小学部分对应领域的内容要求、学业要求和教学提示"
+        }
+      ],
+      "topics": [
+        {
+          "id": "primary.math.numbers.01",
+          "name": "数的含义与数数",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "primary.math.numbers.02",
+          "name": "万以内数的读写",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "primary.math.numbers.03",
+          "name": "万以上数的读写",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "primary.math.numbers.04",
+          "name": "数位与十进制计数法",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "primary.math.numbers.05",
+          "name": "整数的大小比较",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "primary.math.numbers.06",
+          "name": "用万和亿表示大数",
+          "scope": "core",
+          "course": "compulsory"
+        }
+      ]
+    },
+    {
+      "id": "primary.math.integer_operations",
+      "chapter": "整数四则运算",
+      "domain": "数与代数",
+      "source_refs": [
+        {
+          "source_id": "moe-primary-2022-final",
+          "locator": "印刷页 18–23（PDF页序号为印刷页码加7）；小学部分对应领域的内容要求、学业要求和教学提示"
+        }
+      ],
+      "topics": [
+        {
+          "id": "primary.math.integer_operations.01",
+          "name": "加减法的意义与关系",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "primary.math.integer_operations.02",
+          "name": "乘除法的意义与关系",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "primary.math.integer_operations.03",
+          "name": "整数加减法",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "primary.math.integer_operations.04",
+          "name": "表内乘除法",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "primary.math.integer_operations.05",
+          "name": "多位数乘除法",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "primary.math.integer_operations.06",
+          "name": "整数四则混合运算",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "primary.math.integer_operations.07",
+          "name": "运算顺序与括号",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "primary.math.integer_operations.08",
+          "name": "运算律与简便计算",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "primary.math.integer_operations.09",
+          "name": "估算与结果合理性",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "primary.math.integer_operations.10",
+          "name": "用计算器计算与探索规律",
+          "scope": "core",
+          "course": "compulsory"
+        }
+      ]
+    },
+    {
+      "id": "primary.math.factors_multiples",
+      "chapter": "因数与倍数",
+      "domain": "数与代数",
+      "source_refs": [
+        {
+          "source_id": "moe-primary-2022-final",
+          "locator": "印刷页 23–26（PDF页序号为印刷页码加7）；小学部分对应领域的内容要求、学业要求和教学提示"
+        }
+      ],
+      "topics": [
+        {
+          "id": "primary.math.factors_multiples.01",
+          "name": "因数与倍数",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "primary.math.factors_multiples.02",
+          "name": "2、3、5的倍数特征",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "primary.math.factors_multiples.03",
+          "name": "奇数与偶数",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "primary.math.factors_multiples.04",
+          "name": "质数与合数",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "primary.math.factors_multiples.05",
+          "name": "公因数与最大公因数",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "primary.math.factors_multiples.06",
+          "name": "公倍数与最小公倍数",
+          "scope": "core",
+          "course": "compulsory"
+        }
+      ]
+    },
+    {
+      "id": "primary.math.decimals",
+      "chapter": "小数的认识与运算",
+      "domain": "数与代数",
+      "source_refs": [
+        {
+          "source_id": "moe-primary-2022-final",
+          "locator": "印刷页 21–26（PDF页序号为印刷页码加7）；小学部分对应领域的内容要求、学业要求和教学提示"
+        }
+      ],
+      "topics": [
+        {
+          "id": "primary.math.decimals.01",
+          "name": "小数的意义与计数单位",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "primary.math.decimals.02",
+          "name": "小数的读写",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "primary.math.decimals.03",
+          "name": "小数的大小比较",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "primary.math.decimals.04",
+          "name": "小数加减法",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "primary.math.decimals.05",
+          "name": "小数乘除法",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "primary.math.decimals.06",
+          "name": "小数四则混合运算",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "primary.math.decimals.07",
+          "name": "小数与分数的互化",
+          "scope": "core",
+          "course": "compulsory"
+        }
+      ]
+    },
+    {
+      "id": "primary.math.fractions",
+      "chapter": "分数的认识与运算",
+      "domain": "数与代数",
+      "source_refs": [
+        {
+          "source_id": "moe-primary-2022-final",
+          "locator": "印刷页 21–26（PDF页序号为印刷页码加7）；小学部分对应领域的内容要求、学业要求和教学提示"
+        }
+      ],
+      "topics": [
+        {
+          "id": "primary.math.fractions.01",
+          "name": "分数的意义与分数单位",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "primary.math.fractions.02",
+          "name": "分数与除法的关系",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "primary.math.fractions.03",
+          "name": "分数的大小比较",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "primary.math.fractions.04",
+          "name": "通分与同分母表示",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "primary.math.fractions.05",
+          "name": "同分母分数加减法",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "primary.math.fractions.06",
+          "name": "异分母分数加减法",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "primary.math.fractions.07",
+          "name": "分数乘除法",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "primary.math.fractions.08",
+          "name": "分数四则混合运算",
+          "scope": "core",
+          "course": "compulsory"
+        }
+      ]
+    },
+    {
+      "id": "primary.math.quantity_relations",
+      "chapter": "数量关系与规律",
+      "domain": "数与代数",
+      "source_refs": [
+        {
+          "source_id": "moe-primary-2022-final",
+          "locator": "印刷页 19–27（PDF页序号为印刷页码加7）；小学部分对应领域的内容要求、学业要求和教学提示"
+        }
+      ],
+      "topics": [
+        {
+          "id": "primary.math.quantity_relations.01",
+          "name": "简单数量关系与实际问题",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "primary.math.quantity_relations.02",
+          "name": "总量与分量关系",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "primary.math.quantity_relations.03",
+          "name": "单价、数量与总价",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "primary.math.quantity_relations.04",
+          "name": "速度、时间与路程",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "primary.math.quantity_relations.05",
+          "name": "倍数关系",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "primary.math.quantity_relations.06",
+          "name": "等量关系与等式性质",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "primary.math.quantity_relations.07",
+          "name": "用字母表示数量关系",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "primary.math.quantity_relations.08",
+          "name": "用字母表示运算律与公式",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "primary.math.quantity_relations.09",
+          "name": "探索简单变化规律",
+          "scope": "core",
+          "course": "compulsory"
+        }
+      ]
+    },
+    {
+      "id": "primary.math.ratio_proportion",
+      "chapter": "比与正比例",
+      "domain": "数与代数",
+      "source_refs": [
+        {
+          "source_id": "moe-primary-2022-final",
+          "locator": "印刷页 24–27（PDF页序号为印刷页码加7）；小学部分对应领域的内容要求、学业要求和教学提示"
+        }
+      ],
+      "topics": [
+        {
+          "id": "primary.math.ratio_proportion.01",
+          "name": "比的意义与比值",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "primary.math.ratio_proportion.02",
+          "name": "比例的意义",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "primary.math.ratio_proportion.03",
+          "name": "按比例分配",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "primary.math.ratio_proportion.04",
+          "name": "正比例关系的识别",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "primary.math.ratio_proportion.05",
+          "name": "正比例关系的表示与应用",
+          "scope": "core",
+          "course": "compulsory"
+        }
+      ]
+    },
+    {
+      "id": "primary.math.plane_figures",
+      "chapter": "平面图形的认识",
+      "domain": "图形与几何",
+      "source_refs": [
+        {
+          "source_id": "moe-primary-2022-final",
+          "locator": "印刷页 28–35（PDF页序号为印刷页码加7）；小学部分对应领域的内容要求、学业要求和教学提示"
+        }
+      ],
+      "topics": [
+        {
+          "id": "primary.math.plane_figures.01",
+          "name": "平面图形的辨认与分类",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "primary.math.plane_figures.02",
+          "name": "图形拼组",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "primary.math.plane_figures.03",
+          "name": "线段、射线与直线",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "primary.math.plane_figures.04",
+          "name": "两点之间的距离",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "primary.math.plane_figures.05",
+          "name": "平行与垂直",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "primary.math.plane_figures.06",
+          "name": "角的认识与分类",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "primary.math.plane_figures.07",
+          "name": "角的测量与画角",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "primary.math.plane_figures.08",
+          "name": "三角形的分类与特征",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "primary.math.plane_figures.09",
+          "name": "三角形三边关系与内角和",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "primary.math.plane_figures.10",
+          "name": "四边形的分类与特征",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "primary.math.plane_figures.11",
+          "name": "圆与扇形的认识",
+          "scope": "core",
+          "course": "compulsory"
+        }
+      ]
+    },
+    {
+      "id": "primary.math.length_area",
+      "chapter": "长度、周长与面积",
+      "domain": "图形与几何",
+      "source_refs": [
+        {
+          "source_id": "moe-primary-2022-final",
+          "locator": "印刷页 28–35（PDF页序号为印刷页码加7）；小学部分对应领域的内容要求、学业要求和教学提示"
+        }
+      ],
+      "topics": [
+        {
+          "id": "primary.math.length_area.01",
+          "name": "长度单位与换算",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "primary.math.length_area.02",
+          "name": "长度的估测与测量",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "primary.math.length_area.03",
+          "name": "周长的意义",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "primary.math.length_area.04",
+          "name": "长方形与正方形的周长",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "primary.math.length_area.05",
+          "name": "面积的意义与面积单位",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "primary.math.length_area.06",
+          "name": "长方形与正方形的面积",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "primary.math.length_area.07",
+          "name": "平行四边形、三角形与梯形的面积",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "primary.math.length_area.08",
+          "name": "圆的周长与面积",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "primary.math.length_area.09",
+          "name": "不规则图形面积的估计",
+          "scope": "core",
+          "course": "compulsory"
+        }
+      ]
+    },
+    {
+      "id": "primary.math.solid_figures",
+      "chapter": "立体图形与体积",
+      "domain": "图形与几何",
+      "source_refs": [
+        {
+          "source_id": "moe-primary-2022-final",
+          "locator": "印刷页 28、30、32–35（PDF页序号为印刷页码加7）；小学部分对应领域的内容要求、学业要求和教学提示"
+        }
+      ],
+      "topics": [
+        {
+          "id": "primary.math.solid_figures.01",
+          "name": "立体图形的辨认与分类",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "primary.math.solid_figures.02",
+          "name": "观察物体与不同方向的形状",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "primary.math.solid_figures.03",
+          "name": "长方体、正方体与圆柱的展开图",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "primary.math.solid_figures.04",
+          "name": "体积与容积的意义",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "primary.math.solid_figures.05",
+          "name": "体积、容积单位与换算",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "primary.math.solid_figures.06",
+          "name": "长方体与正方体的表面积和体积",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "primary.math.solid_figures.07",
+          "name": "圆柱的表面积和体积",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "primary.math.solid_figures.08",
+          "name": "圆锥的认识与体积",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "primary.math.solid_figures.09",
+          "name": "不规则物体体积的测量",
+          "scope": "core",
+          "course": "compulsory"
+        }
+      ]
+    },
+    {
+      "id": "primary.math.position_transforms",
+      "chapter": "位置、方向与图形运动",
+      "domain": "图形与几何",
+      "source_refs": [
+        {
+          "source_id": "moe-primary-2022-final",
+          "locator": "印刷页 30–36、43–44、47–48（PDF页序号为印刷页码加7）；小学部分对应领域的内容要求、学业要求和教学提示"
+        }
+      ],
+      "topics": [
+        {
+          "id": "primary.math.position_transforms.01",
+          "name": "相对位置与方向",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "primary.math.position_transforms.02",
+          "name": "东南西北与八个方向",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "primary.math.position_transforms.03",
+          "name": "方向、距离与路线图",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "primary.math.position_transforms.04",
+          "name": "用数对确定位置",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "primary.math.position_transforms.05",
+          "name": "比例尺与图形放大缩小",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "primary.math.position_transforms.06",
+          "name": "平移",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "primary.math.position_transforms.07",
+          "name": "旋转",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "primary.math.position_transforms.08",
+          "name": "轴对称与对称轴",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "primary.math.position_transforms.09",
+          "name": "利用图形运动设计图案",
+          "scope": "core",
+          "course": "compulsory"
+        }
+      ]
+    },
+    {
+      "id": "primary.math.statistics",
+      "chapter": "统计与数据分析",
+      "domain": "统计与概率",
+      "source_refs": [
+        {
+          "source_id": "moe-primary-2022-final",
+          "locator": "印刷页 36–41（PDF页序号为印刷页码加7）；小学部分对应领域的内容要求、学业要求和教学提示"
+        }
+      ],
+      "topics": [
+        {
+          "id": "primary.math.statistics.01",
+          "name": "分类标准与数据分类",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "primary.math.statistics.02",
+          "name": "数据的收集与整理",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "primary.math.statistics.03",
+          "name": "统计表的阅读与表达",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "primary.math.statistics.04",
+          "name": "条形统计图",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "primary.math.statistics.05",
+          "name": "折线统计图",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "primary.math.statistics.06",
+          "name": "扇形统计图",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "primary.math.statistics.07",
+          "name": "平均数的意义与应用",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "primary.math.statistics.08",
+          "name": "根据数据作简单判断与预测",
+          "scope": "core",
+          "course": "compulsory"
+        }
+      ]
+    },
+    {
+      "id": "primary.math.percentages",
+      "chapter": "百分数及其应用",
+      "domain": "统计与概率",
+      "source_refs": [
+        {
+          "source_id": "moe-primary-2022-final",
+          "locator": "印刷页 39–41、51–52（PDF页序号为印刷页码加7）；小学部分对应领域的内容要求、学业要求和教学提示"
+        }
+      ],
+      "topics": [
+        {
+          "id": "primary.math.percentages.01",
+          "name": "百分数的意义",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "primary.math.percentages.02",
+          "name": "百分数表示部分与整体",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "primary.math.percentages.03",
+          "name": "百分数与数据比较",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "primary.math.percentages.04",
+          "name": "百分率问题",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "primary.math.percentages.05",
+          "name": "折扣问题",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "primary.math.percentages.06",
+          "name": "税率与利息的简单问题",
+          "scope": "core",
+          "course": "compulsory"
+        }
+      ]
+    },
+    {
+      "id": "primary.math.probability",
+      "chapter": "可能性",
+      "domain": "统计与概率",
+      "source_refs": [
+        {
+          "source_id": "moe-primary-2022-final",
+          "locator": "印刷页 37、40–41（PDF页序号为印刷页码加7）；小学部分对应领域的内容要求、学业要求和教学提示"
+        }
+      ],
+      "topics": [
+        {
+          "id": "primary.math.probability.01",
+          "name": "确定现象与随机现象",
+          "scope": "core",
+          "course": "compulsory",
+          "note": "小学阶段限生活情境中的定性认识，不等同初中古典概率或概率公式。"
+        },
+        {
+          "id": "primary.math.probability.02",
+          "name": "列举简单随机现象的可能结果",
+          "scope": "core",
+          "course": "compulsory",
+          "note": "小学阶段限生活情境中的定性认识，不等同初中古典概率或概率公式。"
+        },
+        {
+          "id": "primary.math.probability.03",
+          "name": "可能性大小的定性比较",
+          "scope": "core",
+          "course": "compulsory",
+          "note": "小学阶段限生活情境中的定性认识，不等同初中古典概率或概率公式。"
+        },
+        {
+          "id": "primary.math.probability.04",
+          "name": "根据试验数据判断可能性",
+          "scope": "core",
+          "course": "compulsory",
+          "note": "小学阶段限生活情境中的定性认识，不等同初中古典概率或概率公式。"
+        }
+      ]
+    },
+    {
+      "id": "primary.math.time_money_mass",
+      "chapter": "常见的量与单位",
+      "domain": "综合与实践",
+      "source_refs": [
+        {
+          "source_id": "moe-primary-2022-final",
+          "locator": "印刷页 43–49（PDF页序号为印刷页码加7）；小学部分对应领域的内容要求、学业要求和教学提示"
+        }
+      ],
+      "topics": [
+        {
+          "id": "primary.math.time_money_mass.01",
+          "name": "人民币与元角分换算",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "primary.math.time_money_mass.02",
+          "name": "购物与付款找零",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "primary.math.time_money_mass.03",
+          "name": "时分秒与钟表",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "primary.math.time_money_mass.04",
+          "name": "经过时间的简单计算",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "primary.math.time_money_mass.05",
+          "name": "年、月、日",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "primary.math.time_money_mass.06",
+          "name": "24时计时法",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "primary.math.time_money_mass.07",
+          "name": "克、千克、吨与换算",
+          "scope": "core",
+          "course": "compulsory"
+        },
+        {
+          "id": "primary.math.time_money_mass.08",
+          "name": "实际测量与单位选择",
+          "scope": "core",
+          "course": "compulsory"
+        }
+      ]
+    },
+    {
+      "id": "primary.math.negative_numbers",
+      "chapter": "生活中的负数",
+      "domain": "综合与实践",
+      "source_refs": [
+        {
+          "source_id": "moe-primary-2022-final",
+          "locator": "印刷页 50–52（PDF页序号为印刷页码加7）；小学部分对应领域的内容要求、学业要求和教学提示"
+        }
+      ],
+      "topics": [
+        {
+          "id": "primary.math.negative_numbers.01",
+          "name": "正负数表示相反意义的量",
+          "scope": "core",
+          "course": "compulsory",
+          "note": "限具体情境中负数的意义，不包含有理数四则运算。"
+        },
+        {
+          "id": "primary.math.negative_numbers.02",
+          "name": "温度、海拔与负数",
+          "scope": "core",
+          "course": "compulsory",
+          "note": "限具体情境中负数的意义，不包含有理数四则运算。"
+        },
+        {
+          "id": "primary.math.negative_numbers.03",
+          "name": "具体情境中负数的意义",
+          "scope": "core",
+          "course": "compulsory",
+          "note": "限具体情境中负数的意义，不包含有理数四则运算。"
+        }
+      ]
+    },
+    {
+      "id": "primary.math.integrated_practice",
+      "chapter": "综合应用与实践",
+      "domain": "综合与实践",
+      "source_refs": [
+        {
+          "source_id": "moe-primary-2022-final",
+          "locator": "印刷页 42–53（PDF页序号为印刷页码加7）；小学部分对应领域的内容要求、学业要求和教学提示"
+        }
+      ],
+      "topics": [
+        {
+          "id": "primary.math.integrated_practice.01",
+          "name": "测量与方案设计",
+          "scope": "core",
+          "course": "compulsory",
+          "note": "主题活动的数学内容分类；不把具体活动名称或项目表现等同统一必考知识。"
+        },
+        {
+          "id": "primary.math.integrated_practice.02",
+          "name": "平面图的绘制与应用",
+          "scope": "core",
+          "course": "compulsory",
+          "note": "主题活动的数学内容分类；不把具体活动名称或项目表现等同统一必考知识。"
+        },
+        {
+          "id": "primary.math.integrated_practice.03",
+          "name": "调查、统计与方案比较",
+          "scope": "core",
+          "course": "compulsory",
+          "note": "主题活动的数学内容分类；不把具体活动名称或项目表现等同统一必考知识。"
+        },
+        {
+          "id": "primary.math.integrated_practice.04",
+          "name": "生活中的综合数学问题",
+          "scope": "core",
+          "course": "compulsory",
+          "note": "主题活动的数学内容分类；不把具体活动名称或项目表现等同统一必考知识。"
+        },
+        {
+          "id": "primary.math.integrated_practice.05",
+          "name": "数学规律的表达与交流",
+          "scope": "core",
+          "course": "compulsory",
+          "note": "主题活动的数学内容分类；不把具体活动名称或项目表现等同统一必考知识。"
+        }
+      ]
+    }
+  ]
+}

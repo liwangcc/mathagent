@@ -1,0 +1,472 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* MathAgent showcase — the workspace's "Paper & Moss" identity, set as a printed page.
+ * Tokens mirror frontend/src/styles/global.css: warm paper, ink type, muted botanical
+ * greens, an editorial serif. Hairlines before shadows; no glass, no glow. */
+
+@layer base {
+  :root,
+  :root[data-theme="song"] {
+    --paper: #f3f1ea;
+    --paper-deep: #e9e4d8;
+    --paper-raised: #fbfaf7;
+    --kraft: #d4b996;
+    --moss: #3f6b4f;
+    --moss-deep: #2e5140;
+    --moss-soft: #e4eadc;
+    --moss-rgb: 63 107 79;
+    --sage: #7d9a7b;
+    --ink: #1f1e1d;
+    --ink-soft: #3d3a35;
+    --ink-muted: #625c52;
+    --ink-faint: #686257;
+    --ink-solid: #1f1e1d;
+    --on-ink: #faf9f5;
+    --rule: rgba(31, 30, 29, 0.16);
+    --line: rgba(31, 30, 29, 0.1);
+    --hair: rgba(31, 30, 29, 0.07);
+    --fill: rgba(31, 30, 29, 0.05);
+    --fill-2: rgba(31, 30, 29, 0.03);
+    --success: #466c30;
+    --warning: #86530a;
+    --danger: #b0392c;
+    --success-soft: color-mix(in srgb, var(--success) 12%, var(--paper-raised));
+    --warning-soft: color-mix(in srgb, var(--warning) 12%, var(--paper-raised));
+    --danger-soft: color-mix(in srgb, var(--danger) 10%, var(--paper-raised));
+
+    /* Chart status steps, validated against the paper surface; "wrong" also carries a hatch. */
+    --chart-correct: #24683a;
+    --chart-partial: #c48a1c;
+    --chart-wrong: #b5372a;
+
+    /* Night ink for the trust band and the evening scene's dimmed room. */
+    --night: #20231f;
+    --night-raised: #282c26;
+    --night-ink: #eee9dc;
+    --night-muted: #b9b7a9;
+    --night-rule: rgba(238, 233, 220, 0.18);
+    --night-accent: #9bb393;
+
+    --font-serif: "Tiempos Headline", "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Palatino, Georgia,
+      "Noto Serif SC", "Source Han Serif SC", "Songti SC", STSong, SimSun, serif;
+    --font-body: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", "PingFang SC", "Noto Sans SC",
+      "Microsoft YaHei", system-ui, sans-serif;
+    --font-hand: "Kaiti SC", STKaiti, KaiTi, "楷体", "Noto Serif SC", serif;
+    --font-mono: ui-monospace, "Cascadia Mono", "SF Mono", Consolas, monospace;
+
+    --dur-1: 120ms;
+    --dur-2: 180ms;
+    --dur-3: 240ms;
+    --dur-4: 320ms;
+    --ease-out: cubic-bezier(0.22, 0.61, 0.36, 1);
+    --ease-emphasized: cubic-bezier(0.16, 1, 0.3, 1);
+    --ease-in: cubic-bezier(0.4, 0, 1, 1);
+    --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+
+    --radius-sm: 8px;
+    --radius-md: 10px;
+    --radius-lg: 12px;
+    --radius-xl: 16px;
+    --shadow-sm: 0 1px 2px rgba(31, 30, 29, 0.05);
+    --shadow-md: 0 8px 20px -10px rgba(31, 30, 29, 0.18);
+    --shadow-pop: 0 24px 60px -24px rgba(31, 30, 29, 0.3), 0 4px 12px rgba(31, 30, 29, 0.06);
+    --focus-ring: 0 0 0 3px rgb(var(--moss-rgb) / 0.24);
+
+    --nav-h: 68px;
+    --gutter: clamp(20px, 4vw, 40px);
+    --page-max: 1240px;
+
+    /* shadcn/tailwind bridge used by the Button primitive. */
+    --background: 48 26% 93%;
+    --foreground: 30 3% 12%;
+    --primary: 30 3% 12%;
+    --primary-foreground: 45 33% 97%;
+    --secondary: 43 23% 88%;
+    --secondary-foreground: 30 3% 12%;
+    --muted: 43 23% 88%;
+    --muted-foreground: 36 9% 35%;
+    --accent: 143 26% 33%;
+    --accent-foreground: 45 33% 97%;
+    --border: 30 3% 12% / 0.14;
+    --input: 30 3% 12% / 0.14;
+
+    color-scheme: light;
+  }
+
+  /* Alternate accents share the same paper; only the accent ink changes. */
+  :root[data-theme="qing"] {
+    --moss: #2f6b6e;
+    --moss-deep: #245457;
+    --moss-soft: #dde9e7;
+    --moss-rgb: 47 107 110;
+    --sage: #6f9a9b;
+  }
+
+  :root[data-theme="dai"] {
+    --moss: #46507c;
+    --moss-deep: #363e62;
+    --moss-soft: #e3e4ee;
+    --moss-rgb: 70 80 124;
+    --sage: #8189ad;
+  }
+
+  /* Warm charcoal and sage — the workspace's dark palette, for explicit and OS dark mode alike. */
+  :root[data-color-mode="dark"] {
+    --paper: #20231f;
+    --paper-deep: #2b2f28;
+    --paper-raised: #282c26;
+    --kraft: #6e5f49;
+    --moss: #9bb393;
+    --moss-deep: #bdd0b4;
+    --moss-soft: #353f31;
+    --moss-rgb: 155 179 147;
+    --sage: #7f9878;
+    --ink: #eee9dc;
+    --ink-soft: #d8d3c6;
+    --ink-muted: #b9b7a9;
+    --ink-faint: #a5a596;
+    --ink-solid: #eee9dc;
+    --on-ink: #20231f;
+    --rule: rgba(238, 233, 220, 0.2);
+    --line: rgba(238, 233, 220, 0.12);
+    --hair: rgba(238, 233, 220, 0.08);
+    --fill: rgba(238, 233, 220, 0.07);
+    --fill-2: rgba(238, 233, 220, 0.04);
+    --success: #a2b88b;
+    --warning: #d8b476;
+    --danger: #e0a090;
+    --chart-correct: #6fa86a;
+    --chart-partial: #d49a3a;
+    --chart-wrong: #e06a55;
+    --night: #161815;
+    --night-raised: #1d201b;
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.14);
+    --shadow-md: 0 8px 20px -10px rgba(0, 0, 0, 0.3);
+    --shadow-pop: 0 24px 60px -24px rgba(0, 0, 0, 0.45), 0 4px 12px rgba(0, 0, 0, 0.12);
+    --background: 100 6% 13%;
+    --foreground: 44 33% 90%;
+    --primary: 44 33% 90%;
+    --primary-foreground: 100 6% 13%;
+    color-scheme: dark;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root[data-color-mode="system"] {
+      --paper: #20231f;
+      --paper-deep: #2b2f28;
+      --paper-raised: #282c26;
+      --kraft: #6e5f49;
+      --moss: #9bb393;
+      --moss-deep: #bdd0b4;
+      --moss-soft: #353f31;
+      --moss-rgb: 155 179 147;
+      --sage: #7f9878;
+      --ink: #eee9dc;
+      --ink-soft: #d8d3c6;
+      --ink-muted: #b9b7a9;
+      --ink-faint: #a5a596;
+      --ink-solid: #eee9dc;
+      --on-ink: #20231f;
+      --rule: rgba(238, 233, 220, 0.2);
+      --line: rgba(238, 233, 220, 0.12);
+      --hair: rgba(238, 233, 220, 0.08);
+      --fill: rgba(238, 233, 220, 0.07);
+      --fill-2: rgba(238, 233, 220, 0.04);
+      --success: #a2b88b;
+      --warning: #d8b476;
+      --danger: #e0a090;
+      --chart-correct: #6fa86a;
+      --chart-partial: #d49a3a;
+      --chart-wrong: #e06a55;
+      --night: #161815;
+      --night-raised: #1d201b;
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.14);
+      --shadow-md: 0 8px 20px -10px rgba(0, 0, 0, 0.3);
+      --shadow-pop: 0 24px 60px -24px rgba(0, 0, 0, 0.45), 0 4px 12px rgba(0, 0, 0, 0.12);
+      --background: 100 6% 13%;
+      --foreground: 44 33% 90%;
+      --primary: 44 33% 90%;
+      --primary-foreground: 100 6% 13%;
+      color-scheme: dark;
+    }
+  }
+
+  html {
+    scroll-behavior: smooth;
+    scroll-padding-top: calc(var(--nav-h) + 12px);
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    margin: 0;
+    min-width: 320px;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--font-body);
+    font-size: 15px;
+    line-height: 1.6;
+    letter-spacing: -0.003em;
+    font-feature-settings: "kern";
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    transition: background-color var(--dur-4) var(--ease-out), color var(--dur-4) var(--ease-out);
+  }
+
+  ::selection {
+    background: var(--moss-soft);
+    color: var(--ink);
+  }
+
+  a,
+  button {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  a:focus-visible,
+  button:focus-visible,
+  input:focus-visible,
+  [tabindex]:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
+  }
+}
+
+@layer components {
+  .wrap {
+    width: 100%;
+    max-width: calc(var(--page-max) + var(--gutter) * 2);
+    margin-inline: auto;
+    padding-inline: var(--gutter);
+  }
+
+  .section {
+    position: relative;
+    padding-block: clamp(88px, 12vw, 152px);
+  }
+
+  .section + .section {
+    border-top: 1px solid var(--line);
+  }
+
+  /* Section opening: a ruled kicker with the index numeral, a serif headline, one calm lead. */
+  .section-head {
+    display: grid;
+    grid-template-columns: minmax(180px, 0.3fr) minmax(0, 1fr);
+    gap: clamp(28px, 6vw, 88px);
+  }
+
+  .kicker {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    height: fit-content;
+    margin: 0;
+    padding-top: 14px;
+    border-top: 1px solid var(--rule);
+    color: var(--ink-muted);
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+  }
+
+  .kicker-num {
+    color: var(--moss);
+    font-family: var(--font-serif);
+    font-size: 34px;
+    font-weight: 400;
+    line-height: 1;
+    letter-spacing: 0;
+    font-variant-numeric: lining-nums;
+  }
+
+  .display {
+    margin: 0;
+    color: var(--ink);
+    font-family: var(--font-serif);
+    font-size: clamp(27px, 4.6vw, 64px);
+    font-weight: 500;
+    line-height: 1.16;
+    letter-spacing: -0.01em;
+  }
+
+  .display em {
+    display: block;
+    color: var(--ink-muted);
+    font-style: normal;
+  }
+
+  .lead {
+    max-width: 44rem;
+    margin: 24px 0 0;
+    color: var(--ink-muted);
+    font-size: clamp(15px, 1.25vw, 17px);
+    line-height: 1.85;
+    text-wrap: pretty;
+  }
+
+  .eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0;
+    color: var(--moss-deep);
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.16em;
+  }
+
+  .eyebrow::before {
+    content: "";
+    width: 24px;
+    height: 1px;
+    background: currentColor;
+  }
+
+  .logo-mark {
+    display: grid;
+    flex: 0 0 auto;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: var(--moss);
+    color: var(--on-ink);
+    font-family: var(--font-serif);
+    font-size: 19px;
+    font-style: italic;
+    font-weight: 500;
+    line-height: 1;
+  }
+
+  .logo-mark.is-small {
+    width: 22px;
+    height: 22px;
+    border-radius: 6px;
+    font-size: 13px;
+  }
+
+  .wordmark {
+    font-family: var(--font-serif);
+    font-size: 23px;
+    font-weight: 500;
+    line-height: 1;
+    letter-spacing: -0.01em;
+  }
+
+  .wordmark i {
+    color: var(--moss);
+    font-style: normal;
+  }
+
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 10px;
+    border-radius: 999px;
+    background: var(--fill);
+    color: var(--ink-soft);
+    font-size: 12px;
+    font-style: normal;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  .chip::before {
+    content: "";
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+
+  .chip.is-good {
+    background: var(--success-soft);
+    color: color-mix(in srgb, var(--success) 80%, var(--ink));
+  }
+
+  .chip.is-warn {
+    background: var(--warning-soft);
+    color: var(--warning);
+  }
+
+  .chip.is-bad {
+    background: var(--danger-soft);
+    color: var(--danger);
+  }
+
+  .chip.is-plain::before {
+    display: none;
+  }
+
+  /* Scroll reveal: elements settle upward a few pixels, never more than 14px. */
+  [data-reveal] {
+    opacity: 0;
+    transform: translateY(14px);
+    transition:
+      opacity 640ms var(--ease-out),
+      transform 820ms var(--ease-emphasized);
+    transition-delay: calc(var(--reveal-delay, 0) * 1ms);
+  }
+
+  [data-reveal][data-revealed] {
+    opacity: 1;
+    transform: none;
+  }
+
+  .demo-note {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin: 28px 0 0;
+    color: var(--ink-faint);
+    font-size: 12px;
+  }
+
+  .demo-note svg {
+    width: 14px;
+    height: 14px;
+  }
+}
+
+@media (max-width: 560px) {
+  .display {
+    font-size: min(7.3vw, 34px);
+  }
+}
+
+@media (max-width: 860px) {
+  .section-head {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 24px;
+  }
+
+  .kicker {
+    max-width: 320px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  [data-reveal] {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    transition-delay: 0ms !important;
+  }
+}

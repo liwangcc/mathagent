@@ -1,0 +1,18 @@
+{
+  "name": "mathagent-desktop",
+  "private": true,
+  "version": "0.1.12",
+  "type": "module",
+  "scripts": {
+    "build:sidecar": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build-sidecar.ps1",
+    "build:frontend": "node ../frontend/node_modules/vite/bin/vite.js build ../frontend --outDir dist-desktop --emptyOutDir",
+    "build:prepare": "npm run build:sidecar && npm run build:frontend",
+    "test:contract": "node --test tests/*.test.js",
+    "test:rust": "npm run build:prepare && cargo test --manifest-path src-tauri/Cargo.toml",
+    "build:release": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build-release.ps1",
+    "tauri": "tauri"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "2.11.4"
+  }
+}

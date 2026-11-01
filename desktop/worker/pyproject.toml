@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mathagent-desktop-worker"
+version = "0.1.12"
+description = "MathAgent desktop CPU capacity supervisor"
+requires-python = ">=3.11,<3.12"
+dependencies = [
+    "numpy==2.4.2",
+    "opencv-python-headless==4.13.0.92",
+    "Pillow==11.1.0",
+    "psutil==7.2.2",
+]
+
+[project.scripts]
+mathagent-sidecar = "mathagent_worker.__main__:main"
+
+[tool.setuptools.packages.find]
+include = ["mathagent_worker*"]
+
+[tool.setuptools.package-data]
+mathagent_worker = ["native/windows_nvidia_gpu/*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

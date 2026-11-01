@@ -1,0 +1,15 @@
+{
+  "artifact_registration_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+  "questions": [
+    {
+      "question_number": "1",
+      "question_type": "choice",
+      "ownership_bbox": [40, 120, 480, 190]
+    },
+    {
+      "question_number": "2",
+      "question_type": "fill",
+      "ownership_bbox": [520, 120, 960, 190]
+    }
+  ]
+}

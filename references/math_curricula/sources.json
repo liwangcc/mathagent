@@ -1,0 +1,152 @@
+{
+  "schema_version": 1,
+  "checked_on": "2026-09-09",
+  "sources": [
+    {
+      "id": "moe-junior-2022",
+      "title": "义务教育数学课程标准（2022年版）",
+      "publisher": "中华人民共和国教育部",
+      "url": "https://www.moe.gov.cn/srcsite/A26/s8001/202204/W020220420582346895190.pdf",
+      "kind": "curriculum_standard",
+      "verification": "content_verified",
+      "checked_sections": [
+        "四、课程内容：初中部分，印刷页53–79（PDF页60–86）"
+      ],
+      "notes": "取得官方PDF并逐页渲染核对初中数与代数、图形与几何、统计与概率、综合与实践；非2025日常修订全文。"
+    },
+    {
+      "id": "moe-senior-2020",
+      "title": "普通高中数学课程标准（2017年版2020年修订）",
+      "publisher": "中华人民共和国教育部",
+      "url": "https://www.pep.com.cn/xw/zt/rjwy/gzkb2020/202205/P020220517519489596282.pdf",
+      "retrieved_url": "https://jyj.changdu.gov.cn/cdsjyj/c101476/202205/764ee1914e3c45aaba8e372f1b628a34/files/75676dfa9af0442db1457404a884a69f.pdf",
+      "kind": "curriculum_standard",
+      "verification": "content_verified",
+      "checked_sections": [
+        "课程结构，印刷页9–12",
+        "四、课程内容：必修/选择性必修，印刷页13–50",
+        "选修A类微积分与空间向量代数，印刷页51–55",
+        "选修C类逻辑推理初步，印刷页64–65"
+      ],
+      "notes": "人教社原链接读取超时，全文从昌都市教育局官方同名PDF镜像取得；抽取内容并核对关键页渲染。非2025日常修订全文。"
+    },
+    {
+      "id": "pep-junior-2024-intro",
+      "title": "人教版义务教育数学（七～九年级）新教材介绍",
+      "publisher": "人民教育出版社",
+      "url": "https://www.pep.com.cn/xw/zt/hd/12/xjcjs/cz/202408/t20240826_1994351.html",
+      "kind": "publisher_introduction",
+      "verification": "content_verified",
+      "checked_sections": [
+        "二、教材介绍：（一）主要变化；函数结构调整、数据的四分位数、数据的分组"
+      ],
+      "notes": "用于新版教材内容变化交叉核对，不等于所有册教材逐节核对。"
+    },
+    {
+      "id": "pep-senior-b-index",
+      "title": "高中数学B版同步教学目录",
+      "publisher": "人民教育出版社",
+      "url": "https://www.pep.com.cn/gzsxb/",
+      "kind": "publisher_catalog",
+      "verification": "content_verified",
+      "checked_sections": [
+        "必修第一至四册、选择性必修第一至三册目录"
+      ],
+      "notes": "用于验证不同教材模块编排差异；只核对目录，不宣称教材正文逐页核验。"
+    },
+    {
+      "id": "junior-2025-revision-notice",
+      "title": "关于福建省义务教育部分学科进校教辅材料送评有关事项的通告",
+      "publisher": "福建省教育厅等",
+      "url": "https://jyt.fj.gov.cn/xxgk/gggs/202604/t20260415_7125019.htm",
+      "kind": "revision_notice",
+      "verification": "notice_only",
+      "checked_sections": [
+        "三（一）：引用2022年版2025年修订日常修订版"
+      ],
+      "notes": "仅证明存在2025日常修订，不能确定知识点增删；本轮正文核对另见junior-2025-public-reprint，通知仍保持notice_only。"
+    },
+    {
+      "id": "senior-2025-revision-notice",
+      "title": "学术报告预告：从课标日常修订看课堂教学改革",
+      "publisher": "广东技术师范大学数学与系统科学学院",
+      "url": "https://sxxy.gpnu.edu.cn/info/1166/6359.htm",
+      "kind": "revision_notice",
+      "verification": "notice_only",
+      "checked_sections": [
+        "报告内容：数学课程标准2025年日常修订介绍"
+      ],
+      "notes": "仅证明修订及其解读活动存在，不以活动提纲代替高中数学课标2025正文。"
+    },
+    {
+      "id": "junior-2025-public-reprint",
+      "title": "义务教育数学课程标准日常修订版（2022年版2025年修订）",
+      "publisher": "tiesto-math.com公开转载（非教育部原始下载渠道）",
+      "url": "https://tiesto-math.com/standard-2025.pdf",
+      "kind": "curriculum_standard_reprint",
+      "verification": "content_verified",
+      "checked_sections": [
+        "封面与目录；初中课程内容印刷页53–79（PDF页56–82），逐页视觉核对",
+        "代数推理例66，印刷页144–145（PDF页147–148）；初中星号选学项目关键页复核"
+      ],
+      "sha256": "01f4a577f991c4a5c63eaeeed22008c0e99172d0d8771b3636efcacea7e4d601",
+      "page_count": 186,
+      "byte_size": 40252808,
+      "notes": "公开转载全文，封面标题相符；广东省教育资源平台存在同名38.39M附件条目，可交叉验证文件名/题名但未取得其附件本体，不能宣称与官方原件哈希相同。内容核对不等于教育部发布链路、所有教材或全文评价要求已核验。"
+    },
+    {
+      "id": "junior-2025-gdedu-metadata",
+      "title": "义务教育数学课程标准日常修订版（2022年版2025年修订）附件条目",
+      "publisher": "广东省教育资源公共服务平台·王炜煜名师工作室",
+      "url": "https://zy.gdedu.gov.cn/studio/index.php?id=75215&r=studio%2Fpost%2Fview&sid=621",
+      "kind": "attachment_metadata",
+      "verification": "metadata_only",
+      "checked_sections": [
+        "2025-11-20条目题名及同名38.39M附件说明；平台页脚广东省教育厅/广东省电化教育馆归属"
+      ],
+      "notes": "附件本体链接未成功取得，只作为题名与体积的旁证；禁止将该条目当成课标内容来源或文件真实性签名。"
+    },
+    {
+      "id": "senior-2025-school-reprint",
+      "title": "普通高中数学课程标准日常修订版（2017年版2025年修订）",
+      "publisher": "木里藏族自治县中学公开转载（非教育部原始下载渠道）",
+      "url": "https://www.scmlzx.net/uploadfile/2025/1110/%EF%BC%883%EF%BC%89%E6%99%AE%E9%80%9A%E9%AB%98%E4%B8%AD%E6%95%B0%E5%AD%A6%E8%AF%BE%E7%A8%8B%E6%A0%87%E5%87%86%E6%97%A5%E5%B8%B8%E4%BF%AE%E8%AE%A2%E7%89%88%EF%BC%882017%E5%B9%B4%E7%89%882025%E5%B9%B4%E4%BF%AE%E8%AE%A2%EF%BC%89.pdf",
+      "kind": "curriculum_standard_reprint",
+      "verification": "content_verified",
+      "checked_sections": [
+        "封面、课程结构印刷页9–12（PDF页12–15）",
+        "必修及选择性必修课程内容印刷页13–49及选修引言页50（PDF页16–53）全文抽取核对",
+        "关键页渲染核对：二分法程序框图页22、复数选学页26、归纳法选学页37、空间向量投影页41、贝叶斯选学页46"
+      ],
+      "sha256": "fc9258bb37ed2e052a4b1be608865a5481f770ae7e28ce536e835d2354353f86",
+      "page_count": 171,
+      "byte_size": 9537415,
+      "notes": "下载文件题名、封面及校方网站归属已核对；为学校公开转载正文，不假称教育部2025原始下载文件。2025所有选修专题、整份教学评价要求及全教材交叉映射不在本轮完成范围。"
+    }
+    ,
+    {
+      "id": "moe-primary-2022-final",
+      "title": "义务教育数学课程标准（2022年版，教育部2022年5月修订链接）",
+      "publisher": "中华人民共和国教育部",
+      "url": "https://www.moe.gov.cn/srcsite/A26/s8001/202204/W020220510531636118932.pdf",
+      "kind": "curriculum_standard",
+      "verification": "content_verified",
+      "checked_sections": [
+        "四、课程内容：小学部分印刷页17–53（PDF页24–60），逐页渲染并视觉阅读",
+        "数与代数印刷页17–27；图形与几何印刷页27–36；统计与概率印刷页36–41；综合与实践印刷页42–53"
+      ],
+      "sha256": "1183b95c58a65eaac4c456f2d2b329bbe42f65a6482993edb537e3eaf8baa144",
+      "page_count": 189,
+      "byte_size": 40123943,
+      "notes": "本轮从教育部官方链接取得扫描PDF并逐页阅读列明小学正文，页53上半仍为小学综合与实践。仅为2022版小学主干依据，不宣称核对小学2025日常修订、全部教材或完整附录例题；既有初高中来源记录保持原样。"
+    }
+  ],
+  "limitations": [
+    "2025日常修订两学段主干正文已按公开转载全文核查；尚未从教育部原始发布渠道核验文件，也未完成全文教学评价要求和所有选修的逐条比对。",
+    "尚未核对全部获审定教材全册；目录是跨版本主干分类骨架，不是教材同步章节表。",
+    "五四学制六年级衔接、地方课程与学校竞赛拓展尚未完成专门目录映射。",
+    "知识点ID是MathAgent自建标识，不是教育部官方编号。",
+    "分类可包含拓展内容；出题/学业结论不得把extension默认当作全体学生必学。",
+    "2025来源content_verified只表示实际阅读并核对了列明章节，不能理解为官方数字签名认证；metadata_only/notice_only来源不得用于证明知识点内容。"
+  ]
+}

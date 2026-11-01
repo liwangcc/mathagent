@@ -1,0 +1,20 @@
+<!doctype html><html><head><meta charset="UTF-8"><title>MathAgent isolated slot acceptance</title></head><body><div style="background:#fff2b2;padding:10px">隔离验收：实际 Upload.vue + 真实保存API；真实Max回包经修复后代码回放（非冷启动）；隔离数据库，不连接生产/模型</div><div id="app"></div><script type="module">
+import {createApp,h,nextTick} from 'vue'
+import {createPinia} from 'pinia'
+import {createRouter,createMemoryHistory} from 'vue-router'
+import ElementPlus from 'element-plus'
+import '/node_modules/element-plus/dist/index.css'
+import '/src/styles/global.css'
+import '/node_modules/katex/dist/katex.min.css'
+import Upload from '/src/views/Upload.vue'
+import {templateDrawingReview} from '/src/utils/templateReview.js'
+const app=createApp({render:()=>h(Upload,{ref:'upload'})})
+app.use(createPinia());app.use(createRouter({history:createMemoryHistory(),routes:[{path:'/',component:{render:()=>null}}]}));app.use(ElementPlus)
+const vm=app.mount('#app'); window.acceptanceErrors=[];app.config.errorHandler=e=>window.acceptanceErrors.push(String(e))
+window.reopen=async()=>{
+ const f=await fetch('/api/acceptance/fixture').then(r=>r.json()); const u=vm.$refs.upload.$.setupState;window.U=u;
+ u.form.category='daily';u.pendingTemplateId=f.template_id;u.templateMode='marked';u.templateColumnMode=f.column_mode;u.templatePages=f.pages.map(p=>({...p,questions:p.questions.map(q=>u.normalizeAnswerSpecForEditor(q))}));u.templateDialogVisible=true;
+ const a=f.artifact;const p={pageIndex:0,pageLabel:'page_1',questionAnchors:a.question_anchors,questionSchema:a.question_schema,answerBoxes:u.flattenTemplateHandwritingRegions(a.template_answer_regions),handwritingBoxes:[],...templateDrawingReview(a.question_schema),columns:f.columns,columnCount:f.columns.length,columnsSource:'teacher',columnsConfirmed:true,hasAnswerRegionContract:true,imageUrl:'/api/acceptance/image',saving:false,referenceGenerating:false,previewEditMode:'geometry',dirty:true};
+ p.referenceImageReadyNumbers=Object.fromEntries(f.pages[0].questions.filter(q=>['drawing','mixed'].includes(q.answer_kind)).map(q=>[q.question_no,true]));u.initializeTemplatePageSlots(p);u.templateCutPreviewPages=[p];u.templateCutResult={status:'complete',pages:[{page_index:0}]};await nextTick();return f;
+}; await window.reopen();
+</script></body></html>

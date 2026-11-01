@@ -1,0 +1,1387 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light"><title>圆 · MathAgent</title><style>:root{--ink:#203343;--muted:#596d7b;--teal:#087f77;--teal-light:#e8f6f1;--blue:#2f6ab1;--amber:#ab5d19;--purple:#7353a2;--bad:#b43f40;--line:#dce4e7;--paper:#fff;--wash:#f3f6f5;--shadow:0 8px 24px #20334308}*{box-sizing:border-box}body{margin:0;background:var(--wash);color:var(--ink);font-family:system-ui,-apple-system,'Segoe UI','Microsoft YaHei',sans-serif;line-height:1.55}button,input,select{font:inherit}button{cursor:pointer;touch-action:manipulation}button:disabled{cursor:not-allowed;opacity:.42}button:active:not(:disabled){background:#e2efeb}button,input,select,summary,a{outline-offset:3px}button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible,a:focus-visible,[tabindex]:focus-visible{outline:3px solid #da9b28}a{color:var(--teal)}button{border:1px solid #ccd9db;border-radius:9px;background:#fff;color:var(--ink);min-height:40px;padding:7px 13px;font-size:16px}button.primary{background:var(--teal);color:white;border-color:var(--teal)}button[aria-pressed=true],button.active{background:var(--teal-light);border-color:var(--teal);color:#08685f}button.small{padding:5px 10px;min-height:36px;font-size:15px}main{max-width:1900px;margin:0 auto;padding:0 24px 22px}.top{display:flex;justify-content:space-between;align-items:center;gap:18px;min-height:84px}.brand{font-size:13px;font-weight:750;color:var(--teal);letter-spacing:.1em}.top h1{font-size:28px;line-height:1.3;margin:3px 0 0;letter-spacing:-.02em}.chapter-code{font-family:ui-monospace,monospace;color:#68857f;font-size:20px;margin-right:12px}.top-tools{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:7px;align-items:center}.top-tools label{font-size:14px;color:var(--muted);display:flex;align-items:center;gap:5px}.scene-nav{display:grid;gap:7px;grid-template-columns:repeat(var(--scenes),minmax(0,1fr));padding-bottom:12px;border-bottom:1px solid var(--line)}.scene-nav button{text-align:left;line-height:1.3;background:#fff;border-color:transparent;display:flex;gap:10px;align-items:center;padding:10px 12px}.scene-nav button.active{border-color:#9abfb4;background:#e7f1ec;color:#155b50}.scene-nav .scene-no{font-size:14px;color:#5c7b76;font-family:ui-monospace,monospace}.scene-nav .scene-name{font-size:17px;font-weight:650}.scene-heading{display:flex;align-items:center;justify-content:space-between;gap:15px;padding:13px 0 11px}.scene-heading h2{font-size:23px;line-height:1.3;margin:0}.scene-heading p{font-size:15px;color:var(--muted);margin:3px 0 0}.scene-entry{font-size:13px;color:#607d75;border:1px solid var(--line);padding:4px 8px;border-radius:6px;white-space:nowrap}.workspace{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(375px,1fr);gap:18px;align-items:start}.figure-card,.reading,.controls-card,.timeline,.extras{background:var(--paper);border:1px solid var(--line);border-radius:15px;box-shadow:var(--shadow);min-width:0}.figure-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 13px;border-bottom:1px solid #edf0ef;min-height:51px}.figure-head strong{font-size:15px;color:#4d6a65;font-weight:600}.view-buttons{display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end}.plot{width:100%;height:390px;display:block;overflow:hidden;user-select:none;-webkit-user-select:none}.plot text{font-family:system-ui,'Microsoft YaHei',sans-serif}.plot [data-drag]{cursor:grab;touch-action:none}.plot [data-drag] .touch-target{fill:transparent}.plot [data-drag].pressing .halo{stroke:#db9e30;stroke-width:3;fill:#f8e7b866}.plot [data-drag].dragging .halo{stroke:var(--teal);stroke-width:3;fill:#c5e8df99}.plot [data-sem]{cursor:pointer}.plot .selected-sem{filter:drop-shadow(0 0 4px #e0a642)}.diagram-caption{margin:0;padding:8px 13px 11px;font-size:14px;line-height:1.45;min-height:38px;border-top:1px solid #edf0ef;color:var(--muted);overflow-wrap:anywhere}.diagram-caption.warning{color:var(--bad);background:#fff6f3}.reading{padding:17px 20px}.eyebrow{font-size:12px;color:#627b75;font-weight:700;letter-spacing:.08em;line-height:1.2;margin:0 0 8px}.definition{font-size:22px;line-height:1.6;margin:0 0 12px}.definition strong{color:#116d62}.mapping{font-size:18px;color:#4c6370;margin:0 0 15px;line-height:1.6}.formula{font-size:29px;line-height:1.4;font-weight:650;letter-spacing:.005em;color:#08766e;overflow-wrap:anywhere;padding:10px 0 13px;border-top:1px solid var(--line)}.formula .second{display:block;font-size:22px;font-weight:500;color:var(--muted);margin-top:5px}.token{border:0;background:none;color:inherit;min-height:0;padding:0 2px;border-radius:4px;font:inherit;text-decoration:underline;text-decoration-color:#0b84703b;text-underline-offset:4px}.token[aria-pressed=true]{background:#ffe7ad;color:#684600}.readings{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:0 0 10px}.readings>div{border-left:3px solid #afcfc3;background:#f3f8f5;padding:7px 10px;min-width:0;border-radius:2px 7px 7px 2px}.readings dt{font-size:13px;color:var(--muted)}.readings dd{margin:1px 0 0;font-size:22px;font-weight:650;line-height:1.4;overflow-wrap:anywhere}.readings .wide{grid-column:1/-1}.readings .warning{background:#fff1ea;border-color:#d08a56}.feedback{padding:10px 12px;margin:0;font-size:17px;line-height:1.6;color:#295e56;background:#eef7f3;border-radius:8px}.feedback.warning{color:#8f3c34;background:#fff0e9}.selected-note{font-size:15px;color:#876020;min-height:0;margin:7px 0 0}.selected-note:empty{display:none}.controls-card{margin-top:14px;padding:12px 15px}.control-heading{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:10px}.control-heading strong{font-size:14px;color:#4b6c62}.preset-row{display:flex;gap:6px;flex-wrap:wrap}.controls{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px 20px}.control{min-width:0}.control>label{display:block;font-size:15px;font-weight:600;color:#49616a;margin:0 0 5px}.input-row{display:flex;align-items:center;gap:8px}.input-row input[type=range]{width:100%;min-width:40px;accent-color:var(--teal);height:28px;margin:0}.input-row input[type=number]{width:81px;min-width:0;border:1px solid #cddbdd;border-radius:7px;padding:6px 7px;font-size:18px;background:#fff;color:var(--ink);font-variant-numeric:tabular-nums}.control select{width:100%;min-width:0;border:1px solid #cddbdd;border-radius:7px;padding:7px;font-size:16px;background:#fff}.control .unit{font-size:13px;color:var(--muted)}.control input[type=checkbox]{width:19px;height:19px;accent-color:var(--teal)}.timeline{margin-top:12px;padding:10px 14px;display:flex;align-items:center;gap:11px;flex-wrap:wrap}.timeline strong{font-size:14px;min-width:110px}.timeline .trajectory{font-size:14px;color:var(--muted);max-width:265px;line-height:1.4}.timeline input[type=range]{flex:1;min-width:120px;accent-color:var(--teal)}.timeline output{font-size:14px;min-width:40px;font-variant-numeric:tabular-nums}.timeline select{font-size:14px;padding:5px;border:1px solid var(--line);border-radius:6px}.action-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:11px}.action-row .actions-spacer{flex:1}.live{font-size:14px;min-height:22px;margin:7px 2px 0;color:#76541d}.extras{margin-top:10px;padding:2px 16px}.extras details{padding:10px 0;border-bottom:1px solid var(--line)}.extras details:last-child{border-bottom:0}.extras summary{cursor:pointer;font-size:17px;font-weight:600;color:#47645a}.extras p,.extras li{font-size:18px}.extra-body{padding:0 5px}.extra-body table{width:100%;border-collapse:collapse;margin:9px 0;font-size:18px;font-variant-numeric:tabular-nums}.extra-body th,.extra-body td{padding:7px 9px;border-bottom:1px solid var(--line);text-align:center}.extra-body td button{min-height:36px;min-width:54px;font-size:18px}.answer{border-left:3px solid var(--teal);padding:8px 12px;background:#eef7f3;border-radius:0 8px 8px 0;margin:8px 0;font-size:19px}.footer{font-size:12px;color:#68797c;display:flex;justify-content:space-between;gap:12px;margin-top:14px;flex-wrap:wrap}.footer p{margin:0}.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}body.reduced *,body.reduced *:before,body.reduced *:after{animation:none!important;transition:none!important;scroll-behavior:auto!important}@media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}@media(min-width:1650px){.plot{height:480px}.definition{font-size:25px}.mapping{font-size:20px}.feedback{font-size:20px}.readings dd{font-size:26px}.formula{font-size:34px}.scene-nav .scene-name{font-size:19px}.scene-heading h2{font-size:25px}.reading{padding:20px 24px}.input-row input[type=number]{width:100px}}@media(max-width:1170px){main{padding:0 18px 20px}.workspace{grid-template-columns:minmax(0,1fr) minmax(320px,.87fr);gap:13px}.definition{font-size:20px}.mapping{font-size:17px}.reading{padding:14px}.readings dd{font-size:20px}.formula{font-size:26px}.plot{height:400px}.scene-nav .scene-name{font-size:15px}.scene-nav button{padding:9px 8px;gap:5px}.top h1{font-size:25px}.controls{gap:12px}.figure-head{align-items:flex-start;flex-wrap:wrap}}@media(max-width:880px){.workspace{grid-template-columns:1fr}.plot{height:400px}.reading{padding:17px 20px}.definition{font-size:22px}.mapping{font-size:19px}.readings dd{font-size:24px}.controls{grid-template-columns:repeat(2,minmax(0,1fr))}.scene-nav{grid-template-columns:repeat(2,minmax(0,1fr))}.top{align-items:flex-start;padding:15px 0;flex-direction:column;gap:10px}.top-tools{justify-content:flex-start}.scene-entry{display:none}.formula{font-size:29px}.scene-heading p{font-size:15px}.scene-nav .scene-name{font-size:17px}}@media(max-width:480px){main{padding:0 10px 20px}.top h1{font-size:24px}.chapter-code{font-size:17px;margin-right:8px}.plot{height:350px}.definition{font-size:21px}.mapping{font-size:18px}.figure-head{padding:9px;gap:6px}.figure-head strong{font-size:14px}.reading{padding:16px}.readings{gap:7px}.readings dd{font-size:20px}.controls-card{padding:11px}.controls{grid-template-columns:1fr;gap:11px}.input-row input[type=number]{width:92px}.control-heading{align-items:flex-start;flex-direction:column}.timeline{gap:7px;padding:10px}.timeline .trajectory{max-width:none;width:100%}.scene-heading h2{font-size:21px}.scene-nav .scene-name{font-size:15px}.formula{font-size:26px}.extras{padding:2px 12px}.extra-body{padding:0}.extra-body table{font-size:16px}.action-row .actions-spacer{display:none}.footer{font-size:12px}.scene-nav button{min-height:48px}}@media print{.top-tools,.controls-card,.timeline,.action-row,.live{display:none}.scene-nav{display:none}.workspace{display:block}.figure-card{break-inside:avoid}.plot{height:400px}.reading{margin-top:14px}body{background:white}.extras details{display:block}}
+
+/* Keep parameters adjacent to their model rather than below a taller explanation column. */
+.visual-stack{min-width:0}.visual-stack .controls-card{display:flex;flex-direction:column;margin-top:11px;padding:10px 13px}.visual-stack .controls{order:0;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.visual-stack .control-heading{order:1;margin:9px 0 0;display:block}.visual-stack .control-heading>strong{display:none}.visual-stack .preset-row{gap:5px}.visual-stack .input-row{gap:6px}.visual-stack .input-row input[type=number]{width:76px}.readings .compact{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:6px 9px}.readings .compact dd{font-size:19px}.top{min-height:70px}.scene-nav button{padding:8px 10px}.scene-heading{padding:10px 0}.plot{height:370px}
+@media(min-width:1650px){.plot{height:480px}.readings .compact dd{font-size:22px}.top{min-height:84px}}
+@media(max-width:1170px){.plot{height:385px}.visual-stack .controls{grid-template-columns:repeat(2,minmax(0,1fr))}.visual-stack .input-row input[type=number]{width:82px}}
+@media(max-width:880px){.visual-stack .controls{grid-template-columns:repeat(3,minmax(0,1fr))}.plot{height:400px}.top{min-height:0}}
+@media(max-width:480px){.visual-stack .controls{grid-template-columns:1fr}.plot{height:350px}.visual-stack .input-row input[type=number]{width:92px}.readings .compact{align-items:flex-start;flex-wrap:wrap}.scene-nav button{padding:8px}.visual-stack .controls-card{padding:11px}}
+
+@media(max-width:880px){.visual-stack{display:contents}.workspace>.reading{order:1}.visual-stack>.figure-card{order:0}.visual-stack>.controls-card{order:2;margin-top:0}}
+@media(max-width:480px){body[data-current-scene="J10-S05"] .plot[data-kind="diagram"]{height:260px}}
+
+/* Immediate manipulation: the plot owns pointer gestures; scrolling remains outside it. */
+.plot{touch-action:none;cursor:grab}.plot.drag-active,.plot.drag-active [data-drag]{cursor:grabbing}.plot [data-drag]{cursor:grab!important}.gesture-hint{margin:0;padding:7px 13px;background:#edf7f4;color:#27695f;font-size:14px;border-bottom:1px solid #e0eae6}.plot-host{position:relative}.plot-host>canvas{position:absolute;inset:0;pointer-events:none;width:100%;height:100%}.plot-host>svg{position:relative}canvas[hidden]{display:none}
+
+body[data-current-scene="J17-S03"] .plot{height:640px}body[data-current-scene="J17-S04"] .plot{height:510px}body[data-current-scene^="J17"] .view-buttons{gap:4px}body[data-current-scene^="J17"] .figure-head{flex-wrap:wrap}
+@media(max-width:530px){body[data-current-scene="J17-S03"] .plot{height:780px}body[data-current-scene="J17-S04"] .plot{height:510px}}
+
+.face-term{display:inline-flex;flex-direction:column;align-items:center;vertical-align:middle;line-height:1.15;margin:0 1px}.face-term small{font-size:12px;font-weight:500;color:var(--sub,#607681);line-height:1.3}.face-term .token{padding:0 2px}
+
+/* Native data editing and teacher-owned notes. */
+textarea{font:inherit;font-size:17px;line-height:1.6;width:100%;max-width:100%;padding:10px;border:1px solid #bdcfd0;border-radius:8px;resize:vertical;background:white;color:var(--ink)}#rawEditor{order:3;border-top:1px solid var(--line);padding:12px 0 3px;margin-top:12px}#rawEditor[hidden],#weightsEditor[hidden]{display:none}#rawEditor summary{cursor:pointer;font-size:17px;font-weight:650;color:var(--teal)}#rawEditor p,#rawEditor label{font-size:15px;line-height:1.6;display:block;margin:5px 0}.raw-actions{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}.extra-body{overflow-x:auto}#teacherNote:focus-visible,textarea:focus-visible{outline:3px solid #da9b28;outline-offset:3px}
+
+/* v4: contextual actions reuse declared controls and existing tools only. */
+.object-actions{display:flex;align-items:center;flex-wrap:wrap;gap:7px;min-height:46px;margin:8px 14px 0;padding:7px 10px;border:1px solid #d7e6df;border-radius:8px;background:#f4f8f5;font-size:14px;color:#526b60}.object-actions .object-hint{font-size:14px;color:#607681}.object-actions .object-param{display:inline-flex;align-items:center;gap:6px;white-space:normal}.object-actions button{min-width:36px;min-height:36px;padding:4px 9px}.object-actions .object-param-label{max-width:220px}.plot.canvas-active{outline:2px solid #91b9ab;outline-offset:-2px}.gesture-hint{line-height:1.5}
+</style><style id="lesson-flow-style">/* MathAgent lesson flow v1 — presentation only (see lesson-flow.js). */
+:root{--lf-motivate:#843f05;--lf-motivate-bg:#fff5e8;--lf-explore:#174f8f;--lf-explore-bg:#edf4fc;--lf-formalize:#0b5a53;--lf-formalize-bg:#e9f5f2;--lf-practice:#4f2398;--lf-practice-bg:#f3effb;--lf-ink:#10292a;--lf-soft:#33494a;--lf-line:#d3dfda}
+body{--lf-c:var(--lf-motivate);--lf-bg:var(--lf-motivate-bg)}
+body[data-lf-stage=explore]{--lf-c:var(--lf-explore);--lf-bg:var(--lf-explore-bg)}
+body[data-lf-stage=formalize]{--lf-c:var(--lf-formalize);--lf-bg:var(--lf-formalize-bg)}
+body[data-lf-stage=practice]{--lf-c:var(--lf-practice);--lf-bg:var(--lf-practice-bg)}
+/* Projector type scale: 1280 px wide ≈ the minimums; grows to a 1920 px whiteboard.
+   「大字」 (the chapter's own projector toggle) adds one more step. */
+body.lf-on{--lf-t-read:clamp(19px,1.1vw + 5px,25px);--lf-t-key:clamp(21px,1.2vw + 6px,28px);--lf-t-eq:clamp(30px,1.7vw + 8px,40px);--lf-t-title:clamp(26px,1.4vw + 8px,34px);--lf-t-sub:clamp(17px,.8vw + 7px,21px);--lf-t-ui:clamp(15px,.6vw + 7px,18px)}
+body.lf-on.projector,body.lf-on.large,body.lf-on.presentation{--lf-t-read:clamp(22px,1.3vw + 6px,29px);--lf-t-key:clamp(24px,1.4vw + 7px,32px);--lf-t-eq:clamp(34px,2vw + 9px,46px);--lf-t-sub:clamp(19px,.9vw + 8px,23px)}
+
+/* Rail: four steps · prev/next · overview · help */
+.lf-rail{position:relative;display:flex;align-items:center;gap:8px;flex-wrap:nowrap;justify-content:flex-end;margin-left:auto;flex:none}
+.lf-steps{display:flex;gap:4px;list-style:none;margin:0;padding:3px;border:1px solid var(--lf-line);border-radius:999px;background:#fff}
+.lf-steps li{margin:0}
+.lf-step{display:flex;align-items:center;gap:6px;border:0!important;background:transparent!important;box-shadow:none!important;border-radius:999px!important;padding:5px 12px 5px 6px!important;min-height:36px;font-size:var(--lf-t-ui,16px);font-weight:650;color:var(--lf-soft)!important;white-space:nowrap}
+.lf-step b{display:inline-grid;place-items:center;width:24px;height:24px;border-radius:50%;font-size:13px;background:#e8eeeb;color:var(--lf-soft)}
+.lf-step[data-lf-stage=motivate]{--c:var(--lf-motivate)}.lf-step[data-lf-stage=explore]{--c:var(--lf-explore)}.lf-step[data-lf-stage=formalize]{--c:var(--lf-formalize)}.lf-step[data-lf-stage=practice]{--c:var(--lf-practice)}
+.lf-step:hover{background:#f1f5f3!important}
+.lf-step.active{background:var(--c)!important;color:#fff!important}
+.lf-step.active b{background:#fff;color:var(--c)}
+.lf-move{display:flex;gap:6px}
+.lf-move button,.lf-overview,.lf-help{min-height:40px;font-size:var(--lf-t-ui,15px);font-weight:650;border-radius:10px;padding:7px 13px;white-space:nowrap}
+.lf-prev{width:6.9em}
+.lf-next{background:var(--lf-c)!important;border-color:var(--lf-c)!important;color:#fff!important;width:14.4em;display:inline-flex;align-items:center;justify-content:center;gap:4px}
+.lf-next span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.lf-next:disabled{background:#e9eeeb!important;border-color:#d7e0db!important;color:#33494a!important;opacity:1}
+.lf-help{width:40px;padding:0!important;font-weight:800}
+.lf-help-panel{position:absolute;right:0;top:calc(100% + 8px);z-index:40;width:min(470px,92vw);background:#fff;color:var(--lf-ink);border:1px solid var(--lf-line);border-radius:14px;box-shadow:0 18px 44px #10292a33;padding:16px 18px;font-size:16px;line-height:1.6;text-align:left}
+.lf-help-panel strong{display:block;font-size:17px;margin-bottom:6px;outline:none}
+.lf-help-panel ul{margin:0;padding-left:20px}.lf-help-panel li{margin:4px 0}
+.lf-help-panel kbd{font:600 13px ui-monospace,monospace;border:1px solid #c5d2cc;border-bottom-width:2px;border-radius:5px;padding:0 5px;background:#f6f8f7}
+
+/* Stage card head (inside the existing side panel) */
+.lf-card-head{display:none}
+body.lf-on .lf-card-head{display:flex;gap:12px;align-items:center;padding:11px 16px;border-radius:14px;background:var(--lf-bg);border:1px solid #d9e2de;border:1px solid color-mix(in srgb,var(--lf-c) 28%,#fff);border-left:6px solid var(--lf-c)}
+.lf-num{flex:none;display:grid;place-items:center;width:34px;height:34px;border-radius:50%;background:var(--lf-c);color:#fff;font-size:19px;font-weight:800}
+.lf-cue-line{margin:0!important;font-size:var(--lf-t-read)!important;line-height:1.45!important;color:var(--lf-ink)!important}
+.lf-title{font-size:1.06em;color:var(--lf-c);margin-right:.55em;letter-spacing:.04em}
+.lf-hint{display:none}
+body.lf-on .lf-hint{display:block;font-size:14px;color:var(--lf-soft);margin-left:auto;margin-right:8px;text-align:right;line-height:1.3}
+
+/* Controls inside the stage card never drop below 16 px on a projector. */
+body.lf-on .lf-card button:not(.token){font-size:max(16px,var(--lf-t-ui));min-height:38px}
+/* Data tables shown in a stage card are key content: reading size. */
+body.lf-on .lf-card table th,body.lf-on .lf-card table td{font-size:var(--lf-t-read)}
+/* Formula annotations (small/sub/sup labels) stay readable: 16 px, dark ink. */
+body.lf-on .lf-card small{font-size:16px;font-weight:600;color:var(--lf-soft)}
+
+/* Calm, legible transitions; reduced motion removes them entirely. */
+@keyframes lf-in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+body.lf-on .lf-card.lf-enter>*{animation:lf-in .24s ease-out both}
+@media (prefers-reduced-motion:reduce){body.lf-on .lf-card.lf-enter>*{animation:none!important}}
+body.low-motion .lf-card.lf-enter>*,body.reduced .lf-card.lf-enter>*,body.lf-reduce .lf-card.lf-enter>*{animation:none!important}
+
+/* Folding: hidden blocks leave the layout, except keep-layout ones (parameter
+   bars) which collapse to zero height and are inert, so in-figure editors that
+   list "visible" source controls keep working in every stage. */
+body.lf-on .lf-fold:not(.lf-keep){display:none!important}
+body.lf-on .lf-keep.lf-fold{height:0!important;min-height:0!important;padding:0!important;margin:0!important;border:0!important;overflow:hidden!important;opacity:0;box-shadow:none!important}
+body.lf-on .lf-tools{display:block}
+body.lf-on:not(.lf-tools-open) .lf-tools{height:0;overflow:hidden;opacity:0}
+.lf-tools-toggle{display:none}
+body.lf-on .lf-tools-toggle{display:inline-flex;align-items:center;min-height:34px;font-size:14px;padding:4px 11px}
+
+/* ---------- primary runtime (小学) ---------- */
+/* Same hues as the chapter's A/B/C/R colour coding, darkened for projector contrast (≥6:1 on white). */
+body.lf-on[data-lf-family=primary]{--muted:#3f5657;--a:#1f5f99;--b:#93530a;--c:#6a44a0;--teal:#0f6558}
+/* Stacked fractions are key mathematics: full size in lesson mode (runtime default is .85em). */
+body.lf-on[data-lf-family=primary] .frac{font-size:1em}
+/* Tokens coloured inline with the runtime's teal (#147c69) get the same darker teal. */
+body.lf-on[data-lf-family=primary] .token[style*="147c69"]{color:#0f6558!important}
+body.lf-on[data-lf-family=primary] .topbar{padding:7px 18px}
+body.lf-on[data-lf-family=primary] .brand-icon{width:32px;height:32px;font-size:19px}
+body.lf-on[data-lf-family=primary] .eyebrow{display:none}
+body.lf-on[data-lf-family=primary] .brand h1{font-size:21px}
+body.lf-on[data-lf-family=primary] .scene-nav{padding:0 18px 7px}
+body.lf-on[data-lf-family=primary] .scene-nav a{font-size:15px;padding:5px 11px}
+body.lf-on[data-lf-family=primary] main{padding:7px 18px 20px}
+body.lf-on[data-lf-family=primary] .scene-heading{align-items:center;margin:0 0 7px;gap:8px 14px}
+body.lf-on[data-lf-family=primary] .scene-heading>div:first-child{flex:1;min-width:0}
+body.lf-on[data-lf-family=primary] .scene-heading h2{font-size:var(--lf-t-title);line-height:1.25}
+body.lf-on[data-lf-family=primary] .scene-heading p{font-size:var(--lf-t-sub);color:var(--lf-soft);margin-top:2px}
+body.lf-on[data-lf-family=primary] #scene-code{display:none}
+body.lf-on[data-lf-family=primary] .workbench{grid-template-columns:minmax(0,1.78fr) minmax(300px,1fr);gap:14px}
+body.lf-on[data-lf-family=primary] .model-top{padding:3px 12px;min-height:36px}
+body.lf-on[data-lf-family=primary] .model-top .right-label{display:none}
+body.lf-on[data-lf-family=primary] .model-top strong{font-size:16px}
+body.lf-on[data-lf-family=primary] .timeline{padding:4px 12px;gap:8px}
+body.lf-on[data-lf-family=primary] .timeline-caption{font-size:15px;color:var(--lf-soft)}
+/* --lf-fig-h is measured by lesson-flow.js: the height left under the figure's
+   real top edge in the first screen, so the whole model is visible. */
+body.lf-on[data-lf-family=primary] #diagram{width:min(100%,calc(var(--lf-fig-h,440px) * 1.7021));margin-inline:auto}
+body.lf-on[data-lf-family=primary] #diagram text{font-size:23px}
+body.lf-on[data-lf-family=primary] #diagram .small{font-size:19px;fill:#3f5657}
+body.lf-on[data-lf-family=primary] #diagram .tiny{font-size:17px;fill:#3f5657}
+body.lf-on[data-lf-family=primary] #diagram .label{font-size:23px}
+body.lf-on[data-lf-family=primary] #diagram .big{font-size:30px}
+/* The fallback warning is pinned directly under the figure title so the
+   degradation is never below the fold (honest 2D path). */
+body.lf-on[data-lf-family=primary] .model-panel{display:flex;flex-direction:column}
+body.lf-on[data-lf-family=primary] .model-panel>*{order:2}
+body.lf-on[data-lf-family=primary] .model-panel>.model-top{order:0}
+body.lf-on[data-lf-family=primary] .model-panel>#fallback-warning{order:1;font-size:14px;line-height:1.4;padding:5px 12px;font-weight:650;border-bottom:1px solid #f0dcb4}
+body.lf-on[data-lf-family=primary] .engine-badge{font-size:13px;font-weight:700;color:#23393a;background:#fffffff0;border:1px solid #cfdcd6;padding:3px 8px}
+body.lf-on[data-lf-family=primary] .info-panel{gap:10px;align-self:stretch}
+body.lf-on[data-lf-family=primary] .info-panel>.info-block{border-radius:14px;padding:13px 17px}
+body.lf-on[data-lf-family=primary] .info-block h3{font-size:14px;color:var(--lf-soft)}
+body.lf-on[data-lf-family=primary] .info-block p{font-size:var(--lf-t-key)}
+body.lf-on[data-lf-family=primary] .info-block .plain,body.lf-on[data-lf-family=primary] .meaning-row{font-size:var(--lf-t-read);color:var(--lf-ink)}
+body.lf-on[data-lf-family=primary] .info-block.current{background:#fff;border-color:var(--lf-line)}
+body.lf-on[data-lf-family=primary][data-lf-stage=formalize] .info-block.current{background:var(--lf-formalize-bg);border-color:#bfe0d9}
+body.lf-on[data-lf-family=primary] .equation{font-size:var(--lf-t-eq)}
+body.lf-on[data-lf-family=primary] .math-note{font-size:max(18px,calc(var(--lf-t-read) - 1px))!important;color:var(--lf-ink)!important}
+body.lf-on[data-lf-family=primary] .feedback-message{font-size:17px}
+body.lf-on[data-lf-family=primary] .info-panel>#controls{display:flex;flex-wrap:wrap;gap:10px 14px;padding:13px 16px;border:1px solid var(--lf-line);border-radius:14px;background:#fbfcfb}
+body.lf-on[data-lf-family=primary] .info-panel>#controls .control{font-size:16px;color:var(--lf-ink)}
+body.lf-on[data-lf-family=primary] .info-panel>#controls input[type=number]{width:78px;height:42px;font-size:19px}
+body.lf-on[data-lf-family=primary] .info-panel>#controls select{height:42px;font-size:17px}
+body.lf-on[data-lf-family=primary] .info-panel>#figure-note{font-size:17px;color:var(--lf-soft);padding:2px 4px;min-height:0}
+body.lf-on[data-lf-family=primary] .info-panel>#exercise{border:1px solid #d5c9ef;border-radius:14px;background:#fff;padding:14px 17px}
+body.lf-on[data-lf-family=primary] .info-panel>#exercise summary{font-size:17px;font-weight:700;color:var(--lf-practice)}
+body.lf-on[data-lf-family=primary] .info-panel>#exercise .detail-content{font-size:var(--lf-t-read);color:var(--lf-ink)}
+body.lf-on[data-lf-family=primary] .info-panel>#exercise input{font-size:19px;height:44px}
+body.lf-on[data-lf-family=primary] .info-panel>#exercise .exercise-answer{font-size:var(--lf-t-read)}
+body.lf-on[data-lf-family=primary] .info-panel>#exercise .exercise-answer:empty{display:none}
+body.lf-on[data-lf-family=primary] .auxiliary{grid-template-columns:1fr}
+@media (max-width:1180px){body.lf-on[data-lf-family=primary] .scene-heading{flex-wrap:wrap}body.lf-on[data-lf-family=primary] .scene-heading>div:first-child{flex-basis:100%}.lf-rail{margin-left:0;justify-content:flex-start}}
+@media (max-width:960px){body.lf-on[data-lf-family=primary] .workbench{grid-template-columns:1fr}.lf-rail{flex-wrap:wrap}}
+@media (max-width:800px){.lf-step{font-size:14px;padding:5px 9px 5px 5px!important}.lf-next{width:auto}.lf-prev{width:auto}}
+@media print{.lf-rail,.lf-card-head,.lf-tools-toggle{display:none!important}}
+
+/* ---------- junior runtime (初中) ---------- */
+/* The junior plot measures itself on each render and draws at 1:1 CSS px (labels
+   stay 20 px), so lesson mode keeps its native size and moves side blocks only. */
+body.lf-on[data-lf-family=junior]{--muted:#3f5a60}
+body.lf-on[data-lf-family=junior] .scene-nav{padding-bottom:8px}
+body.lf-on[data-lf-family=junior] .scene-nav button{padding:6px 10px}
+body.lf-on[data-lf-family=junior] .scene-heading{padding:8px 0 8px;gap:8px 14px}
+body.lf-on[data-lf-family=junior] .scene-heading>div:first-child{flex:1;min-width:0}
+body.lf-on[data-lf-family=junior] #entryLabel{display:none}
+body.lf-on[data-lf-family=junior] .scene-heading h2{font-size:var(--lf-t-title)}
+body.lf-on[data-lf-family=junior] .scene-heading p{font-size:var(--lf-t-sub);color:var(--lf-soft)}
+body.lf-on[data-lf-family=junior] .workspace{grid-template-columns:minmax(0,1.62fr) minmax(300px,1fr);gap:14px}
+body.lf-on[data-lf-family=junior] aside.reading{display:flex;flex-direction:column;gap:10px;padding:12px 14px}
+body.lf-on[data-lf-family=junior] aside.reading>*{margin:0}
+body.lf-on[data-lf-family=junior] aside.reading>.eyebrow{font-size:14px;color:var(--lf-soft);margin-bottom:-4px}
+body.lf-on[data-lf-family=junior] .definition{font-size:var(--lf-t-key);color:var(--lf-ink)}
+body.lf-on[data-lf-family=junior] .mapping{font-size:var(--lf-t-read);color:var(--lf-ink)}
+body.lf-on[data-lf-family=junior] .formula{font-size:var(--lf-t-eq);border-top:0;padding:4px 0}
+body.lf-on[data-lf-family=junior] .formula .second{font-size:var(--lf-t-read);color:var(--lf-soft)}
+body.lf-on[data-lf-family=junior] .readings{margin:0}
+body.lf-on[data-lf-family=junior] .readings dt{font-size:15px;color:var(--lf-soft)}
+body.lf-on[data-lf-family=junior] .feedback{font-size:var(--lf-t-read)}
+body.lf-on[data-lf-family=junior] .selected-note{font-size:var(--lf-t-read);color:#6b4a12}
+body.lf-on[data-lf-family=junior] .gesture-hint{font-size:15px;color:#1f5a51}
+body.lf-on[data-lf-family=junior] .diagram-caption{font-size:16px;color:var(--lf-soft)}
+body.lf-on[data-lf-family=junior] aside.reading>.controls-card{box-shadow:none;padding:10px 12px;display:flex;flex-direction:column;gap:8px}
+body.lf-on[data-lf-family=junior] aside.reading>.controls-card .controls{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+body.lf-on[data-lf-family=junior] aside.reading>.controls-card .control-heading>strong{display:none}
+body.lf-on[data-lf-family=junior] aside.reading>section.timeline{box-shadow:none;padding:8px 10px;gap:8px}
+body.lf-on[data-lf-family=junior] aside.reading>section.timeline strong{min-width:0}
+body.lf-on[data-lf-family=junior] aside.reading>#counterexample,body.lf-on[data-lf-family=junior] aside.reading>#snapshot{align-self:flex-start}
+body.lf-on[data-lf-family=junior] aside.reading>#exerciseDetails{border:1px solid #d5c9ef;border-radius:14px;background:#fff;padding:12px 16px}
+body.lf-on[data-lf-family=junior] aside.reading>#exerciseDetails summary{font-size:17px;font-weight:700;color:var(--lf-practice);cursor:pointer}
+body.lf-on[data-lf-family=junior] aside.reading>#exerciseDetails .extra-body,body.lf-on[data-lf-family=junior] aside.reading>#exerciseDetails p{font-size:var(--lf-t-read);color:var(--lf-ink)}
+body.lf-on[data-lf-family=junior] aside.reading>#exerciseDetails .answer{font-size:var(--lf-t-read)}
+body.lf-on[data-lf-family=junior] .top-tools .lf-pin{font-size:14px}
+@media (max-width:1180px){body.lf-on[data-lf-family=junior] .scene-heading{flex-wrap:wrap}body.lf-on[data-lf-family=junior] .scene-heading>div:first-child{flex-basis:100%}}
+@media (max-width:960px){body.lf-on[data-lf-family=junior] .workspace{grid-template-columns:1fr}}
+body.lf-on[data-lf-family=junior] header.top{padding-top:6px;padding-bottom:4px}
+body.lf-on[data-lf-family=junior] header.top .brand{display:none}
+body.lf-on[data-lf-family=junior] header.top h1{font-size:24px;margin:0}
+body.lf-on[data-lf-family=junior] .figure-head{padding-top:6px;padding-bottom:6px}
+body.lf-on[data-lf-family=junior] .figure-card>.fallback-warning{font-size:14px;font-weight:650;line-height:1.4;padding:5px 12px}
+body.lf-on[data-lf-family=junior] .engine-badge{font-size:13px;font-weight:700}
+
+/* ---------- senior runtime (高中) ---------- */
+/* The senior painter also measures its SVG on each render (1:1 px), so the plot
+   keeps the runtime's height; lesson mode re-sequences the side sections only. */
+body.lf-on[data-lf-family=senior]{--muted:#3d5752}
+body.lf-on[data-lf-family=senior] .head{padding-top:4px;padding-bottom:2px}
+body.lf-on[data-lf-family=senior] .head .eyebrow{display:none}
+body.lf-on[data-lf-family=senior] .head h1{font-size:24px}
+body.lf-on[data-lf-family=senior] .tabs{margin:8px 0 8px}
+body.lf-on[data-lf-family=senior] .scenehead{margin-bottom:8px;gap:8px 14px}
+body.lf-on[data-lf-family=senior] .scenehead>h2{flex:1;min-width:0;font-size:var(--lf-t-title)}
+body.lf-on[data-lf-family=senior] .scenehead>small{display:none}
+body.lf-on[data-lf-family=senior] .bench{grid-template-columns:minmax(0,1.62fr) minmax(300px,1fr);gap:14px}
+body.lf-on[data-lf-family=senior] aside.lesson{display:flex;flex-direction:column;gap:10px;border-left:0;padding-left:0}
+body.lf-on[data-lf-family=senior] aside.lesson>.sect{margin:0;padding:12px 16px;border:1px solid var(--lf-line);border-radius:14px;background:#fff}
+body.lf-on[data-lf-family=senior][data-lf-stage=formalize] aside.lesson>.sect[data-lf-block=definition]{background:var(--lf-formalize-bg);border-color:#bfe0d9}
+body.lf-on[data-lf-family=senior] .sect .label{font-size:14px;color:var(--lf-soft)}
+body.lf-on[data-lf-family=senior] #definition{font-size:var(--lf-t-key);color:var(--lf-ink);margin:0}
+body.lf-on[data-lf-family=senior] #formula{font-size:var(--lf-t-eq)}
+body.lf-on[data-lf-family=senior] #correspondence{font-size:var(--lf-t-read);color:var(--lf-ink)}
+body.lf-on[data-lf-family=senior] #selection{font-size:17px;color:var(--lf-soft)}
+body.lf-on[data-lf-family=senior] #feedback{font-size:var(--lf-t-read)}
+body.lf-on[data-lf-family=senior] #why{font-size:var(--lf-t-read);color:var(--lf-ink)}
+body.lf-on[data-lf-family=senior] .boardnote{font-size:16px;color:var(--lf-soft)}
+body.lf-on[data-lf-family=senior] #plot text{font-size:18px}
+body.lf-on[data-lf-family=senior] aside.lesson>#metrics{border:1px solid var(--lf-line);border-radius:12px;overflow:hidden;grid-template-columns:repeat(2,minmax(0,1fr))}
+body.lf-on[data-lf-family=senior] aside.lesson>#controls{margin:0;grid-template-columns:repeat(2,minmax(0,1fr))}
+body.lf-on[data-lf-family=senior] aside.lesson>section.animation{margin:0;padding:8px 10px;border:1px solid var(--lf-line);border-radius:12px;background:#fff}
+body.lf-on[data-lf-family=senior] aside.lesson>section.animation small{font-size:15px;color:var(--lf-soft)}
+body.lf-on[data-lf-family=senior] aside.lesson>#exercise{border:1px solid #d5c9ef;border-radius:14px;background:#fff;padding:12px 16px}
+body.lf-on[data-lf-family=senior] aside.lesson>#exercise summary{font-size:17px;font-weight:700;color:var(--lf-practice);cursor:pointer}
+body.lf-on[data-lf-family=senior] aside.lesson>#exercise .detailsbody,body.lf-on[data-lf-family=senior] aside.lesson>#exercise p{font-size:var(--lf-t-read);color:var(--lf-ink)}
+body.lf-on[data-lf-family=senior] aside.lesson>#exercise .answer{font-size:var(--lf-t-read)}
+body.lf-on[data-lf-family=senior] .fallback-warning{font-size:14px;font-weight:650;line-height:1.4}
+body.lf-on[data-lf-family=senior] .engine-badge{font-size:13px;font-weight:700}
+@media (max-width:1180px){body.lf-on[data-lf-family=senior] .scenehead{flex-wrap:wrap}body.lf-on[data-lf-family=senior] .scenehead>h2{flex-basis:100%}}
+@media (max-width:960px){body.lf-on[data-lf-family=senior] .bench{grid-template-columns:1fr}}
+
+/* ---------- H16 runtime (高中 · 导数) ---------- */
+body.lf-on[data-lf-family=h16] .header .eyebrow{display:none}
+body.lf-on[data-lf-family=h16] .header h1{font-size:24px}
+body.lf-on[data-lf-family=h16] .scene-line{gap:8px 14px;align-items:center}
+body.lf-on[data-lf-family=h16] .scene-line>div:first-child{flex:1;min-width:0}
+body.lf-on[data-lf-family=h16] #sceneTitle{font-size:var(--lf-t-title)}
+body.lf-on[data-lf-family=h16] .scene-line .question{font-size:var(--lf-t-sub);color:var(--lf-soft)}
+body.lf-on[data-lf-family=h16] #knowledgeBadge{display:none}
+body.lf-on[data-lf-family=h16] .workbench{grid-template-columns:minmax(0,1.62fr) minmax(300px,1fr);gap:14px}
+body.lf-on[data-lf-family=h16] aside.lesson{display:flex;flex-direction:column;gap:10px}
+body.lf-on[data-lf-family=h16] aside.lesson>.lesson-section{margin:0;padding:12px 16px;border:1px solid var(--lf-line);border-radius:14px;background:#fff}
+body.lf-on[data-lf-family=h16][data-lf-stage=formalize] aside.lesson>.lesson-section[data-lf-block=definition]{background:var(--lf-formalize-bg);border-color:#bfe0d9}
+body.lf-on[data-lf-family=h16] .section-label{font-size:14px;color:var(--lf-soft)}
+body.lf-on[data-lf-family=h16] .definition{font-size:var(--lf-t-key);color:var(--lf-ink)}
+body.lf-on[data-lf-family=h16] .formula{font-size:var(--lf-t-eq)}
+body.lf-on[data-lf-family=h16] aside.lesson .explain,body.lf-on[data-lf-family=h16] aside.lesson .facts{font-size:var(--lf-t-read);color:var(--lf-ink)}
+body.lf-on[data-lf-family=h16] .selection-info{font-size:17px;color:var(--lf-soft)}
+body.lf-on[data-lf-family=h16] .graph-note{font-size:16px;color:var(--lf-soft)}
+body.lf-on[data-lf-family=h16] aside.lesson>#metrics{border:1px solid var(--lf-line);border-radius:12px;overflow:hidden}
+body.lf-on[data-lf-family=h16] aside.lesson>#controls{margin:0}
+body.lf-on[data-lf-family=h16] aside.lesson>section.animation{margin:0;padding:8px 10px;border:1px solid var(--lf-line);border-radius:12px;background:#fff}
+body.lf-on[data-lf-family=h16] aside.lesson>#exercise{border:1px solid #d5c9ef;border-radius:14px;background:#fff;padding:12px 16px}
+body.lf-on[data-lf-family=h16] aside.lesson>#exercise summary{font-size:17px;font-weight:700;color:var(--lf-practice);cursor:pointer}
+body.lf-on[data-lf-family=h16] aside.lesson>#exercise .details-body,body.lf-on[data-lf-family=h16] aside.lesson>#exercise p{font-size:var(--lf-t-read);color:var(--lf-ink)}
+body.lf-on[data-lf-family=h16] aside.lesson>#exercise .answer{font-size:var(--lf-t-read)}
+@media (max-width:1180px){body.lf-on[data-lf-family=h16] .scene-line{flex-wrap:wrap}body.lf-on[data-lf-family=h16] .scene-line>div:first-child{flex-basis:100%}}
+@media (max-width:960px){body.lf-on[data-lf-family=h16] .workbench{grid-template-columns:1fr}}
+/* H16 colour tokens: same hues, ≥6:1 on white; card tokens bold like the other families. */
+body.lf-on[data-lf-family=h16]{--green:#066a58;--orange:#9a4a10;--blue:#1f5f99;--purple:#6a44a0;--muted:#3d5760}
+body.lf-on[data-lf-family=h16] .lf-card .token{font-weight:700}
+/* W3 senior chapters: keep the engine badge clear of the fallback warning bar. */
+body.lf-on[data-lf-family=senior] .board:has(>#fallback-warning:not([hidden])) .engine-badge{top:84px}
+
+/* ---------- single-scene 3D demo (高中/空间几何关系) ---------- */
+.lf-sr{position:absolute!important;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+body.lf-on[data-lf-family=space] main{max-width:1200px;padding:10px 16px}
+body.lf-on[data-lf-family=space] main>section{padding:12px 20px;margin-bottom:10px}
+body.lf-on[data-lf-family=space] main>section:first-child>.tag{font-size:15px}
+body.lf-on[data-lf-family=space] main>section:first-child>h1{margin:0;font-size:var(--lf-t-title)}
+body.lf-on[data-lf-family=space] main>section:first-child>p{margin:0 0 6px;font-size:var(--lf-t-sub);color:#3d5566}
+body.lf-on[data-lf-family=space] main>section:nth-child(2)>p:first-child{margin:0 0 6px;font-size:17px;color:#3d5566}
+/* figure left, the step's own controls in a column on the right */
+body.lf-on[data-lf-family=space] .board.lf-card{display:grid;grid-template-columns:minmax(0,1fr) 172px 172px;grid-template-rows:auto repeat(14,min-content) 1fr;column-gap:18px;row-gap:6px;align-items:start;margin-top:6px;padding:12px}
+body.lf-on[data-lf-family=space] .board.lf-card>*{grid-column:2/4;justify-self:start;margin:0}
+/* paired buttons share a row: 锁定/重置视角, 先猜一下/显示规律 */
+body.lf-on[data-lf-family=space] .board.lf-card>#lock,body.lf-on[data-lf-family=space] .board.lf-card>#guess{grid-column:2;justify-self:stretch}
+body.lf-on[data-lf-family=space] .board.lf-card>#reset,body.lf-on[data-lf-family=space] .board.lf-card>#show{grid-column:3;justify-self:stretch}
+body.lf-on[data-lf-family=space] .board.lf-card>.lf-card-head{grid-column:1/-1;grid-row:1;justify-self:stretch}
+body.lf-on[data-lf-family=space] .board.lf-card>canvas{grid-column:1;grid-row:2/-1;justify-self:stretch;height:var(--lf-fig-h,420px)}
+body.lf-on[data-lf-family=space] .board.lf-card>.fallback-warning{order:-1;justify-self:stretch;font-size:15px;font-weight:650;line-height:1.45;border-radius:9px}
+body.lf-on[data-lf-family=space] .board.lf-card>.svg-fallback,body.lf-on[data-lf-family=space] .board.lf-card>[data-sd=overlay]{grid-column:auto}
+body.lf-on[data-lf-family=space] .board.lf-card>.engine-badge{grid-column:auto;font-size:13px;font-weight:700;color:#203548}
+body.lf-on[data-lf-family=space] .board .group{display:flex;flex-wrap:wrap;gap:6px;margin:0}
+body.lf-on[data-lf-family=space] .board .group{align-items:center}
+body.lf-on[data-lf-family=space] .board .group b{min-width:2.4em;font-size:17px;color:#203548}
+body.lf-on[data-lf-family=space] .board button{font-size:17px;font-weight:650;min-height:44px;padding:8px 12px;margin:0}
+body.lf-on[data-lf-family=space] .board button.active{background:#1f5572;outline:3px solid #f0a53a;outline-offset:2px}
+body.lf-on[data-lf-family=space] .board button:focus-visible{outline:3px solid #b35a00;outline-offset:2px}
+body.lf-on[data-lf-family=space] #legend{font-size:18px;font-weight:650;gap:18px;color:#203548}
+body.lf-on[data-lf-family=space] #legend .l1{color:#b8433a}
+body.lf-on[data-lf-family=space] #legend .l2{color:#1d64a8}
+body.lf-on[data-lf-family=space] #o{font-size:var(--lf-t-key);font-weight:750;color:#203548;justify-self:stretch}
+body.lf-on[data-lf-family=space] #a{font-size:18px;color:#1f5a43;justify-self:stretch}
+body.lf-on[data-lf-family=space] #a:empty{display:none}
+body.lf-on[data-lf-family=space] .board:not(.lf-card){margin-top:0;padding:12px 18px;font-size:var(--lf-t-read)}
+body.lf-on[data-lf-family=space] .board:not(.lf-card) summary{font-size:18px;font-weight:700;color:var(--lf-practice);cursor:pointer}
+body.lf-on[data-lf-family=space] .board:not(.lf-card) .answer{font-size:18px}
+@media (max-width:959px){
+body.lf-on[data-lf-family=space] .board.lf-card{display:block}
+body.lf-on[data-lf-family=space] .board.lf-card>canvas{height:min(var(--lf-fig-h,420px),52vh)}
+body.lf-on[data-lf-family=space] .board.lf-card>.lf-card-head,body.lf-on[data-lf-family=space] .board.lf-card>.group,body.lf-on[data-lf-family=space] .board.lf-card>#o,body.lf-on[data-lf-family=space] .board.lf-card>#a,body.lf-on[data-lf-family=space] .board.lf-card>.board{margin:8px 0}
+body.lf-on[data-lf-family=space] .board.lf-card>button{margin:6px 6px 0 0}
+}</style></head><body>
+<main>
+<header class="top"><div><div class="brand">MATHAGENT / 初中数学 · 离线交互工作台 · v4</div><h1><span class="chapter-code">J14</span>圆</h1></div><div class="top-tools"><label><input id="reduced" type="checkbox">减少动态</label><button id="fullScreen" class="small">全屏投屏</button><button id="saveState" class="small">导出课堂状态</button><button id="loadState" class="small">导入状态</button><input type="file" id="stateFile" accept="application/json,.json" hidden></div></header>
+<nav class="scene-nav" id="sceneNav" aria-label="本章自由场景"></nav>
+<section class="scene-heading"><div><h2 id="sceneTitle"></h2><p id="scenePurpose"></p></div><span class="scene-entry" id="entryLabel"></span></section>
+<section class="workspace">
+<div class="visual-stack"><div class="figure-card"><div class="figure-head"><strong id="figureTitle"></strong><div class="view-buttons" id="viewButtons"></div></div><p id="gestureHint" class="gesture-hint"></p><div class="plot-host"><canvas id="threeCanvas" hidden></canvas><svg tabindex="0" id="plot" class="plot" xmlns="http://www.w3.org/2000/svg" aria-label="交互数学图。操作点按住直接拖动；空白处平移二维图或旋转三维视角；也可用数值输入或方向键调整。" role="group"><defs><clipPath id="graphClip"><rect id="clipRect"/></clipPath></defs><g id="contentLayer"><g id="axisLayer"></g><g id="shapeLayer" clip-path="url(#graphClip)"></g><g id="overlayLayer"></g><g id="labelLayer"></g><g id="handleLayer"></g></g></svg></div><div id="objectActions" class="object-actions" role="toolbar" aria-label="所选对象的原有教学操作"></div><p class="diagram-caption" id="caption"></p></div>
+<section class="controls-card"><details id="rawEditor" hidden><summary>直接编辑原始数据（本机计算）</summary><p id="rawHint"></p><label for="rawData">原始数据：逗号、空格或换行分隔</label><textarea id="rawData" rows="3" spellcheck="false"></textarea><div id="weightsEditor" hidden><label for="rawWeights">与数据一一对应的非负权重</label><textarea id="rawWeights" rows="2" spellcheck="false"></textarea></div><div class="raw-actions"><button id="rawApply" class="small">应用这组数据</button><button id="rawAdd" class="small">增加一项</button><button id="rawRemove" class="small">删除选中/末项</button><button id="rawClear" class="small">清空数据</button></div><p id="rawStatus" role="status"></p></details><div class="control-heading"><strong>自由调参 · 不按教学步骤锁定</strong><div id="presets" class="preset-row"></div></div><div class="controls" id="controls"></div></section></div>
+<aside class="reading"><div class="eyebrow">定义与成立条件</div><div id="definition" class="definition"></div><p id="mapping" class="mapping"></p><div id="formula" class="formula"></div><dl id="readings" class="readings"></dl><p id="feedback" class="feedback"></p><p id="selectedNote" class="selected-note"></p></aside>
+</section>
+
+<section class="timeline" aria-label="可暂停、可逆的数学演示"><strong>可控数学演示</strong><span class="trajectory" id="trajectory"></span><button id="play" class="small primary">播放</button><button id="reverse" class="small" aria-label="反转演示方向">正向 →</button><input id="progress" aria-label="演示进度" type="range" min="0" max="1000" value="0"><output id="progressValue">0%</output><select id="speed" aria-label="演示速度"><option value="0.5">0.5倍速</option><option value="1" selected>1倍速</option><option value="2">2倍速</option></select></section>
+<div class="action-row"><button id="counterexample">直接看反例 / 边界</button><button id="snapshot">保留当前对照</button><button id="undo">撤销数学修改</button><span class="actions-spacer"></span><button id="resetView">恢复视图</button><button id="resetScene">恢复本场景</button><button id="exportSVG">导出带标注图 SVG</button><button id="exportPNG">导出带标注图 PNG</button></div>
+<p class="live" id="live" role="status" aria-live="polite" aria-atomic="true"></p>
+<section class="extras"><details id="teacherDetails"><summary>教师本地题干与课堂备注</summary><div class="extra-body"><p>自由编写，不参与自动求解；随“课堂状态”一起导出，不上传。请不要输入学生个人身份信息。</p><textarea id="teacherNote" rows="4" maxlength="5000" placeholder="输入本节题干、讨论问题、现实约束或课堂备注……"></textarea></div></details><details id="tableDetails"><summary>表格与图像对应（可直接点取数据）</summary><div id="tableBody" class="extra-body"></div></details><details id="reasonDetails"><summary>推导、条件与教师参考</summary><div id="reasonBody" class="extra-body"></div></details><details id="exerciseDetails"><summary>随当前参数变化的小练习</summary><div class="extra-body"><p id="exerciseQuestion"></p><button id="showAnswer">直接显示答案与理由</button><div id="exerciseAnswer" class="answer" hidden></div></div></details></section>
+<footer class="footer"><p>v4 · 单文件 · 无联网依赖 · x、y 的单位见当前图轴；近似读数带 ≈。</p><p>原目录本地 ID 保留。定义措辞待指定教材与教师审校；不是考试闯关。</p></footer>
+</main><script>/* MathAgent batch 01 — pure mathematical kernel. No DOM, network, eval, or external dependencies. */
+(function(root,factory){const api=factory();if(typeof module==='object'&&module.exports)module.exports=api;else root.M=api;})(typeof globalThis!=='undefined'?globalThis:this,function(){
+'use strict';
+const EPS=1e-10;
+const near=(a,b)=>Math.abs(a-b)<=EPS*Math.max(1,Math.abs(a),Math.abs(b));
+const clamp=(x,l,h)=>Math.max(l,Math.min(h,x));
+const clean=n=>Math.abs(n)<1e-12?0:Number(n.toFixed(8));
+function num(n,d=3){if(!Number.isFinite(n))return n===Infinity?'+∞':n===-Infinity?'−∞':'未定义';return String(Number(n.toFixed(d))).replace(/-/g,'−');}
+function shown(n,d=3){if(!Number.isFinite(n))return num(n,d);const r=Number(n.toFixed(d));return (near(n,r)?'':'≈')+num(n,d);}
+function eq(name,n,unit=''){return name+(near(n,Number(n.toFixed(3)))?' = ':' ≈ ')+num(n)+(unit?' '+unit:'');}
+function clone(x){if(Array.isArray(x))return x.map(clone);if(x&&typeof x==='object')return Object.fromEntries(Object.entries(x).map(([k,v])=>[k,clone(v)]));return x;}
+function term(c,p,name='x'){if(c===0)return '';const a=Math.abs(c),cs=(p&&a===1)?'':num(a),ps=p===2?name+'²':p===1?name:'';return cs+ps;}
+function poly(a,b,c,name='x'){let s='';[[a,2],[b,1],[c,0]].forEach(([v,p])=>{if(v===0)return;s+=(s?(v<0?' − ':' + '):(v<0?'−':''))+term(v,p,name);});return s||'0';}
+function linear(k,b,name='x'){return poly(0,k,b,name);}
+function vertex(a,p,q){if(a===0)return num(q);const inn=p===0?'x':`(x ${p<0?'+':'−'} ${num(Math.abs(p))})`;return (a===1?'':a===-1?'−':num(a))+inn+'²'+(q===0?'':q<0?' − '+num(-q):' + '+num(q));}
+function qvalue(s,x){return s.a*(x-s.p)*(x-s.p)+s.q;}
+function coefficients(s){return {a:s.a,b:-2*s.a*s.p,c:s.a*s.p*s.p+s.q};}
+function domain(s){return s.domain==='all'?{all:true}:{all:false,lo:s.lo,hi:s.hi,lc:s.lc,rc:s.rc};}
+function empty(d){return !d.all&&(d.lo>d.hi||(d.lo===d.hi&&!(d.lc&&d.rc)));}
+function contains(d,x){if(d.all)return Number.isFinite(x);if(empty(d))return false;return (x>d.lo||near(x,d.lo)&&d.lc)&&(x<d.hi||near(x,d.hi)&&d.rc);}
+function domainText(d){return d.all?'全体实数 ℝ':empty(d)?'空集 ∅':`${d.lc?'[':'('}${num(d.lo)}, ${num(d.hi)}${d.rc?']':')'}`;}
+function roots(s,d=domain(s)){
+ if(empty(d))return {kind:'none',raw:[],values:[],excluded:[]};
+ if(s.a===0)return {kind:s.q===0?'all':'none',raw:[],values:[],excluded:[]};
+ const r=-s.q/s.a;if(r<0)return {kind:'none',raw:[],values:[],excluded:[]};
+ const raw=r===0?[s.p]:[s.p-Math.sqrt(r),s.p+Math.sqrt(r)];
+ const values=raw.filter(x=>contains(d,x));return {kind:values.length?'finite':'none',raw,values,excluded:raw.filter(x=>!contains(d,x)),repeated:r===0};
+}
+function extrema(s,d=domain(s)){
+ if(empty(d))return {empty:true};
+ if(s.a===0)return {empty:false,constant:true,min:{value:s.q,attained:true,x:[]},max:{value:s.q,attained:true,x:[]}};
+ if(d.all){const at={value:s.q,attained:true,x:[s.p]},un={value:s.a>0?Infinity:-Infinity,attained:false,x:[]};return {empty:false,min:s.a>0?at:un,max:s.a>0?un:at};}
+ const candidates=[{x:d.lo,value:qvalue(s,d.lo),included:d.lc},{x:d.hi,value:qvalue(s,d.hi),included:d.rc}];
+ if(s.p>d.lo&&s.p<d.hi)candidates.push({x:s.p,value:s.q,included:true});
+ function pick(fn){const v=fn(...candidates.map(c=>c.value)),ties=candidates.filter(c=>near(c.value,v)),taken=ties.filter(c=>c.included);return {value:v,attained:taken.length>0,x:(taken.length?taken:ties).map(c=>c.x)};}
+ return {empty:false,min:pick(Math.min),max:pick(Math.max)};
+}
+function rangeText(e){if(e.empty)return '∅';if(e.constant)return '{'+num(e.min.value)+'}';return `${e.min.attained?'[':'('}${shown(e.min.value)}, ${shown(e.max.value)}${e.max.attained?']':')'}`;}
+function solveLine(k,b,c){if(k===0)return {kind:b===c?'all':'none',x:null};return {kind:'one',x:(c-b)/k};}
+function linearInequality(k,b,c,inclusive=false){if(k===0)return {kind:(inclusive?b>=c:b>c)?'all':'none'};const x=(c-b)/k;return {kind:'half',x,dir:k>0?'right':'left',inclusive};}
+function inequalityText(r){return r.kind==='all'?'全体实数 ℝ':r.kind==='none'?'空集 ∅':`x ${r.dir==='right'?(r.inclusive?'≥':'>'):(r.inclusive?'≤':'<')} ${shown(r.x)}`;}
+function reciprocal(k,x){return {valid:x!==0,value:x===0?null:k/x,isInverse:k!==0,quadrants:k>0?'Ⅰ、Ⅲ':k<0?'Ⅱ、Ⅳ':'不适用',monotone:k>0?'递减':k<0?'递增':'恒定'};}
+function rectangle(area,x){return x>0&&area>0?{valid:true,x,y:area/x,area}:{valid:false,x,y:null,area};}
+function garden(L,x){const length=L-2*x;return {valid:L>0&&x>0&&length>0,L,x,length,area:x*length,optimalX:L/4,optimalLength:L/2,maxArea:L*L/8};}
+function plans(s){const a=s.ka*s.x+s.ba,b=s.kb*s.x+s.bb,solution=solveLine(s.ka-s.kb,s.ba-s.bb,0);return {a,b,solution,tie:near(a,b),cheaper:near(a,b)?'相同':a<b?'A':'B',valid:s.x>=0};}
+return {EPS,near,clamp,clean,num,shown,eq,clone,poly,linear,vertex,qvalue,coefficients,domain,empty,contains,domainText,roots,extrema,rangeText,solveLine,linearInequality,inequalityText,reciprocal,rectangle,garden,plans};
+});
+</script><script>/* SVG analytic drawing layer. Mathematical positions are never inferred from rendered pixels. */
+'use strict';
+const C={teal:'#087f77',blue:'#2f6ab1',amber:'#ab5d19',purple:'#7353a2',red:'#b43f40',ink:'#263d4d',muted:'#607681',grid:'#e6eeec',ghost:'#9bb4b1',fill:'#e6f4ec'};
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const txt=(x,y,t,o={})=>`<text x="${x}" y="${y}" fill="${o.color||C.ink}" font-size="${o.size||20}" font-weight="${o.weight||500}" text-anchor="${o.anchor||'start'}" ${o.sem?'data-sem="'+esc(o.sem)+'"':''} ${o.aliases?'data-sem-alt="'+o.aliases.join(' ')+'"':''} ${o.halo?'paint-order="stroke" stroke="white" stroke-width="6" stroke-linejoin="round"':''}>${esc(String(t).replace(/=\s*≈/g,'≈').replace(/≈\s*≈/g,'≈'))}</text>`;
+const seg=(x1,y1,x2,y2,o={})=>`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${o.color||C.teal}" stroke-width="${o.width||2}" ${o.dash?'stroke-dasharray="'+o.dash+'"':''} ${o.sem?'data-sem="'+esc(o.sem)+'"':''}/>`;
+function niceStep(span,px){const raw=span/Math.max(2,px/65),p=10**Math.floor(Math.log10(raw)),n=raw/p;return (n<=1?1:n<=2?2:n<=5?5:10)*p;}
+class Plot{
+ constructor(svg){this.svg=svg;this.handles=new Map();this.ctx=document.createElement('canvas').getContext('2d');this.currentSelected='';}
+ begin(bounds,opts={}){
+  this.axisKind='graph';this.svg.dataset.kind=bounds?'graph':'diagram';this.w=Math.max(260,this.svg.clientWidth||760);this.h=this.svg.clientHeight||390;this.svg.setAttribute('viewBox',`0 0 ${this.w} ${this.h}`);
+  this.b=bounds;this.opts=opts;const shift=!bounds&&!this.scene?.orbit;const dx=shift?(this.view?.offsetX||0):0,dy=shift?(this.view?.offsetY||0):0;const scale=shift?1/(this.view?.zoom||1):1;this.diagramScale=scale;this.diagramOffset={x:dx+(1-scale)*this.w/2,y:dy+(1-scale)*this.h/2};document.getElementById('contentLayer').setAttribute('transform',`matrix(${scale},0,0,${scale},${this.diagramOffset.x},${this.diagramOffset.y})`);this.graph=!!bounds;this.left=this.w<440?49:61;this.right=this.w-28;this.top=40;this.bottom=this.h-(opts.numberline?95:54);
+  this.extraCaption='';this.shapes='';this.overlay='';this.labels=[];this.annotations=[];this.used=new Set();this.offscreen=[];this.labelCollisions=[];
+  const clip=document.getElementById('clipRect');clip.setAttribute('x',bounds?this.left:0);clip.setAttribute('y',bounds?this.top:0);clip.setAttribute('width',bounds?this.right-this.left:this.w);clip.setAttribute('height',bounds?this.bottom-this.top:this.h);
+  document.getElementById('axisLayer').innerHTML=bounds?this.axes():'';
+ }
+ x(v){return this.left+(v-this.b.xmin)/(this.b.xmax-this.b.xmin)*(this.right-this.left);}
+ y(v){return this.bottom-(v-this.b.ymin)/(this.b.ymax-this.b.ymin)*(this.bottom-this.top);}
+ screenPoint(cx,cy){const ctm=this.svg.getScreenCTM();if(ctm){const p=this.svg.createSVGPoint();p.x=cx;p.y=cy;return p.matrixTransform(ctm.inverse());}const r=this.svg.getBoundingClientRect();return {x:(cx-r.left)*this.w/r.width,y:(cy-r.top)*this.h/r.height};}
+ inverse(cx,cy){const screen=this.screenPoint(cx,cy);const x=(screen.x-(this.diagramOffset?.x||0))/(this.diagramScale||1),y=(screen.y-(this.diagramOffset?.y||0))/(this.diagramScale||1);return {x:this.b?this.b.xmin+(x-this.left)/(this.right-this.left)*(this.b.xmax-this.b.xmin):x,y:this.b?this.b.ymin+(this.bottom-y)/(this.bottom-this.top)*(this.b.ymax-this.b.ymin):y,px:x,py:y};}
+ // Display culling allows a one-SVG-pixel boundary overlap; this is NOT a mathematical domain test.
+ visible(x,y){const ex=(this.b.xmax-this.b.xmin)/(this.right-this.left),ey=(this.b.ymax-this.b.ymin)/(this.bottom-this.top);return Number.isFinite(x)&&Number.isFinite(y)&&x>=this.b.xmin-ex&&x<=this.b.xmax+ex&&y>=this.b.ymin-ey&&y<=this.b.ymax+ey;}
+ axes(){
+  const b=this.b,x0=M.clamp(this.x(0),this.left,this.right),y0=M.clamp(this.y(0),this.top,this.bottom),xs=niceStep(b.xmax-b.xmin,this.right-this.left),ys=niceStep(b.ymax-b.ymin,this.bottom-this.top);let s='';
+  for(let v=Math.ceil(b.xmin/xs)*xs;v<=b.xmax+1e-8;v+=xs){const x=this.x(v);s+=seg(x,this.top,x,this.bottom,{color:C.grid,width:1});if(!M.near(v,0))s+=txt(x,Math.min(this.bottom+24,y0+23),M.num(v),{size:16,anchor:'middle',color:C.muted});}
+  for(let v=Math.ceil(b.ymin/ys)*ys;v<=b.ymax+1e-8;v+=ys){const y=this.y(v);s+=seg(this.left,y,this.right,y,{color:C.grid,width:1});if(!M.near(v,0))s+=txt(Math.max(this.left-8,x0-10),y+5,M.num(v),{size:16,anchor:'end',color:C.muted});}
+  s+=seg(this.left,y0,this.right+4,y0,{color:'#91a7a8',width:1.6})+seg(x0,this.bottom,x0,this.top-4,{color:'#91a7a8',width:1.6});
+  s+=`<path d="M${this.right-3},${y0-4} L${this.right+4},${y0} L${this.right-3},${y0+4} M${x0-4},${this.top+3} L${x0},${this.top-4} L${x0+4},${this.top+3}" fill="none" stroke="#91a7a8"/>`;
+  if(b.xmin<=0&&b.xmax>=0&&b.ymin<=0&&b.ymax>=0)s+=txt(x0-8,y0+21,'0',{size:16,anchor:'end',color:C.muted});
+  s+=txt(13,23,(this.opts.ylabel||'y')+(this.opts.yunit?'（'+this.opts.yunit+'）':'（无量纲）'),{size:16,color:C.muted});
+  s+=txt(this.w-12,this.h-(this.opts.numberline?65:11),(this.opts.xlabel||'x')+(this.opts.xunit?'（'+this.opts.xunit+'）':'（无量纲）'),{size:16,color:C.muted,anchor:'end'});
+  this.tickInfo={x:xs,y:ys};return s;
+ }
+ raw(s,overlay=false){if(overlay)this.overlay+=s;else this.shapes+=s;}
+ curve(fn,lo,hi,o={}){
+  if(!(hi>lo))return;const n=o.n||420;let path='',drawing=false;for(let i=0;i<=n;i++){const x=lo+(hi-lo)*i/n,y=fn(x);if(!Number.isFinite(y)){drawing=false;continue;}const px=this.x(x),py=this.y(y);if(!Number.isFinite(py)||Math.abs(py)>1e9){drawing=false;continue;}path+=(drawing?' L':' M')+px.toFixed(3)+','+py.toFixed(3);drawing=true;}
+  this.shapes+=`<path ${o.id?'id="'+o.id+'"':''} d="${path}" fill="none" stroke="${o.color||C.teal}" stroke-width="${o.width||3.4}" stroke-linejoin="round" stroke-linecap="round" ${o.dash?'stroke-dasharray="'+o.dash+'"':''} ${o.sem?'data-sem="'+o.sem+'"':''} opacity="${o.opacity||1}"/>`;
+  const drag=o.drag||(!o.dash&&['a','left','right','k'].includes(o.sem)?this.defaultCurveDrag:null);if(drag)this.shapes+=`<path d="${path}" fill="none" stroke="transparent" stroke-width="18" pointer-events="stroke" data-drag="${drag}" data-sem="${o.sem||drag}"/>`;
+ }
+ line(x1,y1,x2,y2,o={}){this.shapes+=seg(this.x(x1),this.y(y1),this.x(x2),this.y(y2),o);}
+ hline(y,o={}){this.line(this.b.xmin,y,this.b.xmax,y,o);}
+ vline(x,o={}){this.line(x,this.b.ymin,x,this.b.ymax,o);}
+ projection(x,y,o={}){this.line(x,0,x,y,{color:o.color||C.ghost,dash:'5 5',width:1.5,sem:o.sem});this.line(0,y,x,y,{color:o.color||C.ghost,dash:'5 5',width:1.5,sem:o.sem});}
+ addLabel(id,text,x,y,o={}){
+  text=String(text).replace(/=\s*≈/g,'≈').replace(/≈\s*≈/g,'≈');
+  const unit=o.unit||'无量纲',a={anchorId:id+'-anchor',objectId:o.objectId||id,meaning:o.meaning||text,symbol:o.symbol||id,value:o.value??text,unit,priority:o.priority||2,preferredOffsets:o.offsets||[[12,-13],[12,30],[-12,-13],[-12,32]],x,y};
+  this.annotations.push(a);this.labels.push({id,text,x,y,...o,a});
+ }
+ point(id,x,y,label,o={}){
+  o={...o,unit:o.unit||((this.opts.xunit||this.opts.yunit)?'('+ (this.opts.xunit||'无量纲')+', '+(this.opts.yunit||'无量纲')+')':'无量纲')};
+  const px=this.x(x),py=this.y(y);if(!this.visible(x,y)){this.offscreen.push(label||id);this.annotations.push({anchorId:id+'-anchor',objectId:id,meaning:label||id,value:[x,y],unit:o.unit||'无量纲',priority:o.priority||2,offscreen:true});return false;}
+  if(o.handle)this.handle(id,px,py,{...o,worldX:x,worldY:y,label:label||id});else if(o.cross)this.shapes+=`<path d="M${px-6},${py-6}l12,12 m0,-12 l-12,12" stroke="${o.color||C.red}" stroke-width="3" fill="none" ${o.sem?'data-sem="'+o.sem+'"':''}/>`;else this.shapes+=`<circle cx="${px}" cy="${py}" r="${o.r||5.5}" fill="${o.open?'white':o.color||C.teal}" stroke="${o.color||C.teal}" stroke-width="2.5" ${o.aliases?'data-sem-alt="'+o.aliases.join(' ')+'"':''} ${o.sem?'data-sem="'+o.sem+'"':''}/>`;
+  if(label)this.addLabel(id,label,px,py,{...o,value:[x,y]});return true;
+ }
+ handle(id,px,py,o={}){
+  let g=this.handles.get(id);if(!g){g=document.createElementNS('http://www.w3.org/2000/svg','g');g.innerHTML='<circle class="halo" r="19" fill="transparent"/><circle class="touch-target" r="24"/><circle class="dot" r="6" stroke="white" stroke-width="2.5"/>';g.setAttribute('tabindex','0');g.setAttribute('role','button');document.getElementById('handleLayer').appendChild(g);this.handles.set(id,g);}
+  g.style.display='';g.removeAttribute('aria-hidden');g.setAttribute('transform',`translate(${px},${py})`);g.setAttribute('data-drag',o.handle||id);g.setAttribute('data-sem',o.sem||id);g.setAttribute('data-sem-alt',(o.aliases||[]).join(' '));g.setAttribute('aria-label',(o.label||id)+'；按住直接拖动；点击可选择，方向键可微调。');g.dataset.px=px;g.dataset.py=py;g.dataset.wx=o.worldX??'';g.dataset.wy=o.worldY??'';g.querySelector('.dot').setAttribute('fill',o.color||C.teal);g.querySelector('.dot').style.display=o.invisibleDot?'none':'';this.used.add(id);
+ }
+ dimension(x1,y1,x2,y2,label,o={}){
+  const A=this.graph?{x:this.x(x1),y:this.y(y1)}:{x:x1,y:y1},B=this.graph?{x:this.x(x2),y:this.y(y2)}:{x:x2,y:y2},dx=B.x-A.x,dy=B.y-A.y,len=Math.hypot(dx,dy)||1,nx=-dy/len*5,ny=dx/len*5;
+  this.overlay+=seg(A.x,A.y,B.x,B.y,o)+seg(A.x-nx,A.y-ny,A.x+nx,A.y+ny,o)+seg(B.x-nx,B.y-ny,B.x+nx,B.y+ny,o);
+  this.addLabel(o.id||label,label,(A.x+B.x)/2,(A.y+B.y)/2,{...o,priority:4,offsets:o.offsets||[[8,-9],[8,28],[-8,-10]]});
+ }
+ numberline(r){
+  const y=this.h-28,l=this.left,h=this.right;this.overlay+=seg(l,y,h,y,{color:C.muted,width:1.6})+txt(12,y+5,'解集',{size:15,color:C.muted});
+  if(r.kind==='none'){this.overlay+=txt((l+h)/2,y-10,'∅',{color:C.red,size:21,anchor:'middle'});return;}
+  let x=r.kind==='half'?M.clamp(this.x(r.x),l,h):l;
+  if(r.kind==='all')this.overlay+=seg(l,y,h,y,{color:C.amber,width:6});else{const active=r.dir==='right'?seg(x,y,h,y,{color:C.amber,width:6}):seg(l,y,x,y,{color:C.amber,width:6});this.overlay+=active;if(r.x>=this.b.xmin&&r.x<=this.b.xmax){this.overlay+=`<circle cx="${x}" cy="${y}" r="6" fill="${r.inclusive?C.amber:'white'}" stroke="${C.amber}" stroke-width="2"/>`+txt(x,y-12,M.shown(r.x),{size:17,anchor:'middle',color:C.amber});}}
+ }
+ commit(selected=''){
+  document.getElementById('shapeLayer').innerHTML=this.shapes;document.getElementById('overlayLayer').innerHTML=this.overlay;
+  let ls='',occupied=[];this.labels.sort((a,b)=>(b.priority||2)-(a.priority||2));
+  for(const l of this.labels){const size=l.size||(this.w<440?17:20);this.ctx.font=`500 ${size}px sans-serif`;const width=Math.min(this.w-16,this.ctx.measureText(l.text).width+10),height=size+10;let best=null;
+   const offsets=l.offsets||l.a.preferredOffsets;const candidates=[...offsets,[12,55],[-12,55],[12,-44],[-12,-44],[22,80],[-22,80]];
+   // Dense constructions: try wider leader-line placements before accepting an overlap.
+   for(const dy of [-72,105,-105,140,-140,180,-180,220])for(const dx of [12,-12,58,-58,110,-110,170,-170])candidates.push([dx,dy]);
+   for(const [dx,dy] of candidates){const bx=M.clamp(l.x+dx-(dx<0?width:0),7,this.w-width-7),by=M.clamp(l.y+dy-height,5,this.h-height-5),rect={x:bx,y:by,w:width,h:height};const bad=occupied.some(r=>rect.x<r.x+r.w+3&&rect.x+rect.w+3>r.x&&rect.y<r.y+r.h+3&&rect.y+rect.h+3>r.y);if(!bad){best=rect;break;}if(!best)best=rect;}
+   const overlaps=occupied.some(r=>best.x<r.x+r.w&&best.x+best.w>r.x&&best.y<r.y+r.h&&best.y+best.h>r.y);if(overlaps)this.labelCollisions.push(l.id);occupied.push(best);
+   const tx=best.x+5,ty=best.y+size+1,cx=M.clamp(l.x,best.x,best.x+best.w),cy=M.clamp(l.y,best.y,best.y+best.h);if(Math.hypot(cx-l.x,cy-l.y)>14)ls+=seg(l.x,l.y,cx,cy,{color:'#a5b9b3',width:1.1});
+   ls+=txt(tx,ty,l.text,{size,color:l.color||C.ink,sem:l.sem,aliases:l.aliases,halo:true,weight:l.weight||500});Object.assign(l.a,{screenBox:best,label:l.text});
+  }
+  document.getElementById('labelLayer').innerHTML=ls;
+  this.handles.forEach((g,id)=>{if(!this.used.has(id)){g.style.display='none';g.setAttribute('aria-hidden','true');}});
+  this.highlight(selected);
+ }
+ highlight(sem){this.currentSelected=sem;this.svg.querySelectorAll('[data-sem]').forEach(n=>n.classList.toggle('selected-sem',!!sem&&(n.getAttribute('data-sem')===sem||(n.getAttribute('data-sem-alt')||'').split(' ').includes(sem))));}
+}
+function cardSVG(x,y,w,h,title,value,color=C.teal){return `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="14" fill="${color===C.red?'#fff2ed':'#f0f7f3'}" stroke="${color}" stroke-width="1.5"/>`+txt(x+w/2,y+30,title,{size:Math.min(18,(w-16)/String(title).length),anchor:'middle',color:C.muted})+txt(x+w/2,y+h/2+20,value,{size:Math.min(27,Math.max(15,(w-16)/String(value).length)),anchor:'middle',color,weight:650});}
+const T=(key,value)=>`<button type="button" class="token" data-sem="${esc(key)}">${esc(value)}</button>`;
+const R=(label,value,wide=false,warning=false)=>({label,value,wide,warning});
+const N=(key,label,min,max,step=1,unit='')=>({key,label,min,max,step,unit,type:'number'});
+const Sel=(key,label,options)=>({key,label,options,type:'select',refresh:true});
+const Check=(key,label)=>({key,label,type:'checkbox'});
+function zoomBounds(b,v){const z=v.zoom||1,cy=(b.ymin+b.ymax)/2+(v.panY||0),cx=(b.xmin+b.xmax)/2+(v.panX||0),sy=(b.ymax-b.ymin)*z*(v.stretch||1)/2,sx=(b.xmax-b.xmin)*z/2;return {xmin:cx-sx,xmax:cx+sx,ymin:cy-sy,ymax:cy+sy};}
+function tableHTML(headers,rows,key){return '<table><thead><tr>'+headers.map(h=>'<th scope="col">'+esc(h)+'</th>').join('')+'</tr></thead><tbody>'+rows.map((r,i)=>'<tr>'+r.map((v,j)=>'<td>'+(j===0&&key?`<button data-table-key="${key}" data-table-value="${r[0]}" data-focus-key="row-${i}">${esc(M.num(Number(v)))}</button>`:esc(v))+'</td>').join('')+'</tr>').join('')+'</tbody></table>';}
+function quadBase(P,s,d,v,snapshot,opts={}){
+ const b=zoomBounds({xmin:-4,xmax:8,ymin:-4,ymax:10},v);P.begin(b,opts);
+ if(snapshot)P.curve(x=>M.qvalue(snapshot,x),b.xmin,b.xmax,{color:C.ghost,dash:'7 6',width:2,sem:'snapshot'});
+ const dm=d.domain;
+ if(!dm.all)P.curve(x=>M.qvalue(s,x),b.xmin,b.xmax,{color:'#c0ccca',dash:'5 6',width:2,sem:'background'});
+ if(!M.empty(dm)){
+  const lo=dm.all?b.xmin:Math.max(dm.lo,b.xmin),hi=dm.all?b.xmax:Math.min(dm.hi,b.xmax);if(!dm.all&&dm.lo===dm.hi)P.point('singleton-domain',dm.lo,M.qvalue(s,dm.lo),null,{color:C.teal,sem:'a'});
+  if(opts.monotone&&s.a!==0){P.curve(x=>M.qvalue(s,x),lo,Math.min(hi,s.p),{color:C.blue,sem:'left'});P.curve(x=>M.qvalue(s,x),Math.max(lo,s.p),hi,{color:C.teal,sem:'right'});}else P.curve(x=>M.qvalue(s,x),lo,hi,{sem:'a'});
+ }
+ if(s.a!==0)P.vline(s.p,{color:C.purple,dash:'6 6',width:1.5,sem:'p'});
+ return b;
+}
+</script><script></script><script></script><script>/* Pure, independently testable mathematical kernel. No DOM or network. */
+(function(root,factory){const k=factory();if(typeof module==='object'&&module.exports)module.exports=k;else root.K=k;})(typeof globalThis!=='undefined'?globalThis:this,()=>{
+'use strict';
+const EPS=1e-9,rad=a=>a*Math.PI/180,deg=a=>a*180/Math.PI;
+const gcd=(a,b)=>{a=Math.abs(Math.round(a));b=Math.abs(Math.round(b));while(b){[a,b]=[b,a%b];}return a||1;};
+function fraction(a,b){if(!b)return {valid:false,text:'无定义'};const g=gcd(a,b),sign=b<0?-1:1;return {valid:true,n:sign*a/g,d:Math.abs(b)/g,text:Math.abs(b/g)===1?String(sign*a/g):`${sign*a/g}/${Math.abs(b)/g}`};}
+function radical(n){if(n<0)return {valid:false,coef:0,base:n,text:'实数范围无定义'};if(n===0)return {valid:true,coef:0,base:1,text:'0'};let c=1,b=n;for(let i=2;i*i<=b;i++)while(b%(i*i)===0){c*=i;b/=i*i;}return {valid:true,coef:c,base:b,text:b===1?String(c):(c===1?'':c)+'√'+b};}
+function quad(a,b,c){if(a===0)return b===0?{kind:c===0?'all':'none',roots:[],delta:null}:{kind:'linear',roots:[-c/b],delta:null};const delta=b*b-4*a*c;if(delta<0)return {kind:'none',delta,roots:[]};if(delta===0)return {kind:'double',delta,roots:[-b/(2*a)]};const q=-.5*(b+(b>=0?1:-1)*Math.sqrt(delta));const roots=(q===0?[(-b-Math.sqrt(delta))/(2*a),(-b+Math.sqrt(delta))/(2*a)]:[q/a,c/q]).sort((x,y)=>x-y);return {kind:'two',delta,roots};}
+const dist=(a,b)=>Math.hypot(a[0]-b[0],a[1]-b[1]);
+const add=(a,b)=>[a[0]+b[0],a[1]+b[1]],sub=(a,b)=>[a[0]-b[0],a[1]-b[1]],mul=(a,t)=>[a[0]*t,a[1]*t],mid=(a,b)=>mul(add(a,b),.5),dot=(a,b)=>a[0]*b[0]+a[1]*b[1],cross=(a,b)=>a[0]*b[1]-a[1]*b[0];
+function area(ps){return Math.abs(ps.reduce((s,a,i)=>s+cross(a,ps[(i+1)%ps.length]),0))/2;}
+function angle(A,B,C){const u=sub(A,B),v=sub(C,B);if(dist(A,B)<EPS||dist(C,B)<EPS)return null;return deg(Math.acos(Math.max(-1,Math.min(1,dot(u,v)/Math.hypot(...u)/Math.hypot(...v)))));}
+function foot(P,A,B){const v=sub(B,A),d=dot(v,v);return d<EPS?null:add(A,mul(v,dot(sub(P,A),v)/d));}
+function triangle(A,B,C){const a=dist(B,C),b=dist(C,A),c=dist(A,B),S=area([A,B,C]),valid=S>EPS;return {a,b,c,area:S,valid,angles:valid?[angle(B,A,C),angle(A,B,C),angle(A,C,B)]:[],G:mul(add(add(A,B),C),1/3),M:mid(B,C),H:foot(A,B,C)};}
+function circleInter(A,r,B,s){const d=dist(A,B);if(d<EPS||r<0||s<0||d>r+s+EPS||d<Math.abs(r-s)-EPS)return [];const t=(r*r-s*s+d*d)/(2*d),h2=r*r-t*t;if(h2<-EPS)return [];const u=mul(sub(B,A),1/d),P=add(A,mul(u,t)),h=Math.sqrt(Math.max(0,h2)),v=[-u[1],u[0]];return h<EPS?[P]:[add(P,mul(v,h)),add(P,mul(v,-h))];}
+function centers(A,B,C){const tr=triangle(A,B,C);if(!tr.valid)return {valid:false};const [ax,ay]=A,[bx,by]=B,[cx,cy]=C,D=2*(ax*(by-cy)+bx*(cy-ay)+cx*(ay-by));const O=[((ax*ax+ay*ay)*(by-cy)+(bx*bx+by*by)*(cy-ay)+(cx*cx+cy*cy)*(ay-by))/D,((ax*ax+ay*ay)*(cx-bx)+(bx*bx+by*by)*(ax-cx)+(cx*cx+cy*cy)*(bx-ax))/D];const p=tr.a+tr.b+tr.c,I=mul(add(add(mul(A,tr.a),mul(B,tr.b)),mul(C,tr.c)),1/p);return {valid:true,O,I,R:dist(O,A),r:2*tr.area/p};}
+function tangents(r,P){const d=Math.hypot(...P);if(d<r-EPS||r<=0)return {valid:false,points:[],length:null};if(Math.abs(d-r)<EPS)return {valid:true,points:[P],length:0};const base=mul(P,r*r/(d*d)),off=mul([-P[1],P[0]],r*Math.sqrt(d*d-r*r)/(d*d));return {valid:true,points:[add(base,off),sub(base,off)],length:Math.sqrt(d*d-r*r)};}
+function rotate(p,O,a){const v=sub(p,O),c=Math.cos(rad(a)),s=Math.sin(rad(a));return add(O,[v[0]*c-v[1]*s,v[0]*s+v[1]*c]);}
+function median(a){if(!a.length)return null;const b=[...a].sort((x,y)=>x-y),n=b.length;return n%2?b[(n-1)/2]:(b[n/2-1]+b[n/2])/2;}
+function quartiles(a,method='exclude'){const b=[...a].sort((x,y)=>x-y),n=b.length;if(!n)return {q1:null,q2:null,q3:null};if(n===1)return {q1:b[0],q2:b[0],q3:b[0]};if(method==='linear'){const q=p=>{const t=(n-1)*p,i=Math.floor(t);return b[i]+(b[Math.min(n-1,i+1)]-b[i])*(t-i);};return {q1:q(.25),q2:q(.5),q3:q(.75)};}const h=Math.floor(n/2);return {q1:median(b.slice(0,h)),q2:median(b),q3:median(b.slice(n%2?h+1:h))};}
+function stats(a,w,method='exclude'){if(!a.length)return {valid:false,n:0};const n=a.length,total=a.reduce((s,x)=>s+x,0),mean=total/n,ss=a.reduce((s,x)=>s+(x-mean)**2,0),freq={};a.forEach(x=>freq[x]=(freq[x]||0)+1);const max=Math.max(...Object.values(freq));const modes=max===1?[]:Object.keys(freq).filter(x=>freq[x]===max).map(Number).sort((x,y)=>x-y);let wm=null;if(w&&w.length===n){const sw=w.reduce((s,x)=>s+x,0);if(sw>0)wm=a.reduce((s,x,i)=>s+x*w[i],0)/sw;}return {valid:true,n,total,mean,median:median(a),modes,variance:ss/n,ss,min:Math.min(...a),max:Math.max(...a),weighted:wm,...quartiles(a,method)};}
+function histogram(a,edges){return edges.slice(0,-1).map((lo,i)=>{const hi=edges[i+1],last=i===edges.length-2,values=a.filter(x=>x>=lo&&(x<hi||last&&x===hi)),s=stats(values);return {lo,hi,count:values.length,values,ss:s.valid?s.ss:0,mean:s.valid?s.mean:null,density:a.length?values.length/a.length/(hi-lo):0};});}
+function random(seed){let z=seed>>>0;return ()=>{z=(Math.imul(z,1664525)+1013904223)>>>0;return z/4294967296;};}
+function sample(n,k,seed){const a=Array.from({length:n},(_,i)=>i),r=random(seed);for(let i=n-1;i>0;i--){const j=Math.floor(r()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a.slice(0,Math.max(0,Math.min(n,k)));}
+function dice(target=7,op='sum'){const cells=[];for(let a=1;a<=6;a++)for(let b=1;b<=6;b++)cells.push({a,b,win:op==='sum'?a+b===target:op==='greater'?a+b>=target:op==='same'?a===b:a+b>6});const win=cells.filter(x=>x.win).length;return {cells,win,total:36,p:win/36,fraction:fraction(win,36).text};}
+function trials(n,seed,target=7){const r=random(seed),results=[];let wins=0;for(let i=0;i<n;i++){const a=1+Math.floor(r()*6),b=1+Math.floor(r()*6),hit=a+b===target;wins+=+hit;results.push({a,b,hit,n:i+1,wins,f:wins/(i+1)});}return {results,wins,n,f:n?wins/n:null,p:dice(target).p};}
+function ballTree(red,blue,replace=false){const N=red+blue,colors=[['红',red],['蓝',blue]],leaves=[];if(N<1||!replace&&N<2)return leaves;for(let i=0;i<2;i++)for(let j=0;j<2;j++){const a=colors[i][1],b=colors[j][1]-(replace?0:i===j?1:0),den=replace?N:N-1;if(a>0&&b>0)leaves.push({first:colors[i][0],second:colors[j][0],a,b,N,den,p:a/N*b/den});}return leaves;}
+function normalScientific(x){if(x===0)return {a:0,n:0,valid:false};let n=Math.floor(Math.log10(Math.abs(x))),a=x/10**n;if(Math.abs(a)>=10-1e-12){a/=10;n++;}return {a,n,valid:true};}
+return {EPS,rad,deg,gcd,fraction,radical,quad,dist,add,sub,mul,mid,dot,cross,area,angle,foot,triangle,circleInter,centers,tangents,rotate,median,quartiles,stats,histogram,random,sample,dice,trials,ballTree,normalScientific};
+});
+</script><script>/* Shared teaching primitives. Each scene below supplies its own mathematics and diagram. */
+'use strict';
+const f=M.num,ap=M.shown,cl=(x,a,b,step=.1)=>M.clean(M.clamp(Math.round(x/step)*step,a,b));
+const rd=(...a)=>a.map(([label,value])=>R(label,String(value),String(value).length>18));
+const asFn=x=>typeof x==='function'?x:()=>x;
+const butt=(tool,label)=>`<button class="small" data-tool="${tool}">${esc(label)}</button>`;
+const anime=(key,a,b,label,integer=false)=>({label:()=>label,apply(s,t){s[key]=integer?Math.round(a+(b-a)*t):M.clean(a+(b-a)*t);}});
+function lesson(n,init,o){const meta=META.scenes[n-1],id=meta.id;
+ const obj={id,title:meta.title,purpose:o.purpose,group:'s'+n,_initial:init,derive:o.derive||((s)=>s),controls:typeof o.controls==='function'?o.controls:()=>o.controls||[],definition:asFn(o.def),mapping:asFn(o.map),formula:asFn(o.formula),readings:o.readings,feedback:(s,d,v)=>{const a=asFn(o.feedback)(s,d,v);return typeof a==='string'?{text:a,warn:d.valid===false||!!d.warn}:a;},figureTitle:asFn(o.figure||meta.title),caption:asFn(o.caption||'实心点可直接拖动。长度单位见图内标注；坐标图使用等比例刻度。'),draw:o.draw,presets:o.presets||[{label:'恢复示例',values:M.clone(init)}],counter:typeof o.counter==='function'?o.counter:s=>Object.assign(s,M.clone(o.counter||init)),animation:o.animation,reason:asFn(o.reason||o.def),exercise:o.exercise||((s,d)=>({question:'依据当前图与给定条件说明结论，并指出不可省略的条件。',answer:asFn(o.answer||o.feedback)(s,d)})),table:o.table||((s,d,v)=>tableHTML(['当前量','读数'],o.readings(s,d,v).map(x=>[x.label,x.value]))),...o};
+ // Short aliases do not leak into the UI protocol.
+ obj.definition=asFn(o.def);obj.mapping=asFn(o.map);obj.formula=asFn(o.formula);obj.caption=asFn(o.caption||obj.caption);obj.figureTitle=asFn(o.figure||meta.title);obj.reason=asFn(o.reason||o.def);obj.controls=typeof o.controls==='function'?o.controls:()=>o.controls||[];obj.counter=typeof o.counter==='function'?o.counter:s=>Object.assign(s,M.clone(o.counter||init));obj.feedback=(s,d,v)=>{let x=asFn(o.feedback)(s,d,v);return typeof x==='string'?{text:x,warn:d.valid===false||!!d.warn}:x;};
+ return obj;
+}
+function structuralInteger(sc,c){
+ if(c.type!=='number')return false;
+ if(['step','seed','N','shown','red','blue','page','target','digits','m','n','k'].includes(c.key)){
+  if(c.key==='k')return sc.id==='J18-S01'||sc.id==='J20-S03';
+  if(c.key==='n')return /J01-S02|J02-S01|J02-S03|J13-S01|J14-S04|J15-S01/.test(sc.id);
+  if(c.key==='target')return sc.id.startsWith('J19');
+  return true;
+ }
+ return (sc.id==='J07-S04'&&c.key==='x')||(/J01-S05/.test(sc.id)&&['a','b'].includes(c.key));
+}
+function makeChapter(id,scenes){const groups={};for(const sc of scenes){groups[sc.group]=sc._initial;delete sc._initial;}return {id,title:META.title,groups,scenes,validate(gs){return scenes.every(sc=>{const s=gs[sc.group];if(!s||typeof s!=='object')return false;
+ for(const desc of sc.controls(s)){if(structuralInteger(sc,desc)&&!Number.isInteger(s[desc.key]))return false;}
+ if(s.data){const [lo,hi]=sc.dataBounds||[-100,100];if(!Array.isArray(s.data)||s.data.length>80||s.data.some(x=>!Number.isFinite(x)||x<lo||x>hi))return false;}
+ if(s.weights&&(!Array.isArray(s.weights)||s.weights.length!==s.data?.length||s.weights.some(x=>!Number.isFinite(x)||x<0||x>10000)))return false;
+ if(s.reference&&(!Array.isArray(s.reference)||s.reference.length>80||s.reference.some(x=>!Number.isFinite(x)||Math.abs(x)>1000)))return false;
+ if(s.mask&&(!Array.isArray(s.mask)||s.mask.length!==6||s.mask.some(x=>typeof x!=='boolean')))return false;
+ if(s.tiles&&(!Array.isArray(s.tiles)||s.tiles.length>30||new Set(s.tiles.map(t=>t.id)).size!==s.tiles.length||s.tiles.some(t=>!Number.isInteger(t.id)||!['x','x2','one'].includes(t.kind)||![1,-1].includes(t.sign)||!Number.isFinite(t.x)||!Number.isFinite(t.y)||t.x<0||t.x>1||t.y<0||t.y>1)))return false;
+ return true;});}};}
+
+function geom(P,v,b={xmin:-2,xmax:10,ymin:-2,ymax:8},unit='cm'){
+ const w=Math.max(260,P.svg.clientWidth||760),h=P.svg.clientHeight||390,left=w<440?49:61,right=w-28,top=40,bottom=h-54;
+ const ratio=(right-left)/(bottom-top),cx=(b.xmin+b.xmax)/2,cy=(b.ymin+b.ymax)/2;
+ let sx=b.xmax-b.xmin,sy=b.ymax-b.ymin;if(sx/sy<ratio)sx=sy*ratio;else sy=sx/ratio;
+ P.begin(zoomBounds({xmin:cx-sx/2,xmax:cx+sx/2,ymin:cy-sy/2,ymax:cy+sy/2},v),{xlabel:'横向',ylabel:'纵向',xunit:unit,yunit:unit});
+}
+function numline(P,v,lo=-8,hi=8,unit='无量纲'){
+ P.begin(zoomBounds({xmin:lo,xmax:hi,ymin:-2,ymax:3},v));P.axisKind='numberline';let a=seg(P.left,P.y(0),P.right,P.y(0),{color:C.muted});const step=niceStep(P.b.xmax-P.b.xmin,P.right-P.left);for(let x=Math.ceil(P.b.xmin/step)*step;x<=P.b.xmax;x+=step)a+=seg(P.x(x),P.y(0)-5,P.x(x),P.y(0)+5,{color:C.muted})+txt(P.x(x),P.y(0)+27,f(x),{size:18,anchor:'middle'});a+=txt(P.right,P.y(0)+55,'单位：'+unit+'；向右为正',{size:17,anchor:'end',color:C.muted})+txt(P.right-2,P.y(0)-9,'→',{size:23});document.getElementById('axisLayer').innerHTML=a;P.tickInfo={x:step,y:0};
+}
+function poly(P,ps,opt={}){P.raw(`<polygon points="${ps.map(p=>`${P.x(p[0])},${P.y(p[1])}`).join(' ')}" fill="${opt.fill||'#d9ece477'}" stroke="${opt.color||C.teal}" stroke-width="${opt.width||2.5}" ${opt.sem?`data-sem="${opt.sem}"`:''} ${opt.drag?`data-drag="${opt.drag}"`:''} ${opt.dash?`stroke-dasharray="${opt.dash}"`:''}/>`);}
+function circle(P,O,r,opt={}){if(r<0||!Number.isFinite(r))return;P.raw(`<circle cx="${P.x(O[0])}" cy="${P.y(O[1])}" r="${Math.abs(P.x(O[0]+r)-P.x(O[0]))}" fill="${opt.fill||'none'}" stroke="${opt.color||C.teal}" stroke-width="${opt.width||2.4}" ${opt.dash?`stroke-dasharray="${opt.dash}"`:''} ${opt.sem?`data-sem="${opt.sem}"`:''} ${opt.drag?`data-drag="${opt.drag}"`:''}/>`);}
+function edge(P,A,B,text,color=C.teal,sem='edge'){P.line(...A,...B,{color,width:3,sem});if(text){const q=K.mid(A,B);P.addLabel(sem+text,text,P.x(q[0]),P.y(q[1]),{sem,color,priority:3,unit:text.includes(' cm')?'cm':text.includes(' m')?'m':'无量纲'});}}
+function point(P,id,p,label=id,color=C.blue,draggable=true){return P.point(id,...p,label,{color,handle:draggable?id:undefined,sem:id,priority:4});}
+function dim(P,A,B,text,color=C.teal,id='dim'){P.dimension(...A,...B,text,{color,id,sem:id,unit:text.includes(' cm')?'cm':text.includes(' m')?'m':'无量纲'});}
+function rightMark(P,O,A,B,size=.22){const u=K.mul(K.sub(A,O),size/(K.dist(A,O)||1)),v=K.mul(K.sub(B,O),size/(K.dist(B,O)||1));poly(P,[K.add(O,u),K.add(K.add(O,u),v),K.add(O,v)],{fill:'none',color:C.amber,width:1.5});}
+function arc(P,O,r,start,end,opt={}){const ps=[];for(let i=0;i<=50;i++){const a=K.rad(start+(end-start)*i/50);ps.push([O[0]+r*Math.cos(a),O[1]+r*Math.sin(a)]);}let d=ps.map((p,i)=>`${i?'L':'M'}${P.x(p[0])},${P.y(p[1])}`).join(' ');P.raw(`<path d="${d}" fill="none" stroke="${opt.color||C.amber}" stroke-width="${opt.width||3}" ${opt.sem?`data-sem="${opt.sem}"`:''} ${opt.drag?`data-drag="${opt.drag}"`:''}/>`);}
+function ang(P,A,O,B,label,color=C.amber){if(K.dist(A,O)<1e-8||K.dist(B,O)<1e-8)return;let s=K.deg(Math.atan2(A[1]-O[1],A[0]-O[0])),d=(K.deg(Math.atan2(B[1]-O[1],B[0]-O[0]))-s+360)%360;if(d>180)d-=360;const r=Math.min(.7,K.dist(A,O)*.23,K.dist(B,O)*.23);arc(P,O,r,s,s+d,{color});const m=K.rad(s+d/2);P.addLabel('angle'+label,label,P.x(O[0]+r*Math.cos(m)),P.y(O[1]+r*Math.sin(m)),{color,size:18,priority:3});}
+function triangleDraw(P,ps,handles=true,labels=['A','B','C']){poly(P,ps);ps.forEach((p,i)=>point(P,labels[i],p,labels[i],i===2?C.purple:C.blue,handles));}
+function flag(P,text,y=26,color=C.muted){const size=P.w<440?16:20,max=Math.max(10,Math.floor((P.w-28)/size)),lines=[];let line='',units=0;for(const c of String(text)){const k=c.charCodeAt(0)>255?1:.56;if(units+k>max){lines.push(line);line='';units=0;}line+=c;units+=k;}if(line)lines.push(line);lines.forEach((a,i)=>P.raw(txt(P.w/2,y+i*(size+4),a,{anchor:'middle',size,color,weight:600}),true));}
+function flow(P,items,active=items.length-1){P.begin(null);const gap=15,w=P.w-40,h=Math.min(64,(P.h-35-(items.length-1)*gap)/items.length);items.forEach((t,i)=>{const y=15+i*(h+gap);P.raw(cardSVG(20,y,w,h,'第'+(i+1)+'步',t,i<=active?C.teal:C.ghost));if(i<items.length-1)P.raw(txt(P.w/2,y+h+14,'↓',{size:18,anchor:'middle',color:C.muted}));});}
+function band(P,lo,hi,y,lc=true,rc=true,color=C.teal,label=''){const l=Math.max(lo,P.b.xmin),r=Math.min(hi,P.b.xmax);if(l<=r)P.line(l,y,r,y,{color,width:7});for(const [x,c] of [[lo,lc],[hi,rc]])if(Number.isFinite(x)&&x>=P.b.xmin&&x<=P.b.xmax)P.point('end'+x+y,x,y,null,{color,open:!c});if(label)P.raw(txt(P.left+4,P.y(y)-13,label,{size:18,color}),true);}
+function polyRootsDraw(P,s,d,v){geom(P,v,{xmin:-8,xmax:8,ymin:-9,ymax:9},'无量纲');P.curve(x=>s.a*x*x+s.b*x+s.c,P.b.xmin,P.b.xmax,{color:C.teal,sem:'curve'});if(s.a!==0){const x=-s.b/(2*s.a),y=s.a*x*x+s.b*x+s.c;point(P,'vertex',[x,y],'V（上下拖动改常数项）',C.purple);}else point(P,'c',[0,s.c],'c='+f(s.c),C.purple);d.roots?.forEach((x,i)=>point(P,'root'+i,[x,0],'x'+(i+1)+'='+ap(x),C.amber,false));}
+const tileName=t=>(t.sign<0?'−':'')+({x:'x',x2:'x²',one:'1'}[t.kind]);
+function tileValues(tiles){const v={x:0,x2:0,one:0};tiles.forEach(t=>v[t.kind]+=t.sign);return v;}
+function tilesDraw(P,s,v){P.begin(null);const W=P.w,H=P.h;const types={x2:[80,80],x:[80,36],one:[36,36]};s.tiles.forEach((t,i)=>{const [tw,th]=types[t.kind],x=t.x*(W-110)+15,y=t.y*(H-110)+40;P.raw(`<g data-drag="tile:${t.id}" data-tile-id="${t.id}" data-sem="${t.kind}"><rect x="${x}" y="${y}" width="${tw}" height="${th}" rx="5" fill="${t.sign<0?'#fce9e4':'#e0f1e9'}" stroke="${s.selected===t.id?C.amber:t.sign<0?C.red:C.teal}" stroke-width="${s.selected===t.id?4:2}" ${t.sign<0?'stroke-dasharray="6 3"':''}/>${txt(x+tw/2,y+th/2+7,tileName(t),{anchor:'middle',size:24,color:t.sign<0?C.red:C.teal})}</g>`);P.handle('tileHandle'+t.id,x+tw/2,y+th/2,{handle:'tile:'+t.id,sem:t.kind,label:tileName(t)+' 符号块；拖动排列',invisibleDot:true,color:t.sign<0?C.red:C.teal});});flag(P,'自由移动不改代数值；负块用负号和虚线表示，不是负面积',25);}
+function tileTools(){return butt('addx2','＋x²')+butt('addx','＋x')+butt('addone','＋1')+butt('negx','−x')+butt('negone','−1')+butt('remove','删除选中块')+butt('sort','按同类项排列')+butt('cancel','消去一对正负块');}
+function tileTool(s,v,t){s.message='';if(t==='remove'){if(s.selected!==null)s.tiles=s.tiles.filter(x=>x.id!==s.selected);s.selected=null;return;}if(t==='sort'){const order={x2:0,x:1,one:2};s.tiles.sort((a,b)=>order[a.kind]-order[b.kind]||b.sign-a.sign);s.tiles.forEach((b,i)=>{b.x=(i%5)*.19;b.y=Math.floor(i/5)*.16;});return;}if(t==='cancel'){for(const a of s.tiles){const b=s.tiles.find(b=>b.kind===a.kind&&b.sign===-a.sign);if(b){s.tiles=s.tiles.filter(t=>t.id!==a.id&&t.id!==b.id);s.message=`${a.kind==='x'?'x':a.kind==='one'?'1':'x²'} 与它的相反数相加为0，只删除这一对。`;return;}}s.message='没有同种符号的一对正负块，不能消去。';return;}if(s.tiles.length>=30){s.message='演示最多30块；请先删除或消去。';return;}const kind=t==='addx2'?'x2':t.includes('one')?'one':'x',id=Math.max(0,...s.tiles.map(b=>b.id))+1;s.tiles.push({id,kind,sign:t.startsWith('neg')?-1:1,x:(s.tiles.length%5)*.19,y:Math.floor(s.tiles.length/5)*.16});s.selected=id;}
+function tileDrag(s,name,p,ctx){if(!name.startsWith('tile:'))return;const id=+name.split(':')[1],t=s.tiles.find(t=>t.id===id),old=ctx.math.tiles.find(t=>t.id===id);if(!t||!old)return;s.selected=id;const el=document.getElementById('plot');t.x=M.clamp(old.x+ctx.delta.px/(el.clientWidth-110),0,1);t.y=M.clamp(old.y+ctx.delta.py/(el.clientHeight-110),0,1);}
+function tileKey(s,name,dx,dy){const t=s.tiles.find(t=>t.id===+name.split(':')[1]);if(t){s.selected=t.id;t.x=M.clamp(t.x+dx*.12,0,1);t.y=M.clamp(t.y-dy*.12,0,1);}}
+const initTiles=(kinds)=>kinds.map((a,i)=>({id:i+1,kind:a.replace('-',''),sign:a.startsWith('-')?-1:1,x:i%5*.19,y:Math.floor(i/5)*.16}));
+/* Editable data points. Moving them changes raw data, not just a displayed label. */
+function dataDrag(s,n,p,ctx){if(!n.startsWith('data:'))return;const i=+n.split(':')[1];if(i>=0&&i<s.data.length){s.selected=i;s.data[i]=cl(p.x,0,100,.1);}}
+function dataKey(s,n,dx,dy){if(n.startsWith('data:')){const i=+n.split(':')[1];if(i>=0&&i<s.data.length){s.selected=i;s.data[i]=cl(s.data[i]+(dx||dy),0,100,.1);}}}
+function dataClick(s,d){if(d.drag?.startsWith('data:'))s.selected=+d.drag.split(':')[1];}
+function dataRemove(s,n){if(n?.startsWith('data:')){const i=+n.split(':')[1];s.data.splice(i,1);s.weights?.splice(i,1);s.selected=Math.min(i,s.data.length-1);}}
+function dataNumberline(P,s,d,v,unit='分'){if(!s.data.length){P.begin(null);flag(P,'数据为空：统计量无定义；可直接增加或输入数据',110,C.red);return;}const lo=Math.min(0,...s.data),hi=Math.max(5,...s.data);numline(P,v,lo-(hi-lo)*.04,hi+(hi-lo)*.07,unit);s.data.forEach((x,i)=>{const y=.3+(i%4)*.28;if(s.weighted&&s.weights){const w=s.weights[i],max=Math.max(1,...s.weights),r=23*Math.sqrt(w/max);P.raw(`<circle cx="${P.x(x)}" cy="${P.y(y)}" r="${r}" fill="#087f7733" stroke="none"/>`);}P.point('data'+i,x,y,i===s.selected?`第${i+1}项：${f(x)} ${unit}`:null,{handle:'data:'+i,color:C.teal,sem:'datum'+i});});if(d.valid){if(s.metric!=='median'){P.line(d.mean,-.4,d.mean,2,{color:C.purple,dash:'6 4'});P.point('mean',d.mean,1.9,'均值 '+ap(d.mean),{color:C.purple});}if(s.metric!=='mean')P.point('median',d.median,1.45,'中位数 '+ap(d.median),{color:C.blue});if(s.weighted&&d.weighted!==null)P.point('weighted',d.weighted,-.7,'加权均值 '+ap(d.weighted),{color:C.amber});}}
+function rawTable(s,unit='分'){return tableHTML(['序号','实际数据/'+unit,...(s.weights?['权重']:[])],s.data.map((x,i)=>[i+1,f(x),...(s.weights?[f(s.weights[i])]:[])]));}
+</script><script>const META={"id": "J14", "stage": "初中", "title": "圆", "source_count": 12, "knowledge_points": [{"id": "J14-K01", "source_name": "圆弧弦与圆心角", "definition_status": "待教材逐点对照审校", "scene_ids": ["J14-S01"]}, {"id": "J14-K02", "source_name": "垂径定理", "definition_status": "待教材逐点对照审校", "scene_ids": ["J14-S01"]}, {"id": "J14-K03", "source_name": "圆周角定理及其推论", "definition_status": "待教材逐点对照审校", "scene_ids": ["J14-S02"]}, {"id": "J14-K04", "source_name": "点与圆的位置关系", "definition_status": "待教材逐点对照审校", "scene_ids": ["J14-S03"]}, {"id": "J14-K05", "source_name": "直线与圆的位置关系", "definition_status": "待教材逐点对照审校", "scene_ids": ["J14-S03"]}, {"id": "J14-K06", "source_name": "圆的切线", "definition_status": "待教材逐点对照审校", "scene_ids": ["J14-S03"]}, {"id": "J14-K07", "source_name": "三角形内心与外心", "definition_status": "待教材逐点对照审校", "scene_ids": ["J14-S04"]}, {"id": "J14-K08", "source_name": "圆与正多边形", "definition_status": "待教材逐点对照审校", "scene_ids": ["J14-S04"]}, {"id": "J14-K09", "source_name": "弧长与扇形面积", "definition_status": "待教材逐点对照审校", "scene_ids": ["J14-S05"]}, {"id": "J14-K10", "source_name": "与圆有关的尺规作图", "definition_status": "待教材逐点对照审校", "scene_ids": ["J14-S05"]}, {"id": "J14-K11", "source_name": "过圆外一点作圆的切线", "definition_status": "待教材逐点对照审校", "scene_ids": ["J14-S05"]}, {"id": "J14-K12", "source_name": "切线长定理", "definition_status": "待教材逐点对照审校", "scene_ids": ["J14-S03"]}], "source": {"file": "数学课件知识图谱与制作约束交接文档.docx", "section": "五 当前已找到的知识点目录", "paragraph_index": 84}, "scope_status": "原目录归属，不等于国家课程标准定位已核准", "production_status": "设计规格，尚未制作课件", "family": "平面图形与度量", "core_object": "圆上距离、圆周角、切线与尺规工作台", "definition": "圆是平面内到定点距离等于定长的点的集合；弦连接圆上两点，直径是经过圆心的弦。切线与圆只有一个公共点。", "mathematical_logic": "点圆关系按d与r；线圆按圆心到直线垂距d与r；同弧圆周角等于圆心角一半（须选择对应弧和角）；弧长nπr/180，扇形面积nπr²/360。", "state_contract": "O,r>0、circlePoints、line、arcChoice、triangle、construction；圆上点用角参数，不允许拖出圆还沿用圆定理。", "annotations": "半径r、弦端点、垂足T；“所对的同一条弧”同色；圆周角顶点必须在圆上；切点直角。", "feedback": "d=r时直线与圆仅有切点T，OT垂直切线；“看起来擦边”不是判定依据，d的数值和直角必须可见。", "acceptance_tests": "r2,n90°弧长π、扇形面积π；d>r无交点；P在圆内无切线；同弧要求不足不发布角相等。", "engine": "JSXGraph+SVG", "prerequisites": "J11尺规与垂线、J12三角形。", "scenes": [{"id": "J14-S01", "title": "弧弦与圆心角", "knowledge_ids": ["J14-K01", "J14-K02"], "design": "改变弦位置观察垂径平分弦及相应弧，条件标“过圆心且垂直”；圆心角与其弧同色。", "direct_entry": true}, {"id": "J14-S02", "title": "圆周角", "knowledge_ids": ["J14-K03"], "design": "保持弧端点拖圆周角顶点，区分同弧与补弧；直径所对圆周角90°，缺条件则撤下结论。", "direct_entry": true}, {"id": "J14-S03", "title": "点线位置与切线", "knowledge_ids": ["J14-K04", "J14-K05", "J14-K06", "J14-K12"], "design": "d从大于r到等于r再小于r，公共点0/1/2同步；圆外点两切线PA=PB，P进圆内时不存在实切线。", "direct_entry": true}, {"id": "J14-S04", "title": "三角形内外心与正多边形", "knowledge_ids": ["J14-K07", "J14-K08"], "design": "中垂线交外心与角平分线交内心分开演示；半径分别到顶点/边垂足，不混图。", "direct_entry": true}, {"id": "J14-S05", "title": "弧长面积与作图", "knowledge_ids": ["J14-K09", "J14-K10", "J14-K11"], "design": "角度/弧度不混用；过圆外点作切线以OP中点为圆心辅助圆求交，施工步骤与理由可独立打开。", "direct_entry": true}], "content_provenance": "目录名称和归属来自附件；定义措辞、模型、场景、参数、反例及测试为本次新增设计，不冒充教材原文。"};
+'use strict';
+const cp=(r,a,O=[0,0])=>K.add(O,[r*Math.cos(K.rad(a)),r*Math.sin(K.rad(a))]);
+const carg=(p,O=[0,0])=>(K.deg(Math.atan2(p[1]-O[1],p[0]-O[0]))+360)%360;
+const CHAPTER=makeChapter('J14',[
+lesson(1,{r:3,theta:90,ox:0,oy:0},{purpose:'直接拖圆心、半径和弦端点，弧、弦、圆心角与垂径分弦来自同一圆。',def:'平面内到定点O距离等于定长r的所有点组成圆，O为圆心，r为半径。弦连接圆上两点，过圆心的弦为直径；圆心角顶点在圆心。在同圆或等圆中，等圆心角对应等弧、等弦。垂直于弦的直径平分弦及其所对的两条弧。',map:'A、B始终在圆上，橙弧AB与θ同起终点。M=(A+B)/2，OM垂直AB；不是任取一条直径就能平分任意弦。移动圆心只平移圆，不改变弦长和角度。',controls:[N('r','半径r',1,4,.1,'cm'),N('theta','圆心角θ',10,180,1,'°'),N('ox','圆心横坐标',-2,2,.1,'cm'),N('oy','圆心纵坐标',-2,2,.1,'cm')],derive(s){const O=[s.ox,s.oy],A=cp(s.r,0,O),B=cp(s.r,s.theta,O),mid=K.mid(A,B);return {O,A,B,mid,chord:K.dist(A,B),om:K.dist(O,mid),arc:s.theta*Math.PI*s.r/180,am:K.dist(A,mid),bm:K.dist(B,mid)};},formula:(s,d)=>`OA=OB=r=${f(s.r)} cm<span class="second">∠AOB=${s.theta}°；AB=${ap(d.chord)} cm</span><span class="second">OM⊥AB ⇒ AM=MB</span>`,readings:(s,d)=>rd(['弦AB',ap(d.chord)+' cm'],['AM、MB',ap(d.am)+'、'+ap(d.bm)+' cm'],['圆心到弦距离',ap(d.om)+' cm'],['对应小弧长',ap(d.arc)+' cm']),feedback:(s,d)=>s.theta===180?'AB是直径，M与O重合，此时OM是零长度，不能把零向量当垂线；应另取过O且垂直AB的直径。':'OM垂直AB，AM与MB始终相等；若只知道“经过圆心”而不知道垂直，不能直接说平分弦。',draw(P,s,d,v){geom(P,v,{xmin:-6,xmax:6,ymin:-6,ymax:6});circle(P,d.O,s.r,{drag:'O'});arc(P,d.O,s.r,0,s.theta,{color:C.amber,width:5});edge(P,d.O,d.A,'r='+f(s.r)+' cm');edge(P,d.O,d.B,null,C.blue);edge(P,d.A,d.B,'AB='+ap(d.chord)+' cm',C.purple,'chord');if(d.om>1e-8){edge(P,d.O,d.mid,null,C.muted);rightMark(P,d.mid,d.O,d.A);}else edge(P,[d.O[0],d.O[1]-s.r],[d.O[0],d.O[1]+s.r],null,C.muted);ang(P,d.A,d.O,d.B,s.theta+'°');point(P,'O',d.O,'O · 拖圆心');point(P,'r',d.A,'A · 拖半径');point(P,'theta',d.B,'B · 拖圆心角',C.amber);point(P,'M',d.mid,'M 弦中点',C.purple,false);},drag(s,n,p,ctx){if(n==='O'){s.ox=cl(ctx.math.ox+ctx.delta.x,-2,2);s.oy=cl(ctx.math.oy+ctx.delta.y,-2,2);}if(n==='r')s.r=cl(K.dist([p.x,p.y],[s.ox,s.oy]),1,4);if(n==='theta')s.theta=cl(carg([p.x,p.y],[s.ox,s.oy]),10,180,1);},key(s,n,dx,dy){if(n==='O'){s.ox=cl(s.ox+dx,-2,2);s.oy=cl(s.oy+dy,-2,2);}else if(n==='r')s.r=cl(s.r+(dx||dy),1,4);else s.theta=cl(s.theta+Math.sign(dx||dy),10,180,1);},counter:{theta:180},animation:anime('theta',20,160,'同一圆内增大圆心角；弧与弦同步增长',true),reason:'<p>OA=OB，两条半径构成等腰三角形。由顶点O向底边AB作垂线，两个直角三角形共用斜边长度r、公共边OM，用HL判全等，得AM=BM。对应角相等进一步得到两侧弧相等。直径情形须单独选取垂直方向，不能拿长度为0的OM做边。</p>'}),
+lesson(2,{r:3,beta:120,phi:250},{purpose:'把P拖过不同弧，圆周角会切换到另一条所对弧；端点重合明确无定义。',def:'圆周角顶点在圆上，两边与圆相交。它等于它所对弧的圆心角的一半；“所对弧”必须是不含角顶点的那条弧。同弧所对圆周角相等；半圆所对圆周角是直角。',map:'A在圆最右端，B由β确定，P是紫色可拖点。橙色高亮只画不包含P的弧AB；不把两条互补弧混成同一条。',controls:[N('r','半径r',1,4,.1,'cm'),N('beta','A到B逆时针角',20,300,1,'°'),N('phi','圆周点P位置角',0,360,1,'°')],derive(s){const A=cp(s.r,0),B=cp(s.r,s.beta),P=cp(s.r,s.phi),valid=K.dist(P,A)>1e-7&&K.dist(P,B)>1e-7,inside=s.phi>0&&s.phi<s.beta,arcDeg=inside?360-s.beta:s.beta;return {A,B,P,valid,inside,arcDeg,angle:valid?K.angle(A,P,B):null};},formula:(s,d)=>d.valid?`∠APB=${ap(d.angle)}°<span class="second">不含P的弧AB=${d.arcDeg}°；圆周角=对应弧度数/2</span>`:'P与弦端点重合：圆周角无定义',readings:(s,d)=>rd(['P的位置',d.inside?'在逆时针A→B弧上':'在另一条弧上'],['所对弧度数',d.valid?d.arcDeg+'°':'无定义'],['圆周角',d.valid?ap(d.angle)+'°':'无定义'],['是否直径对应直角',s.beta===180&&d.valid?'是，90°':'当前不是直径情形']),feedback:(s,d)=>!d.valid?'P与A或B重合，一条角边长度为0；不画虚假的0°圆周角。':`当前所对的是${d.arcDeg}°的弧，不含P。${d.inside?'P已切到另一条弧，圆周角一般改为补角，不能沿用原读数。':'在当前同一弧上移动P，所对弧不变，所以圆周角不变。'}`,draw(P,s,d,v){geom(P,v,{xmin:-5,xmax:5,ymin:-5,ymax:5});circle(P,[0,0],s.r);arc(P,[0,0],s.r,d.inside?s.beta:0,d.inside?360:s.beta,{color:C.amber,width:5});edge(P,[0,0],d.A,null,C.muted);edge(P,[0,0],d.B,null,C.muted);edge(P,d.A,d.B,null,C.teal);edge(P,d.P,d.A,null,C.purple);edge(P,d.P,d.B,null,C.purple);if(d.valid)ang(P,d.A,d.P,d.B,ap(d.angle)+'°',C.purple);point(P,'A',d.A,'A',C.blue,false);point(P,'beta',d.B,'B · 拖弦端点',C.amber);point(P,'phi',d.P,d.valid?'P · 沿圆拖动':'P与端点重合',C.purple);point(P,'O',[0,0],'O',C.muted,false);flag(P,d.valid?'高亮弧不含P：'+d.arcDeg+'°':'无定义：请把P移离A、B');},drag(s,n,p){if(n==='phi')s.phi=cl(carg([p.x,p.y]),0,360,1);if(n==='beta')s.beta=cl(carg([p.x,p.y]),20,300,1);},key(s,n,dx,dy){s[n]=cl(s[n]+Math.sign(dx||dy),n==='beta'?20:0,n==='beta'?300:360,1);},counter:{beta:120,phi:60},presets:[{label:'同弧圆周角60°',values:{beta:120,phi:250}},{label:'换弧成120°',values:{beta:120,phi:60}},{label:'直径所对90°',values:{beta:180,phi:270}},{label:'端点重合禁区',values:{beta:120,phi:120}}],animation:{label:s=>'P沿B到A的不含端点弧移动；所对弧'+s.beta+'°，圆周角'+f(s.beta/2)+'°',apply(s,t){s.phi=M.clean(s.beta+(360-s.beta)*(.08+.84*t));}},reason:'<p>连接OP。先证明圆心O在一条角边上的情形：利用两条半径相等构成等腰三角形和外角性质，得圆心角是圆周角的2倍。一般情形可由两部分相加或相减得到。关键是始终选不包含P的弧；P换到另一条弧时，两个圆周角一般互补。</p>'}),
+lesson(3,{mode:'line',r:3,d:2,px:5,py:1},{purpose:'拖直线跨过割线、切线和相离；外点切线使用真正切点，内点不补出假切线。',def:'点与圆的位置由OP与r比较。直线与圆的位置由圆心到直线距离d与r比较：d<r相交两点，d=r相切一点，d>r相离。切线垂直于过切点的半径；从圆外一点引两条切线，切线长相等。',map:'直线模式的橙线y=d可以上下拖动，OH为垂距。外点模式的紫点P自由拖动；T₁、T₂由切点方程计算，并非任意圆周点。',controls:s=>[Sel('mode','对象',[['line','直线与圆'],['point','点与圆'],['tangent','外点两条切线']]),N('r','半径r',1,4,.1,'cm'),...(s.mode==='line'?[N('d','直线的有向高度',-5,5,.1,'cm')]:[N('px','P横坐标',-6,6,.1,'cm'),N('py','P纵坐标',-5,5,.1,'cm')])],derive(s){const P=[s.px,s.py],op=Math.hypot(...P),disc=s.r*s.r-s.d*s.d,ints=disc<-1e-8?[]:Math.abs(disc)<1e-8?[[0,s.d]]:[[-Math.sqrt(disc),s.d],[Math.sqrt(disc),s.d]],tang=K.tangents(s.r,P);return {P,op,ints,tang,position:Math.abs(op-s.r)<1e-8?'圆上':op<s.r?'圆内':'圆外',valid:s.mode!=='tangent'||tang.valid};},formula:(s,d)=>s.mode==='line'?`|d|=${f(Math.abs(s.d))}，r=${f(s.r)} cm<span class="second">交点数=${d.ints.length}</span>`:s.mode==='point'?`OP=${ap(d.op)} cm；P在${d.position}`:d.tang.valid?`PT₁=PT₂=√(OP²−r²)${d.tang.points.length===1?'=0（P在圆上）':''}<span class="second">切线垂直于对应切点半径</span>`:'OP<r：圆内一点不能引圆的实切线',readings:(s,d)=>s.mode==='line'?rd(['圆心到直线距离',f(Math.abs(s.d))+' cm'],['位置关系',d.ints.length===2?'相交':d.ints.length===1?'相切':'相离'],['真实交点数',d.ints.length]):rd(['OP',ap(d.op)+' cm'],['P位置',d.position],['切点数',d.tang.points.length],['切线段长度',d.tang.valid?ap(d.tang.length)+' cm':'无实切线']),feedback:(s,d)=>s.mode==='line'?`现在${d.ints.length===2?'两交点，割线':d.ints.length===1?'只有一个切点，切线':'没有交点，相离'}。拖动直线会重新求交，不能只改“相切”文字而保持两交点。`:s.mode==='tangent'&&!d.tang.valid?'P在圆内，切点集合为空。图中停止绘切线，不把圆内连线冒充切线。':d.position==='圆上'?'P在圆上只有一条切线；切线段长度为0，不画两条重复切线。':'两切线长相等由直角三角形全等得到，切点各自满足OT⊥PT。',draw(P,s,d,v){geom(P,v,{xmin:-7,xmax:8,ymin:-6,ymax:6});circle(P,[0,0],s.r);point(P,'r',[0,s.r],'拖半径r');point(P,'O',[0,0],'O',C.muted,false);if(s.mode==='line'){P.line(P.b.xmin,s.d,P.b.xmax,s.d,{color:C.amber,width:3,sem:'line'});point(P,'d',[Math.min(5,P.b.xmax-1),s.d],'拖直线',C.amber);edge(P,[0,0],[0,s.d],'|d|='+f(Math.abs(s.d))+' cm',C.purple);rightMark(P,[0,s.d],[0,0],[1,s.d]);d.ints.forEach((q,i)=>point(P,'intersection'+i,q,'T'+(i+1),C.blue,false));}else{point(P,'P',d.P,'P · 自由拖动',C.purple);edge(P,[0,0],d.P,'OP='+ap(d.op)+' cm',C.muted);if(s.mode==='tangent')d.tang.points.forEach((q,i)=>{edge(P,[0,0],q,'r='+f(s.r)+' cm',C.blue);if(d.tang.points.length===1){const u=[-q[1]/s.r,q[0]/s.r];edge(P,K.add(q,K.mul(u,-7)),K.add(q,K.mul(u,7)),null,C.amber);}else{edge(P,d.P,q,'PT'+(i+1)+'='+ap(d.tang.length)+' cm',C.amber);rightMark(P,q,[0,0],d.P);}point(P,'T'+i,q,'T'+(i+1),C.amber,false);});}},drag(s,n,p){if(n==='P'){s.px=cl(p.x,-6,6);s.py=cl(p.y,-5,5);}if(n==='r')s.r=cl(Math.hypot(p.x,p.y),1,4);if(n==='d')s.d=cl(p.y,-5,5);},key(s,n,dx,dy){if(n==='P'){s.px=cl(s.px+dx,-6,6);s.py=cl(s.py+dy,-5,5);}else if(n==='r')s.r=cl(s.r+(dy||dx),1,4);else s.d=cl(s.d+(dy||dx),-5,5);},counter:{mode:'tangent',px:1,py:0,r:3},presets:[{label:'相切：d=r=3',values:{mode:'line',d:3,r:3}},{label:'两条等长切线：3、4、5',values:{mode:'tangent',r:3,px:5,py:0}},{label:'P在圆上，只有一条',values:{mode:'tangent',r:3,px:3,py:0}}],animation:{label:s=>s.mode==='line'?'直线经过相交、相切、相离临界状态':'P从圆内移到圆外，实切线仅在条件满足时出现',apply(s,t){if(s.mode==='line')s.d=1+4*t;else{s.px=1+5*t;s.py=0;}}},reason:'<p>圆心到直线的垂足H是该直线上离O最近的点。若OH>r，全线上点都在圆外；若OH=r，仅H在圆上；若OH<r，由直角三角形两侧各得到一个交点。</p><p>外点P引切线PT₁、PT₂，OT₁=OT₂=r、OP公共且两角为直角，HL得两直角三角形全等，因此PT₁=PT₂。用勾股计算长度√(OP²−r²)。</p>'}),
+lesson(4,{mode:'both',cx:0,cy:4,n:6,r:3},{purpose:'拖三角形顶点比较内心、外心；正多边形半径、边心距、边长由同一圆求得。',def:'三角形内心是三条内角平分线的交点，到三边所在直线等距，是内切圆圆心。外心是三边垂直平分线的交点，到三个顶点等距，是外接圆圆心。正多边形各边、各内角分别相等，可内接于一个圆。',map:'内心I连到三边的垂足，外心O连到三个顶点；两种等距不能互换。钝角三角形外心可以在外部，内心仍在内部。',controls:s=>[Sel('mode','显示对象',[['both','内外心同时对照'],['in','内心与三条垂距'],['out','外心与三条半径'],['polygon','正多边形与圆']]),...(s.mode==='polygon'?[N('n','正多边形边数',3,10,1),N('r','外接圆半径',1,4,.1,'cm')]:[N('cx','C横坐标',-4,4,.1,'cm'),N('cy','C纵坐标',-1,5,.1,'cm')])],derive(s){if(s.mode==='polygon'){const ps=Array.from({length:s.n},(_,i)=>cp(s.r,90+i*360/s.n));return {valid:true,ps,side:2*s.r*Math.sin(Math.PI/s.n),apothem:s.r*Math.cos(Math.PI/s.n),area:K.area(ps),central:360/s.n};}const A=[-3,-1],B=[3,-1],C1=[s.cx,s.cy],ct=K.centers(A,B,C1);return {...ct,A,B,C:C1,ps:[A,B,C1],feet:ct.valid?[[A,B],[B,C1],[C1,A]].map(([a,b])=>K.foot(ct.I,a,b)):[]};},formula:(s,d)=>!d.valid?'三顶点共线：不存在有限的三角形内切圆和外接圆':s.mode==='polygon'?`中心角=360°/${s.n}=${ap(d.central)}°<span class="second">边长=${ap(d.side)} cm；边心距=${ap(d.apothem)} cm</span>`:`OA=OB=OC=R=${ap(d.R)} cm<span class="second">I到三边距离=r=${ap(d.r)} cm</span>`,readings:(s,d)=>!d.valid?rd(['模型状态','退化，停止显示圆心'],['非退化条件','三顶点不共线；当前不满足']):s.mode==='polygon'?rd(['边数',s.n],['周长',ap(s.n*d.side)+' cm'],['面积',ap(d.area)+' cm²'],['边心距',ap(d.apothem)+' cm']):rd(['外心坐标',d.O.map(x=>ap(x)).join('，')+' cm'],['内心坐标',d.I.map(x=>ap(x)).join('，')+' cm'],['外接圆R',ap(d.R)+' cm'],['内切圆r',ap(d.r)+' cm']),feedback:(s,d)=>!d.valid?'三个点共线，没有非退化三角形，停止显示由零分母制造的假圆心。':s.mode==='polygon'?'正多边形中心角相等，边长通过等腰三角形计算；移动半径点会同步缩放所有顶点。':'I的等距对象是三边所在直线，O的等距对象是三顶点。外心离开视窗时可缩小或平移观察；不把它裁回三角形内部。',draw(P,s,d,v){geom(P,v,{xmin:-6,xmax:6,ymin:-5,ymax:7});if(s.mode==='polygon'){circle(P,[0,0],s.r);poly(P,d.ps);d.ps.forEach(q=>edge(P,[0,0],q,null,C.muted));const m=K.mid(d.ps[0],d.ps[1]);edge(P,[0,0],m,'边心距='+ap(d.apothem)+' cm',C.purple);rightMark(P,m,[0,0],d.ps[0]);edge(P,d.ps[0],d.ps[1],'边长='+ap(d.side)+' cm',C.amber);point(P,'r',d.ps[0],'拖外接半径');return;}triangleDraw(P,d.ps,false);point(P,'C',d.C,'C · 拖顶点',C.purple);if(!d.valid){flag(P,'三点共线，无三角形圆心',70,C.red);return;}if(s.mode!=='out'){circle(P,d.I,d.r,{color:C.teal});d.feet.forEach((q,i)=>{edge(P,d.I,q,null,C.teal);rightMark(P,q,d.I,d.ps[i]);});point(P,'I',d.I,'I 内心',C.teal,false);}if(s.mode!=='in'){circle(P,d.O,d.R,{color:C.purple,dash:'6 3'});d.ps.forEach(q=>edge(P,d.O,q,null,C.purple));point(P,'O',d.O,'O 外心',C.purple,false);}if(Math.abs(d.O[0])>6||d.O[1]<-5||d.O[1]>7)flag(P,'外心在当前视窗外；坐标与半径见读数，可缩小视窗');},drag(s,n,p){if(n==='C'){s.cx=cl(p.x,-4,4);s.cy=cl(p.y,-1,5);}else if(n==='r')s.r=cl(Math.hypot(p.x,p.y),1,4);},key(s,n,dx,dy){if(n==='C'){s.cx=cl(s.cx+dx,-4,4);s.cy=cl(s.cy+dy,-1,5);}else s.r=cl(s.r+(dy||dx),1,4);},counter:{mode:'both',cx:0,cy:0},presets:[{label:'一般三角形',values:{mode:'both',cx:1,cy:4}},{label:'钝角，外心在外',values:{mode:'both',cx:0,cy:0}},{label:'共线边界',values:{mode:'both',cy:-1}},{label:'正六边形',values:{mode:'polygon',n:6,r:3}}],animation:{label:s=>s.mode==='polygon'?'正多边形整体等比缩放':'拖动三角形顶点，内外心按定义重算',apply(s,t){if(s.mode==='polygon')s.r=1+3*t;else s.cx=-3+6*t;}},reason:'<p>角平分线性质保证交点到三边距离相等，因而可作与三边相切的同一圆。垂直平分线性质保证交点到三顶点距离相等，因而可作经过三顶点的同一圆。</p><p>正n边形分成n个全等等腰三角形，每个中心角360°/n。半角直角三角形给边长2R sin(π/n)，边心距R cos(π/n)，总面积也等于周长×边心距/2。</p>'}),
+lesson(5,{mode:'sector',r:3,theta:60,p:5,step:0},{purpose:'扇形面积与弧长区分平方单位；外点切线尺规构造每一步都依赖真实交点。',def:'半径r、圆心角θ度的弧长l=(θ/360°)×2πr；扇形面积S=(θ/360°)×πr²。过圆外一点P作切线：以OP为直径作辅助圆，取它与原圆的交点T，连PT。',map:'弧长是边界的长度，用cm；扇形面积是内部区域，用cm²。切线构造的M为OP中点，辅助圆半径OP/2，不得随意调整到看起来相切。',controls:s=>[Sel('mode','场景模式',[['sector','弧长与扇形面积'],['construct','尺规作圆外点切线']]),N('r','圆半径r',1,4,.1,'cm'),...(s.mode==='sector'?[N('theta','圆心角θ',0,360,1,'°')]:[N('p','OP',.5,8,.1,'cm'),N('step','构造步骤',0,4,1)])],derive(s){const P=[s.p,0],M=[s.p/2,0],ints=K.circleInter([0,0],s.r,M,s.p/2);return {P,M,ints,valid:s.mode==='sector'||s.p>s.r,l:s.theta*Math.PI*s.r/180,area:s.theta*Math.PI*s.r*s.r/360,tl:s.p>=s.r?Math.sqrt(s.p*s.p-s.r*s.r):null};},formula:(s,d)=>s.mode==='sector'?`l=(${s.theta}/360)×2π×${f(s.r)} cm<span class="second">S=(${s.theta}/360)×π×${f(s.r)}² cm²</span>`:`M是OP中点；辅助圆直径OP<span class="second">T在辅助圆上 ⇒ ∠OTP=90° ⇒ PT为切线</span>`,readings:(s,d)=>s.mode==='sector'?rd(['弧长l',ap(d.l)+' cm'],['扇形面积S',ap(d.area)+' cm²'],['占整圆比例',f(s.theta/360,4)],['退化边界',s.theta===0?'0°：弧长和面积均0':s.theta===360?'360°：完整圆':'正常扇形']):rd(['OP',f(s.p)+' cm'],['辅助圆半径',f(s.p/2)+' cm'],['真实交点数',d.ints.length],['两切线段长度',d.valid?ap(d.tl)+' cm':'不满足“圆外一点”条件']),feedback:(s,d)=>s.mode==='sector'?`θ=${s.theta}°占全圆${f(s.theta/360,4)}。圆心角与两条半径共用一个参数；面积不能错用弧长单位。`:d.valid?'T在两个圆上，OT是原圆半径，OP是辅助圆直径，故OT⊥PT。步骤可自由前进、后退；拖P时辅助圆及T同步重建。':'当前P不在圆外，不能执行“两条外点切线”的构造；不虚构第二个切点。',draw(P,s,d,v){geom(P,v,{xmin:-5,xmax:s.mode==='sector'?5:10,ymin:-5,ymax:5});circle(P,[0,0],s.r);if(s.mode==='sector'){const ps=[[0,0],...Array.from({length:81},(_,i)=>cp(s.r,s.theta*i/80))];poly(P,ps,{fill:'#d9ece4aa'});arc(P,[0,0],s.r,0,s.theta,{color:C.amber,width:5});point(P,'r',[s.r,0],'拖r');point(P,'theta',cp(s.r,s.theta),'拖圆心角θ',C.amber);edge(P,[0,0],[s.r,0],'r='+f(s.r)+' cm');flag(P,s.theta+'°；弧长 '+ap(d.l)+' cm；面积 '+ap(d.area)+' cm²');return;}point(P,'O',[0,0],'O',C.blue,false);point(P,'P',d.P,'P · 拖外点');edge(P,[0,0],d.P,'OP='+f(s.p)+' cm');if(s.step>=1)point(P,'M',d.M,'M 中点',C.purple,false);if(s.step>=2)circle(P,d.M,s.p/2,{color:C.purple,dash:'6 4'});if(s.step>=3&&d.valid)d.ints.forEach((q,i)=>{point(P,'T'+i,q,'T'+(i+1),C.amber,false);if(s.step>=4){edge(P,d.P,q,'PT='+ap(d.tl)+' cm',C.amber);edge(P,[0,0],q,null,C.teal);rightMark(P,q,[0,0],d.P);}});},tools:s=>s.mode==='construct'?butt('prev','上一步')+butt('next','下一步')+butt('all','直接完整构造'):'',tool(s,v,t){s.step=t==='all'?4:M.clamp(s.step+(t==='next'?1:-1),0,4);},drag(s,n,p){if(n==='r')s.r=cl(Math.hypot(p.x,p.y),1,4);if(n==='theta')s.theta=cl(carg([p.x,p.y]),0,360,1);if(n==='P')s.p=cl(p.x,.5,8);},key(s,n,dx,dy){if(n==='r')s.r=cl(s.r+(dx||dy),1,4);if(n==='theta')s.theta=cl(s.theta+Math.sign(dx||dy),0,360,1);if(n==='P')s.p=cl(s.p+dx,.5,8);},counter:{mode:'construct',p:2,r:3,step:4},presets:[{label:'r=3，60°：π cm，1.5π cm²',values:{mode:'sector',r:3,theta:60}},{label:'圆外点5，半径3',values:{mode:'construct',r:3,p:5,step:0}}],animation:{label:s=>s.mode==='sector'?'增加圆心角；边界弧长与内部面积按不同公式计算':'圆心—中点—辅助圆—真实交点—切线',apply(s,t){if(s.mode==='sector')s.theta=Math.round(360*t);else s.step=Math.round(4*t);}},reason:'<p>相同圆中，弧长与扇形面积各自按圆心角等分。整圆360°对应周长2πr、面积πr²，故分别乘θ/360。r=3、θ=60°时l=π cm，S=3π/2 cm²，两者数值与量纲都不可混用。</p><p>构造证明：T在以OP为直径的圆上，由半圆所对圆周角为直角知∠OTP=90°；又T在原圆上，OT为半径，所以PT为切线。构造成功还要求P确在原圆外。</p>'})]);
+</script><script>/* Direct interaction additions to the existing lessons. No prerequisite mode or hold delay. */
+'use strict';
+if(['J08','J09','J10'].includes(CHAPTER.id)){
+ const round=(n,min,max,step=.1)=>M.clean(M.clamp(Math.round(n/step)*step,min,max));
+ const value=(sc,s,key,n)=>InteractionRules.value(sc,s,key,n);
+ for(const sc of CHAPTER.scenes){
+  const oldDraw=sc.draw,oldDrag=sc.drag,oldKey=sc.key;
+  sc.draw=function(P,s,d,v,snap){
+   P.defaultCurveDrag=sc.group==='quadratic'?'curve':sc.id==='J08-S03'||sc.id==='J08-S04'&&s.mode==='solve'?'lineBody':null;
+   oldDraw(P,s,d,v,snap);
+   if(sc.group==='quadratic'&&s.a!==0&&P.visible(s.p,s.q))P.handle('V',P.x(s.p),P.y(s.q),{handle:'vertex',worldX:s.p,worldY:s.q,sem:'p',aliases:['q'],color:C.purple,label:'V 顶点，直接拖动同时改变 p、q'});
+   if(sc.id==='J10-S02'&&s.a!==0&&s.t>0){
+    const y=s.a*s.t*s.t+s.q;
+    for(const side of [-1,1]){const x=s.p+side*s.t;if(P.visible(x,y))P.handle(side<0?'symLeft':'symRight',P.x(x),P.y(y),{handle:'symmetry',worldX:x,worldY:y,sem:'t',color:side<0?C.blue:C.teal,label:'对称点，左右拖动改变等距 t'});}
+   }
+   if(sc.id==='J08-S01'&&v.mode==='mapping'){
+    const y=P.h-61,a=52,b=P.w-52,x=a+(b-a)*(s.x+5)/11;
+    P.raw(seg(a,y,b,y,{color:C.ghost,width:2})+txt(a,y+22,'−5',{size:14,color:C.muted,anchor:'middle'})+txt(b,y+22,'6',{size:14,color:C.muted,anchor:'middle'}));
+    P.handle('inputBead',x,y,{handle:'inputBead',sem:'input',label:'直接拖动改变输入 x',color:C.blue});
+    P.addLabel('inputBead','拖动输入 x='+M.num(s.x),x,y,{priority:5,color:C.blue,size:17,offsets:[[12,-9],[-12,-9]]});
+   }
+   if(sc.id==='J08-S03'){
+    P.point('slope',1,s.k+s.b,'K(1, '+M.num(s.k+s.b)+') · 改k',{handle:'slope',sem:'k',color:C.teal,priority:3});
+   }
+   if(sc.id==='J08-S04'&&s.mode==='solve'){
+    const x=P.b.xmin+.78*(P.b.xmax-P.b.xmin);if(P.visible(x,s.c))P.handle('threshold',P.x(x),P.y(s.c),{worldX:x,worldY:s.c,handle:'threshold',sem:'threshold',color:C.amber,label:'直接上下拖动水平线 y=c'});
+    P.raw(`<line x1="${P.left}" y1="${P.y(s.c)}" x2="${P.right}" y2="${P.y(s.c)}" stroke="transparent" stroke-width="16" pointer-events="stroke" data-drag="thresholdLine" data-sem="threshold"/>`);
+   }
+   if(sc.id==='J09-S01'&&d.valid){
+    const x=80,y=P.h-75-d.y*rectangleScale;
+    P.handle('width',x,y,{handle:'rectWidth',sem:'y',color:C.blue,label:'上下拖动改变宽，面积保持不变'});
+    // The filled rectangle can itself be repositioned; this is view translation, not a size change.
+    P.shapes=P.shapes.replace('data-role="area-model"','data-drag="moveDrawing" data-role="area-model"');
+   }
+   if(sc.id==='J09-S02'){
+    if(P.visible(2,s.k/2))P.point('coefficient',2,s.k/2,'K(2, '+M.num(s.k/2)+') · 改k',{handle:'coefficient',sem:'curve',color:C.teal,priority:3});
+   }
+   if(sc.id==='J10-S05'&&d.valid){
+    if(v.mode==='graph'&&M.near(s.x,d.optimalX)){P.handle('probe',P.x(s.x),P.y(d.area),{handle:'probe',worldX:s.x,worldY:d.area,sem:'x',color:C.blue,label:'当前面积点，可直接左右拖动'});}
+    if(v.mode==='model'){
+     const scale=Math.min((P.w-142)/s.L,(P.h-150)/(s.L/2)),h=s.x*scale;
+     P.handle('fence',P.w/2,76+h,{handle:'fence',sem:'x',color:C.blue,label:'拖动下方围栏，改变宽 x'});
+     P.raw(`<line x1="${P.w/2-d.length*scale/2}" y1="${76+h}" x2="${P.w/2+d.length*scale/2}" y2="${76+h}" stroke="transparent" stroke-width="22" pointer-events="stroke" data-drag="fence" data-sem="x"/>`);
+    }
+   }
+  };
+  sc.dragStart=function(s,name,p,ctx){if(sc.id==='J09-S01')ctx.fixedScale=rectangleScale;if(sc.id==='J10-S05')ctx.fixedScale=Math.min((document.getElementById('plot').clientWidth-142)/s.L,(document.getElementById('plot').clientHeight-150)/(s.L/2));};
+  sc.drag=function(s,name,p,ctx,v){
+   if(sc.group==='quadratic'&&name==='vertex'){s.p=value(sc,s,'p',p.x);s.q=value(sc,s,'q',p.y);return;}
+   if(sc.group==='quadratic'&&name==='curve'){s.p=value(sc,s,'p',ctx.math.p+ctx.delta.x);s.q=value(sc,s,'q',ctx.math.q+ctx.delta.y);return;}
+   if(sc.id==='J10-S02'&&name==='symmetry'){s.t=value(sc,s,'t',Math.abs(p.x-s.p));return;}
+   if(sc.id==='J10-S03'&&(name==='domainLo'||name==='domainHi')){if(name==='domainLo')s.lo=value(sc,s,'lo',Math.min(p.x,s.hi));else s.hi=value(sc,s,'hi',Math.max(p.x,s.lo));return;}
+   if(sc.id==='J08-S01'&&name==='inputBead'){s.x=value(sc,s,'x',-5+(p.px-52)/(document.getElementById('plot').clientWidth-104)*11);return;}
+   if(name==='lineBody'){s.b=value(sc,s,'b',ctx.math.b+ctx.delta.y);return;}
+   if(sc.id==='J08-S03'&&name==='slope'){s.k=value(sc,s,'k',p.y-s.b);return;}
+   if(sc.id==='J08-S04'&&name==='threshold'){s.c=value(sc,s,'c',p.y);return;}
+   if(sc.id==='J08-S04'&&name==='thresholdLine'){s.c=value(sc,s,'c',ctx.math.c+ctx.delta.y);return;}
+   if(sc.id==='J09-S01'&&name==='rect'){s.x=value(sc,s,'x',ctx.math.x+ctx.delta.px/ctx.fixedScale);return;}
+   if(sc.id==='J09-S01'&&name==='rectWidth'){const w=ctx.math.area/ctx.math.x-ctx.delta.py/ctx.fixedScale;s.x=value(sc,s,'x',s.area/Math.max(.1,w));return;}
+   if(sc.id==='J09-S02'&&name==='coefficient'){s.k=value(sc,s,'k',2*p.y);return;}
+   if(sc.id==='J10-S05'&&name==='fence'){s.x=value(sc,s,'x',ctx.math.x+ctx.delta.py/ctx.fixedScale);return;}
+   if(sc.id==='J08-S02'&&name==='probe'){s.x=value(sc,s,'x',p.x);return;}
+   if(sc.id==='J09-S03'&&name==='probe'){s.x=value(sc,s,'x',p.x);return;}
+   oldDrag?.(s,name,p,ctx,v);
+  };
+  sc.key=function(s,name,dx,dy,v){
+   if(sc.group==='quadratic'&&name==='vertex'){s.p=value(sc,s,'p',s.p+dx);s.q=value(sc,s,'q',s.q+dy);return;}
+   if(name==='symmetry'){s.t=value(sc,s,'t',s.t+dx);return;}
+   if(name==='domainLo'){s.lo=value(sc,s,'lo',Math.min(s.lo+dx,s.hi));return;}if(name==='domainHi'){s.hi=value(sc,s,'hi',Math.max(s.hi+dx,s.lo));return;}
+   if(name==='inputBead'){s.x=value(sc,s,'x',s.x+dx);return;}
+   if(name==='slope'){s.k=value(sc,s,'k',s.k+Math.sign(dy)*(Math.abs(dy)>=1?1:.25));return;}
+   if(name==='threshold'){s.c=value(sc,s,'c',s.c+dy);return;}
+   if(name==='rectWidth'){s.x=value(sc,s,'x',s.area/(s.area/s.x+dy));return;}
+   if(name==='coefficient'){s.k=value(sc,s,'k',s.k+Math.sign(dy)*(Math.abs(dy)>=1?2:1));return;}
+   if(name==='fence'){s.x=value(sc,s,'x',s.x+dy);return;}
+   if(sc.id==='J09-S03'&&name==='probe'){const c=InteractionRules.descriptor(sc,s,'x');s.x=value(sc,s,'x',s.x+Math.sign(dx||dy)*c.step);return;}
+   if(sc.id==='J08-S02'&&name==='probe'){s.x=value(sc,s,'x',s.x+dx);return;}
+   oldKey?.(s,name,dx,dy,v);
+  };
+ }
+}
+</script><script>/* v4: manual parameter editing and graph operations share a single numerical contract.
+ * Scene callbacks retain mathematical meaning; this is not a free-shape editor.
+ * Original presets/counterexamples/continuous teaching animations remain separate paths.
+ */
+'use strict';
+const InteractionRules=(()=>{
+ const equal=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
+ const descriptor=(scene,s,key)=>(scene.controls?.(s)||[]).find(c=>c.key===key);
+ function number(c,raw){
+  if(!c||c.type!=='number'||!Number.isFinite(raw))throw Error('不是允许的有限数值参数');
+  const step=Number(c.step)||1,base=Number(c.min),max=Number(c.max);
+  const last=Math.floor((max-base)/step+1e-8);
+  const n=Math.max(0,Math.min(last,Math.round((raw-base)/step)));
+  return M.clean(Number((base+n*step).toPrecision(13)));
+ }
+ function value(scene,s,key,raw){return number(descriptor(scene,s,key),raw);}
+ function changed(before,after){return Object.keys(after).filter(k=>!equal(before[k],after[k]));}
+ function normalize(scene,before,after){
+  const changedKeys=changed(before,after),active=scene.controls?.(after)||[];
+  for(const k of changedKeys){
+   const c=active.find(c=>c.key===k);if(!c)continue;
+   if(c.type==='number')after[k]=number(c,after[k]);
+   else if(c.type==='select'&&!c.options.some(([x])=>x===after[k]))throw Error('该场景未允许此选项');
+   else if(c.type==='checkbox'&&typeof after[k]!=='boolean')throw Error('开关必须为布尔值');
+  }
+  // Ordered endpoints are one original coupled control; empty inequalities in J07 are intentional.
+  if(scene.id.slice(0,3)!=='J07'&&Number.isFinite(after.lo)&&Number.isFinite(after.hi)&&after.lo>after.hi){
+   if(changedKeys.includes('lo')&&!changedKeys.includes('hi'))after.lo=after.hi;
+   else if(changedKeys.includes('hi')&&!changedKeys.includes('lo'))after.hi=after.lo;
+   else throw Error('左端点不能大于右端点');
+  }
+  for(const k of changedKeys)if(descriptor(scene,after,k))scene.afterChange?.(after,k);
+  // A dependent control may be changed by afterChange; apply its declared contract too.
+  for(const k of changed(before,after)){const c=descriptor(scene,after,k);if(c?.type==='number')after[k]=number(c,after[k]);}
+  return changed(before,after);
+ }
+ function quickKeys(scene,s,name){
+  let keys=[];
+  if(descriptor(scene,s,name)?.type==='number')keys.push(name);
+  for(const k of [name+'x',name+'y'])if(descriptor(scene,s,k)?.type==='number')keys.push(k);
+  const map={
+   'J08-S01':{inputBead:['x'],probe:['x']},
+   'J08-S02':{probe:['x']},
+   'J08-S03':{probe:['x'],intercept:['b'],slope:['k'],lineBody:['b']},
+   'J08-S04':{probe:['x'],threshold:['c'],thresholdLine:['c'],lineBody:['b']},
+   'J09-S01':{rect:['x'],rectWidth:['x']},
+   'J09-S02':{probe:['x'],coefficient:['k']},
+   'J09-S03':{probe:['x']},
+   'J10-S01':{vertex:['p','q'],curve:['p','q']},
+   'J10-S02':{vertex:['p','q'],curve:['p','q'],symmetry:['t']},
+   'J10-S03':{vertex:['p','q'],curve:['p','q'],probe:['x'],domainLo:['lo'],domainHi:['hi']},
+   'J10-S04':{vertex:['p','q'],curve:['p','q']},
+   'J10-S05':{fence:['x'],probe:['x']},
+   'J17-S01':{imageA:['dx','dy']},
+   'J17-S02':{light:['lx','lz'],object:['ox','height']},
+   'J17-S03':{dimL:['L'],dimW:['W'],dimH:['H']},
+   'J17-S04':{fold:['fold']}
+  };
+  keys.push(...(map[scene.id]?.[name]||[]));
+  return [...new Set(keys)].filter(k=>descriptor(scene,s,k)?.type==='number');
+ }
+ return {descriptor,number,value,changed,normalize,quickKeys};
+})();
+</script><script>/* Shared UI shell. Math, view, presentation, and transient interaction states are separated. */
+'use strict';
+(function(){
+const $=id=>document.getElementById(id),plot=new Plot($('plot'));
+let lastTap=null,notes={},canvasActive=false,selectedTarget="",lastContract={source:"initial",fields:[]};
+const normalizeMath=t=>String(t??'').replace(/=\s*≈/g,'≈').replace(/≈\s*≈/g,'≈');
+let groups=M.clone(CHAPTER.groups),views={},pedagogy={},histories={},current=CHAPTER.scenes[0],revision=0,derived=null,lastControlRecord={key:'',at:0},frame=0,playing=false,direction=1,progress=0,lastFrame=0,drag=null,pending=null,holdTimer=0,liveTimer=0,rendering=false;
+const state=()=>groups[current.group],view=()=>views[current.id]||(views[current.id]=freshView()),ped=()=>pedagogy[current.id]||(pedagogy[current.id]={revealed:false,selected:'',snapshot:null});
+function freshView(){return {mode:current.defaultView||(current.views?current.views[0][0]:'graph'),zoom:1,stretch:1,panX:0,panY:0,offsetX:0,offsetY:0,yaw:.65,pitch:.5,...(current.initialView||{})};}
+function say(text,delayed=false){clearTimeout(liveTimer);const fn=()=>{$('live').textContent=text;};if(delayed)liveTimer=setTimeout(fn,260);else fn();}
+function record(key='change',force=false){const now=performance.now(),history=histories[current.group]||(histories[current.group]=[]),before=M.clone(state());if(!force&&lastControlRecord.key===current.group+':'+key&&now-lastControlRecord.at<750){lastControlRecord.at=now;return;}if(!history.length||JSON.stringify(history[history.length-1])!==JSON.stringify(before)){history.push(before);if(history.length>100)history.shift();}lastControlRecord={key:current.group+':'+key,at:now};}
+function descriptors(scene=current,s=state()){return scene.controls?scene.controls(s):[];}
+function validateChange(key,value){const desc=descriptors().find(c=>c.key===key);if(!desc)return null;if(desc.type==='number'){if(typeof structuralInteger==='function'&&structuralInteger(current,desc)&&!Number.isInteger(value))return `“${desc.label}”必须为整数，保留上一次有效值。`;if(!Number.isFinite(value)||value<desc.min-1e-9||value>desc.max+1e-9)return `“${desc.label}”须在 ${desc.min} 至 ${desc.max} 之间，图中保留上一次有效值。`;if(CHAPTER.id!=='J07'&&(key==='lo'&&value>state().hi||key==='hi'&&value<state().lo))return '左端点不能大于右端点。请先调整另一端；图中保留上一次有效区间。';}return null;}
+function estimatedProgress(){if(!current.animation)return 0;const a=M.clone(state()),b=M.clone(state());current.animation.apply(a,0);current.animation.apply(b,1);const key=Object.keys(a).find(k=>typeof a[k]==='number'&&a[k]!==b[k]);return key?M.clamp((state()[key]-a[key])/(b[key]-a[key]),0,1):0;}
+function changed(message='',opts={}){revision++;if(!opts.animation)progress=estimatedProgress();render();if(message)say(message,!!opts.delayed);}
+function mutateAllowed(source,fn){
+ const before=M.clone(state()),signature=JSON.stringify(descriptors());
+ try{fn(state());const fields=InteractionRules.normalize(current,before,state());
+  if(CHAPTER.validate&&!CHAPTER.validate(groups))throw Error('不满足原场景的数据或几何约束');
+  lastContract={source,fields,accepted:true};
+  if(signature!==JSON.stringify(descriptors())){buildControls();buildViews();}
+  return fields.length>0;
+ }catch(error){groups[current.group]=before;lastContract={source,fields:[],accepted:false,message:error.message};say('未修改：'+error.message+'。保留原有效状态。');return false;}
+}
+function applyValue(key,value,source='input'){
+ const problem=validateChange(key,value);if(problem){say(problem);const input=$('n-'+key);if(input)input.setAttribute('aria-invalid','true');return false;}
+ const declared=descriptors().find(c=>c.key===key);if(!declared)return false;if(declared.type==='number')value=InteractionRules.number(declared,value);if(state()[key]===value){syncControls();return true;}stop();record(key);if(!mutateAllowed(source,s=>s[key]=value))return false;const desc=descriptors().find(c=>c.key===key);if(desc&&desc.refresh){buildControls();buildViews();$('n-'+key)?.focus({preventScroll:true});}changed(`${desc?.label||key} 已更新；图形、公式和已显示的练习答案同步重算。`,{delayed:source==='range'});return true;
+}
+function buildNav(){const nav=$('sceneNav');nav.style.setProperty('--scenes',CHAPTER.scenes.length);nav.innerHTML=CHAPTER.scenes.map((s,i)=>`<button type="button" data-scene="${s.id}"><span class="scene-no">${String(i+1).padStart(2,'0')}</span><span class="scene-name">${esc(s.title)}</span></button>`).join('');nav.addEventListener('click',e=>{const b=e.target.closest('[data-scene]');if(b)go(b.dataset.scene);});}
+function go(id,fromHash=false){lastTap=null;const target=CHAPTER.scenes.find(s=>s.id===id);if(!target)return;stop();cancelHold();selectedTarget='';canvasActive=false;$('plot').classList.remove('canvas-active');current=target;document.body.dataset.currentScene=current.id;direction=1;progress=estimatedProgress();lastControlRecord={key:'',at:0};buildControls();buildPresets();buildViews();$('teacherNote').value=notes[current.id]||'';$('sceneTitle').textContent=current.title;$('scenePurpose').textContent=current.purpose;$('entryLabel').textContent='#'+current.id;document.title=CHAPTER.title+' · '+current.title+' · MathAgent v4';$('sceneNav').querySelectorAll('[data-scene]').forEach(b=>{const active=b.dataset.scene===current.id;b.classList.toggle('active',active);b.setAttribute('aria-current',active?'page':'false');});$('snapshot').hidden=!current.snapshot;['tableDetails','reasonDetails','exerciseDetails'].forEach(id=>$(id).open=false);if(!fromHash&&location.hash!=='#'+id)location.hash=id;render();say('已进入 '+current.id+' '+current.title+'。场景可自由跳转，未改变无关模型参数。');}
+function buildControls(){const defs=descriptors();$('controls').innerHTML=defs.map(c=>{
+ const id='n-'+c.key;
+ if(c.type==='select')return `<div class="control"><label for="${id}">${esc(c.label)}</label><select id="${id}" data-control="${c.key}">${c.options.map(([value,label])=>`<option value="${esc(value)}">${esc(label)}</option>`).join('')}</select></div>`;
+ if(c.type==='checkbox')return `<div class="control"><label for="${id}">${esc(c.label)}</label><input id="${id}" type="checkbox" data-control="${c.key}"></div>`;
+ return `<div class="control"><label for="${id}">${esc(c.label)}${c.unit?` <span class="unit">/ ${esc(c.unit)}</span>`:''}</label><div class="input-row"><input id="r-${c.key}" aria-label="${esc(c.label)}滑块" type="range" data-range="${c.key}" min="${c.min}" max="${c.max}" step="${c.step}"><input id="${id}" aria-label="${esc(c.label)}精确数值" type="number" data-control="${c.key}" min="${c.min}" max="${c.max}" step="${c.step}"></div></div>`;
+ }).join('');syncControls();}
+function syncControls(){for(const c of descriptors()){const el=$('n-'+c.key),r=$('r-'+c.key);if(!el)continue;if(c.type==='checkbox')el.checked=state()[c.key];else if(document.activeElement!==el)el.value=state()[c.key];if(r)r.value=state()[c.key];}}
+function buildPresets(){const ps=typeof current.presets==='function'?current.presets(state()):current.presets||[];$('presets').innerHTML=ps.map((p,i)=>`<button class="small" data-preset="${i}">${esc(p.label)}</button>`).join('');}
+function buildViews(){let b=current.tools?current.tools(state(),view()):'';if(current.views)b+=current.views.map(([v,l])=>`<button class="small" data-view="${v}" aria-pressed="${view().mode===v}">${esc(l)}</button>`).join('');if(current.stretch)b+='<button class="small" id="stretch" aria-pressed="false">纵轴压缩×2</button>';b+='<button class="small" id="zoomIn" aria-label="放大坐标视窗">＋</button><button class="small" id="zoomOut" aria-label="缩小坐标视窗">−</button>';$('viewButtons').innerHTML=b;}
+function objectActions(){
+ const s=state(),bar=$('objectActions');let html='';
+ // A tool may select its newly-created object. Keep the shortcut bound to that SAME selection.
+ if(selectedTarget.startsWith('tile:'))selectedTarget=Array.isArray(s.tiles)&&s.tiles.some(t=>t.id===s.selected)?'tile:'+s.selected:'';
+ if(selectedTarget.startsWith('cube:'))selectedTarget=s.mode==='blocks'&&s.cubes?.[s.selected]?'cube:'+s.selected:'';
+ if(selectedTarget.startsWith('data:'))selectedTarget=s.data?.[s.selected]!==undefined?'data:'+s.selected:'';
+ if(selectedTarget){
+  const keys=InteractionRules.quickKeys(current,s,selectedTarget);
+  for(const key of keys){const c=InteractionRules.descriptor(current,s,key),less=state()[key]<=c.min+1e-9,more=state()[key]>=c.max-1e-9;
+   html+=`<span class="object-param"><span class="object-param-label" title="${esc(c.label)}；步长 ${c.step}">${esc(key)} = ${esc(M.num(s[key]))}${c.unit?' '+esc(c.unit):''}</span><button type="button" class="small" data-step-control="${key}" data-direction="-1" aria-label="${esc(key)} 减少一个原步长" ${less?'disabled':''}>−</button><button type="button" class="small" data-step-control="${key}" data-direction="1" aria-label="${esc(key)} 增加一个原步长" ${more?'disabled':''}>＋</button></span>`;
+  }
+  if(selectedTarget.startsWith('tile:')&&Array.isArray(s.tiles)){
+   const tile=s.tiles.find(t=>t.id===+selectedTarget.split(':')[1]);
+   if(tile){const add=tile.sign<0?'neg'+tile.kind:'add'+tile.kind;
+    if($('viewButtons').querySelector('[data-tool="'+add+'"]'))html+=`<button type="button" class="small" data-object-tool="${add}">＋ 同类同号块</button>`;
+    html+='<button type="button" class="small" data-object-tool="remove">− 删除选中块</button>';
+   }
+  }
+  if(current.id==='J17-S03'&&s.mode==='blocks'&&selectedTarget.startsWith('cube:')&&s.cubes[s.selected])html+='<button type="button" class="small" data-object-tool="addFace">＋ 沿选中面添块</button><button type="button" class="small" data-object-tool="delete">− 删除选中块</button>';
+  if(selectedTarget.startsWith('data:')&&Array.isArray(s.data)&&s.data[+selectedTarget.split(':')[1]]!==undefined)html+='<button type="button" class="small" data-object-data="add">＋ 原始数据一项</button><button type="button" class="small" data-object-data="remove">− 删除所选数据</button>';
+ }
+ bar.innerHTML=html?'<span class="object-hint">所选对象 · 原有操作</span>'+html:'<span class="object-hint">选中操作点或图形块：显示原参数步进或原有增删操作；固定对象不开放任意变形。</span>';
+}
+$('objectActions').addEventListener('click',e=>{
+ const b=e.target.closest('button');if(!b)return;
+ if(b.dataset.stepControl){const key=b.dataset.stepControl,c=InteractionRules.descriptor(current,state(),key);if(c)applyValue(key,InteractionRules.number(c,state()[key]+Number(b.dataset.direction)*c.step),'graph-step');}
+ if(b.dataset.objectTool){const original=$('viewButtons').querySelector('[data-tool="'+b.dataset.objectTool+'"]');if(original&&!original.disabled)original.click();}
+ if(b.dataset.objectData)dataMutation(b.dataset.objectData);
+});
+function restoreFocus(key,sem){let n;if(key)n=document.querySelector('[data-focus-key="'+CSS.escape(key)+'"]');else if(sem)n=$('formula').querySelector('[data-sem="'+CSS.escape(sem)+'"]')||$('definition').querySelector('[data-sem="'+CSS.escape(sem)+'"]');if(n)n.focus({preventScroll:true});}
+function render(){if(rendering)return;rendering=true;try{
+ const s=state(),d=current.derive(s),v=view(),p=ped();derived=d;const ae=document.activeElement,focusKey=ae?.dataset?.focusKey,focusSem=ae?.classList?.contains('token')?ae.dataset.sem:null;
+ $('definition').innerHTML=current.definition(s,d,v);$('mapping').textContent=current.mapping(s,d,v);$('formula').innerHTML=normalizeMath(current.formula(s,d,v));
+ $('readings').innerHTML=current.readings(s,d,v).map(r=>`<div class="${r.wide?'wide ':''}${r.label==='当前定义域'?'compact ':''}${r.warning?'warning':''}"><dt>${esc(r.label)}</dt><dd>${esc(r.value)}</dd></div>`).join('');
+ const f=current.feedback(s,d,v);$('feedback').textContent=normalizeMath(f.text);$('feedback').classList.toggle('warning',!!f.warn);$('figureTitle').textContent=current.figureTitle(s,d,v);
+ plot.view=v;plot.scene=current;current.draw(plot,s,d,v,p.snapshot);plot.commit(p.selected);
+ let caption=current.caption(s,d,v);if(plot.extraCaption)caption+=' '+plot.extraCaption;if(plot.graph&&plot.axisKind!=='numberline')caption+=` 横轴每格 ${M.num(plot.tickInfo.x)}，纵轴每格 ${M.num(plot.tickInfo.y)}。`;if(plot.offscreen.length)caption+=' 视窗外：'+Array.from(new Set(plot.offscreen)).join('；')+'，数值仍见右侧。';if(p.snapshot)caption+=' 灰虚线为保留对照，不参与当前计算。';
+ $('caption').textContent=caption;$('caption').classList.toggle('warning',!!plot.offscreen.length);$('zoomIn').hidden=$('zoomOut').hidden=false;
+ $('gestureHint').textContent=(current.gestureHint?.(s,v)||(current.orbit?'拖空白旋转视角':'直接拖操作点 · 拖空白平移画布'))+' · 点击画布后滚轮缩放；点画布外恢复页面滚动 · 图形修改沿用原参数约束';
+ $('plot').dataset.gesture=current.orbit?'orbit':plot.graph?'pan':'diagram';
+ $('viewButtons').querySelectorAll('[data-view]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.view===v.mode)));if($('stretch'))$('stretch').setAttribute('aria-pressed',String(v.stretch===2));
+ $('tableBody').innerHTML=current.table(s,d,v);$('reasonBody').innerHTML=current.reason(s,d,v);const ex=current.exercise(s,d,v);$('exerciseQuestion').textContent=ex.question;$('exerciseAnswer').hidden=!p.revealed;if(p.revealed)$('exerciseAnswer').textContent=normalizeMath(ex.answer);
+ $('trajectory').textContent=current.animation.label(s,d,v);$('progress').value=Math.round(progress*1000);$('progressValue').textContent=Math.round(progress*100)+'%';$('play').textContent=playing?'暂停':'播放';$('reverse').textContent=direction===1?'正向 →':'← 反向';$('snapshot').textContent=p.snapshot?'清除对照':'保留当前对照';$('undo').disabled=!(histories[current.group]||[]).length;
+ $('selectedNote').textContent=p.selected?(current.selected?.[p.selected]||'已选中图中对象；按住图中实心操作点即可拖动；数值输入也能精确调整。'):'';
+ document.querySelectorAll('.token').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.sem===p.selected)));syncControls();syncDataEditor();if(document.activeElement!==$('teacherNote'))$('teacherNote').value=notes[current.id]||'';objectActions();restoreFocus(focusKey,focusSem);
+ }finally{rendering=false;}}
+function stop(){if(frame)cancelAnimationFrame(frame);frame=0;playing=false;$('play').textContent='播放';}
+function applyProgress(t,announce=false){progress=M.clamp(t,0,1);current.animation.apply(state(),progress);changed(announce?'演示已定位；当前量按同一数学关系重算。':'',{animation:true});}
+function play(){if(playing){stop();say('演示已暂停；可拖动进度，或反向继续。');return;}record('animation',true);if($('reduced').checked){const target=direction===1?1:0;applyProgress(progress===target?1-target:target);say('减少动态已启用：直接到达演示端点，未启动逐帧动画。');return;}
+ if(direction===1&&progress>=1)applyProgress(0);if(direction===-1&&progress<=0)applyProgress(1);playing=true;lastFrame=performance.now();$('play').textContent='暂停';const tick=now=>{if(!playing)return;const dt=Math.min(now-lastFrame,100)/6000*Number($('speed').value);lastFrame=now;applyProgress(progress+direction*dt);if(progress>=1&&direction===1||progress<=0&&direction===-1){stop();say('演示到达端点。可反向、重播或精确拖动进度。');}else frame=requestAnimationFrame(tick);};frame=requestAnimationFrame(tick);
+}
+/* Direct pointer manipulation: no hold timer. Capture the SVG root, not nodes replaced by rendering. */
+function cancelHold(){clearTimeout(holdTimer);holdTimer=0;pending=null;if(drag){try{$('plot').releasePointerCapture(drag.pointerId);}catch(_){}drag=null;}$('plot').classList.remove('drag-active');}
+function targetData(target){return target?Object.fromEntries(Object.entries(target.dataset)):{};}
+$('plot').addEventListener('pointerdown',e=>{
+ if(e.button!==0)return;cancelHold();canvasActive=true;$('plot').classList.add('canvas-active');$('plot').focus({preventScroll:true});const target=e.target.closest('[data-drag]'),data=targetData(target),v=view(),pos=plot.inverse(e.clientX,e.clientY);
+ let kind=target?'math':current.orbit?'orbit':plot.graph?'pan':'diagramPan';if(data.drag==='moveDrawing')kind='diagramPan';
+ drag={kind,target,data,pointerId:e.pointerId,name:data.drag||'',x:e.clientX,y:e.clientY,start:pos,view:M.clone(v),math:M.clone(state()),moved:false,recorded:false,scene:current.id};
+ if(target&&target.dataset.wx!==undefined&&target.dataset.wx!==''){drag.offset={x:pos.x-Number(target.dataset.wx),y:pos.y-Number(target.dataset.wy)};}
+ else if(target?.dataset.px!==undefined){drag.pixelOffset={x:pos.px-Number(target.dataset.px),y:pos.py-Number(target.dataset.py)};}
+ if(target){selectedTarget=data.drag;ped().selected=data.sem||data.drag;current.dragStart?.(state(),drag.name,pos,drag,v);}else selectedTarget='';
+ drag.rootStart=plot.screenPoint(e.clientX,e.clientY);
+ if(plot.graph){drag.bounds={...plot.b};drag.scaleX=(plot.b.xmax-plot.b.xmin)/(plot.right-plot.left);drag.scaleY=(plot.b.ymax-plot.b.ymin)/(plot.bottom-plot.top);}
+ $('plot').setPointerCapture(e.pointerId);e.preventDefault();
+});
+$('plot').addEventListener('pointermove',e=>{
+ if(!drag||drag.pointerId!==e.pointerId)return;const dx=e.clientX-drag.x,dy=e.clientY-drag.y;if(!drag.moved&&Math.hypot(dx,dy)<3)return;
+ e.preventDefault();drag.moved=true;$('plot').classList.add('drag-active');const v=view(),rootPoint=plot.screenPoint(e.clientX,e.clientY),ldx=rootPoint.x-drag.rootStart.x,ldy=rootPoint.y-drag.rootStart.y;
+ if(drag.kind==='orbit'){v.yaw=drag.view.yaw-dx*.009;v.pitch=M.clamp(drag.view.pitch+dy*.007,-1.42,1.42);render();return;}
+ if(drag.kind==='pan'){v.panX=(drag.view.panX||0)-ldx*drag.scaleX;v.panY=(drag.view.panY||0)+ldy*drag.scaleY;render();return;}
+ if(drag.kind==='diagramPan'){v.offsetX=(drag.view.offsetX||0)+ldx;v.offsetY=(drag.view.offsetY||0)+ldy;render();return;}
+ if(!drag.recorded){record('direct-drag',true);drag.recorded=true;stop();}
+ const p=plot.inverse(e.clientX,e.clientY);if(drag.offset){p.x-=drag.offset.x;p.y-=drag.offset.y;}if(drag.pixelOffset){p.px-=drag.pixelOffset.x;p.py-=drag.pixelOffset.y;}
+ drag.delta={px:ldx/(plot.diagramScale||1),py:ldy/(plot.diagramScale||1),x:ldx*(drag.scaleX||1),y:-ldy*(drag.scaleY||1)};
+ if(mutateAllowed('graph-drag',s=>current.drag?.(s,drag.name,p,drag,v)))changed('');else render();
+});
+$('plot').addEventListener('pointerup',e=>{
+ if(!drag||drag.pointerId!==e.pointerId)return;const ended=drag,now=performance.now();let doubled=false;
+ if(!ended.moved&&current.click){const before=JSON.stringify(state());record('object-click',true);mutateAllowed('graph-click',s=>current.click(s,ended.data,plot.inverse(e.clientX,e.clientY),view()));if(JSON.stringify(state())!==before){buildControls();buildViews();revision++;}}
+ if(!ended.moved&&ended.target&&current.doubleClick){
+  // SVG shapes are replaced on render. Recognize two pointer taps at the root instead
+  // of relying on a native dblclick targeting a now-detached polygon.
+  if(lastTap&&lastTap.scene===current.id&&now-lastTap.time<430&&Math.hypot(e.clientX-lastTap.x,e.clientY-lastTap.y)<18&&lastTap.data.drag===ended.data.drag){
+   stop();record('double-tap',true);mutateAllowed('graph-double-click',s=>current.doubleClick(s,lastTap.data,view()));buildControls();buildViews();revision++;lastTap=null;doubled=true;
+  }else lastTap={scene:current.id,time:now,x:e.clientX,y:e.clientY,data:ended.data};
+ }else lastTap=null;
+ cancelHold();render();if(ended.moved&&ended.kind==='math'&&lastContract.accepted===false){say('未修改：'+lastContract.message+'。保留上一次有效状态。');return;}say(doubled?(current.toolMessage?.(state(),view(),'addFace')||'图形增添操作已执行；请看当前数量与反馈。'):ended.moved?(ended.kind==='math'?'拖动已完成；图形、当前读数与已显示答案同步更新。':'观察视图已改变；数学参数保持不变。'):(ended.target?'已选择图中对象；按住直接拖动即可操作。':current.orbit?'在空白处按住并拖动即可旋转观察，不需要长按等待。':'空白处按住拖动可平移视图。'));
+});
+$('plot').addEventListener('pointercancel',()=>{cancelHold();render();say('手势已取消，保留最后一个有效状态；可撤销或重置。');});
+$('plot').addEventListener('lostpointercapture',()=>{if(drag){drag=null;$('plot').classList.remove('drag-active');}});
+function zoomAt(clientX,clientY,factor){
+ cancelHold();const v=view(),before=plot.inverse(clientX,clientY),wasGraph=plot.graph,diagram=!plot.graph&&!current.orbit;
+ v.zoom=M.clamp(v.zoom*factor,.35,4);render();
+ const after=plot.inverse(clientX,clientY);
+ if(wasGraph&&plot.graph){v.panX=(v.panX||0)+before.x-after.x;v.panY=(v.panY||0)+before.y-after.y;render();}
+ else if(diagram){v.offsetX=(v.offsetX||0)+(after.px-before.px)*plot.diagramScale;v.offsetY=(v.offsetY||0)+(after.py-before.py)*plot.diagramScale;render();}
+}
+$('plot').addEventListener('focusin',()=>{canvasActive=true;$('plot').classList.add('canvas-active');});
+document.addEventListener('pointerdown',e=>{if(!$('plot').contains(e.target))lastTap=null;if(!$('plot').contains(e.target)&&!$('objectActions').contains(e.target)&&!$('viewButtons').contains(e.target)){canvasActive=false;$('plot').classList.remove('canvas-active');}},true);
+$('plot').addEventListener('wheel',e=>{
+ if(!canvasActive||e.ctrlKey||e.deltaY===0)return;
+ e.preventDefault();zoomAt(e.clientX,e.clientY,e.deltaY>0?1.1:1/1.1);
+},{passive:false});
+$('plot').addEventListener('keydown',e=>{
+ const h=e.target.closest('[data-drag]');if(!h){if(['Delete','Backspace'].includes(e.key)&&current.removeSelected){e.preventDefault();stop();record('delete',true);mutateAllowed('graph-delete',s=>current.removeSelected(s));buildControls();buildViews();changed('已执行删除，数量与三视图同步更新。');return;}if(current.orbit&&['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.key)){e.preventDefault();if(e.key==='ArrowLeft')view().yaw-=.12;if(e.key==='ArrowRight')view().yaw+=.12;if(e.key==='ArrowUp')view().pitch=M.clamp(view().pitch+.1,-1.42,1.42);if(e.key==='ArrowDown')view().pitch=M.clamp(view().pitch-.1,-1.42,1.42);render();}return;}
+ if(e.key==='Enter'||e.key===' '){e.preventDefault();ped().selected=h.dataset.sem;current.select?.(state(),h.dataset.drag,view());render();say('已选中；方向键可微调，也可直接拖动。');return;}
+ if((e.key==='Delete'||e.key==='Backspace')&&current.remove){e.preventDefault();record('delete',true);mutateAllowed('graph-delete',s=>current.remove(s,h.dataset.drag,view()));changed('已删除所选图形。');return;}
+ const step=e.shiftKey?1:.1,dx=e.key==='ArrowLeft'?-step:e.key==='ArrowRight'?step:0,dy=e.key==='ArrowDown'?-step:e.key==='ArrowUp'?step:0;if((dx||dy)&&current.key){e.preventDefault();stop();record('keyboard');selectedTarget=h.dataset.drag;const keys=InteractionRules.quickKeys(current,state(),selectedTarget);mutateAllowed('graph-keyboard',s=>{if(keys.length===1){const c=InteractionRules.descriptor(current,s,keys[0]);s[c.key]=InteractionRules.number(c,s[c.key]+Math.sign(dx||dy)*c.step*(e.shiftKey?10:1));}else if(keys.length===2){keys.forEach((key,i)=>{const delta=i===0?dx:dy;if(delta){const c=InteractionRules.descriptor(current,s,key);s[key]=InteractionRules.number(c,s[key]+Math.sign(delta)*c.step*(e.shiftKey?10:1));}});}else current.key(s,h.dataset.drag,dx,dy,view());});changed('已通过键盘微调。');}
+});
+$('controls').addEventListener('input',e=>{const el=e.target;if(el.dataset.range){applyValue(el.dataset.range,Number(el.value),'range');return;}const key=el.dataset.control;if(!key||el.tagName==='SELECT'||el.type==='checkbox')return;if(el.value===''||!Number.isFinite(Number(el.value))){el.setAttribute('aria-invalid','true');say('输入尚未完整；图中保留上一次有效值，不把空输入当成0。');return;}el.removeAttribute('aria-invalid');applyValue(key,Number(el.value));});
+$('controls').addEventListener('change',e=>{const el=e.target,key=el.dataset.control;if(!key)return;if(el.tagName==='SELECT')applyValue(key,el.value);else if(el.type==='checkbox')applyValue(key,el.checked);});
+$('controls').addEventListener('focusout',e=>{const el=e.target;if(el.dataset.control&&el.type==='number'){el.removeAttribute('aria-invalid');el.value=state()[el.dataset.control];}lastControlRecord={key:'',at:0};});
+$('presets').addEventListener('click',e=>{const b=e.target.closest('[data-preset]');if(!b)return;const ps=typeof current.presets==='function'?current.presets(state()):current.presets;stop();cancelHold();record('preset',true);Object.assign(state(),M.clone(ps[Number(b.dataset.preset)].values));buildControls();buildViews();changed('已载入“'+ps[Number(b.dataset.preset)].label+'”；这是当前真实数学状态。');});
+$('viewButtons').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;if(b.dataset.tool&&current.tool){stop();cancelHold();const before=JSON.stringify(state());record('tool',true);mutateAllowed('original-tool',s=>current.tool(s,view(),b.dataset.tool));buildControls();buildViews();if(JSON.stringify(state())!==before)changed('操作完成；数学图形与读数同步更新。');else{render();say(current.toolMessage?.(state(),view(),b.dataset.tool)||'观察设置已改变；数学量不变。');}return;}if(b.dataset.view){view().mode=b.dataset.view;cancelHold();}if(b.id==='zoomIn'||b.id==='zoomOut'){const r=$('plot').getBoundingClientRect();zoomAt(r.left+r.width/2,r.top+r.height/2,b.id==='zoomIn'?.8:1/.8);}if(b.id==='stretch')view().stretch=view().stretch===2?1:2;render();say('只改变观察视图；数学参数、根和最值均未改变。');});
+document.addEventListener('click',e=>{const token=e.target.closest('[data-sem]');if(token&&!token.closest('[data-drag]')){ped().selected=token.dataset.sem;current.selectSemantic?.(state(),token.dataset.sem,view());render();}const t=e.target.closest('[data-table-key]');if(t){const key=t.dataset.tableKey,value=Number(t.dataset.tableValue);if(descriptors().some(c=>c.key===key)){applyValue(key,value,'table');}else if(typeof state()[key]==='number'&&Number.isFinite(value)){stop();record('table',true);state()[key]=value;changed('已选取表格输入；当前点与输出同步更新。');}}});
+$('play').onclick=play;$('reverse').onclick=()=>{direction*=-1;render();say('已反转演示方向；当前进度不跳位。');};$('progress').addEventListener('pointerdown',()=>record('scrub',true));$('progress').addEventListener('input',()=>{stop();record('scrub');applyProgress(Number($('progress').value)/1000,true);});
+$('counterexample').onclick=()=>{stop();cancelHold();record('counter',true);current.counter(state());buildControls();buildViews();changed('已直接进入反例或边界。请依据当前参数与条件阅读结论。');};
+$('snapshot').onclick=()=>{ped().snapshot=ped().snapshot?null:M.clone(state());render();say(ped().snapshot?'已保留当前数学图形作对照；之后调参不会改动灰色对照。':'对照已清除；当前数学参数没有改变。');};
+$('undo').onclick=()=>{const h=histories[current.group]||[];if(!h.length)return;stop();cancelHold();groups[current.group]=h.pop();lastControlRecord={key:'',at:0};buildControls();buildViews();changed('已恢复上一个有效数学状态；图式与当前答案重新同步。');};
+$('resetView').onclick=()=>{cancelHold();views[current.id]=freshView();buildViews();render();say('观察视图已恢复；数学参数没有改变。');};
+$('resetScene').onclick=()=>{stop();cancelHold();selectedTarget='';record('reset',true);groups[current.group]=M.clone(CHAPTER.groups[current.group]);pedagogy[current.id]={revealed:false,selected:'',snapshot:null};views[current.id]=freshView();direction=1;progress=estimatedProgress();$('speed').value='1';['tableDetails','reasonDetails','exerciseDetails'].forEach(id=>$(id).open=false);buildControls();buildViews();changed('本场景数学参数、视图、动画和已显示答案均已恢复。同组场景共享的函数参数也随之恢复。');};
+$('showAnswer').onclick=()=>{ped().revealed=true;render();say('答案与理由已显示；之后修改数学参数会直接重算，不保留旧答案。');};
+const mq=matchMedia('(prefers-reduced-motion: reduce)');$('reduced').checked=mq.matches;document.body.classList.toggle('reduced',mq.matches);function reduce(){stop();document.body.classList.toggle('reduced',$('reduced').checked);say($('reduced').checked?'减少动态已启用：按播放直接切换到轨迹端点。':'已允许可暂停的数学演示；不会自动播放。');}$('reduced').onchange=reduce;mq.addEventListener?.('change',e=>{$('reduced').checked=e.matches;reduce();});
+$('fullScreen').onclick=async()=>{try{if(document.fullscreenElement)await document.exitFullscreen();else if(document.documentElement.requestFullscreen)await document.documentElement.requestFullscreen();else say('当前浏览器未提供全屏 API；可使用浏览器自身全屏功能。');}catch(e){say('当前环境不允许进入全屏，课件仍可正常使用。');}};
+$('saveState').onclick=()=>{const data={format:'MathAgent-classroom-state',version:1,chapter:CHAPTER.id,scene:current.id,groups,views,notes};const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=CHAPTER.id+'_课堂状态.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);say('已导出数学参数和视图状态；包含当前本地原始数据和教师备注，不向网络发送。');};
+$('loadState').onclick=()=>$('stateFile').click();
+$('stateFile').onchange=async()=>{const file=$('stateFile').files[0];if(!file)return;try{if(file.size>200000)throw Error('状态文件超过200KB限制');const data=JSON.parse(await file.text());if(data.format!=='MathAgent-classroom-state'||data.version!==1||data.chapter!==CHAPTER.id)throw Error('文件格式或章节不匹配');const candidate=M.clone(CHAPTER.groups);for(const g of Object.keys(candidate)){const src=data.groups?.[g];if(!src||Object.keys(src).some(k=>!Object.hasOwn(candidate[g],k)))throw Error('含未知参数');for(const k of Object.keys(candidate[g])){const value=src[k],fallback=candidate[g][k];if((typeof value!==typeof fallback&&!(k==='selected'&&(value===null||Number.isInteger(value))))||typeof value==='number'&&(!Number.isFinite(value)||Math.abs(value)>1000000000))throw Error('参数类型或范围无效');const cs=CHAPTER.scenes.filter(sc=>sc.group===g).flatMap(sc=>descriptors(sc,src)).filter(c=>c.key===k);if(typeof value==='number'&&cs.length&&!cs.some(c=>value>=c.min&&value<=c.max))throw Error('数值超过该课件控制范围');if(typeof value==='string'&&cs.some(c=>c.type==='select')&&!cs.some(c=>c.options?.some(([v])=>v===value)))throw Error('未知选项');candidate[g][k]=value;}if(CHAPTER.id!=='J07'&&candidate[g].lo>candidate[g].hi)throw Error('区间端点顺序无效');}
+ if(CHAPTER.validate&&!CHAPTER.validate(candidate))throw Error('图形数据不满足本章约束');
+ const nextNotes={};for(const sc of CHAPTER.scenes){const t=data.notes?.[sc.id];if(t!==undefined&&(typeof t!=='string'||t.length>5000))throw Error('教师备注格式无效');if(typeof t==='string')nextNotes[sc.id]=t;}stop();cancelHold();notes=nextNotes;groups=candidate;histories={};pedagogy={};views={};for(const sc of CHAPTER.scenes){const v=data.views?.[sc.id];if(v&&Number.isFinite(v.zoom)&&v.zoom>=.35&&v.zoom<=4&&(v.stretch===1||v.stretch===2)&&(!sc.views||sc.views.some(([mode])=>mode===v.mode))){const nv={zoom:v.zoom,stretch:v.stretch,mode:v.mode,yaw:.65,pitch:.5,panX:0,panY:0,offsetX:0,offsetY:0};for(const key of ['panX','panY','offsetX','offsetY','yaw','pitch'])if(Number.isFinite(v[key])&&Math.abs(v[key])<=100000)nv[key]=v[key];views[sc.id]=nv;}}revision++;go(CHAPTER.scenes.some(s=>s.id===data.scene)?data.scene:CHAPTER.scenes[0].id);say('状态已验证并导入；旧练习答案与旧对照已清除。');
+ }catch(e){say('未导入：'+e.message+'。当前数学状态未改动。');}finally{$('stateFile').value='';}};
+
+function syncDataEditor(){const s=state(),on=Array.isArray(s.data);$('rawEditor').hidden=!on;if(!on)return;const bounds=current.dataBounds||[-100,100];$('rawHint').textContent='单位：'+(current.dataUnit||'分')+'；允许'+bounds[0]+'至'+bounds[1]+'，最多80项。图上拖动也会修改这里的实际数据。';if(document.activeElement!==$('rawData'))$('rawData').value=s.data.join(', ');$('weightsEditor').hidden=!Array.isArray(s.weights);if(Array.isArray(s.weights)&&document.activeElement!==$('rawWeights'))$('rawWeights').value=s.weights.join(', ');}
+function parseData(text,bounds){const trim=text.trim();if(!trim)return [];const parts=trim.split(/[\s,，;；]+/),a=parts.map(Number);if(a.length>80||a.some(x=>!Number.isFinite(x)||x<bounds[0]||x>bounds[1]))throw Error('只接受'+bounds[0]+'至'+bounds[1]+'的有限数值，最多80项');return a;}
+function dataMutation(action){if(!Array.isArray(state().data))return;try{const s=state(),bounds=current.dataBounds||[-100,100];let a=[...s.data],w=Array.isArray(s.weights)?[...s.weights]:null;if(action==='apply'){a=parseData($('rawData').value,bounds);if(w){w=parseData($('rawWeights').value,[0,1000]);if(w.length!==a.length)throw Error('权重数与数据项数必须完全一致');}}if(action==='add'){if(a.length>=80)throw Error('已经有80项');a.push(current.newValue??M.clamp(0,...bounds));if(w)w.push(1);}if(action==='remove'&&a.length){const i=Number.isInteger(s.selected)&&s.selected>=0&&s.selected<a.length?s.selected:a.length-1;a.splice(i,1);if(w)w.splice(i,1);}if(action==='clear'){a=[];if(w)w=[];}stop();record('raw-data',true);s.data=a;if(w)s.weights=w;if(typeof s.selected==='number')s.selected=Math.max(0,Math.min(s.selected,a.length-1));current.afterData?.(s);buildControls();buildViews();$('rawStatus').textContent='已应用'+a.length+'项实际数据；图表和统计量已重算。';changed('原始数据已更新。');}catch(e){$('rawStatus').textContent='未应用：'+e.message+'；原数据保持不变。';say($('rawStatus').textContent);}}
+$('rawApply').onclick=()=>dataMutation('apply');$('rawAdd').onclick=()=>dataMutation('add');$('rawRemove').onclick=()=>dataMutation('remove');$('rawClear').onclick=()=>dataMutation('clear');$('teacherNote').oninput=()=>{notes[current.id]=$('teacherNote').value.slice(0,5000);};
+function fileDownload(blob,name){const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
+function exportVector(){render();const copy=$('plot').cloneNode(true),w=plot.w,h=plot.h;copy.setAttribute('x','0');copy.setAttribute('y','62');copy.setAttribute('width',w);copy.setAttribute('height',h);copy.setAttribute('viewBox',`0 0 ${w} ${h}`);copy.removeAttribute('class');copy.querySelectorAll('[data-export-fill]').forEach(el=>el.setAttribute('fill',el.dataset.exportFill));copy.querySelectorAll('[tabindex]').forEach(el=>el.removeAttribute('tabindex'));const vals=current.readings(state(),derived,view()).map(x=>x.label+'：'+x.value),rows=[];let line='',units=0;const max=Math.max(12,(w-36)/16);for(const c of vals.join('；')){const n=c.charCodeAt(0)>255?1:.55;if(units+n>max){rows.push(line);line='';units=0;}line+=c;units+=n;}if(line)rows.push(line);const height=h+100+rows.length*27;const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${height}" viewBox="0 0 ${w} ${height}"><rect width="100%" height="100%" fill="#fff"/><style>text{font-family:system-ui,'Microsoft YaHei',sans-serif}.touch-target{fill:transparent}</style><text x="18" y="25" font-size="19" fill="#203343">${esc(CHAPTER.id+' '+CHAPTER.title)}</text><text x="18" y="49" font-size="16" fill="#536b72">${esc(current.id+' '+current.title)}</text>${new XMLSerializer().serializeToString(copy)}${rows.map((t,i)=>`<text x="18" y="${h+86+i*27}" font-size="16" fill="#203343">${esc(normalizeMath(t))}</text>`).join('')}</svg>`;return {svg,w,height};}
+$('exportSVG').onclick=()=>{stop();const {svg}=exportVector();fileDownload(new Blob([svg],{type:'image/svg+xml;charset=utf-8'}),current.id+'_带标注模型.svg');say('已导出当前模型的矢量图、标签和数值读数。');};
+$('exportPNG').onclick=async()=>{stop();try{const {svg,w,height}=exportVector(),url=URL.createObjectURL(new Blob([svg],{type:'image/svg+xml;charset=utf-8'}));const img=new Image();await new Promise((ok,no)=>{img.onload=ok;img.onerror=no;img.src=url;});const c=document.createElement('canvas');c.width=w*2;c.height=height*2;const cx=c.getContext('2d');cx.scale(2,2);cx.drawImage(img,0,0);URL.revokeObjectURL(url);const blob=await new Promise(ok=>c.toBlob(ok,'image/png'));if(!blob)throw Error('PNG编码失败');fileDownload(blob,current.id+'_带标注模型.png');say('已导出双倍像素PNG，含当前模型标签与数值。');}catch(e){say('本环境未能导出PNG，可使用SVG导出：'+String(e.message||e));}};
+
+window.addEventListener('blur',()=>{cancelHold();stop();});document.addEventListener('visibilitychange',()=>{if(document.hidden){cancelHold();stop();}});window.addEventListener('hashchange',()=>{const id=location.hash.slice(1);if(id!==current.id)go(id,true);});new ResizeObserver(()=>render()).observe($('plot'));
+window.MathAgent={get chapter(){return CHAPTER.id;},get scene(){return current.id;},get mathState(){return M.clone(state());},get viewState(){return M.clone(view());},get derived(){return M.clone(derived);},get revision(){return revision;},get annotations(){return M.clone(plot.annotations);},get annotationWarnings(){return [...plot.labelCollisions];},get playing(){return playing;},get interaction(){return {pending:false,dragging:!!drag,kind:drag?.kind||null,canvasActive,selectedTarget};},get interactionContract(){return M.clone(lastContract);},get controls(){return M.clone(descriptors());},get presentation(){return M.clone(ped());},get progress(){return progress;}};
+buildNav();go(CHAPTER.scenes.some(s=>s.id===location.hash.slice(1))?location.hash.slice(1):CHAPTER.scenes[0].id,true);
+})();
+</script><script id="lesson-flow">/* MathAgent lesson flow v1 — presentation layer only.
+   Re-sequences the chapter's EXISTING blocks into a teacher-paced rhythm:
+   引入 → 探究 → 归纳 → 练习 (motivate → explore → formalize → practice).
+   It never writes mathematical state and never calls scene/model functions
+   except the runtime's own scene navigation. Every formula, definition and
+   answer shown in a stage is the node the chapter already rendered; the only
+   text added here is generic classroom guidance (stage names and prompts).
+   Stages are views, not gates: any stage and the full workbench (总览) are
+   one click or key away. Works identically for the WebGL and SVG paths.
+   Only nodes the runtime reaches by global id are moved; anything it finds
+   relative to a parent (e.g. a tool row's hint) is mirrored, never moved. */
+(function () {
+  'use strict';
+  if (window.LessonFlow) return;
+  const $ = (s, r = document) => r.querySelector(s);
+  const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+  const text = el => (el ? el.textContent.replace(/\s+/g, ' ').trim() : '');
+  const STAGES = [
+    { id: 'motivate', n: 1, name: '引入', cue: '先看图：说一说图中每种颜色、每个标注表示什么。' },
+    { id: 'explore', n: 2, name: '探究', cue: '动手试：改变一个量，看图、式子和数值怎样一起变。' },
+    { id: 'formalize', n: 3, name: '归纳', cue: '说规律：用定义把发现说完整，注意成立条件。' },
+    { id: 'practice', n: 4, name: '练习', cue: '试一试：先独立作答，再检查或看答案。' },
+  ];
+
+  /* Each adapter only names existing DOM of one runtime family.
+     blocks: key → { el, keep (fold in place of leaving layout), open (details) }
+     stages: stage → ordered block keys shown in the stage card
+     pins:   [element, destination] moved into always-visible chrome in lesson mode */
+  const ADAPTERS = {
+    primary: {
+      detect: () => !!(window.CW && window.CW.app && $('#scene-nav') && $('.info-panel')),
+      sceneCount: () => window.CW.app.scenes.length,
+      sceneIndex: () => window.CW.app.current,
+      sceneName: i => window.CW.app.scenes[i]?.title || '',
+      goScene: i => window.CW.app.go(i),
+      watch: () => [$('#scene-title')],
+      live: () => $('#announcer'),
+      heading: () => $('.scene-heading'),
+      card: () => $('.info-panel'),
+      figurePanel: () => $('.model-panel'),
+      math: () => { try { return JSON.stringify(window.CW.snapshot().state); } catch (_) { return null; } },
+      tools: () => [$('#fraction-tools'), $('#canvas-view-tools')].filter(Boolean),
+      toolsAnchor: () => $('.model-top'),
+      hint: () => $('#canvas-gesture-hint'),
+      hintAnchor: () => $('.model-top'),
+      // Figure keeps its aspect and is sized to the first screen under its real top edge.
+      fit: { el: '#diagram', below: ['#timeline'], min: 300 },
+      blocks: {
+        look: { el: () => $$('.info-panel > .info-block')[1] },
+        definition: { el: () => $$('.info-panel > .info-block')[0] },
+        current: { el: () => $('.info-panel > .info-block.current') },
+        controls: { el: () => $('#controls'), keep: true },
+        note: { el: () => $('#figure-note') },
+        exercise: { el: () => $('#exercise'), open: true },
+      },
+      stages: {
+        motivate: ['look'],
+        explore: ['controls', 'current', 'note'],
+        formalize: ['definition', 'current'],
+        practice: ['exercise'],
+      },
+    },
+    junior: {
+      detect: () => !!(window.MathAgent && $('#sceneNav [data-scene]') && $('aside.reading')),
+      nav: () => $$('#sceneNav [data-scene]'),
+      sceneCount() { return this.nav().length; },
+      sceneIndex() { return Math.max(0, this.nav().findIndex(b => b.classList.contains('active'))); },
+      sceneName(i) { return text(this.nav()[i]?.querySelector('.scene-name')) || text(this.nav()[i]); },
+      goScene(i) { this.nav()[i]?.click(); },
+      watch: () => [$('#sceneTitle')],
+      live: () => $('#live'),
+      heading: () => $('.scene-heading'),
+      card: () => $('aside.reading'),
+      figurePanel: () => $('.figure-card'),
+      math: () => { try { return JSON.stringify(window.MathAgent.mathState); } catch (_) { return null; } },
+      blocks: {
+        look: { el: () => $('#mapping') },
+        select: { el: () => $('#selectedNote') },
+        demo: { el: () => $('section.timeline') },
+        controls: { el: () => $('.controls-card'), keep: true },
+        label: { el: () => $('aside.reading > .eyebrow') },
+        definition: { el: () => $('#definition') },
+        formula: { el: () => $('#formula') },
+        readings: { el: () => $('#readings') },
+        feedback: { el: () => $('#feedback') },
+        boundary: { el: () => $('#counterexample') },
+        snapshot: { el: () => $('#snapshot') },
+        exercise: { el: () => $('#exerciseDetails'), open: true },
+      },
+      stages: {
+        motivate: ['look', 'select', 'demo'],
+        explore: ['controls', 'formula', 'readings', 'feedback', 'select', 'demo', 'snapshot'],
+        formalize: ['label', 'definition', 'formula', 'readings', 'boundary'],
+        practice: ['exercise'],
+      },
+      // 撤销 / 恢复本场景 stay one click away in every stage (they live below the fold otherwise).
+      pins: () => [[$('#undo'), $('.top-tools')], [$('#resetScene'), $('.top-tools')]],
+    },
+    senior: {
+      detect: () => !!(window.CourseApp && $('#tabs [data-scene]') && $('aside.lesson')),
+      nav: () => $$('#tabs [data-scene]'),
+      sceneCount() { return this.nav().length; },
+      sceneIndex() {
+        let id = null; try { id = window.CourseApp.getState().scene; } catch (_) {}
+        const i = this.nav().findIndex(b => (id ? b.dataset.scene === id : b.classList.contains('active')));
+        return Math.max(0, i);
+      },
+      sceneName(i) { const b = this.nav()[i]; if (!b) return ''; const c = b.cloneNode(true); c.querySelectorAll('small').forEach(x => x.remove()); return text(c); },
+      goScene(i) { this.nav()[i]?.click(); },
+      watch: () => [$('#sceneTitle')],
+      live: () => $('#live'),
+      heading: () => $('.scenehead'),
+      card: () => $('aside.lesson'),
+      figurePanel: () => $('section.board'),
+      math: () => { try { return JSON.stringify(window.CourseApp.getState().math); } catch (_) { return null; } },
+      blocks: {
+        definition: { el: () => $$('aside.lesson > .sect')[0] },
+        look: { el: () => $$('aside.lesson > .sect')[1] },
+        facts: { el: () => $$('aside.lesson > .sect')[2] },
+        metrics: { el: () => $('#metrics') },
+        controls: { el: () => $('#controls'), keep: true },
+        demo: { el: () => $('section.animation') },
+        exercise: { el: () => $('#exercise'), open: true },
+      },
+      stages: {
+        motivate: ['look', 'demo'],
+        explore: ['controls', 'metrics', 'facts', 'demo'],
+        formalize: ['definition', 'facts'],
+        practice: ['exercise'],
+      },
+    },
+    // H16 ships its own constrained runtime (window.H16Courseware) with the same lesson sections.
+    h16: {
+      detect: () => !!(window.H16Courseware && $('.tabs [data-scene]') && $('aside.lesson')),
+      nav: () => $$('.tabs [data-scene]'),
+      sceneCount() { return this.nav().length; },
+      sceneIndex() {
+        let id = null; try { id = window.H16Courseware.getState().scene; } catch (_) {}
+        return Math.max(0, this.nav().findIndex(b => (id ? b.dataset.scene === id : b.getAttribute('aria-selected') === 'true')));
+      },
+      sceneName(i) { return text(this.nav()[i]?.querySelector('span')) || text(this.nav()[i]); },
+      goScene(i) { this.nav()[i]?.click(); },
+      watch: () => [$('#sceneTitle')],
+      live: () => $('#live'),
+      heading: () => $('.scene-line'),
+      card: () => $('aside.lesson'),
+      figurePanel: () => $('section.board-card'),
+      math: () => { try { return JSON.stringify(window.H16Courseware.getState().math); } catch (_) { return null; } },
+      blocks: {
+        definition: { el: () => $$('aside.lesson > .lesson-section')[0] },
+        look: { el: () => $$('aside.lesson > .lesson-section')[1] },
+        facts: { el: () => $$('aside.lesson > .lesson-section')[2] },
+        metrics: { el: () => $('#metrics') },
+        controls: { el: () => $('#controls'), keep: true },
+        demo: { el: () => $('section.animation') },
+        exercise: { el: () => $('#exercise'), open: true },
+      },
+      stages: {
+        motivate: ['look', 'demo'],
+        explore: ['controls', 'metrics', 'facts', 'demo'],
+        formalize: ['definition', 'facts'],
+        practice: ['exercise'],
+      },
+    },
+    // Single-scene WebGL demo (高中/空间几何关系): the canvas stays put under the stage head;
+    // each step shows the page's own controls for that step below it.
+    space: {
+      detect: () => !!($('[data-rel]') && $('#s-fallback') && $('main .board')),
+      sceneCount: () => 1,
+      sceneIndex: () => 0,
+      sceneName: () => text($('main h1')),
+      goScene() {},
+      watch: () => [],
+      live: () => $('#lf-live'),
+      heading: () => $('main > section'),
+      card: () => $$('main .board')[0],
+      figurePanel: () => $$('main .board')[0],
+      math: () => JSON.stringify({ relation: ($('[data-rel].active') || {}).dataset?.rel || null }),
+      fit: { el: '#s', below: [], min: 320 },
+      cues: {
+        explore: '动手试：切换线线、线面、面面关系，拖动旋转，从不同角度看位置关系。',
+        formalize: '说规律：先猜一下，再显示规律，把位置关系说完整。',
+      },
+      blocks: {
+        look: { el: () => $('#legend') },
+        relation: { el: () => $('#o') },
+        lines: { el: () => $$('main .board .group')[0] },
+        lineplane: { el: () => $$('main .board .group')[1] },
+        planes: { el: () => $$('main .board .group')[2] },
+        lock: { el: () => $('#lock') },
+        reset: { el: () => $('#reset') },
+        guess: { el: () => $('#guess') },
+        show: { el: () => $('#show') },
+        rule: { el: () => $('#a') },
+        exercise: { el: () => $$('main .board')[1], openInside: 'details' },
+      },
+      stages: {
+        motivate: ['relation', 'look'],
+        explore: ['relation', 'lines', 'lineplane', 'planes', 'lock', 'reset'],
+        formalize: ['relation', 'guess', 'show', 'rule'],
+        practice: ['exercise'],
+      },
+    },
+  };
+
+  const LF = {
+    stages: STAGES, on: false, stage: 'motivate', family: null, a: null, parked: new Map(), pinned: [], sceneSeen: -1,
+    init() {
+      const fam = Object.keys(ADAPTERS).find(k => { try { return ADAPTERS[k].detect(); } catch (_) { return false; } });
+      if (!fam) return false;
+      this.family = fam; this.a = ADAPTERS[fam];
+      document.body.dataset.lfFamily = fam;
+      this.build();
+      let pref = null; try { pref = localStorage.getItem('mathagent.lessonflow'); } catch (_) {}
+      const q = new URLSearchParams(location.search).get('lesson');
+      this.setOn(q ? q !== 'off' : pref !== 'off', false);
+      const mo = new MutationObserver(() => this.sceneChanged());
+      this.a.watch().filter(Boolean).forEach(el => mo.observe(el, { childList: true, characterData: true, subtree: true }));
+      this.sceneChanged(true);
+      document.addEventListener('keydown', e => this.key(e));
+      window.addEventListener('resize', () => this.queueFit());
+      // The chapter's own 减少动态 switch also removes stage transitions (OS preference is handled in CSS).
+      const rc = $('#reduced') || $('#reduce') || $('#reduceMotion');
+      if (rc) { const sync = () => document.body.classList.toggle('lf-reduce', rc.checked); rc.addEventListener('change', sync); sync(); }
+      const fp = this.a.figurePanel && this.a.figurePanel();
+      if (fp) new MutationObserver(() => this.queueFit()).observe(fp, { attributes: true, attributeFilter: ['hidden'], subtree: true });
+      return true;
+    },
+    build() {
+      const a = this.a;
+      if (a.live && !a.live() && a.sceneCount() === 1) {
+        const l = document.createElement('p');
+        l.id = 'lf-live'; l.className = 'lf-sr'; l.setAttribute('role', 'status'); l.setAttribute('aria-live', 'polite');
+        document.body.append(l);
+      }
+      const card = a.card();
+      card.classList.add('lf-card');
+      const head = document.createElement('div');
+      head.className = 'lf-card-head'; head.id = 'lf-card-head';
+      head.innerHTML = '<span class="lf-num" aria-hidden="true"></span><p class="lf-cue-line"><strong class="lf-title"></strong><span class="lf-cue"></span></p>';
+      card.prepend(head);
+      this.head = head;
+      const rail = document.createElement('nav');
+      rail.className = 'lf-rail'; rail.id = 'lf-rail';
+      rail.setAttribute('aria-label', '课堂节奏：引入、探究、归纳、练习（翻页笔或 PageDown 下一步）');
+      rail.innerHTML = '<ol class="lf-steps">' +
+        STAGES.map(s => `<li><button type="button" class="lf-step" data-lf-stage="${s.id}" data-lf-n="${s.n}"><b>${s.n}</b>${s.name}</button></li>`).join('') +
+        '</ol><div class="lf-move"><button type="button" id="lf-prev" class="lf-prev">◀ 上一步</button><button type="button" id="lf-next" class="lf-next">下一步 ▶</button></div>' +
+        '<button type="button" id="lf-overview" class="lf-overview" aria-pressed="false" title="显示完整工作台：全部参数、定义与练习同屏">总览</button>' +
+        '<button type="button" id="lf-help" class="lf-help" aria-expanded="false" aria-controls="lf-help-panel" aria-label="课堂操作帮助">?</button>' +
+        '<div id="lf-help-panel" class="lf-help-panel" role="dialog" aria-label="课堂操作帮助" hidden><strong tabindex="-1">课堂节奏怎么用</strong><ul>' +
+        '<li><kbd>PageDown</kbd> / 翻页笔「下一页」：下一步；<kbd>PageUp</kbd>：上一步。练习之后自动进入下一个场景。</li>' +
+        '<li>数字键 <kbd>1</kbd>–<kbd>4</kbd>：直接跳到引入、探究、归纳、练习（输入框和图上不生效）。</li>' +
+        '<li>四个步骤随时可点，不设门槛；「总览」恢复完整工作台，再点一次回到课堂节奏。</li>' +
+        '<li>切换步骤只改变显示重点，不改变任何数学参数；图上拖动、方向键、滚轮缩放在每一步都可用。</li>' +
+        '<li><kbd>Esc</kbd> 关闭本帮助。</li></ul></div>';
+      a.heading().append(rail);
+      this.rail = rail;
+      rail.addEventListener('click', e => {
+        const b = e.target.closest('button'); if (!b) return;
+        if (b.dataset.lfStage) this.go(b.dataset.lfStage, true);
+        else if (b.id === 'lf-prev') this.prev();
+        else if (b.id === 'lf-next') this.next();
+        else if (b.id === 'lf-overview') this.setOn(!this.on, true);
+        else if (b.id === 'lf-help') this.help();
+      });
+      // Tool rows (zoom / free board) fold behind one toggle; folded rows stay
+      // laid out (inert, zero height) so in-figure editors keep every source.
+      const tools = a.tools ? a.tools() : [];
+      if (tools.length) {
+        const drawer = document.createElement('div');
+        drawer.className = 'lf-tools'; drawer.id = 'lf-tools';
+        tools[0].before(drawer);
+        tools.forEach(t => drawer.append(t));
+        const tbtn = document.createElement('button');
+        tbtn.type = 'button'; tbtn.id = 'lf-tools-toggle'; tbtn.className = 'lf-tools-toggle';
+        tbtn.setAttribute('aria-expanded', 'false'); tbtn.setAttribute('aria-controls', 'lf-tools');
+        tbtn.textContent = '缩放与工具 ▾';
+        tbtn.onclick = () => this.tools(!document.body.classList.contains('lf-tools-open'));
+        a.toolsAnchor()?.append(tbtn);
+        this.drawer = drawer; this.tbtn = tbtn;
+      }
+      // The runtime owns its gesture hint (and finds it relative to its tool
+      // row), so the hint is mirrored as text, never moved.
+      const hint = a.hint ? a.hint() : null;
+      if (hint) {
+        const mirror = document.createElement('span');
+        mirror.className = 'lf-hint'; mirror.setAttribute('aria-hidden', 'true');
+        const copy = () => { mirror.textContent = hint.textContent; };
+        copy(); new MutationObserver(copy).observe(hint, { childList: true, characterData: true, subtree: true });
+        (a.hintAnchor() || hint.parentNode).insertBefore(mirror, this.tbtn && this.tbtn.parentNode === a.hintAnchor() ? this.tbtn : null);
+      }
+      for (const [k, def] of Object.entries(a.blocks)) {
+        const el = def.el();
+        if (!el) continue;
+        el.dataset.lfBlock = k;
+        if (def.keep) el.classList.add('lf-keep');
+        const mark = document.createComment('lf:' + k);
+        el.before(mark);
+        this.parked.set(k, { el, mark, def });
+      }
+      for (const [el, to] of (a.pins ? a.pins() : [])) {
+        if (!el || !to) continue;
+        const mark = document.createComment('lf:pin');
+        el.before(mark);
+        this.pinned.push({ el, mark, to });
+      }
+    },
+    // an adapter may word a step's cue for its own controls (same four steps)
+    cue(s) { return (this.a.cues && this.a.cues[s.id]) || s.cue; },
+    queueFit() {
+      if (this.fitRaf) return;
+      this.fitRaf = requestAnimationFrame(() => { this.fitRaf = 0; this.fit(); });
+    },
+    fit() {
+      const f = this.a.fit, body = document.body;
+      if (!f || !this.on) { body.style.removeProperty('--lf-fig-h'); this.figH = 0; return; }
+      const el = $(f.el); if (!el) return;
+      let below = 8;
+      for (const sel of f.below || []) { const e = $(sel); if (e && !e.hidden && e.getClientRects().length) below += e.getBoundingClientRect().height; }
+      const top = el.getBoundingClientRect().top + window.scrollY;
+      const h = Math.max(f.min || 300, Math.floor(window.innerHeight - top - below));
+      if (h !== this.figH) { this.figH = h; body.style.setProperty('--lf-fig-h', h + 'px'); window.dispatchEvent(new Event('resize')); }
+    },
+    tools(open) {
+      document.body.classList.toggle('lf-tools-open', open);
+      this.tbtn?.setAttribute('aria-expanded', String(open));
+      if (this.drawer) this.drawer.inert = this.on && !open;
+      if (this.tbtn) this.tbtn.textContent = open ? '缩放与工具 ▴' : '缩放与工具 ▾';
+      this.queueFit();
+    },
+    setOn(on, user) {
+      this.on = on;
+      document.body.classList.toggle('lf-on', on);
+      $('#lf-overview')?.setAttribute('aria-pressed', String(!on));
+      if ($('#lf-overview')) $('#lf-overview').textContent = on ? '总览' : '课堂节奏';
+      if (user) { try { localStorage.setItem('mathagent.lessonflow', on ? 'on' : 'off'); } catch (_) {} }
+      for (const p of this.pinned) { if (on) p.to.append(p.el); else p.mark.after(p.el); p.el.classList.toggle('lf-pin', on); }
+      if (on) this.apply(); else this.restore();
+      this.tools(document.body.classList.contains('lf-tools-open'));
+      if (user) this.say(on ? `课堂节奏：第 ${this.cur().n} 步 ${this.cur().name}` : '总览：完整工作台已显示，数学状态不变。');
+      this.fit();
+      window.dispatchEvent(new Event('resize'));
+    },
+    restore() {
+      for (const p of this.parked.values()) {
+        p.mark.after(p.el);
+        p.el.classList.remove('lf-fold', 'lf-show'); p.el.inert = false;
+        if (p.def.open) p.el.open = false;
+        if (p.def.openInside) { const d = p.el.querySelector(p.def.openInside); if (d) d.open = false; }
+      }
+      document.body.removeAttribute('data-lf-stage');
+    },
+    cur() { return STAGES.find(s => s.id === this.stage); },
+    apply() {
+      if (!this.on) return;
+      const s = this.cur(), card = this.a.card(), shown = this.a.stages[s.id] || [];
+      document.body.dataset.lfStage = s.id;
+      for (const [k, p] of this.parked) {
+        if (shown.includes(k)) continue;
+        // keep-layout blocks fold inside the card (zero height, inert) instead of leaving the layout
+        if (p.def.keep) card.append(p.el); else p.mark.after(p.el);
+        p.el.classList.remove('lf-show'); p.el.classList.add('lf-fold');
+        p.el.inert = !!p.def.keep;
+        if (p.def.open) p.el.open = false;
+        if (p.def.openInside) { const d = p.el.querySelector(p.def.openInside); if (d) d.open = false; }
+      }
+      for (const k of shown) {
+        const p = this.parked.get(k); if (!p) continue;
+        card.append(p.el);
+        p.el.classList.add('lf-show'); p.el.classList.remove('lf-fold'); p.el.inert = false;
+        if (p.def.open) p.el.open = true;
+        if (p.def.openInside) { const d = p.el.querySelector(p.def.openInside); if (d) d.open = true; }
+      }
+      this.head.querySelector('.lf-num').textContent = s.n;
+      this.head.querySelector('.lf-title').textContent = s.name;
+      this.head.querySelector('.lf-cue').textContent = this.cue(s);
+      card.classList.remove('lf-enter'); void card.offsetWidth; card.classList.add('lf-enter');
+      this.syncRail();
+      this.queueFit();
+    },
+    syncRail() {
+      const s = this.cur(), i = this.a.sceneIndex();
+      $$('.lf-step', this.rail).forEach(b => {
+        const on = b.dataset.lfStage === s.id;
+        b.classList.toggle('active', on);
+        if (on) b.setAttribute('aria-current', 'step'); else b.removeAttribute('aria-current');
+      });
+      const next = this.nextTarget(), prev = this.prevTarget();
+      const nb = $('#lf-next'), pb = $('#lf-prev');
+      nb.disabled = !next; pb.disabled = !prev;
+      const nextName = !next ? '' : next.scene !== i ? `下一场景：${this.a.sceneName(next.scene)}` : `下一步：${STAGES.find(x => x.id === next.stage).name}`;
+      nb.innerHTML = !next ? '本章已完成' : `<span>${nextName.replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]))}</span> ▶`;
+      nb.title = nextName || '已是本章最后一步';
+      nb.setAttribute('aria-label', nextName || '本章已完成');
+      pb.textContent = !prev ? '◀ 上一步' : prev.scene !== i ? '◀ 上一场景' : `◀ ${STAGES.find(x => x.id === prev.stage).name}`;
+      pb.setAttribute('aria-label', !prev ? '上一步（已是第一步）' : prev.scene !== i ? `上一场景：${this.a.sceneName(prev.scene)}` : `上一步：${STAGES.find(x => x.id === prev.stage).name}`);
+    },
+    nextTarget() {
+      const k = STAGES.findIndex(s => s.id === this.stage), i = this.a.sceneIndex();
+      if (k < STAGES.length - 1) return { scene: i, stage: STAGES[k + 1].id };
+      if (i < this.a.sceneCount() - 1) return { scene: i + 1, stage: STAGES[0].id };
+      return null;
+    },
+    prevTarget() {
+      const k = STAGES.findIndex(s => s.id === this.stage), i = this.a.sceneIndex();
+      if (k > 0) return { scene: i, stage: STAGES[k - 1].id };
+      if (i > 0) return { scene: i - 1, stage: STAGES[STAGES.length - 1].id };
+      return null;
+    },
+    move(t) {
+      if (!t) return;
+      if (!this.on) this.setOn(true, true);
+      if (t.scene !== this.a.sceneIndex()) { this.pending = t.stage; this.a.goScene(t.scene); this.sceneChanged(); }
+      else this.go(t.stage, true);
+    },
+    next() { this.move(this.nextTarget()); },
+    prev() { this.move(this.prevTarget()); },
+    go(id, user) {
+      if (!STAGES.some(s => s.id === id)) return;
+      if (!this.on) this.setOn(true, !!user);
+      this.stage = id;
+      this.apply();
+      if (user) { const s = this.cur(); this.say(`第 ${s.n} 步 ${s.name}：${this.cue(s)}`); }
+    },
+    sceneChanged(first) {
+      const i = this.a.sceneIndex();
+      if (!first && i === this.sceneSeen) { this.syncRail(); return; }
+      this.sceneSeen = i;
+      this.stage = this.pending || 'motivate';
+      this.pending = null;
+      if (this.on) this.apply(); else this.syncRail();
+    },
+    say(msg) {
+      const live = this.a.live(); if (!live) return;
+      clearTimeout(this.sayTimer);
+      this.sayTimer = setTimeout(() => { live.textContent = msg; }, 60);
+    },
+    help(force) {
+      const p = $('#lf-help-panel'), b = $('#lf-help');
+      const open = force === undefined ? p.hidden : force;
+      p.hidden = !open; b.setAttribute('aria-expanded', String(open));
+      if (open) p.querySelector('strong').focus();
+    },
+    key(e) {
+      if (e.defaultPrevented || e.altKey || e.ctrlKey || e.metaKey) return;
+      const t = e.target;
+      if (e.key === 'Escape' && !$('#lf-help-panel').hidden) { this.help(false); $('#lf-help').focus(); return; }
+      const typing = t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName) || t.getAttribute?.('role') === 'slider');
+      if (typing) return;
+      if (e.key === 'PageDown') { e.preventDefault(); this.next(); }
+      else if (e.key === 'PageUp') { e.preventDefault(); this.prev(); }
+      else if (/^[1-4]$/.test(e.key) && !(t && t.closest && t.closest('svg, canvas, #figure-wrap, .plot-host, .board'))) {
+        e.preventDefault(); this.go(STAGES[+e.key - 1].id, true);
+      }
+    },
+    snapshot() {
+      const vis = el => !!el && el.getClientRects().length > 0 && getComputedStyle(el).visibility !== 'hidden' && !el.classList.contains('lf-fold');
+      return {
+        family: this.family, on: this.on, stage: this.stage, scene: this.a.sceneIndex(), scenes: this.a.sceneCount(),
+        next: $('#lf-next')?.textContent || '', shown: [...this.parked.keys()].filter(k => vis(this.parked.get(k).el)),
+        title: this.head?.querySelector('.lf-title')?.textContent || '', cue: this.head?.querySelector('.lf-cue')?.textContent || '', math: this.a.math(),
+      };
+    },
+  };
+  window.LessonFlow = LF;
+  const start = () => { if (!LF.init()) setTimeout(() => LF.init(), 300); };
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else setTimeout(start, 0);
+})();</script></body></html>

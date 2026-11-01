@@ -1,0 +1,645 @@
+/* Shared page anatomy. Views compose these instead of re-declaring layout in
+ * scoped styles, so every page shares the same header, toolbar, stat and meter
+ * vocabulary. Tokens live in global.css; motion in motion.css.
+ */
+
+/* ── Page frame ── */
+.page-shell {
+  width: 100%;
+  max-width: var(--page-max);
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-5);
+  min-width: 0;
+}
+
+.page-shell--narrow {
+  max-width: var(--page-max-narrow);
+}
+
+/* Page intro: title + one-line purpose on the left, primary actions on the right. */
+.page-intro {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--sp-4);
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.page-intro__text {
+  min-width: 0;
+}
+
+.page-intro__eyebrow {
+  margin: 0 0 4px;
+  color: var(--primary);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-semibold);
+  letter-spacing: 0.04em;
+}
+
+.page-intro h1,
+.page-intro__title {
+  margin: 0;
+  color: var(--ink);
+  font-size: var(--fs-2xl);
+  font-weight: var(--fw-bold);
+  line-height: var(--lh-tight);
+  letter-spacing: -0.02em;
+}
+
+.page-intro p,
+.page-intro__lead {
+  max-width: 72ch;
+  margin: 6px 0 0;
+  color: var(--ink-muted);
+  font-size: var(--fs-sm);
+  line-height: var(--lh-snug);
+}
+
+.page-intro__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
+}
+
+/* ── Card header anatomy (inside el-card #header) ── */
+.card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.card-head-left,
+.card-head-right {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.card-head-right {
+  justify-content: flex-end;
+}
+
+.head-title,
+.section-title,
+.card-title-text {
+  color: var(--ink);
+  font-size: var(--fs-lg);
+  font-weight: var(--fw-semibold);
+  line-height: var(--lh-tight);
+  letter-spacing: -0.01em;
+}
+
+.head-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  flex: 0 0 auto;
+  border-radius: var(--radius-sm);
+  background: var(--primary-soft);
+  color: var(--primary);
+  font-size: 16px;
+}
+
+.head-subtitle {
+  color: var(--ink-muted);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-medium);
+}
+
+/* ── Toolbar: filters on the left, actions on the right, one row when it fits ── */
+.toolbar-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.toolbar-group {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.toolbar-divider {
+  width: 1px;
+  height: 20px;
+  background: var(--line);
+}
+
+/* ── Stat tiles: label · serif figure · context, as the showcase's report metrics.
+ * The figure stays in ink; tone lives in the left marker. ── */
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: var(--sp-3);
+}
+
+.stat-tile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  padding: 18px 18px 16px 20px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--paper);
+}
+
+.stat-tile::before {
+  content: '';
+  position: absolute;
+  inset: 16px auto 16px 0;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: var(--stat-tone, var(--moss));
+}
+
+.stat-tile__label {
+  color: var(--ink-muted);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-semibold);
+}
+
+.stat-tile__value {
+  color: var(--ink);
+  font-family: var(--font-serif);
+  font-size: clamp(30px, 3vw, 40px);
+  font-weight: 400;
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+  font-variant-numeric: lining-nums tabular-nums;
+}
+
+.stat-tile__unit {
+  margin-left: 3px;
+  color: var(--ink-muted);
+  font-family: var(--font-body);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-medium);
+  letter-spacing: 0;
+}
+
+.stat-tile__meta {
+  color: var(--ink-faint);
+  font-size: var(--fs-xs);
+  line-height: var(--lh-snug);
+}
+
+.stat-tile.is-good { --stat-tone: var(--success); }
+.stat-tile.is-warn { --stat-tone: var(--warning); }
+.stat-tile.is-bad,
+.stat-tile.is-warm { --stat-tone: var(--chart-wrong); }
+
+/* ── Insight cards: a ruled kicker, a serif title and one muted line, then the figure ── */
+.insight-card {
+  min-width: 0;
+  padding: 20px 22px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--paper);
+}
+
+.insight-card__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  margin-bottom: 16px;
+}
+
+.insight-card__kicker {
+  color: var(--moss-deep);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-semibold);
+  letter-spacing: 0.08em;
+}
+
+.insight-card__title {
+  margin: 4px 0 0;
+  color: var(--ink);
+  font-family: var(--font-serif);
+  font-size: var(--fs-2xl);
+  font-weight: 500;
+  line-height: 1.25;
+  letter-spacing: -0.005em;
+}
+
+.insight-card__lead {
+  margin: 4px 0 0;
+  color: var(--ink-muted);
+  font-size: var(--fs-sm);
+  line-height: var(--lh-snug);
+}
+
+.insight-card__badge {
+  flex: 0 0 auto;
+  padding: 3px 10px;
+  border-radius: var(--radius-pill);
+  background: var(--fill);
+  color: var(--ink-soft);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-semibold);
+  white-space: nowrap;
+}
+
+/* ── Ink bars: an 8px track whose fill grows in once; --bar-tone and --i set color and stagger ── */
+.ink-bar {
+  position: relative;
+  display: block;
+  height: 8px;
+  overflow: hidden;
+  border-radius: 4px;
+  background: var(--fill);
+}
+
+.ink-bar > span {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: inherit;
+  background: var(--bar-tone, var(--chart-wrong));
+  transform-origin: left center;
+  animation: ma-meter-grow 1s var(--ease-emphasized) backwards;
+  animation-delay: calc(var(--i, 0) * 120ms + 120ms);
+}
+
+/* ── Meter rows (label · bar · value) for distributions ── */
+.meter-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.meter-row {
+  display: grid;
+  grid-template-columns: minmax(160px, 260px) minmax(0, 1fr) 72px;
+  align-items: center;
+  gap: var(--sp-4);
+  padding: 10px 8px;
+  border-radius: var(--radius-sm);
+  transition: background-color var(--dur-2) var(--ease-out);
+}
+
+.meter-row:hover {
+  background: var(--fill-2);
+}
+
+.meter-row__label {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.meter-row__label strong {
+  color: var(--ink);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semibold);
+  overflow-wrap: anywhere;
+}
+
+.meter-row__label small {
+  color: var(--ink-muted);
+  font-size: var(--fs-xs);
+}
+
+.meter-row__track {
+  position: relative;
+  height: 8px;
+  overflow: hidden;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--primary) 10%, var(--card));
+}
+
+.meter-row__fill {
+  height: 100%;
+  border-radius: 4px;
+  background: var(--primary);
+  transform-origin: left center;
+  animation: ma-meter-grow var(--dur-4) var(--ease-emphasized) backwards;
+}
+
+.meter-row__value {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  color: var(--ink);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semibold);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.meter-row__value small {
+  color: var(--ink-muted);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-medium);
+}
+
+@keyframes ma-meter-grow {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+
+/* ── Small shared bits ── */
+.num {
+  font-variant-numeric: tabular-nums;
+}
+
+.text-muted {
+  color: var(--ink-muted);
+}
+
+.status-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: var(--radius-pill);
+  background: var(--fill);
+  color: var(--ink-soft);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-semibold);
+  white-space: nowrap;
+}
+
+.status-chip::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.status-chip.is-good { background: var(--success-soft); color: color-mix(in srgb, var(--success) 80%, var(--ink)); }
+.status-chip.is-warn { background: var(--warning-soft); color: var(--warning); }
+.status-chip.is-bad { background: var(--danger-soft); color: var(--danger); }
+.status-chip.is-plain::before { display: none; }
+
+@media (max-width: 768px) {
+  .meter-row {
+    grid-template-columns: minmax(0, 1fr) 64px;
+  }
+
+  .meter-row__track {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .meter-row__fill,
+  .ink-bar > span {
+    animation: none;
+  }
+}
+
+/* ── Masthead: the editorial opening block of a hero page.
+ * Flat paper, hairline rules, a serif headline and a hand-drawn ink illustration.
+ * No glow, no gradients, no glass. */
+.hero-band {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  padding: 34px 38px 30px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-xl);
+  background: var(--paper-raised);
+  color: var(--ink);
+}
+
+.hero-band.is-kraft {
+  background: var(--paper-deep);
+  border-color: transparent;
+}
+
+.hero-band__eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 14px;
+  color: var(--moss-deep);
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  letter-spacing: 0.16em;
+}
+
+.hero-band__eyebrow::before {
+  content: '';
+  width: 22px;
+  height: 1px;
+  background: currentColor;
+}
+
+.hero-band__title {
+  margin: 0;
+  color: var(--ink);
+  font-family: var(--font-serif);
+  font-size: clamp(32px, 3vw, 46px);
+  font-weight: 500;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+}
+
+.hero-band__lead {
+  max-width: 60ch;
+  margin: 14px 0 0;
+  color: var(--ink-muted);
+  font-size: var(--fs-lg);
+  line-height: 1.65;
+}
+
+.hero-metrics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px 0;
+}
+
+.hero-metric {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: 0 30px;
+  border-left: 1px solid var(--rule);
+}
+
+.hero-metric:first-child {
+  padding-left: 0;
+  border-left: 0;
+}
+
+.hero-metric__value {
+  color: var(--ink);
+  font-family: var(--font-serif);
+  font-size: clamp(36px, 3.2vw, 52px);
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+  font-variant-numeric: lining-nums;
+}
+
+.hero-metric__value small {
+  margin-left: 4px;
+  color: var(--ink-muted);
+  font-family: var(--font-body);
+  font-size: var(--fs-sm);
+  font-weight: 500;
+  letter-spacing: 0;
+}
+
+.hero-metric__label {
+  margin-top: 10px;
+  overflow: hidden;
+  color: var(--ink-muted);
+  font-size: var(--fs-xs);
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 480px) {
+  .hero-metrics {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .hero-metric {
+    padding-inline: 12px;
+  }
+
+  .hero-metric__label {
+    white-space: normal;
+  }
+}
+
+/* Tone rides on a small marker, not on the numeral. */
+.hero-metric.is-accent .hero-metric__value {
+  color: var(--moss-deep);
+}
+
+.hero-metric.is-warn .hero-metric__label::before,
+.hero-metric.is-bad .hero-metric__label::before,
+.hero-metric.is-good .hero-metric__label::before {
+  content: '';
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-right: 6px;
+  border-radius: 50%;
+  vertical-align: 1px;
+}
+
+.hero-metric.is-warn .hero-metric__label::before { background: var(--warning); }
+.hero-metric.is-bad .hero-metric__label::before { background: var(--danger); }
+.hero-metric.is-good .hero-metric__label::before { background: var(--success); }
+
+/* Hand-drawn ink illustration that inks itself once. */
+.hero-plot {
+  position: absolute;
+  z-index: -1;
+  pointer-events: none;
+}
+
+.hero-plot .axis {
+  stroke: var(--rule);
+  stroke-width: 1;
+}
+
+.hero-plot .curve {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 0;
+  animation: ma-plot-draw 1.8s var(--ease-out) 0.15s backwards;
+}
+
+.hero-plot .curve.is-faint {
+  stroke: var(--rule);
+  stroke-dasharray: 0.012 0.012;
+  animation: ma-fade-in 900ms var(--ease-out) 0.4s backwards;
+}
+
+.hero-plot .dot {
+  fill: var(--moss);
+  stroke: none;
+  animation: ma-fade-in var(--dur-3) var(--ease-out) 1.4s backwards;
+}
+
+.hero-plot .dot.is-hollow {
+  fill: var(--paper-raised);
+  stroke: var(--ink);
+  stroke-width: 1.4;
+}
+
+.hero-plot .wash {
+  fill: var(--moss-soft);
+  stroke: none;
+}
+
+@keyframes ma-plot-draw {
+  from { stroke-dashoffset: 1; }
+  to { stroke-dashoffset: 0; }
+}
+
+/* Two button voices used on mastheads: solid ink and quiet outline. */
+.el-button.is-solid {
+  --el-button-bg-color: var(--ink-solid);
+  --el-button-border-color: var(--ink-solid);
+  --el-button-text-color: var(--on-ink);
+  --el-button-hover-bg-color: color-mix(in srgb, var(--ink-solid) 84%, var(--paper));
+  --el-button-hover-border-color: color-mix(in srgb, var(--ink-solid) 84%, var(--paper));
+  --el-button-hover-text-color: var(--on-ink);
+  --el-button-active-bg-color: var(--ink-solid);
+  --el-button-active-border-color: var(--ink-solid);
+  padding-inline: 20px;
+  font-weight: 600;
+}
+
+.el-button.is-outline {
+  --el-button-bg-color: transparent;
+  --el-button-border-color: var(--rule);
+  --el-button-text-color: var(--ink);
+  --el-button-hover-bg-color: var(--fill);
+  --el-button-hover-border-color: var(--ink);
+  --el-button-hover-text-color: var(--ink);
+  --el-button-active-bg-color: var(--fill);
+  padding-inline: 18px;
+}
+
+/* Index numerals used by task tiles and step headers. */
+.index-numeral {
+  color: var(--moss);
+  font-family: var(--font-serif);
+  font-size: 34px;
+  font-weight: 400;
+  line-height: 1;
+  font-variant-numeric: lining-nums;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-plot .curve,
+  .hero-plot .dot {
+    animation: none;
+  }
+}

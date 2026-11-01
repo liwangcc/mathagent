@@ -1,0 +1,20 @@
+{
+  "columns": [
+    {
+      "index": 1,
+      "label": "左栏",
+      "transcription": "姓名：S02\n二、填空题\n13. 743\n14. 1\n15. 2\n16. 4π\n三、解答题\n17.\n解：(1) 已知 \\frac{1}{\\sin A} + \\frac{\\sin A}{\\sin B \\sin C} = \\frac{\\sin B}{\\sin A \\sin C} + \\frac{\\sin C}{\\sin A \\sin B}\n\\sin B \\sin C + \\sin^2 A = \\sin^2 B + \\sin^2 C\nbc + a^2 = b^2 + c^2\n\\cos A = \\frac{b^2 + c^2 - a^2}{2bc} = \\frac{1}{2}\n∵ ∠A ∈ (0, π)\n∴ ∠A = \\frac{π}{3}"
+    },
+    {
+      "index": 2,
+      "label": "中栏",
+      "transcription": "(2) 延长AM到点N使AM=MN\n四边形ABNC是平行四边形，∠ABN=\\frac{2π}{3}\n(2|BM|)^2 = b^2 + c^2 - bc\n(2|AM|)^2 = b^2 + c^2 + bc\n得：\\frac{b^2 + c^2 - bc}{b^2 + c^2 + bc} = \\frac{3}{7}\n2b^2 - 5bc + 2c^2 = 0\n∵ b > c\n\\frac{b}{c} = 2\n\n18.\n解：(1) 由题：A'E ⊥ 平面BCD\n∵ BC ⊂ 平面BCD\n∴ A'E ⊥ BC\n又∵ CD ⊥ BC, A'E ∩ CD = E\n∴ BC ⊥ 平面A'CD\n∵ A'D  平面A'CD\n BC ⊥ A'D\n A'D ⊥ A'B, A'B ∩ BC = B\n∴ A'D ⊥ 平面A'BC\n(2) 以D为原点，DA为x轴，DC为y轴建立空间直角坐标系\n令 AB=2, AD=1\n∴ C(0, 2, 0), B(1, 2, 0), A'(0, \\frac{1}{2}, \\frac{\\sqrt{3}}{2}), M(0, \\frac{1}{4}, \\frac{\\sqrt{3}}{4})\n\\vec{BC} = (-1, 0, 0), \\vec{CM} = (0, -\\frac{7}{4}, \\frac{\\sqrt{3}}{4})\n设平面MBC的一个法向量为 \\vec{m} = (x, y, z)\n解得：\\vec{m} = (0, \\sqrt{3}, 7)\n平面DBC的一个法向量为 \\vec{n} = (0, 0, 1)\n|\\vec{m}| = \\sqrt{52}, |\\vec{n}| = 1\n令 \\vec{m} 与 \\vec{n} 所成夹角为 θ\n\\vec{m} \\cdot \\vec{n} = |\\vec{m}| \\cdot |\\vec{n}| \\cosθ\n\\cosθ = \\frac{7\\sqrt{13}}{26}\n∵ 该二面角为锐角\n∴ 二面角 M-BC-D 的余弦值为 \\frac{7\\sqrt{13}}{26}"
+    },
+    {
+      "index": 3,
+      "label": "右栏",
+      "transcription": "19.\n解：(1) 由题：“适合天气”的概率 P = \\frac{20}{30} = \\frac{2}{3}\n∴ ξ ~ B(6, \\frac{2}{3})   ξ的值可取 0, 1, 2, 3, 4, 5, 6\nP(ξ=0) = (\\frac{1}{3})^6 = \\frac{1}{729}\nP(ξ=1) = C_6^1 (\\frac{2}{3}) (\\frac{1}{3})^5 = \\frac{12}{729} = \\frac{4}{243}\nP(ξ=2) = C_6^2 (\\frac{2}{3})^2 (\\frac{1}{3})^4 = \\frac{60}{729} = \\frac{20}{243}\nP(ξ=3) = C_6^3 (\\frac{2}{3})^3 (\\frac{1}{3})^3 = \\frac{160}{729}\nP(ξ=4) = C_6^4 (\\frac{2}{3})^4 (\\frac{1}{3})^2 = \\frac{240}{729} = \\frac{80}{243}\nP(ξ=5) = C_6^5 (\\frac{2}{3})^5 (\\frac{1}{3}) = \\frac{192}{729} = \\frac{64}{243}\nP(ξ=6) = C_6^6 (\\frac{2}{3})^6 (\\frac{1}{3})^0 = \\frac{64}{729}\n[表格]\nξ | 0 | 1 | 2 | 3 | 4 | 5 | 6\nP | \\frac{1}{729} | \\frac{4}{243} | \\frac{20}{243} | \\frac{160}{729} | \\frac{80}{243} | \\frac{64}{243} | \\frac{64}{729}\n\n(2) ① 由(1)得：E(ξ) = 6 × \\frac{2}{3} = 4\n这6天内“适合天气”ξ天的销售金额为 40x 元，\n其余“不适合天气”(6-ξ)天的销售金额为\n(40 - \\frac{x}{4})(6-ξ)x 元   6天进购该蔬菜总金额为 120x 元\n∴ y = 40xξ + (40 - \\frac{x}{4})(6-ξ)x - 120x\n= \\frac{x^2}{4}ξ - \\frac{3x^2}{2} + 120x\n② E(y) = \\frac{x^2}{4}E(ξ) - \\frac{3}{2}(x^2) + 120x\n= x^2 - \\frac{3}{2}x^2 + 120x = -\\frac{1}{2}x^2 + 120x\n令 f(x) = -\\frac{1}{2}x^2 + 120x = -\\frac{1}{2}(x-120)^2 + 7200\n答：当 x=120 时 E(y) 有最大值为 7200"
+    }
+  ],
+  "uncertain": []
+}

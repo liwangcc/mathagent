@@ -1,0 +1,41 @@
+<!doctype html><html lang="zh"><meta charset="utf-8"><title>MathAgent 文件导入验收（不调用模型）</title>
+<h1>文件导入验收</h1><p>调用 Upload.vue 实际模板/学生 handler、Worker 和 Canvas；服务可用性闸门仅在测试中置为可用，不登录、不发模型请求。</p>
+<label>模板 <input id="template" type="file" multiple></label><label>学生 <input id="student" type="file" multiple></label>
+<pre id="result">ready</pre>
+<script type="module">
+import uploadSource from '../src/views/Upload.vue?raw'
+import {extractImagesFromFileList,extractImagesFromDrop,IMPORT_ACCEPT} from '../src/utils/fileExtraction.js'
+import {compressImageFiles,validateUploadList} from '../src/utils/uploadValidation.js'
+const state = {templateFiles:{value:[]},templatePreprocessing:{value:false},fileList:{value:[]},imagePreprocessing:{value:false},imageExtracting:{value:false},extractionProgress:{value:{}},isDragover:{value:false}}
+const messages=[]
+const deps = {...state,recognitionAutoArmed:{value:true},extractImagesFromFileList,extractImagesFromDrop,compressImageFiles,validateUploadList,
+  requireTemplateService:()=>true,requireRecognitionService:()=>true,
+  ElMessage:{warning:message=>messages.push({level:'warning',message}),error:message=>messages.push({level:'error',message}),success:message=>messages.push({level:'success',message})},
+  notifyProcessingError:(error,fallback)=>messages.push({level:'error',message:error.message||fallback})}
+const template=uploadSource.slice(uploadSource.indexOf('async function onTemplateFileChange(e)'),uploadSource.indexOf('function templateRecognitionStorageKey()'))
+const student=uploadSource.slice(uploadSource.indexOf('async function processFiles('),uploadSource.indexOf('function resetFiles()'))
+const handlers=new Function(...Object.keys(deps),`${template}\n${student}\nreturn {onTemplateFileChange,onFileInputChange}`)(...Object.values(deps))
+window.receipts=[]
+window.runImport=async(files,mode='template')=>{
+  messages.length=0
+  state.templateFiles.value=[];state.fileList.value=[]
+  const start=performance.now()
+  await handlers[mode==='template'?'onTemplateFileChange':'onFileInputChange']({target:{files,value:''}})
+  const output=(mode==='template'?state.templateFiles:state.fileList).value
+  const receipt={input:files.map(f=>f.name),mode,messages:[...messages],elapsedMs:Math.round(performance.now()-start),output:[]}
+  for(const file of output){
+    const raw=file.raw||file
+    const bytes=new Uint8Array(await raw.arrayBuffer())
+    let binary=''; for(const byte of bytes) binary+=String.fromCharCode(byte)
+    receipt.output.push({name:raw.name,type:raw.type,size:raw.size,source:raw.sourceRelativePath,data:btoa(binary)})
+  }
+  window.receipts.push(receipt)
+  document.querySelector('#result').textContent=JSON.stringify(receipt,null,2)
+  return receipt
+}
+for(const mode of ['template','student']){
+  const input=document.querySelector('#'+mode);input.accept=IMPORT_ACCEPT
+  input.onchange=()=>window.runImport([...input.files],mode)
+}
+window.harnessReady=true
+</script></html>
