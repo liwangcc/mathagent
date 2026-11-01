@@ -27,7 +27,8 @@ jobs:
         run: python -m compileall -q app.py config.py routers services database.py
 
       - name: 鉴权与安全回归
-        # 只跑不依赖外部模型/网络的用例：认证、短信限流、连接测试、安全加固。
+        # 只跑不依赖外部模型/网络的用例：认证、短信限流、连接测试、安全加固，
+        # 以及设置页写 .env 的注入/并发回归、CSP 白名单、Host 校验。
         # 完整套件需要模型与 Redis，留给本地 venv 执行。
         run: |
           pytest -q \
@@ -35,7 +36,11 @@ jobs:
             tests/test_security_hardening.py \
             tests/test_security_report_fixes.py \
             tests/test_sms_send_guard.py \
-            tests/test_settings_test_connection.py
+            tests/test_settings_test_connection.py \
+            tests/test_settings_env_injection.py \
+            tests/test_env_sync.py \
+            tests/test_csp_policy.py \
+            tests/test_allowed_hosts.py
 
       - name: 依赖一致性
         run: pip check

@@ -2,7 +2,7 @@
 # MathAgent production release.
 #
 # Usage:
-#   cd /d/MathAgent && bash deploy.sh [--dry-run]
+#   cd <repo root> && bash deploy.sh [--dry-run]
 #
 # The script intentionally leaves nginx unchanged.  A healthy loopback service
 # is required before a separate, reviewed public-vhost switch can remove the
