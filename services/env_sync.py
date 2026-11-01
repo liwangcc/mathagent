@@ -9,6 +9,9 @@
    否则写仓库根目录的 .env；
 2. 每个请求开头比对一次文件 mtime/size（一次 stat，微秒级），变了就把受管的键重新读进
    os.environ，让另一个 worker 在下一个请求就用上新值，不需要重启。
+
+解析规则跟 python-dotenv 对齐（启动时 python-dotenv 也读同一个文件）：只有 \n 才分行，
+支持 `export ` 前缀、单/双引号、行尾注释。
 """
 from __future__ import annotations
 
@@ -29,20 +32,66 @@ def env_path() -> Path:
     return Path(__file__).resolve().parent.parent / ".env"
 
 
+def _unquote(raw: str) -> str:
+    """按 dotenv 的规则取一个值：单引号原样、双引号反转义、无引号去行尾注释。"""
+    raw = raw.strip()
+    if raw[:1] == "'":
+        end = raw.find("'", 1)
+        return raw[1:end] if end != -1 else raw[1:]
+    if raw[:1] == '"':
+        out = []
+        i = 1
+        while i < len(raw):
+            ch = raw[i]
+            if ch == '"':
+                break
+            if ch == "\\" and i + 1 < len(raw):
+                nxt = raw[i + 1]
+                if nxt == "n":
+                    out.append("\n")
+                elif nxt == "t":
+                    out.append("\t")
+                elif nxt in ('"', "\\"):
+                    out.append(nxt)
+                else:
+                    out.append(ch + nxt)
+                i += 2
+                continue
+            out.append(ch)
+            i += 1
+        return "".join(out)
+    # 未加引号：dotenv 把空白后的 # 当注释起点
+    for marker in (" #", "\t#"):
+        idx = raw.find(marker)
+        if idx != -1:
+            raw = raw[:idx]
+    return raw.strip()
+
+
 def _parse(text: str) -> dict[str, str]:
+    """按 python-dotenv 的规则解析。
+
+    只有 \\n 才分行。str.splitlines() 还会在 \\x0b \\x0c \\x85 U+2028 上分行，
+    与写盘端「一行一个键」的假设不一致，等于给设置页留了注入通道。
+    """
+    if text.startswith("\ufeff"):
+        text = text[1:]
+    text = text.replace("\r\n", "\n").replace("\r", "\n")
+
     out: dict[str, str] = {}
-    for raw in text.splitlines():
+    for raw in text.split("\n"):
         line = raw.strip()
-        if not line or line.startswith("#") or "=" not in line:
+        if not line or line.startswith("#"):
             continue
-        key, value = line.split("=", 1)
+        if line.startswith("export "):
+            line = line[len("export "):].lstrip()
+        if "=" not in line:
+            continue
+        key, _, rest = line.partition("=")
         key = key.strip()
-        value = value.strip()
         if not key or not key.replace("_", "").isalnum():
             continue
-        if len(value) >= 2 and value[0] == value[-1] == '"':
-            value = value[1:-1].replace('\\"', '"').replace("\\\\", "\\")
-        out[key] = value
+        out[key] = _unquote(rest)
     return out
 
 

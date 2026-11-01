@@ -80,11 +80,11 @@ HSTS_MAX_AGE = int(os.environ.get("HSTS_MAX_AGE", "31536000"))
 CONTENT_SECURITY_POLICY = os.environ.get(
     "CONTENT_SECURITY_POLICY",
     "default-src 'self'; "
-    "script-src 'self' 'unsafe-inline' https://*.aliyun.com https://*.alicaptcha.com; "
+    "script-src 'self' 'unsafe-inline' https://*.alicaptcha.com; "
     "style-src 'self' 'unsafe-inline'; "
     "img-src 'self' data: blob:; "
     "font-src 'self' data:; "
-    "connect-src 'self' https://*.aliyun.com https://*.alicaptcha.com; "
+    "connect-src 'self' https://*.alicaptcha.com; "
     "frame-src https://*.alicaptcha.com; frame-ancestors 'none'; "
     "base-uri 'self'; "
     "form-action 'self'",

@@ -508,8 +508,9 @@ def _allowed_hosts() -> list[str]:
     if not hosts:
         # 未配置时默认允许本机 + 常见反代透传 host
         hosts = ["127.0.0.1", "localhost", "0.0.0.0", "[::1]"]
-    # testserver 是 TestClient 默认 host，必须始终保留以保证测试可用
-    if "testserver" not in hosts:
+    # testserver 是 TestClient 的默认 host。只在测试进程里放行：
+    # 生产部署就算正确配了域名，也不该接受这个测试专用的 Host。
+    if os.environ.get("MATHAGENT_ALLOW_TESTSERVER") == "1" and "testserver" not in hosts:
         hosts.append("testserver")
     return hosts
 

@@ -1,9 +1,11 @@
 """设置页面接口 — API Key 配置 / 模型选择 / 连接测试"""
 
+import contextlib
 import ipaddress
 import logging
 import os
 import socket
+import time
 from pathlib import Path
 from urllib.parse import urlparse
 
@@ -18,6 +20,55 @@ from models_user import User
 from routers.auth import _require_admin
 
 logger = logging.getLogger(__name__)
+
+# 会被 str.splitlines() 当成换行、但在 .env 里仍属同一行的字符。
+# 写进去是一行、读回来是多行，就等于允许通过设置页往 .env 里插任意键
+# （LLM_BASE_URL、JWT_SECRET、MATHAGENT_DATA_DIR 都能插）。
+_LINE_BREAK_CHARS = ("\n", "\r", "\x0b", "\x0c", "\x1c", "\x1d", "\x1e", "\x85", "\u2028", "\u2029")
+
+
+def _has_line_break(value: str) -> bool:
+    return any(ch in value for ch in _LINE_BREAK_CHARS)
+
+
+def _is_key_line(line: str, key: str) -> bool:
+    stripped = line.lstrip()
+    if stripped.startswith("export "):
+        stripped = stripped[len("export "):].lstrip()
+    return stripped.startswith(f"{key}=") or stripped.startswith(f"{key} =")
+
+
+@contextlib.contextmanager
+def _env_file_lock(timeout: float = 5.0):
+    """跨进程串行化 .env 的读-改-写（gunicorn 至少两个 worker）。"""
+    lock = ENV_PATH.with_name(ENV_PATH.name + ".lock")
+    lock.parent.mkdir(parents=True, exist_ok=True)
+    deadline = time.monotonic() + timeout
+    handle = None
+    while handle is None:
+        try:
+            handle = os.open(lock, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+        except FileExistsError:
+            if time.monotonic() > deadline:
+                # 锁文件只防并发写，不是安全边界；超时就接管，
+                # 免得一个崩掉的 worker 永久卡住设置页。
+                try:
+                    lock.unlink()
+                except OSError:
+                    pass
+                continue
+            time.sleep(0.05)
+    try:
+        yield
+    finally:
+        try:
+            os.close(handle)
+        except OSError:
+            pass
+        try:
+            lock.unlink()
+        except OSError:
+            pass
 router = APIRouter()
 
 # .env 位置跟运行形态走：容器/生产在 data 卷里，本地在仓库根目录
@@ -214,6 +265,9 @@ def save_settings(data: SettingsSaveRequest, user: User = Depends(_require_admin
     api_key = (data.api_key or "").strip()
     base_url = (data.base_url or "").strip()
     model = (data.model or "").strip()
+    for _label, _value in (("API Key", api_key), ("模型地址", base_url), ("模型", model)):
+        if _has_line_break(_value):
+            raise HTTPException(400, f"{_label}不能包含换行或行分隔符")
 
     changed = []
 
@@ -256,39 +310,38 @@ def save_settings(data: SettingsSaveRequest, user: User = Depends(_require_admin
     return {"ok": True, "changed": changed}
 
 
-def _update_config_file(key: str, value: str):
-    """更新 .env 中的一个键值对（替换已有行或追加），不再写可执行的 config.py。
 
-    值按 .env 字面量处理：含特殊字符时用双引号包裹并转义，杜绝注入。
-    仅允许预期的配置键，防止任意键写入。
+def _update_config_file(key: str, value: str):
+    """把键值写进 .env（先删掉旧行再追加），原子替换，跨进程加锁。
+
+    值按 .env 字面量处理：反斜杠与双引号转义；包含换行或行分隔符的写入
+    一律拒绝 —— 那种值会破坏「一行一个键」的前提。
     """
     allowed = {
         "LLM_API_KEY", "LLM_BASE_URL", "LLM_MODEL",
     }
     if key not in allowed:
         raise ValueError(f"不允许写入的配置键: {key}")
+    if _has_line_break(value):
+        raise ValueError(f"配置值里不能有换行或行分隔符: {key}")
 
-    # .env 安全转义：包裹双引号并转义反斜杠/双引号/换行
-    safe = value.replace("\\", "\\\\").replace('"', '\\"').replace("\n", "").replace("\r", "")
+    safe = value.replace("\\", "\\\\").replace('"', '\\"')
     line = f'{key}="{safe}"'
 
-    lines = []
-    if ENV_PATH.exists():
-        lines = ENV_PATH.read_text(encoding="utf-8").splitlines()
-
-    replaced = False
-    for i, ln in enumerate(lines):
-        # 匹配 KEY=... 或 KEY = ...（忽略前导空白与注释行）
-        stripped = ln.lstrip()
-        if stripped.startswith(f"{key}=") or stripped.startswith(f"{key} ="):
-            lines[i] = line
-            replaced = True
-            break
-    if not replaced:
+    with _env_file_lock():
+        lines = []
+        if ENV_PATH.exists():
+            lines = ENV_PATH.read_text(encoding="utf-8").splitlines()
+        # 同一个键可能已经出现多次；只改第一行会让「读最后一行」的解析器继续用旧值，
+        # 所以先全删再追加。
+        lines = [ln for ln in lines if not _is_key_line(ln, key)]
         lines.append(line)
 
-    ENV_PATH.parent.mkdir(parents=True, exist_ok=True)
-    ENV_PATH.write_text("\n".join(lines) + "\n", encoding="utf-8")
+        ENV_PATH.parent.mkdir(parents=True, exist_ok=True)
+        tmp = ENV_PATH.with_name(ENV_PATH.name + ".tmp")
+        tmp.write_text("\n".join(lines) + "\n", encoding="utf-8")
+        os.replace(tmp, ENV_PATH)
+
     _sync_env(force=True)
 
 

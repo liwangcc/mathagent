@@ -44,6 +44,8 @@ def _isolate_environment(root: Path) -> None:
     os.environ["KNOWLEDGE_CLASSIFIER_WORKER_ENABLED"] = "false"
     os.environ["DATABASE_URL"] = f"sqlite:///{(root / 'test.db').as_posix()}"
     os.environ["MATHAGENT_DATA_DIR"] = str(root)
+    # TestClient 用 Host: testserver；生产不认这个 Host，这里显式打开。
+    os.environ["MATHAGENT_ALLOW_TESTSERVER"] = "1"
 
 
 def _redirect_storage(root: Path) -> None:
