@@ -11,5 +11,9 @@
 # 实际只是少装了一个测试插件。
 -r requirements.txt
 
-pytest>=8.3
+# pytest 9 changed monkeypatch.setattr undo (pytest#10644) and breaks patching the
+# _LazyModule proxies (cv2/np/Image) in services/; keep 8.x until tests are adapted.
+pytest>=8.3,<9
 pytest-asyncio>=0.23
+# The Redis limiter/scheduler tests run their Lua scripts on fakeredis; [lua] adds lupa.
+fakeredis[lua]>=2.40
