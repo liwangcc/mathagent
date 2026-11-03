@@ -22,7 +22,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     LANG=C.UTF-8 \
     TZ=Asia/Shanghai
 
-# curl 供容器的 HEALTHCHECK 使用；libglib2.0-0 / libgomp1 是 numpy/scipy/opencv
+# curl 供容器的 HEALTHCHECK 使用；libglib2.0-0 / libgomp1 是 numpy/opencv
 # 运行期依赖；build-essential 只在安装依赖时需要，装完即卸掉，避免留在运行镜像里。
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \

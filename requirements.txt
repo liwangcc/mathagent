@@ -20,7 +20,6 @@ python-dotenv>=1.0.1
 PyJWT==2.13.0
 # 模型密钥静态加密（AES-GCM）。环境里已由其他依赖间接安装，这里显式声明。
 cryptography>=42,<52
-alibabacloud-dysmsapi20170525==2.0.24
 alibabacloud-dypnsapi20170525>=2.0.0
 alibabacloud-tea-util>=0.3.0
 bcrypt==4.2.1
@@ -28,8 +27,6 @@ numpy>=1.26.0
 opencv-python-headless==4.10.0.84
 matplotlib>=3.8.0
 reportlab==5.0.0
-scipy>=1.12.0
-sympy>=1.13.0
 # 教师办公助手（Hermes）是可选组件，见 requirements-optional.txt。
 # 它把 certifi 钉在 2026.5.20、PyJWT 钉在 2.12.1，和本文件的 SEC-01 证书链要求冲突，
 # 放进主依赖会让 pip 解析失败，所以单独拆出去。
