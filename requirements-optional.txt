@@ -6,7 +6,13 @@
 #
 # 装机顺序：
 #   pip install -r requirements.txt
+#   pip install "openai==2.24.0" "concurrent-log-handler==0.9.29; sys_platform == 'win32'"
 #   pip install --no-deps hermes-agent          # 只用它的代码，不换掉上面装好的 certifi/PyJWT
 # 这样能跑，但 hermes-agent 是按旧版 certifi/PyJWT 测的；如果办公助手报依赖错误，
 # 把它单独装进另一个 venv，用环境变量把 MathAgent 指向那个解释器。
+#
+# Imported by Hermes itself, never by MathAgent code. Because hermes-agent goes in
+# with --no-deps, they are installed explicitly (second command above).
+openai==2.24.0
+concurrent-log-handler==0.9.29; sys_platform == 'win32'
 hermes-agent>=0.16.0; python_version < '3.14'
