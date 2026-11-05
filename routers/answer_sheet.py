@@ -1292,7 +1292,7 @@ async def _recognize_source_stream_events(
             }
             session.status = "source_uploaded"
             session.error = None
-            session.save()
+            await asyncio.to_thread(session.save)
         completed += 1
         yield _answer_sheet_sse("progress", {
             "message": f"{label}识别进度已保存",
@@ -1363,7 +1363,7 @@ async def _recognize_source_stream_events(
         page.pop("recognition_checkpoint", None)
     session.status = "source_recognized"
     session.error = None
-    session.save()
+    await asyncio.to_thread(session.save)
     yield _answer_sheet_sse("done", {
         "message": "原始试卷识别完成",
         "current": total,
