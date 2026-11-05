@@ -53,6 +53,32 @@ jobs:
       - name: 依赖一致性
         run: pip check
 
+  backend-golden:
+    name: 后端特征测试（golden）
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: 安装依赖
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-dev.txt
+
+      - name: 特征测试
+        # golden 钉的是解码后的像素（尺寸 + RGB 字节），锁渲染结果而不是 PNG
+        # 编码器；这三个文件只调本地函数和内存内的 FastAPI 测试客户端，不需要
+        # 模型、Redis 或网络，所以可以进 CI。
+        run: |
+          pytest -q \
+            tests/test_full_column_evidence_characterization.py \
+            tests/test_recognition_stream_characterization.py \
+            tests/test_orientation_confirm_characterization.py
+
   frontend-test:
     name: 前端测试与构建
     runs-on: ubuntu-latest
