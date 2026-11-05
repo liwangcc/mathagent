@@ -3438,242 +3438,393 @@ async def batch_grade_confirm_orientation(
     db: Session = Depends(get_db),
 ):
     """Persist a client-rendered teacher rotation, then retry one paper."""
+    action_id = _orientation_action_id(action_id, quarter_turns_clockwise)
+    try:
+        with batch_operation_lock(batch_id, UPLOAD_DIR):
+            return await _confirm_orientation_locked(
+                batch_id,
+                paper_id,
+                action_id,
+                quarter_turns_clockwise,
+                file,
+                user,
+                db,
+            )
+    except BatchOperationBusy as exc:
+        raise HTTPException(409, detail="该批次正在执行另一项操作，请稍后重试") from exc
+
+
+def _orientation_action_id(action_id: str, quarter_turns_clockwise: int) -> str:
+    """Validate the request before taking the batch lock; returns the action id."""
     action_id = str(action_id or "").strip()
     if not (8 <= len(action_id) <= 80) or not action_id.replace("-", "").replace("_", "").isalnum():
         raise HTTPException(400, detail="action_id 格式无效")
     if quarter_turns_clockwise not in {0, 1, 2, 3}:
         raise HTTPException(400, detail="旋转角度必须是 0/90/180/270 度")
+    return action_id
 
+
+async def _confirm_orientation_locked(
+    batch_id: str,
+    paper_id: str,
+    action_id: str,
+    quarter_turns_clockwise: int,
+    file: UploadFile | None,
+    user: User,
+    db: Session,
+) -> dict:
+    """The confirmation itself; the caller holds the batch operation lock."""
+    batch = QuickBatch.load_meta(batch_id, UPLOAD_DIR)
+    _require_owned_batch(batch, user)
+    _require_orientation_editable(batch)
+    upload = _batch_upload_or_404(batch, paper_id)
+
+    history, existing = _orientation_action(upload, action_id, quarter_turns_clockwise)
+    if existing is not None and existing.get("status") == "complete":
+        return _orientation_state_payload(batch)
+    if file is None:
+        raise HTTPException(
+            400,
+            detail={
+                "error": "CLIENT_ORIENTATION_UPLOAD_REQUIRED",
+                "message": "请在浏览器完成旋转后重新提交方向文件",
+            },
+        )
+    _require_orientation_change(batch, upload, paper_id)
+
+    template_session, paper_cache = _orientation_template_evidence(batch, user.id)
+    current_source_hash = await _verified_original_source_hash(batch, upload)
+    _require_rotatable_page(upload)
+    working_path, working_sha256 = await _save_client_orientation_upload(
+        file,
+        batch_dir=batch.batch_dir,
+        paper_id=paper_id,
+        action_id=action_id,
+        source_sha256=current_source_hash,
+        quarter_turns_clockwise=quarter_turns_clockwise,
+    )
+
+    event, confirmed_orientation, history = _begin_orientation_retry(
+        batch,
+        upload,
+        history,
+        existing,
+        paper_id=paper_id,
+        action_id=action_id,
+        quarter_turns_clockwise=quarter_turns_clockwise,
+        teacher_id=user.id,
+        source_sha256=current_source_hash,
+        working_path=working_path,
+        working_sha256=working_sha256,
+    )
+    await _save_quick_batch_meta(batch)
+
+    roster_names = _class_roster_names(db, batch, user.id)
+    result = await _recognize_reoriented_upload(
+        batch,
+        upload,
+        paper_cache,
+        confirmed_orientation,
+        teacher_id=user.id,
+        paper_id=paper_id,
+        action_id=action_id,
+        roster_names=roster_names,
+    )
+    _finish_orientation_retry(
+        batch, upload, event, history, result, template_session, db,
+        teacher_id=user.id, paper_id=paper_id,
+    )
+    await _save_quick_batch_meta(batch)
+
+    return _orientation_state_payload(batch)
+
+
+def _require_orientation_editable(batch: QuickBatch) -> None:
+    """Only a batch between recognition and grading may change a page direction."""
+    if batch.review_results or batch.status in {"grading", "review_ready", "done"}:
+        raise HTTPException(409, detail="本批次已进入批阅或审阅阶段，不能再修改试卷方向")
+    if batch.status not in {
+        "failed",
+        "ocr_partial_failed",
+        "ocr_done",
+        "orientation_retrying",
+    }:
+        raise HTTPException(409, detail="请先等待当前识别或页型基准确认流程结束")
+
+
+def _batch_upload_or_404(batch: QuickBatch, paper_id: str) -> dict:
+    upload = next(
+        (
+            item for item in batch.uploads
+            if str(item.get("paper_id") or "") == paper_id
+        ),
+        None,
+    )
+    if upload is None:
+        raise HTTPException(404, detail="试卷不存在或已被清理")
+    return upload
+
+
+def _orientation_action(
+    upload: dict,
+    action_id: str,
+    quarter_turns_clockwise: int,
+) -> tuple[list[dict], dict | None]:
+    """The page's direction history and this action's earlier event, if any.
+
+    Replaying an action id with other turns is refused.
+    """
+    history = list(upload.get("orientation_history") or [])
+    existing = next(
+        (item for item in history if str(item.get("action_id") or "") == action_id),
+        None,
+    )
+    if existing is not None:
+        if int(existing.get("quarter_turns_clockwise") or 0) != quarter_turns_clockwise:
+            raise HTTPException(409, detail="同一方向确认请求不能改用其他旋转角度")
+    return history, existing
+
+
+def _require_orientation_change(batch: QuickBatch, upload: dict, paper_id: str) -> None:
+    """A cleared direction may be rotated again only while its OCR retry is unfinished."""
+    job = next(
+        (
+            item for item in batch.ocr_jobs
+            if str(item.get("paper_id") or "") == paper_id
+        ),
+        {},
+    )
+    if orientation_is_ready(upload) and not (
+        upload.get("orientation_status") == "teacher_confirmed"
+        and str(job.get("status") or "") in {"queued", "running", "failed"}
+    ):
+        raise HTTPException(409, detail="该试卷方向已经确认，无需重复旋转")
+
+
+def _orientation_template_evidence(
+    batch: QuickBatch,
+    teacher_id: int,
+) -> tuple[TemplateSession, PaperCache]:
+    """The batch's frozen template and its visual evidence cache."""
+    if batch.source_mode != "template" or not batch.template_id:
+        raise HTTPException(409, detail="旧批次缺少模板快照标识，请重新上传本批试卷")
+    template_session = _load_owned_template_session(batch.template_id, teacher_id)
+    paper_cache = _build_template_paper_cache(template_session)
+    return template_session, paper_cache
+
+
+async def _verified_original_source_hash(batch: QuickBatch, upload: dict) -> str:
+    """Hash of the preserved original; it must still be inside the batch and unchanged."""
+    batch_root = os.path.realpath(batch.batch_dir)
+    original_path = os.path.realpath(str(
+        upload.get("original_image_path") or upload.get("image_path") or ""
+    ))
+    if (
+        not original_path.startswith(batch_root + os.sep)
+        or not os.path.isfile(original_path)
+    ):
+        raise HTTPException(404, detail="原始试卷已被清理，无法旋转")
+    current_source_hash = await asyncio.to_thread(sha256_file, original_path)
+    stored_source_hash = str(upload.get("source_sha256") or "")
+    if stored_source_hash and stored_source_hash != current_source_hash:
+        raise HTTPException(409, detail="原始试卷内容已变化，请重新上传")
+    return current_source_hash
+
+
+def _require_rotatable_page(upload: dict) -> None:
+    if upload.get("orientation_reason") == "page_tilt_exceeds_limit":
+        raise HTTPException(
+            409,
+            detail={
+                "error": "ORIENTATION_STILL_INVALID",
+                "message": "该页面存在连续倾斜，90 度旋转无法修正，请重新拍摄。",
+            },
+        )
+
+
+def _begin_orientation_retry(
+    batch: QuickBatch,
+    upload: dict,
+    history: list[dict],
+    existing: dict | None,
+    *,
+    paper_id: str,
+    action_id: str,
+    quarter_turns_clockwise: int,
+    teacher_id: int,
+    source_sha256: str,
+    working_path: str,
+    working_sha256: str,
+) -> tuple[dict, dict, list[dict]]:
+    """Switch the page to the teacher-rotated file and reopen its OCR job.
+
+    Returns ``(event, confirmed_orientation, history)``; the event stays
+    ``ocr_running`` until the retry has finished.
+    """
+    working = {
+        "image_path": working_path,
+        "working_sha256": working_sha256,
+        "manual_quarter_turns": quarter_turns_clockwise,
+    }
+    diagnostic = {
+        **_client_ocr_ready_orientation(os.path.basename(working_path)),
+        "orientation_coordinate_space": "client_teacher_rotated_pixels",
+    }
+
+    confirmed_at = datetime.now(timezone.utc).isoformat()
+    event = existing or {
+        "action_id": action_id,
+        "quarter_turns_clockwise": quarter_turns_clockwise,
+        "teacher_id": teacher_id,
+        "created_at": confirmed_at,
+    }
+    event.update({
+        "status": "ocr_running",
+        "source_sha256": source_sha256,
+        "working_sha256": working["working_sha256"],
+        "detector": diagnostic,
+    })
+    history = [
+        item for item in history
+        if str(item.get("action_id") or "") != action_id
+    ]
+    history.append(event)
+
+    old_path = str(upload.get("image_path") or "")
+    confirmed_orientation = {
+        **diagnostic,
+        "orientation_status": "teacher_confirmed",
+        "orientation_reason": "teacher_confirmed",
+    }
+    upload.update({
+        **working,
+        **confirmed_orientation,
+        "orientation_confirmed_by": teacher_id,
+        "orientation_confirmed_at": confirmed_at,
+        "orientation_confirmation_id": action_id,
+        "orientation_history": history[-20:],
+    })
+    batch.replace_ocr_job_path(old_path, upload)
+    batch.mark_ocr_job(upload["image_path"], "running")
+    batch.papers = [
+        item for item in batch.papers
+        if str(item.get("paper_id") or "") != paper_id
+    ]
+    # Followers must not keep pointing at the page being re-recognized.
+    _refresh_identity_inheritance(batch)
+    batch.confirmation_questions = []
+    batch.status = "orientation_retrying"
+    batch.error = None
+    return event, confirmed_orientation, history
+
+
+async def _recognize_reoriented_upload(
+    batch: QuickBatch,
+    upload: dict,
+    paper_cache: PaperCache,
+    confirmed_orientation: dict,
+    *,
+    teacher_id: int,
+    paper_id: str,
+    action_id: str,
+    roster_names: list[str],
+) -> dict:
+    """OCR the rotated page under its own vision phase; a failure becomes a result."""
+    vision_phase_token = set_vision_phase_key(
+        f"orientation-retry:{paper_id}:{action_id}"
+    )
     try:
-        with batch_operation_lock(batch_id, UPLOAD_DIR):
-            batch = QuickBatch.load_meta(batch_id, UPLOAD_DIR)
-            _require_owned_batch(batch, user)
-            if batch.review_results or batch.status in {"grading", "review_ready", "done"}:
-                raise HTTPException(409, detail="本批次已进入批阅或审阅阶段，不能再修改试卷方向")
-            if batch.status not in {
-                "failed",
-                "ocr_partial_failed",
-                "ocr_done",
-                "orientation_retrying",
-            }:
-                raise HTTPException(409, detail="请先等待当前识别或页型基准确认流程结束")
-
-            upload = next(
-                (
-                    item for item in batch.uploads
-                    if str(item.get("paper_id") or "") == paper_id
-                ),
-                None,
-            )
-            if upload is None:
-                raise HTTPException(404, detail="试卷不存在或已被清理")
-
-            history = list(upload.get("orientation_history") or [])
-            existing = next(
-                (item for item in history if str(item.get("action_id") or "") == action_id),
-                None,
-            )
-            if existing is not None:
-                if int(existing.get("quarter_turns_clockwise") or 0) != quarter_turns_clockwise:
-                    raise HTTPException(409, detail="同一方向确认请求不能改用其他旋转角度")
-                if existing.get("status") == "complete":
-                    return _orientation_state_payload(batch)
-
-            if file is None:
-                raise HTTPException(
-                    400,
-                    detail={
-                        "error": "CLIENT_ORIENTATION_UPLOAD_REQUIRED",
-                        "message": "请在浏览器完成旋转后重新提交方向文件",
-                    },
-                )
-
-            job = next(
-                (
-                    item for item in batch.ocr_jobs
-                    if str(item.get("paper_id") or "") == paper_id
-                ),
-                {},
-            )
-            if orientation_is_ready(upload) and not (
-                upload.get("orientation_status") == "teacher_confirmed"
-                and str(job.get("status") or "") in {"queued", "running", "failed"}
-            ):
-                raise HTTPException(409, detail="该试卷方向已经确认，无需重复旋转")
-
-            if batch.source_mode != "template" or not batch.template_id:
-                raise HTTPException(409, detail="旧批次缺少模板快照标识，请重新上传本批试卷")
-            template_session = _load_owned_template_session(batch.template_id, user.id)
-            paper_cache = _build_template_paper_cache(template_session)
-
-            batch_root = os.path.realpath(batch.batch_dir)
-            original_path = os.path.realpath(str(
-                upload.get("original_image_path") or upload.get("image_path") or ""
-            ))
-            if (
-                not original_path.startswith(batch_root + os.sep)
-                or not os.path.isfile(original_path)
-            ):
-                raise HTTPException(404, detail="原始试卷已被清理，无法旋转")
-            current_source_hash = await asyncio.to_thread(sha256_file, original_path)
-            stored_source_hash = str(upload.get("source_sha256") or "")
-            if stored_source_hash and stored_source_hash != current_source_hash:
-                raise HTTPException(409, detail="原始试卷内容已变化，请重新上传")
-
-            if upload.get("orientation_reason") == "page_tilt_exceeds_limit":
-                raise HTTPException(
-                    409,
-                    detail={
-                        "error": "ORIENTATION_STILL_INVALID",
-                        "message": "该页面存在连续倾斜，90 度旋转无法修正，请重新拍摄。",
-                    },
-                )
-            working_path, working_sha256 = await _save_client_orientation_upload(
-                file,
-                batch_dir=batch.batch_dir,
-                paper_id=paper_id,
-                action_id=action_id,
-                source_sha256=current_source_hash,
-                quarter_turns_clockwise=quarter_turns_clockwise,
-            )
-            working = {
-                "image_path": working_path,
-                "working_sha256": working_sha256,
-                "manual_quarter_turns": quarter_turns_clockwise,
-            }
-            diagnostic = {
-                **_client_ocr_ready_orientation(os.path.basename(working_path)),
-                "orientation_coordinate_space": "client_teacher_rotated_pixels",
-            }
-
-            confirmed_at = datetime.now(timezone.utc).isoformat()
-            event = existing or {
-                "action_id": action_id,
-                "quarter_turns_clockwise": quarter_turns_clockwise,
-                "teacher_id": user.id,
-                "created_at": confirmed_at,
-            }
-            event.update({
-                "status": "ocr_running",
-                "source_sha256": current_source_hash,
-                "working_sha256": working["working_sha256"],
-                "detector": diagnostic,
-            })
-            history = [
-                item for item in history
-                if str(item.get("action_id") or "") != action_id
-            ]
-            history.append(event)
-
-            old_path = str(upload.get("image_path") or "")
-            confirmed_orientation = {
-                **diagnostic,
-                "orientation_status": "teacher_confirmed",
-                "orientation_reason": "teacher_confirmed",
-            }
-            upload.update({
-                **working,
-                **confirmed_orientation,
-                "orientation_confirmed_by": user.id,
-                "orientation_confirmed_at": confirmed_at,
-                "orientation_confirmation_id": action_id,
-                "orientation_history": history[-20:],
-            })
-            batch.replace_ocr_job_path(old_path, upload)
-            batch.mark_ocr_job(upload["image_path"], "running")
-            batch.papers = [
-                item for item in batch.papers
-                if str(item.get("paper_id") or "") != paper_id
-            ]
-            # Followers must not keep pointing at the page being re-recognized.
-            _refresh_identity_inheritance(batch)
-            batch.confirmation_questions = []
-            batch.status = "orientation_retrying"
-            batch.error = None
-            await _save_quick_batch_meta(batch)
-
-            roster_names = _class_roster_names(db, batch, user.id)
-            vision_phase_token = set_vision_phase_key(
-                f"orientation-retry:{paper_id}:{action_id}"
-            )
-            try:
-                try:
-                    result = await _recognize_batch_upload(
-                        batch,
-                        upload["image_path"],
-                        paper_cache,
-                        teacher_id=str(user.id),
-                        paper_id=paper_id,
-                        roster_names=roster_names,
-                    )
-                    result["orientation"] = confirmed_orientation
-                except Exception as exc:
-                    logger.error("方向确认后单卷 OCR 异常 %s: %s", upload.get("filename"), exc)
-                    result = ocr_failure_result(
-                        exc,
-                        message="方向已确认，但试卷识别失败",
-                    )
-                    result["orientation"] = confirmed_orientation
-            finally:
-                reset_vision_phase_key(vision_phase_token)
-
-            failed, can_retry = mark_ocr_outcome(
-                batch, upload["image_path"], result,
-            )
-            failure_questions = _single_page_template_failure_questions(template_session)
-            error_payload = _ingest_recognized_paper(
+        try:
+            result = await _recognize_batch_upload(
                 batch,
-                db,
-                user.id,
-                str(upload.get("filename") or "unknown"),
                 upload["image_path"],
-                result,
-                failure_questions=(None if can_retry else failure_questions),
+                paper_cache,
+                teacher_id=str(teacher_id),
+                paper_id=paper_id,
+                roster_names=roster_names,
             )
-            if (
-                error_payload
-                and error_payload.get("requires_manual_review")
-                and orientation_is_ready(error_payload)
-            ):
-                batch.mark_ocr_job(
-                    upload["image_path"],
-                    "needs_review",
-                    str(error_payload.get("error") or ""),
-                )
+            result["orientation"] = confirmed_orientation
+        except Exception as exc:
+            logger.error("方向确认后单卷 OCR 异常 %s: %s", upload.get("filename"), exc)
+            result = ocr_failure_result(
+                exc,
+                message="方向已确认，但试卷识别失败",
+            )
+            result["orientation"] = confirmed_orientation
+    finally:
+        reset_vision_phase_key(vision_phase_token)
+    return result
 
-            upload_order = {
-                str(item.get("paper_id") or ""): index
-                for index, item in enumerate(batch.uploads)
-            }
-            batch.papers.sort(
-                key=lambda item: upload_order.get(str(item.get("paper_id") or ""), len(upload_order))
-            )
-            _initialize_batch_answer_map(batch, user.id, template_session)
-            summary = batch_ocr_summary(batch)
-            all_orientations_ready = all(
-                orientation_is_ready(item) for item in batch.uploads
-            )
-            if summary["can_grade"] and all_orientations_ready:
-                batch.confirmation_questions = _confirmation_questions(batch)
-                batch.status = "ocr_done"
-            else:
-                batch.status = "ocr_partial_failed"
 
-            event["status"] = "complete"
-            event["ocr_status"] = next(
-                (
-                    item.get("status") for item in batch.ocr_jobs
-                    if str(item.get("paper_id") or "") == paper_id
-                ),
-                "failed",
-            )
-            event["completed_at"] = datetime.now(timezone.utc).isoformat()
-            upload["orientation_history"] = history[-20:]
-            await _save_quick_batch_meta(batch)
+def _finish_orientation_retry(
+    batch: QuickBatch,
+    upload: dict,
+    event: dict,
+    history: list[dict],
+    result: dict,
+    template_session: TemplateSession,
+    db: Session,
+    *,
+    teacher_id: int,
+    paper_id: str,
+) -> None:
+    """Record the retried OCR in the ledger, settle the batch, complete the event.
 
-            return _orientation_state_payload(batch)
-    except BatchOperationBusy as exc:
-        raise HTTPException(409, detail="该批次正在执行另一项操作，请稍后重试") from exc
+    Unlike ``_apply_ocr_outcome`` an accelerator pause is ingested like any
+    other result here; kept as it was.
+    """
+    _failed, can_retry = mark_ocr_outcome(
+        batch, upload["image_path"], result,
+    )
+    failure_questions = _single_page_template_failure_questions(template_session)
+    error_payload = _ingest_recognized_paper(
+        batch,
+        db,
+        teacher_id,
+        str(upload.get("filename") or "unknown"),
+        upload["image_path"],
+        result,
+        failure_questions=(None if can_retry else failure_questions),
+    )
+    if (
+        error_payload
+        and error_payload.get("requires_manual_review")
+        and orientation_is_ready(error_payload)
+    ):
+        batch.mark_ocr_job(
+            upload["image_path"],
+            "needs_review",
+            str(error_payload.get("error") or ""),
+        )
+
+    upload_order = {
+        str(item.get("paper_id") or ""): index
+        for index, item in enumerate(batch.uploads)
+    }
+    batch.papers.sort(
+        key=lambda item: upload_order.get(str(item.get("paper_id") or ""), len(upload_order))
+    )
+    _initialize_batch_answer_map(batch, teacher_id, template_session)
+    summary = batch_ocr_summary(batch)
+    all_orientations_ready = all(
+        orientation_is_ready(item) for item in batch.uploads
+    )
+    if summary["can_grade"] and all_orientations_ready:
+        batch.confirmation_questions = _confirmation_questions(batch)
+        batch.status = "ocr_done"
+    else:
+        batch.status = "ocr_partial_failed"
+
+    event["status"] = "complete"
+    event["ocr_status"] = next(
+        (
+            item.get("status") for item in batch.ocr_jobs
+            if str(item.get("paper_id") or "") == paper_id
+        ),
+        "failed",
+    )
+    event["completed_at"] = datetime.now(timezone.utc).isoformat()
+    upload["orientation_history"] = history[-20:]
 
 
 @router.get("/batch-grade/{batch_id}/paper/{paper_id}/image")
