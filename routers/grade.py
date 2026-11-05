@@ -2029,6 +2029,336 @@ def _confirmation_questions(batch: QuickBatch) -> list[dict]:
     return questions_out
 
 
+# ── Student recognition streams ──────────────────────────────────────────────
+#
+# Both recognition endpoints validate the request and the template evidence
+# first, then return an SSE stream.  Inside the stream each concern has its
+# own owner and the event generators only sequence them:
+#
+#   _RecognitionLease    DB session, batch operation lock and request-local
+#                        vision/grading context, released in reverse
+#   _RecognitionRun      resumable-run state over the durable OCR job ledger
+#   _RecognitionFlavor   where the first run and a resume deliberately differ
+#   *_events             what the client sees, in order
+
+
+_RECOGNITION_DISCONNECTED = "识别连接中断，等待恢复"
+
+
+class _RecognitionLease:
+    """What one recognition stream holds while it runs.
+
+    Taken inside the SSE generator, so a busy batch still answers with an SSE
+    error instead of an HTTP status.  ``release`` undoes it in reverse: the
+    grading pipeline, the batch lock, the context tokens, the DB session.
+    """
+
+    def __init__(self, batch_id: str, teacher_id: int) -> None:
+        self.batch_id = batch_id
+        self.db = SessionLocal()
+        self._batch_lock = None
+        self._grading_token = set_grading_teacher_id(str(teacher_id))
+        self._vision_phase_token = None
+        self._vision_batch_size_token = None
+
+    def set_vision_phase(self, phase_key: str, *, retry_scope_key: str | None = None) -> None:
+        self._vision_phase_token = set_vision_phase_key(phase_key, retry_scope_key=retry_scope_key)
+
+    def set_vision_batch_size(self, paper_count: int) -> None:
+        self._vision_batch_size_token = set_vision_batch_paper_count(paper_count)
+
+    def acquire_batch_lock(self) -> bool:
+        """Take the cross-worker batch lock; False while another stream holds it."""
+        try:
+            self._batch_lock = batch_operation_lock(self.batch_id, UPLOAD_DIR)
+            self._batch_lock.__enter__()
+        except BatchOperationBusy:
+            self._batch_lock = None
+            return False
+        return True
+
+    async def release(self, pipeline: "_PerPaperGradingPipeline | None") -> None:
+        try:
+            if pipeline is not None:
+                await pipeline.aclose()
+        finally:
+            try:
+                if self._batch_lock is not None:
+                    self._batch_lock.__exit__(None, None, None)
+            finally:
+                try:
+                    if self._vision_batch_size_token is not None:
+                        reset_vision_batch_paper_count(self._vision_batch_size_token)
+                    if self._vision_phase_token is not None:
+                        reset_vision_phase_key(self._vision_phase_token)
+                    reset_grading_teacher_id(self._grading_token)
+                finally:
+                    self.db.close()
+
+
+@dataclass(frozen=True)
+class _RecognitionFlavor:
+    """Where the first recognition run and a resumed one differ on purpose.
+
+    Both streams share one implementation; these fields keep the events and
+    checkpoints of each exactly as they were before the two were merged.
+    """
+
+    start_message: str
+    busy_message: str
+    # Formatted with ``inspected`` and ``total``.
+    inspection_message: str
+    inspection_wait_message: str
+    ocr_heartbeat_message: str
+    ocr_failure_log: str
+    dispatch_suffix: str
+    # A resume tags every OCR and grading progress event with its batch id.
+    tags_progress: bool
+    # A resume keeps ``pending_uploads`` in step with every ledger change.
+    syncs_pending_uploads: bool
+    # The first run reports manual-review placeholders only with the final
+    # paper list; a resume reports every failed page at once and the client
+    # merges rows by paper_id.
+    streams_review_placeholders: bool
+
+    def streams_failed_page(self, error_payload: dict | None, accelerator_wait: bool) -> bool:
+        """Whether a page without a usable transcription is reported right away."""
+        if not error_payload or accelerator_wait:
+            return False
+        return self.streams_review_placeholders or (
+            not error_payload.get("requires_manual_review")
+            or not orientation_is_ready(error_payload)
+        )
+
+
+_INITIAL_RECOGNITION = _RecognitionFlavor(
+    start_message="开始识别",
+    busy_message="该批次正在执行识别，请等待当前任务完成，不要重复提交",
+    inspection_message="已完成 {inspected}/{total} 张图片安全方向检查",
+    inspection_wait_message="正在进行图片安全与方向检查，请保持页面打开",
+    ocr_heartbeat_message="正在进行本地配准与答案区域预处理，请稍候",
+    ocr_failure_log="并发 OCR 异常 %s: %s",
+    dispatch_suffix="",
+    tags_progress=False,
+    syncs_pending_uploads=False,
+    streams_review_placeholders=False,
+)
+_RESUMED_RECOGNITION = _RecognitionFlavor(
+    start_message="正在恢复未完成的识别任务",
+    busy_message="该批次仍在识别，请等待当前任务完成，不要重复提交",
+    inspection_message="恢复时已检查 {inspected}/{total} 张图片",
+    inspection_wait_message="正在恢复图片安全与方向检查，请保持页面打开",
+    ocr_heartbeat_message="正在恢复未完成的试卷识别，请保持页面打开",
+    ocr_failure_log="恢复 OCR 异常 %s: %s",
+    dispatch_suffix=":resume",
+    tags_progress=True,
+    syncs_pending_uploads=True,
+    streams_review_placeholders=True,
+)
+
+
+@dataclass
+class _RecognitionRun:
+    """One recognition stream's progress over the batch's durable OCR ledger.
+
+    A resume replaces ``batch`` with the checkpoint it reloads under the batch
+    lock; an interruption or failure always checkpoints the current object.
+    """
+
+    batch: QuickBatch
+    teacher_id: int
+    flavor: _RecognitionFlavor
+    db: Session
+    total: int = 0
+    processed: int = 0
+    pipeline: "_PerPaperGradingPipeline | None" = None
+    # Set once a resume has persisted its outcome: a disconnect after that
+    # point must not reopen the batch as interrupted.
+    completed: bool = False
+
+    def busy_payload(self) -> dict:
+        return {"code": "BATCH_RECOGNITION_BUSY", "message": self.flavor.busy_message}
+
+    def started_payload(self) -> dict:
+        return {
+            "batch_id": self.batch.batch_id,
+            "message": self.flavor.start_message,
+            "current": self.processed,
+            "total": self.total,
+        }
+
+    def inspection_payload(self, inspected: int, *, waiting: bool) -> dict:
+        return {
+            "batch_id": self.batch.batch_id,
+            "message": (
+                self.flavor.inspection_wait_message
+                if waiting
+                else self.flavor.inspection_message.format(inspected=inspected, total=self.total)
+            ),
+            "current": self.processed,
+            "total": self.total,
+            "heartbeat": waiting,
+        }
+
+    def progress_payload(self, message: str, *, heartbeat: bool = False) -> dict:
+        """Progress of the OCR and grading phases."""
+        payload = {"batch_id": self.batch.batch_id} if self.flavor.tags_progress else {}
+        payload.update(message=message, current=self.processed, total=self.total)
+        if heartbeat:
+            payload["heartbeat"] = True
+        return payload
+
+    async def record_ocr_outcome(
+        self,
+        upload: dict,
+        paper_data: dict,
+        failure_questions: list[dict],
+    ) -> dict | None:
+        """Ledger, checkpoint, then grade one finished upload, in that order."""
+        error_payload = _apply_ocr_outcome(
+            self.batch, self.db, self.teacher_id, upload, paper_data, failure_questions,
+        )
+        if self.flavor.syncs_pending_uploads:
+            sync_pending_recognition_uploads(self.batch)
+        await _save_quick_batch_meta(self.batch)
+        self.pipeline.dispatch_upload(upload)
+        self.processed += 1
+        return error_payload
+
+    async def checkpoint_stop(self, status: str, error: str, *, log_message: str) -> None:
+        """Persist a run that ended early; its finished OCR and grades stay saved."""
+        self.batch.status = status
+        self.batch.error = error
+        try:
+            await _checkpoint_recognition_cleanup(self.batch, self.pipeline)
+        except Exception:
+            logger.exception(log_message, self.batch.batch_id)
+
+
+def _inspected_upload_count(batch: QuickBatch) -> int:
+    """Uploads already hashed and orientation-checked."""
+    return sum(
+        bool(
+            upload.get("source_sha256")
+            and upload.get("working_sha256")
+            and _orientation_diagnostics(upload)
+        )
+        for upload in batch.uploads
+    )
+
+
+def _ocr_job_worker(run: _RecognitionRun, paper_cache: PaperCache, roster_names: list[str]):
+    """The dispatcher's worker: reserve one queued OCR job, recognize it on its route."""
+    batch = run.batch
+
+    async def recognize(indexed_upload: tuple[int, dict]) -> dict:
+        route_ordinal, upload = indexed_upload
+        batch.mark_ocr_job(str(upload.get("image_path") or ""), "running")
+        if run.flavor.syncs_pending_uploads:
+            sync_pending_recognition_uploads(batch)
+        route_token = set_vision_route_ordinal(route_ordinal)
+        try:
+            return await _recognize_upload(
+                batch, upload, paper_cache,
+                teacher_id=run.teacher_id, roster_names=roster_names,
+            )
+        except Exception as exc:
+            logger.error(run.flavor.ocr_failure_log, upload.get("filename"), exc)
+            return ocr_failure_result(exc, message="识别失败")
+        finally:
+            reset_vision_route_ordinal(route_token)
+
+    return recognize
+
+
+async def _ocr_phase_events(
+    run: _RecognitionRun,
+    uploads: list[dict],
+    paper_cache: PaperCache,
+    failure_questions: list[dict],
+    roster_names: list[str],
+):
+    """SSE while ``uploads`` are recognized, interleaved with per-paper grading.
+
+    并发段：dispatcher 只保留固定数量的实际 OCR 生命周期任务；其余上传文件
+    保持在持久 ocr_jobs 队列中等待，不提前 Base64/占内存。在途窗口取批调度
+    并发（OCR_BATCH_DISPATCH_CONCURRENT）；图像内存由载荷字节预算与图像闩
+    兜底。Consume under ``contextlib.aclosing`` so the OCR stream is settled
+    before the caller's own cleanup.
+    """
+    pipeline = run.pipeline
+    result_stream = teacher_waved_completion_map(
+        list(enumerate(uploads)),
+        _ocr_job_worker(run, paper_cache, roster_names),
+        teacher_id=str(run.teacher_id),
+        batch_id=f"{run.batch.batch_id}{run.flavor.dispatch_suffix}",
+        wave_size=OCR_TEACHER_WAVE_SIZE,
+        max_concurrent=OCR_BATCH_DISPATCH_CONCURRENT,
+    )
+    async with aclosing(_ocr_and_grading_events(result_stream, pipeline)) as events:
+        async for kind, value in events:
+            if kind == "heartbeat":
+                yield _sse("progress", run.progress_payload(
+                    run.flavor.ocr_heartbeat_message, heartbeat=True,
+                ))
+                continue
+            if kind == "graded":
+                yield _pipeline_result_sse(pipeline, value)
+                continue
+            position, paper_data = value
+            upload = uploads[position]
+            error_payload = await run.record_ocr_outcome(upload, paper_data, failure_questions)
+            # A failed provider call is still a terminal outcome for this
+            # sheet. Stream it immediately so a batch whose first OCR attempts
+            # time out cannot look frozen at 0/N.
+            accelerator_wait = is_accelerator_pause_result(paper_data)
+            yield _sse("progress", run.progress_payload(_ocr_outcome_message(
+                str(upload.get("filename") or "unknown"),
+                accelerator_wait=accelerator_wait,
+                failed=bool(error_payload),
+            )))
+            if run.flavor.streams_failed_page(error_payload, accelerator_wait):
+                yield _sse("paper", error_payload)
+
+
+async def _grading_drain_events(run: _RecognitionRun):
+    """SSE until every paper dispatched during OCR is graded.
+
+    收尾对账：批阅已逐卷提前跑，尾部在途卷在这里补齐再出 done。
+    """
+    async for kind, graded in run.pipeline.drain():
+        if kind == "heartbeat":
+            yield _sse("progress", run.progress_payload(
+                "正在批阅已识别的试卷，请保持页面打开", heartbeat=True,
+            ))
+            continue
+        yield _pipeline_result_sse(run.pipeline, graded)
+
+
+def _complete_recognition(batch: QuickBatch, *, clear_error: bool) -> tuple[list[dict], dict]:
+    """Freeze the confirmation questions and settle the batch's OCR status."""
+    # 组装冻结模板的题目合同。
+    questions_out = _confirmation_questions(batch)
+    batch.confirmation_questions = questions_out
+    ocr_summary = batch_ocr_summary(batch)
+    batch.status = "ocr_done" if ocr_summary["can_grade"] else "ocr_partial_failed"
+    batch.pending_uploads = []
+    if clear_error:
+        batch.error = None
+    return questions_out, ocr_summary
+
+
+def _sse_response(teaching_context: dict | None, events) -> StreamingResponse:
+    return StreamingResponse(
+        stream_teaching(teaching_context, events),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
+
+
+# ── Initial recognition ──────────────────────────────────────────────────────
+
+
 @router.post("/batch-grade/recognize")
 async def batch_grade_recognize(
     files: list[UploadFile] = File(...),
@@ -2053,6 +2383,71 @@ async def batch_grade_recognize(
       - done:     {batch_id, mode, total_papers, questions:[...]}
       - error:    {message}
     """
+    relative_paths = _parse_recognition_request(
+        files,
+        category=category,
+        exam_name=exam_name,
+        mode=mode,
+        source_paths=source_paths,
+        anonymous=anonymous,
+        template_id=template_id,
+        user=user,
+    )
+
+    # Student template recognition has a verified server-side evidence matcher
+    # fallback.  Accelerator readiness is advisory here; an unavailable
+    # opportunity node must not turn an otherwise healthy grading request into
+    # a pre-upload 503.
+    await _require_batch_grade_chain(user)
+
+    template_session = _template_for_new_batch(template_id, user.id, category, exam_name)
+    limiter = _check_requested_image_allowance(db, user.id, len(files))
+    batch = _new_template_batch(
+        template_session,
+        user,
+        template_id=template_id,
+        category=category,
+        exam_name=exam_name,
+        mode=mode,
+        anonymous=anonymous,
+        inherit_identity=inherit_identity,
+    )
+
+    # ── 保存上传文件（流式落盘 + 安全校验 + 批量硬限制） ──
+    saved_uploads = await _save_new_batch_uploads(batch, files)
+    saved_uploads = _register_batch_uploads(batch, saved_uploads, relative_paths)
+    await _save_quick_batch_meta(batch)
+
+    # All request validation and upload checks have succeeded.  Reload while
+    # holding the cross-worker lock so a concurrent confirm cannot overwrite a
+    # frozen status with an older confirmed snapshot.
+    try:
+        template_session, paper_cache = _freeze_template_for_batch(
+            batch, template_id, user.id, category, exam_name,
+        )
+    except Exception:
+        _discard_unstarted_batch(batch, saved_uploads)
+        raise
+    _reserve_batch_images(limiter, user.id, batch, saved_uploads)
+    failure_questions = _single_page_template_failure_questions(template_session)
+
+    return _sse_response(batch.teaching_context, _initial_recognition_events(
+        batch, template_session, paper_cache, failure_questions, user.id, mode,
+    ))
+
+
+def _parse_recognition_request(
+    files: list[UploadFile],
+    *,
+    category: str,
+    exam_name: str,
+    mode: str,
+    source_paths: str,
+    anonymous: bool,
+    template_id: str,
+    user: User,
+) -> list[str]:
+    """Reject a malformed request before any I/O; return the uploads' source paths."""
     if category not in VALID_GRADING_CATEGORIES:
         raise HTTPException(400, detail="category 必须是 daily 或 exam")
     if category == "exam" and not exam_name:
@@ -2073,19 +2468,22 @@ async def batch_grade_recognize(
     # Every batch is graded against a confirmed template.
     if not str(template_id or "").strip():
         raise HTTPException(400, detail="请先导入并确认模板后再开始批改")
+    return relative_paths
 
-    # Student template recognition has a verified server-side evidence matcher
-    # fallback.  Accelerator readiness is advisory here; an unavailable
-    # opportunity node must not turn an otherwise healthy grading request into
-    # a pre-upload 503.
-    await _require_batch_grade_chain(user)
 
-    template_session = _load_owned_template_session(template_id, user.id)
+def _template_for_new_batch(
+    template_id: str,
+    teacher_id: int,
+    category: str,
+    exam_name: str,
+) -> TemplateSession:
+    """The caller's confirmed template; contract drift is persisted for reconfirmation."""
+    template_session = _load_owned_template_session(template_id, teacher_id)
     try:
         _validate_template_for_recognition(template_session, category, exam_name)
     except HTTPException as exc:
         if exc.status_code == 409 and template_session.recognition_contract_error():
-            with _locked_owned_template_session(template_id, user.id) as latest_template:
+            with _locked_owned_template_session(template_id, teacher_id) as latest_template:
                 _validate_template_for_recognition(
                     latest_template,
                     category,
@@ -2093,13 +2491,17 @@ async def batch_grade_recognize(
                     persist_reconfirmation=True,
                 )
         raise
+    return template_session
 
+
+def _check_requested_image_allowance(db: Session, teacher_id: int, requested: int):
+    """Today's student-image allowance must cover this upload; returns the limiter."""
     # Keep the gate callable with the historical two-argument contract used by
     # integrations and test doubles, then apply the requested-image check on
     # the returned limiter. The second check is still before any OCR work.
-    limiter = _check_limits_or_raise(db, user.id)
+    limiter = _check_limits_or_raise(db, teacher_id)
     if limiter is not None:
-        requested_daily = limiter.check_daily_image_limit(user.id, len(files))
+        requested_daily = limiter.check_daily_image_limit(teacher_id, requested)
         if not requested_daily["allowed"]:
             raise HTTPException(403, detail={
                 "error": "DAILY_IMAGE_LIMIT_EXCEEDED",
@@ -2109,6 +2511,21 @@ async def batch_grade_recognize(
                 ),
                 **requested_daily,
             })
+    return limiter
+
+
+def _new_template_batch(
+    template_session: TemplateSession,
+    user: User,
+    *,
+    template_id: str,
+    category: str,
+    exam_name: str,
+    mode: str,
+    anonymous: bool,
+    inherit_identity: bool,
+) -> QuickBatch:
+    """A new batch frozen to its class, identity mode, category and template."""
     batch_id = uuid.uuid4().hex[:12]
     require_teacher_stage(user)
     batch = QuickBatch(
@@ -2125,10 +2542,13 @@ async def batch_grade_recognize(
     batch.exam_name = exam_name if category == "exam" else ""
     batch.grade_mode = mode
     os.makedirs(batch.batch_dir, exist_ok=True)
+    return batch
 
-    # ── 保存上传文件（流式落盘 + 安全校验 + 批量硬限制） ──
+
+async def _save_new_batch_uploads(batch: QuickBatch, files: list[UploadFile]) -> list[tuple]:
+    """Stream the uploads to disk; a rejected upload leaves no batch directory."""
     try:
-        saved_uploads = await _save_batch_uploads(
+        return await _save_batch_uploads(
             files,
             batch.batch_dir,
             require_client_ocr_ready=True,
@@ -2141,6 +2561,13 @@ async def batch_grade_recognize(
             pass
         raise
 
+
+def _register_batch_uploads(
+    batch: QuickBatch,
+    saved_uploads: list[tuple],
+    relative_paths: list[str],
+) -> list[tuple]:
+    """Record the saved uploads and their queued OCR jobs, in recognition order."""
     if batch.identity_inheritance:
         # "The previous page" must not depend on the browser's file-picker
         # order (Windows lists the focused file first): use natural path order.
@@ -2153,7 +2580,6 @@ async def batch_grade_recognize(
         saved_uploads = [saved_uploads[index] for index in order]
         relative_paths = [relative_paths[index] for index in order]
 
-    total = len(saved_uploads)
     batch.uploads = []
     for index, (filename, path, content_sha256) in enumerate(saved_uploads):
         batch.uploads.append({
@@ -2170,46 +2596,55 @@ async def batch_grade_recognize(
         })
     batch.ensure_ocr_jobs(batch.uploads)
     batch.status = "recognizing_remaining"
-    await _save_quick_batch_meta(batch)
+    return saved_uploads
 
-    # All request validation and upload checks have succeeded.  Reload while
-    # holding the cross-worker lock so a concurrent confirm cannot overwrite a
-    # frozen status with an older confirmed snapshot.
-    try:
-        with _locked_owned_template_session(template_id, user.id) as latest_template:
-            _validate_template_for_recognition(
-                latest_template,
-                category,
-                exam_name,
-                persist_reconfirmation=True,
+
+def _freeze_template_for_batch(
+    batch: QuickBatch,
+    template_id: str,
+    teacher_id: int,
+    category: str,
+    exam_name: str,
+) -> tuple[TemplateSession, PaperCache]:
+    """Under the template lock: revalidate, build the visual evidence, freeze.
+
+    Invalid visual evidence marks the template for reconfirmation (409).
+    """
+    with _locked_owned_template_session(template_id, teacher_id) as latest_template:
+        _validate_template_for_recognition(
+            latest_template,
+            category,
+            exam_name,
+            persist_reconfirmation=True,
+        )
+        try:
+            paper_cache = _build_template_paper_cache(latest_template)
+        except HTTPException as exc:
+            latest_template.requires_reconfirmation = True
+            latest_template.reconfirmation_reason = (
+                "模板视觉基准无效，请老师重新确认模板"
             )
-            try:
-                paper_cache = _build_template_paper_cache(latest_template)
-            except HTTPException as exc:
-                latest_template.requires_reconfirmation = True
-                latest_template.reconfirmation_reason = (
-                    "模板视觉基准无效，请老师重新确认模板"
-                )
-                latest_template.save_meta()
-                raise HTTPException(
-                    409,
-                    detail=latest_template.reconfirmation_reason,
-                ) from exc
-            if latest_template.status == "confirmed":
-                latest_template.status = "frozen"
-                latest_template.save_meta()
-            template_session = latest_template
-            batch.template_mode = str(
-                latest_template.template_mode or batch.template_mode or "marked"
-            )
-    except Exception:
-        _discard_unstarted_batch(batch, saved_uploads)
-        raise
+            latest_template.save_meta()
+            raise HTTPException(
+                409,
+                detail=latest_template.reconfirmation_reason,
+            ) from exc
+        if latest_template.status == "confirmed":
+            latest_template.status = "frozen"
+            latest_template.save_meta()
+        batch.template_mode = str(
+            latest_template.template_mode or batch.template_mode or "marked"
+        )
+        return latest_template, paper_cache
+
+
+def _reserve_batch_images(limiter, teacher_id: int, batch: QuickBatch, saved_uploads: list[tuple]) -> None:
+    """Reserve today's allowance for the saved pages; a refusal discards the batch."""
     reservation = (
         limiter.reserve_student_images(
-            user.id,
-            total,
-            batch_id=f"student-upload-{batch_id}",
+            teacher_id,
+            len(saved_uploads),
+            batch_id=f"student-upload-{batch.batch_id}",
         )
         if limiter is not None
         else {"allowed": True}
@@ -2221,250 +2656,134 @@ async def batch_grade_recognize(
             "message": "今日学生试卷图片额度不足，请减少本次上传张数",
             **reservation,
         })
-    failure_questions = _single_page_template_failure_questions(template_session)
-    uid = user.id
 
-    async def generate():
-        db_gen = SessionLocal()
-        batch_lock = None
-        pipeline = None
-        grading_token = set_grading_teacher_id(str(uid))
-        vision_phase_token = set_vision_phase_key("initial-recognition")
-        vision_batch_size_token = set_vision_batch_paper_count(total)
-        try:
-            try:
-                batch_lock = batch_operation_lock(batch_id, UPLOAD_DIR)
-                batch_lock.__enter__()
-            except BatchOperationBusy:
-                batch_lock = None
-                yield _sse("error", {
-                    "code": "BATCH_RECOGNITION_BUSY",
-                    "message": "该批次正在执行识别，请等待当前任务完成，不要重复提交",
-                })
-                return
-            yield _sse("progress", {
-                "batch_id": batch_id,
-                "message": "开始识别",
-                "current": 0,
-                "total": total,
-            })
-            inspected = sum(
-                bool(
-                    upload.get("source_sha256")
-                    and upload.get("working_sha256")
-                    and _orientation_diagnostics(upload)
-                )
-                for upload in batch.uploads
-            )
-            async for inspected_upload in _bounded_batch_upload_inspections(
-                batch,
-                batch.uploads,
-            ):
-                if inspected_upload is not None:
-                    inspected += 1
-                yield _sse("progress", {
-                    "batch_id": batch_id,
-                    "message": (
-                        f"已完成 {inspected}/{total} 张图片安全方向检查"
-                        if inspected_upload is not None
-                        else "正在进行图片安全与方向检查，请保持页面打开"
-                    ),
-                    "current": 0,
-                    "total": total,
-                    "heartbeat": inspected_upload is None,
-                })
-            roster_names = _class_roster_names(db_gen, batch, uid)
-            pipeline = _start_per_paper_grading(batch, db_gen, uid, template_session)
-            processed = 0
-            # 并发段：dispatcher 只保留固定数量的实际 OCR 生命周期任务；
-            # 其余上传文件保持在持久 ocr_jobs 队列中等待，不提前 Base64/占内存。
-            # 在途窗口取批调度并发（OCR_BATCH_DISPATCH_CONCURRENT）；图像内存
-            # 由载荷字节预算与图像闩兜底，学生批不再串行化。
-            remaining = list(batch.uploads)
-            if remaining:
-                yield _sse("progress", {
-                    "message": f"排队识别剩余 {len(remaining)} 张",
-                    "current": processed, "total": total,
-                })
 
-                async def _bounded_ocr(indexed_upload: tuple[int, dict]) -> dict:
-                    route_ordinal, upload = indexed_upload
-                    batch.mark_ocr_job(str(upload.get("image_path") or ""), "running")
-                    route_token = set_vision_route_ordinal(route_ordinal)
-                    try:
-                        return await _recognize_upload(
-                            batch, upload, paper_cache,
-                            teacher_id=uid, roster_names=roster_names,
-                        )
-                    except Exception as exc:
-                        logger.error("并发 OCR 异常 %s: %s", upload.get("filename"), exc)
-                        return ocr_failure_result(exc, message="识别失败")
-                    finally:
-                        reset_vision_route_ordinal(route_token)
+def _fail_unrecognized_batch(batch: QuickBatch) -> dict:
+    """No page of a new batch was transcribed: fail it, keep its files listed."""
+    batch.status = "failed"
+    batch.error = "所有试卷识别失败"
+    return {
+        "message": "本批次所有试卷均未识别成功。请检查视觉模型服务、网络或降低并发后重试；失败文件已保留在列表中。",
+    }
 
-                result_stream = teacher_waved_completion_map(
-                    list(enumerate(remaining)),
-                    _bounded_ocr,
-                    teacher_id=str(uid),
-                    batch_id=batch_id,
-                    wave_size=OCR_TEACHER_WAVE_SIZE,
-                    max_concurrent=OCR_BATCH_DISPATCH_CONCURRENT,
-                )
-                async with aclosing(_ocr_and_grading_events(result_stream, pipeline)) as events:
-                    async for kind, value in events:
-                        if kind == "heartbeat":
-                            yield _sse("progress", {
-                                "message": "正在进行本地配准与答案区域预处理，请稍候",
-                                "current": processed,
-                                "total": total,
-                                "heartbeat": True,
-                            })
-                            continue
-                        if kind == "graded":
-                            yield _pipeline_result_sse(pipeline, value)
-                            continue
-                        position, paper_data = value
-                        upload = remaining[position]
-                        err = _apply_ocr_outcome(
-                            batch, db_gen, uid, upload, paper_data, failure_questions,
-                        )
-                        await _save_quick_batch_meta(batch)
-                        pipeline.dispatch_upload(upload)
-                        processed += 1
-                        # A failed provider call is still a terminal outcome for
-                        # this sheet. Stream it immediately so a batch whose first
-                        # OCR attempts time out cannot look frozen at 0/N.
-                        accelerator_wait = is_accelerator_pause_result(paper_data)
-                        yield _sse("progress", {
-                            "message": _ocr_outcome_message(
-                                str(upload.get("filename") or "unknown"),
-                                accelerator_wait=accelerator_wait,
-                                failed=bool(err),
-                            ),
-                            "current": processed,
-                            "total": total,
-                        })
-                        # Manual-review placeholders are reported with every
-                        # other paper once OCR has finished; report the rest now.
-                        if err and not accelerator_wait and (
-                            not err.get("requires_manual_review")
-                            or not orientation_is_ready(err)
-                        ):
-                            yield _sse("paper", err)
 
-            # 收尾对账：批阅已逐卷提前跑，尾部在途卷在这里补齐再出 done。
-            async for kind, graded in pipeline.drain():
-                if kind == "heartbeat":
-                    yield _sse("progress", {
-                        "message": "正在批阅已识别的试卷，请保持页面打开",
-                        "current": processed,
-                        "total": total,
-                        "heartbeat": True,
-                    })
-                    continue
-                yield _pipeline_result_sse(pipeline, graded)
+def _initial_recognition_paper_payload(batch: QuickBatch, paper: dict) -> dict:
+    """Final paper row of a first run.
 
-            accelerator_pause = _pause_batch_for_accelerator(batch)
-            if accelerator_pause is not None:
-                await _save_quick_batch_meta(batch)
-                yield _sse("error", accelerator_pause)
-                return
-
-            # ── 建 answer_map ──
-            _initialize_batch_answer_map(batch, uid, template_session)
-
-            successful_papers = [
-                paper for paper in batch.papers
-                if (paper.get("questions") or [])
-            ]
-            if not successful_papers:
-                batch.status = "failed"
-                batch.error = "所有试卷识别失败"
-                await _save_quick_batch_meta(batch)
-                yield _sse("error", {
-                    "message": "本批次所有试卷均未识别成功。请检查视觉模型服务、网络或降低并发后重试；失败文件已保留在列表中。",
-                })
-                return
-
-            for paper in batch.papers:
-                matched = 0 if paper.get("ocr_failure") else sum(
-                    1 for q in paper["questions"]
-                    if batch.answer_map.get(q["question_no"], {}).get("matched")
-                )
-                paper_payload = {
-                    "batch_id": batch.batch_id,
-                    "filename": paper["filename"],
-                    "student_name": paper["student_name"],
-                    "student_no": paper.get("student_no", ""),
-                    "paper_id": paper.get("paper_id", ""),
-                    "identity": paper.get("identity", {}),
-                    "questions_count": len(paper["questions"]),
-                    "matched_count": matched,
-                    "orientation_status": paper.get("orientation_status", "needs_review"),
-                    "orientation_reason": paper.get("orientation_reason", ""),
-                    "detected_tilt_degrees": paper.get("detected_tilt_degrees"),
-                }
-                if paper.get("ocr_failure"):
-                    paper_payload.update(_ocr_failure_payload(paper))
-                yield _sse("paper", paper_payload)
-
-            # 组装冻结模板的题目合同。
-            questions_out = _confirmation_questions(batch)
-            batch.confirmation_questions = questions_out
-
-            ocr_summary = batch_ocr_summary(batch)
-            batch.status = "ocr_done" if ocr_summary["can_grade"] else "ocr_partial_failed"
-            batch.pending_uploads = []
-            await _save_quick_batch_meta(batch)
-
-            yield _sse("done", {
-                "batch_id": batch_id,
-                "status": batch.status,
-                "teaching_context": copy.deepcopy(batch.teaching_context),
-                "mode": mode,
-                "total_papers": len(batch.papers),
-                "questions": questions_out,
-                **ocr_summary,
-            })
-        except (asyncio.CancelledError, GeneratorExit):
-            if batch.status == "recognizing_remaining":
-                batch.status = "recognition_interrupted"
-                batch.error = "识别连接中断，等待恢复"
-                try:
-                    await _checkpoint_recognition_cleanup(batch, pipeline)
-                except Exception:
-                    logger.exception("failed to checkpoint interrupted recognition %s", batch.batch_id)
-            raise
-        except Exception as e:
-            info = report_failure(e, stage="transcription", task_id=batch.batch_id)
-            batch.status = "failed"
-            batch.error = info["message"]
-            try:
-                await _checkpoint_recognition_cleanup(batch, pipeline)
-            except Exception:
-                logger.exception("failed to checkpoint recognition failure %s", batch.batch_id)
-            yield _sse("error", {"message": info["message"], "error_info": info})
-        finally:
-            try:
-                if pipeline is not None:
-                    await pipeline.aclose()
-            finally:
-                try:
-                    if batch_lock is not None:
-                        batch_lock.__exit__(None, None, None)
-                finally:
-                    try:
-                        reset_vision_batch_paper_count(vision_batch_size_token)
-                        reset_vision_phase_key(vision_phase_token)
-                        reset_grading_teacher_id(grading_token)
-                    finally:
-                        db_gen.close()
-
-    return StreamingResponse(
-        stream_teaching(batch.teaching_context, generate()),
-        media_type="text/event-stream",
-        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    Unlike ``_recognition_paper_payload`` (used by a resume) it passes stored
+    values through uncoerced; kept separate so that neither stream changes.
+    """
+    matched = 0 if paper.get("ocr_failure") else sum(
+        1 for q in paper["questions"]
+        if batch.answer_map.get(q["question_no"], {}).get("matched")
     )
+    paper_payload = {
+        "batch_id": batch.batch_id,
+        "filename": paper["filename"],
+        "student_name": paper["student_name"],
+        "student_no": paper.get("student_no", ""),
+        "paper_id": paper.get("paper_id", ""),
+        "identity": paper.get("identity", {}),
+        "questions_count": len(paper["questions"]),
+        "matched_count": matched,
+        "orientation_status": paper.get("orientation_status", "needs_review"),
+        "orientation_reason": paper.get("orientation_reason", ""),
+        "detected_tilt_degrees": paper.get("detected_tilt_degrees"),
+    }
+    if paper.get("ocr_failure"):
+        paper_payload.update(_ocr_failure_payload(paper))
+    return paper_payload
+
+
+async def _initial_recognition_events(
+    batch: QuickBatch,
+    template_session: TemplateSession,
+    paper_cache: PaperCache,
+    failure_questions: list[dict],
+    teacher_id: int,
+    mode: str,
+):
+    """SSE of a new batch: inspect, recognize and grade every upload, then finalize.
+
+    A disconnect leaves the batch ``recognition_interrupted`` for a resume; any
+    other failure leaves it ``failed``.  Finished OCR and grades stay saved.
+    """
+    lease = _RecognitionLease(batch.batch_id, teacher_id)
+    lease.set_vision_phase("initial-recognition")
+    lease.set_vision_batch_size(len(batch.uploads))
+    run = _RecognitionRun(
+        batch, teacher_id, _INITIAL_RECOGNITION, lease.db, total=len(batch.uploads),
+    )
+    try:
+        if not lease.acquire_batch_lock():
+            yield _sse("error", run.busy_payload())
+            return
+        yield _sse("progress", run.started_payload())
+        inspected = _inspected_upload_count(batch)
+        async for inspected_upload in _bounded_batch_upload_inspections(batch, batch.uploads):
+            if inspected_upload is not None:
+                inspected += 1
+            yield _sse("progress", run.inspection_payload(
+                inspected, waiting=inspected_upload is None,
+            ))
+
+        roster_names = _class_roster_names(lease.db, batch, teacher_id)
+        run.pipeline = _start_per_paper_grading(batch, lease.db, teacher_id, template_session)
+        remaining = list(batch.uploads)
+        if remaining:
+            yield _sse("progress", run.progress_payload(f"排队识别剩余 {len(remaining)} 张"))
+            async with aclosing(_ocr_phase_events(
+                run, remaining, paper_cache, failure_questions, roster_names,
+            )) as events:
+                async for event in events:
+                    yield event
+        async with aclosing(_grading_drain_events(run)) as events:
+            async for event in events:
+                yield event
+
+        accelerator_pause = _pause_batch_for_accelerator(batch)
+        if accelerator_pause is not None:
+            await _save_quick_batch_meta(batch)
+            yield _sse("error", accelerator_pause)
+            return
+
+        # ── 建 answer_map ──
+        _initialize_batch_answer_map(batch, teacher_id, template_session)
+        if not any(paper.get("questions") for paper in batch.papers):
+            failure = _fail_unrecognized_batch(batch)
+            await _save_quick_batch_meta(batch)
+            yield _sse("error", failure)
+            return
+        for paper in batch.papers:
+            yield _sse("paper", _initial_recognition_paper_payload(batch, paper))
+        questions_out, ocr_summary = _complete_recognition(batch, clear_error=False)
+        await _save_quick_batch_meta(batch)
+
+        yield _sse("done", {
+            "batch_id": batch.batch_id,
+            "status": batch.status,
+            "teaching_context": copy.deepcopy(batch.teaching_context),
+            "mode": mode,
+            "total_papers": len(batch.papers),
+            "questions": questions_out,
+            **ocr_summary,
+        })
+    except (asyncio.CancelledError, GeneratorExit):
+        if batch.status == "recognizing_remaining":
+            await run.checkpoint_stop(
+                "recognition_interrupted", _RECOGNITION_DISCONNECTED,
+                log_message="failed to checkpoint interrupted recognition %s",
+            )
+        raise
+    except Exception as e:
+        info = report_failure(e, stage="transcription", task_id=batch.batch_id)
+        await run.checkpoint_stop(
+            "failed", info["message"],
+            log_message="failed to checkpoint recognition failure %s",
+        )
+        yield _sse("error", {"message": info["message"], "error_info": info})
+    finally:
+        await lease.release(run.pipeline)
 
 
 _OCR_RESUMABLE_BATCH_STATES = {
@@ -2545,6 +2864,9 @@ def _pause_batch_for_accelerator(batch: QuickBatch) -> dict | None:
     }
 
 
+# ── Recognition resume ───────────────────────────────────────────────────────
+
+
 @router.post("/batch-grade/{batch_id}/recognize/resume")
 async def batch_grade_resume_recognition(
     batch_id: str,
@@ -2553,6 +2875,20 @@ async def batch_grade_resume_recognition(
     """Resume unfinished OCR jobs from the durable per-batch ledger."""
     batch = QuickBatch.load_meta(batch_id, UPLOAD_DIR)
     _require_owned_batch(batch, user)
+    _require_resumable_recognition(batch)
+
+    # Template evidence can be produced by the server matcher when no
+    # opportunity node is available, so recovery checks only the core grading
+    # services.  The per-page accelerator handoff remains atomic in PaperCache.
+    await _require_batch_grade_chain(user)
+
+    return _sse_response(
+        batch.teaching_context, _resumed_recognition_events(batch_id, batch, user),
+    )
+
+
+def _require_resumable_recognition(batch: QuickBatch) -> None:
+    """HTTP preflight: only an unfinished template recognition can resume."""
     if str(batch.source_mode or "").strip().lower() != "template":
         raise HTTPException(
             409,
@@ -2567,359 +2903,244 @@ async def batch_grade_resume_recognition(
     if batch.status not in _OCR_RESUMABLE_BATCH_STATES:
         raise HTTPException(409, detail="该批次当前不需要恢复识别")
 
-    # Template evidence can be produced by the server matcher when no
-    # opportunity node is available, so recovery checks only the core grading
-    # services.  The per-page accelerator handoff remains atomic in PaperCache.
-    await _require_batch_grade_chain(user)
 
-    uid = user.id
+def _resume_refusal(batch: QuickBatch) -> dict | None:
+    """The preflight again, on the checkpoint reloaded under the batch lock."""
+    if str(batch.source_mode or "").strip().lower() != "template":
+        return {
+            "code": "BATCH_SOURCE_MODE_INVALID",
+            "message": "该批次缺少有效的模板流程标识，请重新上传试卷",
+        }
+    if not str(batch.template_id or "").strip():
+        return {
+            "code": "BATCH_TEMPLATE_REQUIRED",
+            "message": "批次缺少冻结模板，不能恢复识别",
+        }
+    if batch.status not in _OCR_RESUMABLE_BATCH_STATES:
+        return {
+            "code": "BATCH_NOT_RESUMABLE",
+            "message": "该批次状态已变化，请刷新页面查看最新结果",
+        }
+    return None
 
-    async def generate():
-        nonlocal batch
-        db_gen = SessionLocal()
-        batch_lock = None
-        pipeline = None
-        grading_token = set_grading_teacher_id(str(uid))
-        vision_phase_token = None
-        vision_batch_size_token = None
-        completed = False
-        try:
-            try:
-                batch_lock = batch_operation_lock(batch_id, UPLOAD_DIR)
-                batch_lock.__enter__()
-            except BatchOperationBusy:
-                batch_lock = None
-                yield _sse("error", {
-                    "code": "BATCH_RECOGNITION_BUSY",
-                    "message": "该批次仍在识别，请等待当前任务完成，不要重复提交",
-                })
-                return
 
-            batch = QuickBatch.load_meta(batch_id, UPLOAD_DIR)
-            _require_owned_batch(batch, user)
-            batch.recover_interrupted_ocr_jobs(max_attempts=OCR_MAX_JOB_ATTEMPTS)
-            if str(batch.source_mode or "").strip().lower() != "template":
-                yield _sse("error", {
-                    "code": "BATCH_SOURCE_MODE_INVALID",
-                    "message": "该批次缺少有效的模板流程标识，请重新上传试卷",
-                })
-                return
-            if not str(batch.template_id or "").strip():
-                yield _sse("error", {
-                    "code": "BATCH_TEMPLATE_REQUIRED",
-                    "message": "批次缺少冻结模板，不能恢复识别",
-                })
-                return
-            if batch.status not in _OCR_RESUMABLE_BATCH_STATES:
-                yield _sse("error", {
-                    "code": "BATCH_NOT_RESUMABLE",
-                    "message": "该批次状态已变化，请刷新页面查看最新结果",
-                })
-                return
-
-            finalize_exhausted_ocr_jobs(batch)
-            requeue_retryable_ocr_failures(batch)
-            summary = batch_ocr_summary(batch)
-            # A disconnect can happen after the final OCR checkpoint but before
-            # confirmation/done. Reuse that complete ledger and run normal
-            # finalization; no queued OCR is not itself a recognition failure.
-            if not queued_recognition_uploads(batch) and not summary["can_grade"]:
-                failed_jobs = [
-                    job for job in batch.ocr_jobs
-                    if str(job.get("status") or "") == "failed"
-                ]
-                exhausted = bool(
-                    failed_jobs
-                    and all(
-                        ocr_job_attempts(job) >= OCR_MAX_JOB_ATTEMPTS
-                        for job in failed_jobs
-                    )
-                )
-                batch.status = (
-                    "ocr_partial_failed"
-                    if summary["succeeded_papers"] or summary["manual_review_papers"]
-                    else "failed"
-                )
-                batch.pending_uploads = []
-                batch.error = "没有可自动恢复的识别任务"
-                await _save_quick_batch_meta(batch)
-                yield _sse("error", {
-                    "code": (
-                        "OCR_RETRY_EXHAUSTED"
-                        if exhausted
-                        else "OCR_NO_RETRYABLE_FAILURES"
-                    ),
-                    "message": (
-                        "可恢复识别次数已用尽；请检查原图，若均正常请联系管理员检查模型服务。"
-                        if exhausted
-                        else "当前失败项不能自动恢复，请检查原图或联系管理员。"
-                    ),
-                    **summary,
-                })
-                completed = True
-                return
-            batch.recognition_resume_generation += 1
-            await _save_quick_batch_meta(batch)
-            vision_phase_token = set_vision_phase_key(
-                f"recognition-resume:{batch.recognition_resume_generation}",
-                retry_scope_key="recognition-resume",
-            )
-
-            template_session = _load_owned_template_session(batch.template_id, uid)
-            paper_cache = _build_template_paper_cache(template_session)
-            failure_questions = _single_page_template_failure_questions(template_session)
-            pending = queued_recognition_uploads(batch)
-            if pending:
-                vision_batch_size_token = set_vision_batch_paper_count(len(pending))
-            total = len(batch.uploads)
-            processed = sum(
-                str(job.get("status") or "") in OCR_JOB_TERMINAL_STATES
-                for job in batch.ocr_jobs
-            )
-            batch.status = "recognizing_remaining"
-            batch.error = None
-            sync_pending_recognition_uploads(batch)
-            await _save_quick_batch_meta(batch)
-            yield _sse("progress", {
-                "batch_id": batch.batch_id,
-                "message": "正在恢复未完成的识别任务",
-                "current": processed,
-                "total": total,
-            })
-
-            inspected = total - len([
-                upload for upload in batch.uploads
-                if not (
-                    upload.get("source_sha256")
-                    and upload.get("working_sha256")
-                    and _orientation_diagnostics(upload)
-                )
-            ])
-            async for inspected_upload in _bounded_batch_upload_inspections(
-                batch,
-                pending,
-            ):
-                if inspected_upload is not None:
-                    inspected += 1
-                yield _sse("progress", {
-                    "batch_id": batch.batch_id,
-                    "message": (
-                        f"恢复时已检查 {inspected}/{total} 张图片"
-                        if inspected_upload is not None
-                        else "正在恢复图片安全与方向检查，请保持页面打开"
-                    ),
-                    "current": processed,
-                    "total": total,
-                    "heartbeat": inspected_upload is None,
-                })
-
-            roster_names = _class_roster_names(db_gen, batch, uid)
-
-            # 逐卷流水批阅：同 initial recognize——识别定稿一张就批一张。
-            pipeline = _start_per_paper_grading(batch, db_gen, uid, template_session)
-            # OCR may have been saved before its grading task was cancelled.
-            # Resume only terminal pages; dispatch's rubric/identity gates
-            # preserve valid results and leave uncertain identity for review.
-            terminal_paths = {
-                os.path.realpath(str(job.get("image_path") or ""))
-                for job in batch.ocr_jobs
-                if job.get("status") in {"succeeded", "needs_review"}
-                and job.get("image_path")
-            }
-            for paper in batch.papers:
-                if os.path.realpath(str(paper.get("image_path") or "")) in terminal_paths:
-                    pipeline.dispatch(paper)
-
-            if pending:
-                async def bounded_ocr(indexed_upload: tuple[int, dict]) -> dict:
-                    route_ordinal, upload = indexed_upload
-                    batch.mark_ocr_job(str(upload.get("image_path") or ""), "running")
-                    sync_pending_recognition_uploads(batch)
-                    route_token = set_vision_route_ordinal(route_ordinal)
-                    try:
-                        return await _recognize_upload(
-                            batch, upload, paper_cache,
-                            teacher_id=uid, roster_names=roster_names,
-                        )
-                    except Exception as exc:
-                        logger.error("恢复 OCR 异常 %s: %s", upload.get("filename"), exc)
-                        return ocr_failure_result(exc, message="识别失败")
-                    finally:
-                        reset_vision_route_ordinal(route_token)
-
-                # Same in-flight window as initial recognition. Each slot spends
-                # most of its life waiting on the accelerator node or the OCR
-                # provider; the native template matcher keeps its own preprocess
-                # gate in PaperCache and request memory stays on the byte budget.
-                result_stream = teacher_waved_completion_map(
-                    list(enumerate(pending)),
-                    bounded_ocr,
-                    teacher_id=str(uid),
-                    batch_id=f"{batch.batch_id}:resume",
-                    wave_size=OCR_TEACHER_WAVE_SIZE,
-                    max_concurrent=OCR_BATCH_DISPATCH_CONCURRENT,
-                )
-                async with aclosing(_ocr_and_grading_events(result_stream, pipeline)) as events:
-                    async for kind, value in events:
-                        if kind == "heartbeat":
-                            yield _sse("progress", {
-                                "batch_id": batch.batch_id,
-                                "message": "正在恢复未完成的试卷识别，请保持页面打开",
-                                "current": processed,
-                                "total": total,
-                                "heartbeat": True,
-                            })
-                            continue
-                        if kind == "graded":
-                            yield _pipeline_result_sse(pipeline, value)
-                            continue
-                        position, paper_data = value
-                        upload = pending[position]
-                        error_payload = _apply_ocr_outcome(
-                            batch, db_gen, uid, upload, paper_data, failure_questions,
-                        )
-                        sync_pending_recognition_uploads(batch)
-                        await _save_quick_batch_meta(batch)
-                        pipeline.dispatch_upload(upload)
-                        accelerator_wait = is_accelerator_pause_result(paper_data)
-                        processed += 1
-                        yield _sse("progress", {
-                            "batch_id": batch.batch_id,
-                            "message": _ocr_outcome_message(
-                                str(upload.get("filename") or "unknown"),
-                                accelerator_wait=accelerator_wait,
-                                failed=bool(error_payload),
-                            ),
-                            "current": processed,
-                            "total": total,
-                        })
-                        # Unlike the first run, resume reports every failed page
-                        # now; the final paper list repeats it and the client
-                        # merges rows by paper_id.
-                        if error_payload and not accelerator_wait:
-                            yield _sse("paper", error_payload)
-
-            # 收尾对账：批阅已逐卷提前跑，尾部在途卷在这里补齐再出 done。
-            async for kind, graded in pipeline.drain():
-                if kind == "heartbeat":
-                    yield _sse("progress", {
-                        "batch_id": batch.batch_id,
-                        "message": "正在批阅已识别的试卷，请保持页面打开",
-                        "current": processed,
-                        "total": total,
-                        "heartbeat": True,
-                    })
-                    continue
-                yield _pipeline_result_sse(pipeline, graded)
-
-            accelerator_pause = _pause_batch_for_accelerator(batch)
-            if accelerator_pause is not None:
-                await _save_quick_batch_meta(batch)
-                yield _sse("error", accelerator_pause)
-                completed = True
-                return
-
-            _initialize_batch_answer_map(batch, uid, template_session)
-            successful_papers = [
-                paper for paper in batch.papers if paper.get("questions")
-            ]
-            if not successful_papers:
-                ocr_summary = batch_ocr_summary(batch)
-                failed_jobs = [
-                    job for job in batch.ocr_jobs
-                    if str(job.get("status") or "") == "failed"
-                ]
-                exhausted = bool(
-                    failed_jobs
-                    and all(
-                        ocr_job_attempts(job) >= OCR_MAX_JOB_ATTEMPTS
-                        for job in failed_jobs
-                    )
-                )
-                batch.status = "failed"
-                batch.error = (
-                    "可恢复识别次数已用尽"
-                    if exhausted
-                    else "所有试卷识别失败"
-                )
-                await _save_quick_batch_meta(batch)
-                yield _sse("error", {
-                    "code": "OCR_RETRY_EXHAUSTED" if exhausted else "VISION_UNAVAILABLE",
-                    "message": (
-                        "可恢复识别次数已用尽；请检查原图，若均正常请联系管理员检查模型服务。"
-                        if exhausted
-                        else "本批次所有试卷均未识别成功，请检查视觉识别服务后重试。"
-                    ),
-                    **ocr_summary,
-                })
-                completed = True
-                return
-
-            for paper in batch.papers:
-                yield _sse("paper", _recognition_paper_payload(batch, paper))
-
-            questions_out = _confirmation_questions(batch)
-            batch.confirmation_questions = questions_out
-            ocr_summary = batch_ocr_summary(batch)
-            batch.status = "ocr_done" if ocr_summary["can_grade"] else "ocr_partial_failed"
-            batch.pending_uploads = []
-            batch.error = None
-            await _save_quick_batch_meta(batch)
-            completed = True
-            yield _sse("done", {
-                "batch_id": batch.batch_id,
-                "status": batch.status,
-                "mode": batch.grade_mode,
-                "total_papers": len(batch.papers),
-                "questions": questions_out,
-                **ocr_summary,
-            })
-        except (asyncio.CancelledError, GeneratorExit):
-            if not completed and batch.status in _OCR_RESUMABLE_BATCH_STATES:
-                batch.status = "recognition_interrupted"
-                batch.error = "识别连接中断，等待恢复"
-                try:
-                    await _checkpoint_recognition_cleanup(batch, pipeline)
-                except Exception:
-                    logger.exception("failed to checkpoint interrupted recognition %s", batch.batch_id)
-            raise
-        except Exception as exc:
-            info = report_failure(exc, stage="transcription", task_id=batch.batch_id)
-            if batch.status in _OCR_RESUMABLE_BATCH_STATES:
-                batch.status = "recognition_interrupted"
-                batch.error = str(exc)
-                try:
-                    await _checkpoint_recognition_cleanup(batch, pipeline)
-                except Exception:
-                    logger.exception("failed to checkpoint recognition failure %s", batch.batch_id)
-            yield _sse("error", {
-                "code": "GRADING_CHAIN_FAILED",
-                "message": "识别恢复链路中断，已完成结果已保存，请稍后重试。",
-                "error_info": info,
-            })
-        finally:
-            try:
-                if pipeline is not None:
-                    await pipeline.aclose()
-            finally:
-                try:
-                    if batch_lock is not None:
-                        batch_lock.__exit__(None, None, None)
-                finally:
-                    try:
-                        if vision_phase_token is not None:
-                            reset_vision_phase_key(vision_phase_token)
-                        if vision_batch_size_token is not None:
-                            reset_vision_batch_paper_count(vision_batch_size_token)
-                        reset_grading_teacher_id(grading_token)
-                    finally:
-                        db_gen.close()
-
-    return StreamingResponse(
-        stream_teaching(batch.teaching_context, generate()),
-        media_type="text/event-stream",
-        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+def _ocr_attempts_exhausted(batch: QuickBatch) -> bool:
+    """True when every failed OCR job has used up its automatic attempts."""
+    failed_jobs = [
+        job for job in batch.ocr_jobs
+        if str(job.get("status") or "") == "failed"
+    ]
+    return bool(
+        failed_jobs
+        and all(
+            ocr_job_attempts(job) >= OCR_MAX_JOB_ATTEMPTS
+            for job in failed_jobs
+        )
     )
+
+
+def _stop_resume_without_work(batch: QuickBatch, summary: dict) -> dict:
+    """Nothing is queued and the ledger cannot be graded: settle it and say why."""
+    exhausted = _ocr_attempts_exhausted(batch)
+    batch.status = (
+        "ocr_partial_failed"
+        if summary["succeeded_papers"] or summary["manual_review_papers"]
+        else "failed"
+    )
+    batch.pending_uploads = []
+    batch.error = "没有可自动恢复的识别任务"
+    return {
+        "code": (
+            "OCR_RETRY_EXHAUSTED"
+            if exhausted
+            else "OCR_NO_RETRYABLE_FAILURES"
+        ),
+        "message": (
+            "可恢复识别次数已用尽；请检查原图，若均正常请联系管理员检查模型服务。"
+            if exhausted
+            else "当前失败项不能自动恢复，请检查原图或联系管理员。"
+        ),
+        **summary,
+    }
+
+
+def _restart_recognition(run: _RecognitionRun) -> None:
+    """Reopen the ledger for this resume and count the jobs already finished."""
+    batch = run.batch
+    run.total = len(batch.uploads)
+    run.processed = sum(
+        str(job.get("status") or "") in OCR_JOB_TERMINAL_STATES
+        for job in batch.ocr_jobs
+    )
+    batch.status = "recognizing_remaining"
+    batch.error = None
+    sync_pending_recognition_uploads(batch)
+
+
+def _redispatch_checkpointed_papers(pipeline: "_PerPaperGradingPipeline", batch: QuickBatch) -> None:
+    """Grade papers whose OCR was saved before their grading task was cancelled.
+
+    Resume only terminal pages; dispatch's rubric/identity gates preserve
+    valid results and leave uncertain identity for review.
+    """
+    terminal_paths = {
+        os.path.realpath(str(job.get("image_path") or ""))
+        for job in batch.ocr_jobs
+        if job.get("status") in {"succeeded", "needs_review"}
+        and job.get("image_path")
+    }
+    for paper in batch.papers:
+        if os.path.realpath(str(paper.get("image_path") or "")) in terminal_paths:
+            pipeline.dispatch(paper)
+
+
+def _fail_unrecognized_resume(batch: QuickBatch) -> dict:
+    """The resumed OCR still left every page without a transcription."""
+    ocr_summary = batch_ocr_summary(batch)
+    exhausted = _ocr_attempts_exhausted(batch)
+    batch.status = "failed"
+    batch.error = (
+        "可恢复识别次数已用尽"
+        if exhausted
+        else "所有试卷识别失败"
+    )
+    return {
+        "code": "OCR_RETRY_EXHAUSTED" if exhausted else "VISION_UNAVAILABLE",
+        "message": (
+            "可恢复识别次数已用尽；请检查原图，若均正常请联系管理员检查模型服务。"
+            if exhausted
+            else "本批次所有试卷均未识别成功，请检查视觉识别服务后重试。"
+        ),
+        **ocr_summary,
+    }
+
+
+async def _resumed_recognition_events(batch_id: str, batch: QuickBatch, user: User):
+    """SSE of a resume: rerun the queued OCR jobs, grade, then finalize.
+
+    ``batch`` is the preflight snapshot; the stream reloads the checkpoint once
+    it holds the batch lock.  A disconnect or failure before the outcome is
+    persisted leaves the batch ``recognition_interrupted`` for the next resume.
+    """
+    teacher_id = user.id
+    lease = _RecognitionLease(batch_id, teacher_id)
+    run = _RecognitionRun(batch, teacher_id, _RESUMED_RECOGNITION, lease.db)
+    try:
+        if not lease.acquire_batch_lock():
+            yield _sse("error", run.busy_payload())
+            return
+
+        batch = run.batch = QuickBatch.load_meta(batch_id, UPLOAD_DIR)
+        _require_owned_batch(batch, user)
+        batch.recover_interrupted_ocr_jobs(max_attempts=OCR_MAX_JOB_ATTEMPTS)
+        refusal = _resume_refusal(batch)
+        if refusal is not None:
+            yield _sse("error", refusal)
+            return
+
+        finalize_exhausted_ocr_jobs(batch)
+        requeue_retryable_ocr_failures(batch)
+        summary = batch_ocr_summary(batch)
+        # A disconnect can happen after the final OCR checkpoint but before
+        # confirmation/done. Reuse that complete ledger and run normal
+        # finalization; no queued OCR is not itself a recognition failure.
+        if not queued_recognition_uploads(batch) and not summary["can_grade"]:
+            stopped = _stop_resume_without_work(batch, summary)
+            await _save_quick_batch_meta(batch)
+            yield _sse("error", stopped)
+            run.completed = True
+            return
+        batch.recognition_resume_generation += 1
+        await _save_quick_batch_meta(batch)
+        lease.set_vision_phase(
+            f"recognition-resume:{batch.recognition_resume_generation}",
+            retry_scope_key="recognition-resume",
+        )
+
+        template_session = _load_owned_template_session(batch.template_id, teacher_id)
+        paper_cache = _build_template_paper_cache(template_session)
+        failure_questions = _single_page_template_failure_questions(template_session)
+        pending = queued_recognition_uploads(batch)
+        if pending:
+            lease.set_vision_batch_size(len(pending))
+        _restart_recognition(run)
+        await _save_quick_batch_meta(batch)
+        yield _sse("progress", run.started_payload())
+
+        inspected = _inspected_upload_count(batch)
+        async for inspected_upload in _bounded_batch_upload_inspections(batch, pending):
+            if inspected_upload is not None:
+                inspected += 1
+            yield _sse("progress", run.inspection_payload(
+                inspected, waiting=inspected_upload is None,
+            ))
+
+        roster_names = _class_roster_names(lease.db, batch, teacher_id)
+        # 逐卷流水批阅：同 initial recognize——识别定稿一张就批一张。
+        run.pipeline = _start_per_paper_grading(batch, lease.db, teacher_id, template_session)
+        _redispatch_checkpointed_papers(run.pipeline, batch)
+        if pending:
+            # Same in-flight window as initial recognition. Each slot spends
+            # most of its life waiting on the accelerator node or the OCR
+            # provider; the native template matcher keeps its own preprocess
+            # gate in PaperCache and request memory stays on the byte budget.
+            async with aclosing(_ocr_phase_events(
+                run, pending, paper_cache, failure_questions, roster_names,
+            )) as events:
+                async for event in events:
+                    yield event
+        async with aclosing(_grading_drain_events(run)) as events:
+            async for event in events:
+                yield event
+
+        accelerator_pause = _pause_batch_for_accelerator(batch)
+        if accelerator_pause is not None:
+            await _save_quick_batch_meta(batch)
+            yield _sse("error", accelerator_pause)
+            run.completed = True
+            return
+
+        _initialize_batch_answer_map(batch, teacher_id, template_session)
+        if not any(paper.get("questions") for paper in batch.papers):
+            failure = _fail_unrecognized_resume(batch)
+            await _save_quick_batch_meta(batch)
+            yield _sse("error", failure)
+            run.completed = True
+            return
+        for paper in batch.papers:
+            yield _sse("paper", _recognition_paper_payload(batch, paper))
+        questions_out, ocr_summary = _complete_recognition(batch, clear_error=True)
+        await _save_quick_batch_meta(batch)
+        run.completed = True
+        yield _sse("done", {
+            "batch_id": batch.batch_id,
+            "status": batch.status,
+            "mode": batch.grade_mode,
+            "total_papers": len(batch.papers),
+            "questions": questions_out,
+            **ocr_summary,
+        })
+    except (asyncio.CancelledError, GeneratorExit):
+        if not run.completed and run.batch.status in _OCR_RESUMABLE_BATCH_STATES:
+            await run.checkpoint_stop(
+                "recognition_interrupted", _RECOGNITION_DISCONNECTED,
+                log_message="failed to checkpoint interrupted recognition %s",
+            )
+        raise
+    except Exception as exc:
+        info = report_failure(exc, stage="transcription", task_id=run.batch.batch_id)
+        if run.batch.status in _OCR_RESUMABLE_BATCH_STATES:
+            await run.checkpoint_stop(
+                "recognition_interrupted", str(exc),
+                log_message="failed to checkpoint recognition failure %s",
+            )
+        yield _sse("error", {
+            "code": "GRADING_CHAIN_FAILED",
+            "message": "识别恢复链路中断，已完成结果已保存，请稍后重试。",
+            "error_info": info,
+        })
+    finally:
+        await lease.release(run.pipeline)
 
 
 @router.get("/batch-grade/{batch_id}/identity-options")
