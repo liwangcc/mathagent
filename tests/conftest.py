@@ -91,3 +91,16 @@ if "config" not in sys.modules:
     _isolate_environment(_ROOT)
     restrict_network_to_test_servers()
     _redirect_storage(_ROOT)
+
+
+def pytest_configure(config):
+    # Imported here so the hermetic setup above runs before anything else.
+    from tests import patch_reach
+
+    patch_reach.install()
+
+
+def pytest_unconfigure(config):
+    from tests import patch_reach
+
+    patch_reach.finish()
