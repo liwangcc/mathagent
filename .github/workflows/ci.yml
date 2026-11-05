@@ -2,7 +2,7 @@ name: tests
 
 on:
   push:
-    branches: [main]
+    branches: [main, "ci/**"]
   pull_request:
 
 # 最小权限：job（含 fork 来的 PR）只读源码，不需要写 token。
