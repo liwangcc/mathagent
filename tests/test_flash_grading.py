@@ -3,7 +3,11 @@ import asyncio
 import copy
 import hashlib
 import json
+import os
+import subprocess
+import sys
 from pathlib import Path
+from types import SimpleNamespace
 
 import httpx
 import pytest
@@ -496,14 +500,104 @@ def test_flash_readiness_is_model_scoped_without_mutating_ocr_pool(monkeypatch):
     assert ocr._vision_pool.readiness()["enabled_keys"] == 1
 
 
-def test_config_defaults_to_flash_and_answer_sheet_uses_generic_gate():
-    root = Path(__file__).resolve().parents[1]
-    source = (root / "config.py").read_text(encoding="utf-8")
-    assert 'GRADING_PROVIDER = os.environ.get("GRADING_PROVIDER", "qwen3.8-flash")' in source
-    # mimo / gpt-sol are retired: only Flash may be selected.
-    assert 'if GRADING_PROVIDER != "qwen3.8-flash":' in source
-    answer_sheet = (root / "routers" / "answer_sheet.py").read_text(encoding="utf-8")
-    segment = answer_sheet.split("async def _answer_sheet_service_availability", 1)[1].split("\nasync def ", 1)[0]
-    assert "get_grading_readiness()" in segment
-    assert "get_grading_readiness_async(limiter)" in segment
-    assert "get_mimo_readiness" not in segment
+def _import_config(tmp_path, grading_provider=None) -> subprocess.CompletedProcess:
+    """Import ``config`` in a fresh interpreter with GRADING_PROVIDER set or unset."""
+    project_root = Path(__file__).resolve().parents[1]
+    env = os.environ.copy()
+    env.pop("GRADING_PROVIDER", None)
+    if grading_provider is not None:
+        env["GRADING_PROVIDER"] = grading_provider
+    env["PYTHON_DOTENV_DISABLED"] = "1"
+    env.setdefault("JWT_SECRET", "test-only-jwt-secret-with-at-least-32-characters")
+    env["PYTHONPATH"] = str(project_root)
+    return subprocess.run(
+        [sys.executable, "-c", "import config; print(config.GRADING_PROVIDER)"],
+        cwd=tmp_path, env=env, text=True, capture_output=True,
+    )
+
+
+@pytest.mark.parametrize("raw", [None, "  QWEN3.8-Flash  "])
+def test_grading_provider_defaults_to_flash(tmp_path, raw):
+    completed = _import_config(tmp_path, raw)
+    assert completed.returncode == 0, completed.stderr
+    assert completed.stdout.strip() == "qwen3.8-flash"
+
+
+@pytest.mark.parametrize("retired", ["mimo", "gpt-sol"])
+def test_retired_grading_providers_stop_startup(tmp_path, retired):
+    completed = _import_config(tmp_path, retired)
+    assert completed.returncode != 0
+    assert f"GRADING_PROVIDER={retired} 已退役" in completed.stderr
+
+
+class _NonRedisLimiter:
+    pass
+
+
+def _answer_sheet_gate(monkeypatch, *, redis: bool, sync_ready: bool, async_ready: bool):
+    """Run the answer-sheet readiness gate with every other dependency ready."""
+    from routers import answer_sheet
+    from services import model_concurrency, ocr_teacher_fairness
+
+    calls = []
+
+    class _RedisLimiter(model_concurrency.RedisModelLimiter):
+        def __init__(self):
+            pass
+
+        async def ping(self):
+            calls.append(("ping",))
+
+    limiter = _RedisLimiter() if redis else _NonRedisLimiter()
+
+    async def storage(*_args, **_kwargs):
+        return {"ready": True}
+
+    async def ocr_ready():
+        return {"configured": True, "ready": True}
+
+    def sync_readiness():
+        calls.append(("sync",))
+        return {"configured": True, "ready": sync_ready}
+
+    async def async_readiness(used_limiter=None):
+        calls.append(("async", used_limiter))
+        return {"configured": True, "ready": async_ready}
+
+    async def capacity(_teacher_id):
+        return {"status": "available"}
+
+    monkeypatch.setattr(config, "ANSWER_SHEET_GRADING_ENABLED", True)
+    monkeypatch.setattr(answer_sheet, "get_upload_storage_readiness_async", storage)
+    monkeypatch.setattr(ocr, "get_ocr_readiness", ocr_ready)
+    monkeypatch.setattr(model_concurrency, "get_model_limiter", lambda: limiter)
+    monkeypatch.setattr(analyzer, "get_grading_readiness", sync_readiness)
+    monkeypatch.setattr(analyzer, "get_grading_readiness_async", async_readiness)
+    monkeypatch.setattr(ocr_teacher_fairness, "public_teacher_availability", capacity)
+    result = asyncio.run(answer_sheet._answer_sheet_service_availability(SimpleNamespace(id=1)))
+    return result, calls, limiter
+
+
+@pytest.mark.parametrize("sync_ready, expected", [(True, "available"), (False, "unavailable")])
+def test_answer_sheet_gate_uses_the_generic_grading_readiness(monkeypatch, sync_ready, expected):
+    result, calls, _limiter = _answer_sheet_gate(
+        monkeypatch, redis=False, sync_ready=sync_ready, async_ready=not sync_ready,
+    )
+    assert result["status"] == expected
+    assert calls == [("sync",)], "without the shared limiter only the local readiness decides"
+    if not sync_ready:
+        assert result["message"] == "数学批改服务尚未就绪，请稍后重试或联系管理员。"
+
+
+@pytest.mark.parametrize("sync_ready, async_ready, expected", [
+    (True, False, "unavailable"),
+    (False, True, "available"),
+])
+def test_answer_sheet_gate_asks_the_shared_limiter_when_redis_backs_it(
+    monkeypatch, sync_ready, async_ready, expected,
+):
+    result, calls, limiter = _answer_sheet_gate(
+        monkeypatch, redis=True, sync_ready=sync_ready, async_ready=async_ready,
+    )
+    assert result["status"] == expected
+    assert calls == [("ping",), ("sync",), ("async", limiter)]

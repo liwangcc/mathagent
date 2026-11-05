@@ -3,23 +3,17 @@
 A test that reads ``routers/*.py`` or ``services/*.py`` and matches strings
 pins how a function is written, so a behaviour-preserving split of that file
 fails it (or forces the test to be rewritten alongside the code it guards).
-New tests may not do this.  The files below still do; each one must be turned
-into a behaviour test before the module it reads is split, and is then removed
-from this list (a stale entry fails too).
+No test may do this.  The last two (template import / answer-sheet stream
+checkpoints, Flash defaults and the answer-sheet readiness gate) became
+behaviour tests; keep the list below empty.  A property with no observable
+behaviour is not worth a test: say so in review instead of matching text.
 """
 import ast
 from pathlib import Path
 
 TESTS = Path(__file__).resolve().parent
 
-KNOWN_SOURCE_TEXT_TESTS = {
-    # Reads routers/grade_template.py and routers/answer_sheet.py: heartbeats,
-    # checkpoints off the event loop, component settling.
-    "test_template_recognition_streaming.py",
-    # Reads config.py and routers/answer_sheet.py: grading provider defaults
-    # and the answer-sheet readiness gate.
-    "test_flash_grading.py",
-}
+KNOWN_SOURCE_TEXT_TESTS: set[str] = set()
 
 
 def _reads_python_source(tree: ast.AST) -> bool:
