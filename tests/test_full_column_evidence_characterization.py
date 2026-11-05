@@ -7,7 +7,8 @@ pinned, on synthetic pixels only:
   once (the order of the checks), and whether the output directory exists
   afterwards (``mkdir`` happens after layout validation, before rendering);
 * for accepted inputs, the complete diagnostics (key order included), the
-  SHA-256 of every evidence PNG and the files left in the output directory.
+  pixel digest (size + raw RGB) of every evidence PNG and the files left in
+  the output directory.
 
 Regenerate only for an intended behaviour change:
 
@@ -21,6 +22,7 @@ from pathlib import Path
 
 import numpy as np
 import pytest
+from PIL import Image
 
 from services import template_evidence as evidence
 from services.template_anchor_crops import build_anchor_crop_plan
@@ -194,7 +196,15 @@ def _cases():
 
 
 def _png_digest(path: str) -> str:
-    return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+    # Pin the decoded pixels, not the encoded bytes: PNG bytes depend on the
+    # zlib build behind Pillow (zlib-ng and stock zlib deflate differently),
+    # so a byte hash turns a pure encoder change into a golden failure on any
+    # machine or CI image with a different Pillow wheel. Size + raw RGB keeps
+    # the comparison pixel-exact and stays stable across Pillow 11/12.
+    with Image.open(path) as image:
+        rgb = image.convert("RGB")
+        body = f"{rgb.size[0]}x{rgb.size[1]}".encode() + rgb.tobytes()
+    return hashlib.sha256(body).hexdigest()
 
 
 def _scrub(value, root: str):
