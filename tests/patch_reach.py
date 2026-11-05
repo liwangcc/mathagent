@@ -14,7 +14,8 @@ of the source (no imports, independent of test order):
 * shadows  modules of the target's split family — ``routers/grade_*.py`` and
            ``routers/grade/`` for ``routers.grade`` — that bind the same origin
            under the same name and read it as a global; code there does not
-           see the patch.
+           see the patch, unless the same ``monkeypatch`` has already patched
+           that module's own binding (patch the split module first).
 
 Split a large module into files of its family so this applies.  Findings that
 exist today are listed in ``patch_reach_baseline.json``; any other finding
@@ -172,13 +173,15 @@ def _baseline() -> frozenset[tuple[str, str, str]]:
     return frozenset(tuple(item) for item in json.loads(BASELINE.read_text(encoding="utf-8"))["allowed"])
 
 
-def _check(target, name: str) -> None:
+def _check(target, name: str, patched: frozenset[tuple[str, str]] = frozenset()) -> None:
+    """``patched``: what the same MonkeyPatch already replaced; a shadow whose
+    own binding is among them is reached by that companion patch."""
     if not isinstance(target, types.ModuleType) or target.__name__ not in _project():
         return
     module = target.__name__
     reached, shadows = reach(module, name)
     findings = [] if reached else [(module, name, "<inert>")]
-    findings += [(module, name, shadow) for shadow in shadows]
+    findings += [(module, name, shadow) for shadow in shadows if (shadow, name) not in patched]
     if _mode() == "record":
         _observed.update(findings)
         return
@@ -187,7 +190,7 @@ def _check(target, name: str) -> None:
         lines = "\n".join(
             f"  {module}.{name}: "
             + ("nothing reads it through this module" if shadow == "<inert>"
-               else f"{shadow} reads its own binding — patch {shadow}.{name} too")
+               else f"{shadow} reads its own binding — patch {shadow}.{name} too, first")
             for module, name, shadow in new
         )
         pytest.fail("monkeypatch does not reach every reader:\n" + lines
@@ -199,18 +202,38 @@ def _resolve(dotted: str):
     return sys.modules.get(module_name), attr
 
 
+def _patched_by(patcher: pytest.MonkeyPatch) -> set[tuple[str, str]]:
+    return patcher.__dict__.setdefault("_patch_reach_patched", set())
+
+
 def install() -> None:
-    """Check every ``monkeypatch.setattr`` and ``unittest.mock.patch``."""
+    """Check every ``monkeypatch.setattr`` and ``unittest.mock.patch``.
+
+    A shadow is satisfied when the same MonkeyPatch has already patched the
+    shadow module's own binding of the name (``undo`` forgets those patches).
+    """
     original_setattr = pytest.MonkeyPatch.setattr
+    original_undo = pytest.MonkeyPatch.undo
 
     def setattr_checked(self, target, *args, **kwargs):
+        patched = _patched_by(self)
         if isinstance(target, str):
             result = original_setattr(self, target, *args, **kwargs)
-            _check(*_resolve(target))
-            return result
-        if args and isinstance(args[0], str):
-            _check(target, args[0])
-        return original_setattr(self, target, *args, **kwargs)
+            module, attr = _resolve(target)
+            _check(module, attr, frozenset(patched))
+        elif args and isinstance(args[0], str):
+            module, attr = target, args[0]
+            _check(module, attr, frozenset(patched))
+            result = original_setattr(self, target, *args, **kwargs)
+        else:
+            return original_setattr(self, target, *args, **kwargs)
+        if isinstance(module, types.ModuleType):
+            patched.add((module.__name__, attr))
+        return result
+
+    def undo_forgetting(self):
+        _patched_by(self).clear()
+        return original_undo(self)
 
     original_enter = mock._patch.__enter__
 
@@ -219,6 +242,7 @@ def install() -> None:
         return original_enter(self)
 
     pytest.MonkeyPatch.setattr = setattr_checked
+    pytest.MonkeyPatch.undo = undo_forgetting
     mock._patch.__enter__ = enter_checked
 
 

@@ -84,3 +84,31 @@ def test_unlisted_finding_fails_the_test(monkeypatch):
     monkeypatch.setattr(patch_reach, "_mode", lambda: "enforce")
     with pytest.raises(pytest.fail.Exception, match="nothing reads it through this module"):
         patch_reach._check(grade, "name_no_code_reads")
+
+
+def test_shadow_is_satisfied_only_by_an_earlier_patch_of_its_own_binding(monkeypatch):
+    import types
+
+    import routers.grade as grade
+
+    # A split-family module with its own binding of grade's heartbeat interval.
+    split = types.ModuleType("routers.grade_split")
+    split._GRADE_HEARTBEAT_SECONDS = grade._GRADE_HEARTBEAT_SECONDS
+    monkeypatch.setattr(patch_reach, "_mode", lambda: "enforce")
+    monkeypatch.setattr(patch_reach, "reach", lambda module, name: (True, ("routers.grade_split",)))
+    shadowed = "patch routers.grade_split._GRADE_HEARTBEAT_SECONDS too, first"
+    with pytest.MonkeyPatch.context() as patcher:
+        with pytest.raises(pytest.fail.Exception, match=shadowed):
+            patcher.setattr(grade, "_GRADE_HEARTBEAT_SECONDS", 0.01)
+    with pytest.MonkeyPatch.context() as patcher:
+        patcher.setattr(split, "_GRADE_HEARTBEAT_SECONDS", 0.01)
+        patcher.setattr(grade, "_GRADE_HEARTBEAT_SECONDS", 0.01)
+        assert (grade._GRADE_HEARTBEAT_SECONDS, split._GRADE_HEARTBEAT_SECONDS) == (0.01, 0.01)
+        patcher.undo()
+        with pytest.raises(pytest.fail.Exception, match=shadowed):
+            patcher.setattr(grade, "_GRADE_HEARTBEAT_SECONDS", 0.01)
+    with pytest.MonkeyPatch.context() as patcher, pytest.MonkeyPatch.context() as other:
+        other.setattr(split, "_GRADE_HEARTBEAT_SECONDS", 0.01)
+        with pytest.raises(pytest.fail.Exception, match=shadowed):
+            patcher.setattr(grade, "_GRADE_HEARTBEAT_SECONDS", 0.01)
+    assert grade._GRADE_HEARTBEAT_SECONDS == split._GRADE_HEARTBEAT_SECONDS == 15.0
