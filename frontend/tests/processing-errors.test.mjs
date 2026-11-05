@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { readFileSync } from 'node:fs'
+import { loadApiClient } from './helpers/apiClient.js'
 import { createErrorNotifier, enrichProcessingError } from '../src/utils/processingError.js'
 import { createSseEventError, createSseResponseError, consumeSse } from '../src/utils/sse.js'
 
@@ -10,27 +10,32 @@ const info = (id = 'a'.repeat(32)) => ({
 })
 
 test('HTTP interceptor plus page catch notifies exactly once; another failure survives', async () => {
-  let rejected
-  const axios = {
-    create: () => ({ interceptors: {
-      request: { use() {} }, response: { use(_success, error) { rejected = error } },
-    } }), isCancel: () => false,
-  }
-  const messages = []
-  const notify = createErrorNotifier(message => messages.push(message))
-  let source = readFileSync(new URL('../src/api/index.js', import.meta.url), 'utf8')
-  source = source.replace(/^import .*$/gm, '').replaceAll('import.meta.env', '({})')
-    .replace(/export default api/g, '').replace(/\bexport /g, '')
-  new Function('axios', 'ElMessage', 'notifyProcessingError', 'enrichProcessingError', source)(
-    axios, { warning() {} }, notify, enrichProcessingError,
-  )
-  const error = Object.assign(new Error('old wrapper'), { response: { status: 500, data: { detail: '处理失败', error_info: info() } } })
-  await assert.rejects(rejected(error), e => e === error)
-  assert.equal(notify(error, 'page catch'), false)
-  assert.equal(messages.length, 1)
-  assert.match(messages[0], /答案转录.*诊断编号/)
-  assert.equal(notify(enrichProcessingError(new Error('same text'), { error_info: info('b'.repeat(32)) })), true)
-  assert.equal(messages.length, 2)
+  const client = await loadApiClient()
+  const { notifyProcessingError } = await import('../src/utils/errorNotification.js')
+  const fail = id => () => ({ status: 500, data: { detail: '处理失败', error_info: info(id) } })
+
+  client.respond(fail('d'.repeat(32)))
+  const error = await client.api.grade.results().catch(err => err)
+  assert.equal(error.errorId, 'd'.repeat(32))
+  assert.equal(notifyProcessingError(error, 'page catch'), false)
+  assert.equal(client.messages.length, 1)
+  assert.equal(client.messages[0].type, 'error')
+  assert.match(client.messages[0].message, /答案转录.*诊断编号/)
+
+  client.respond(fail('e'.repeat(32)))
+  const another = await client.api.grade.results().catch(err => err)
+  assert.equal(another.message, error.message)
+  assert.equal(client.messages.length, 2)
+  assert.deepEqual(client.messages[1], client.messages[0])
+
+  // Without error_info only object identity links the toast to the page catch.
+  const transport = Object.assign(new Error('old wrapper'), { response: { status: 500, data: { detail: '旧接口失败' } } })
+  client.respond(() => { throw transport })
+  const legacy = await client.api.grade.results().catch(err => err)
+  assert.equal(legacy, transport)
+  assert.equal(notifyProcessingError(legacy, 'page catch'), false)
+  assert.equal(client.messages.length, 3)
+  assert.deepEqual(client.messages[2], { type: 'error', message: '旧接口失败' })
 })
 
 test('SSE and polled failed status retain one identity, including reload', async () => {

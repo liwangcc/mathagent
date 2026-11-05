@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import test from 'node:test'
+import { loadApiClient } from './helpers/apiClient.js'
 
 const upload = readFileSync(new URL('../src/views/Upload.vue', import.meta.url), 'utf8')
-const api = readFileSync(new URL('../src/api/index.js', import.meta.url), 'utf8')
 
 test('模板识别完成后自动裁剪并显示受鉴权模板覆盖框', () => {
   assert.match(upload, /templateDialogVisible\.value = true[\s\S]*templateCutCandidatesState\(tid\)[\s\S]*applyTemplateCutState\(existingCut, runToken\)[\s\S]*void onRunTemplateCut\(\)/)
@@ -24,8 +24,25 @@ test('模板识别完成后自动裁剪并显示受鉴权模板覆盖框', () =>
   assert.match(upload, /tpl-question-anchor/)
   assert.match(upload, /tpl-template-handwriting/)
   assert.match(upload, /api\.grade\.templatePageImage\(templateId, Number\(page\.page_index\)\)/)
-  assert.match(api, /templatePageImage: async \(templateId, pageIndex\)/)
-  assert.match(api, /responseType: 'blob'/)
+})
+
+test('模板页图以带登录令牌的 blob 请求取回，并返回由该图生成的对象 URL', async (t) => {
+  const client = await loadApiClient({ localStorage: { mathagent_token: 'tok-page' } })
+  const image = new Blob(['page-image'], { type: 'image/png' })
+  client.respond(() => ({ data: image, headers: { 'content-type': 'image/png' } }))
+  const createObjectURL = t.mock.method(URL, 'createObjectURL', () => 'blob:template-page-3')
+
+  const objectUrl = await client.api.grade.templatePageImage('tpl 1/2', 3)
+
+  assert.equal(client.requests.length, 1)
+  const [request] = client.requests
+  assert.equal(request.method, 'get')
+  assert.equal(request.url, '/batch-grade/template/tpl%201%2F2/pages/3/image')
+  assert.equal(request.responseType, 'blob')
+  assert.equal(request.headers.Authorization, 'Bearer tok-page')
+  assert.equal(createObjectURL.mock.callCount(), 1)
+  assert.equal(createObjectURL.mock.calls[0].arguments[0], image)
+  assert.equal(objectUrl, 'blob:template-page-3')
 })
 
 test('手动按钮只用于重新自动裁剪，不是首次裁剪门禁', () => {

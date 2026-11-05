@@ -9,10 +9,10 @@ import {
   sourceDirectory,
   studentPageIdentityHint,
 } from '../src/utils/answerSheetPairing.js'
+import { loadApiClient } from './helpers/apiClient.js'
 
 const read = (relative) => readFileSync(fileURLToPath(new URL(relative, import.meta.url)), 'utf8')
 const view = read('../src/views/AnswerSheet.vue')
-const api = read('../src/api/index.js')
 const file = (name) => ({ name, path: name })
 const byPath = (item) => item.path
 
@@ -99,10 +99,21 @@ test('学生答题卡支持文件夹与压缩包导入，并随每页上传来�
   assert.match(view, /webkitdirectory: true/)
   assert.match(view, /accept: '\.jpg,\.jpeg,\.png,\.zip,\.rar'/)
   assert.match(view, /captureSourcePath\(file\),\n\s+\)/)
-  assert.match(api, /uploadStudents: \(sessionId, uploadId, file, sourcePath = ''\)/)
-  assert.match(api, /formData\.append\('source_path', sourcePath\)/)
   // Only the student picker imports folders; template/source pickers stay image-only.
   assert.equal((view.match(/import-archives/g) || []).length, 1)
+})
+
+test('学生答题卡上传请求附带每页来源路径，未给路径时不发送该字段', async () => {
+  const client = await loadApiClient()
+  const page = new File(['front'], 'a.jpg', { type: 'image/jpeg' })
+  await client.api.answerSheet.uploadStudents('s1', 'u1', page, '收集.zip/张三/a.jpg')
+  await client.api.answerSheet.uploadStudents('s1', 'u1', page)
+
+  const [withPath, withoutPath] = client.requests.map(config => config.data)
+  assert.equal(withPath.get('source_path'), '收集.zip/张三/a.jpg')
+  assert.equal(withPath.get('files'), page)
+  assert.equal(withoutPath.has('source_path'), false)
+  assert.equal(withoutPath.get('files'), page)
 })
 
 test('上传区默认提醒文件夹、文件名配对或按顺序上传正反面，并在页面卡片显示身份来源', () => {

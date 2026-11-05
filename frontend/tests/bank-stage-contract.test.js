@@ -1,9 +1,9 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
+import { loadApiClient } from './helpers/apiClient.js'
 
 const view = readFileSync(new URL('../src/views/Bank.vue', import.meta.url), 'utf8')
-const api = readFileSync(new URL('../src/api/index.js', import.meta.url), 'utf8')
 const photo = readFileSync(new URL('../src/views/BankPhotoImport.vue', import.meta.url), 'utf8')
 const pending = readFileSync(new URL('../src/views/PendingAnswers.vue', import.meta.url), 'utf8')
 
@@ -17,9 +17,37 @@ test('bank follows profile without independent stage or legacy-adoption controls
   assert.doesNotMatch(view, /updateProfile|education_stage\s*=(?!=)/)
 })
 
-test('bank query and export forward optional stage params', () => {
-  assert.match(api, /chapters: \(params\) => http.get\('\/teacher\/chapters', \{ params \}\)/)
-  assert.match(api, /exportPrivate: \(params = \{\}\) => authFetch\(`\/api\/bank\/export\?\$\{new URLSearchParams\(params\)\}`\)/)
+test('bank query and export forward optional stage params', async () => {
+  const client = await loadApiClient({ localStorage: { mathagent_token: 'teacher-token' } })
+  client.respond(() => ({ data: { chapters: ['c1'] } }))
+  assert.deepEqual(await client.api.bank.chapters({ education_stage: 'junior' }), { chapters: ['c1'] })
+  assert.deepEqual(await client.api.bank.chapters(), { chapters: ['c1'] })
+  const sent = client.requests.map(({ method, url, params, headers }) => ({
+    method, url, params, authorization: headers.Authorization,
+  }))
+  assert.deepEqual(sent, [
+    { method: 'get', url: '/teacher/chapters', params: { education_stage: 'junior' }, authorization: 'Bearer teacher-token' },
+    { method: 'get', url: '/teacher/chapters', params: undefined, authorization: 'Bearer teacher-token' },
+  ])
+
+  const fetched = []
+  const realFetch = globalThis.fetch
+  globalThis.fetch = async (url, options = {}) => {
+    fetched.push({ url, method: options.method ?? 'GET', authorization: options.headers?.Authorization })
+    return new Response(`xlsx ${fetched.length}`)
+  }
+  const exported = []
+  try {
+    exported.push(await client.api.bank.exportPrivate({ education_stage: 'senior' }))
+    exported.push(await client.api.bank.exportPrivate())
+  } finally {
+    globalThis.fetch = realFetch
+  }
+  assert.deepEqual(fetched, [
+    { url: '/api/bank/export?education_stage=senior', method: 'GET', authorization: 'Bearer teacher-token' },
+    { url: '/api/bank/export?', method: 'GET', authorization: 'Bearer teacher-token' },
+  ])
+  assert.deepEqual(await Promise.all(exported.map(resp => resp.text())), ['xlsx 1', 'xlsx 2'])
 })
 
 test('photo import returns server batch id on save and restores only that opaque id', () => {

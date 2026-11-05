@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import test from 'node:test'
+import { loadApiClient } from './helpers/apiClient.js'
 
 const upload = readFileSync(new URL('../src/views/Upload.vue', import.meta.url), 'utf8')
-const api = readFileSync(new URL('../src/api/index.js', import.meta.url), 'utf8')
 
 test('recognition checkpoints its batch id on the first progress event', () => {
   assert.match(upload, /if \(evt === 'progress'\) \{\s*rememberRecognitionBatch\(data\)/)
@@ -12,11 +12,26 @@ test('recognition checkpoints its batch id on the first progress event', () => {
 })
 
 test('unfinished recognition can resume from the durable endpoint after refresh', () => {
-  assert.match(api, /recognitionResume: \(batchId, signal\)/)
-  assert.match(api, /batch-grade\/\$\{encodeURIComponent\(batchId\)\}\/recognize\/resume/)
   assert.match(upload, /async function resumeRecognitionBatch\(resumeBatchId, \{ automatic = false \} = \{\}\)/)
   assert.match(upload, /\['recognizing_remaining', 'recognition_interrupted'\]/)
   assert.match(upload, /Number\(payload\?\.retryable_failed_papers \|\| 0\)/)
+})
+
+test('recognition resume POSTs the saved batch id to the durable endpoint and returns the event stream', async (t) => {
+  const { api } = await loadApiClient({ localStorage: { mathagent_token: 'tok-resume' } })
+  const stream = new Response('event: progress\ndata: {}\n\n', { headers: { 'Content-Type': 'text/event-stream' } })
+  const fetchMock = t.mock.method(globalThis, 'fetch', async () => stream)
+  const controller = new AbortController()
+
+  const response = await api.grade.recognitionResume('batch 7/a', controller.signal)
+
+  assert.equal(response, stream)
+  assert.equal(fetchMock.mock.callCount(), 1)
+  const [url, init] = fetchMock.mock.calls[0].arguments
+  assert.equal(url, '/api/batch-grade/batch%207%2Fa/recognize/resume')
+  assert.equal(init.method, 'POST')
+  assert.equal(init.signal, controller.signal)
+  assert.equal(init.headers.Authorization, 'Bearer tok-resume')
 })
 
 test('accelerator waiting auto-resumes with a bounded manual fallback', () => {

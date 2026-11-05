@@ -3,10 +3,10 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { computed, defineComponent, effectScope, h, ref, watch } from 'vue'
+import { loadApiClient } from './helpers/apiClient.js'
 
 const read = (relative) => readFileSync(fileURLToPath(new URL(relative, import.meta.url)), 'utf8')
 const view = read('../src/views/AnswerSheet.vue')
-const api = read('../src/api/index.js')
 
 test('批次不再选择批阅类型或班级，班级来自全局当前班级', () => {
   assert.doesNotMatch(view, /批阅类型/)
@@ -19,9 +19,22 @@ test('批次不再选择批阅类型或班级，班级来自全局当前班级',
 })
 
 test('批次列表接口按答题卡模板号加时间戳展示', () => {
-  assert.match(api, /listSessions: \(\) => http\.get\('\/answer-sheet\/sessions'\)/)
   assert.match(view, /item\.batch_label \|\| '待绑定答题卡模板'/)
   assert.match(view, /批次 \{\{ session\.batch_label \}\}/)
+})
+
+test('批次列表接口不带参数 GET /answer-sheet/sessions 并返回后端批次', async () => {
+  const client = await loadApiClient()
+  const batches = [{ session_id: 'b1', batch_label: 'AS-1111-2222-3333-4444-20260927-143000' }]
+  client.respond(() => ({ data: { batches } }))
+
+  assert.deepEqual(await client.api.answerSheet.listSessions(), { batches })
+  assert.equal(client.requests.length, 1)
+  const [request] = client.requests
+  assert.equal(request.method, 'get')
+  assert.equal(request.url, '/answer-sheet/sessions')
+  assert.equal(request.params, undefined)
+  assert.equal(request.data, undefined)
 })
 
 test('建批次向导使用试卷模板选择与登记，不再提交空请求', () => {

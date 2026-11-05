@@ -1,9 +1,9 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
+import { loadApiClient } from './helpers/apiClient.js'
 
 const source = fs.readFileSync(new URL('../src/views/Upload.vue', import.meta.url), 'utf8')
-const api = fs.readFileSync(new URL('../src/api/index.js', import.meta.url), 'utf8')
 
 test('label points retain geometry while their text stays in the external legend', () => {
   assert.match(source, /const TEMPLATE_PROVENANCE_KEYS = \[\s*'geometry_kind'/)
@@ -31,7 +31,32 @@ test('teacher can adjust and persist template columns and blue answer regions', 
   assert.match(source, /template_answer_regions: blankTemplate \|\| page\.hasAnswerRegionContract \? confirmedAnswerRegions/)
   assert.match(source, /template_handwriting_regions: confirmedHandwriting/)
   assert.doesNotMatch(source, /deleteTemplateCrop/)
-  assert.match(api, /templateLayoutOverrides/)
+})
+
+test('模板分栏与作答框以 PUT 持久化到 layout-overrides，失败时不额外弹通用提示', async () => {
+  const client = await loadApiClient({ localStorage: { mathagent_token: 'tok-layout' } })
+  const payload = {
+    page_index: 1,
+    columns: [{ x1_1000: 0, x2_1000: 500 }, { x1_1000: 500, x2_1000: 1000 }],
+    question_anchors: [{ question_number: '1', question_number_bbox: [10, 10, 40, 30], human_confirmed: true }],
+    template_answer_regions: [{ question_number: '1', regions: [[50, 60, 400, 200]] }],
+    template_handwriting_regions: [{ question_number: '1', regions: [[50, 60, 400, 200]] }],
+  }
+  client.respond(() => ({ data: { success: true, page_index: 1, columns: payload.columns } }))
+
+  const saved = await client.api.grade.templateLayoutOverrides('tpl 1/2', payload)
+
+  assert.deepEqual(saved, { success: true, page_index: 1, columns: payload.columns })
+  assert.equal(client.requests.length, 1)
+  const [request] = client.requests
+  assert.equal(request.method, 'put')
+  assert.equal(request.url, '/batch-grade/template/tpl%201%2F2/layout-overrides')
+  assert.deepEqual(JSON.parse(request.data), payload)
+  assert.equal(request.headers.Authorization, 'Bearer tok-layout')
+
+  client.respond(() => ({ status: 422, data: { detail: '第 1 题作答框越界' } }))
+  await assert.rejects(client.api.grade.templateLayoutOverrides('tpl 1/2', payload), { message: '第 1 题作答框越界' })
+  assert.deepEqual(client.messages, [])
 })
 
 test('整题增删折叠在题目管理内，并与仅删除定位标记明确区分', () => {
@@ -49,7 +74,26 @@ test('整题增删折叠在题目管理内，并与仅删除定位标记明确�
     source,
     /\{ action: 'insert', before_question_number: target, new_question_number: number \}/,
   )
-  assert.match(api, /templateQuestionEdit/)
+})
+
+test('整题增删以 PUT 发往模板题目接口，原样携带教师输入的题号并返回服务端编号', async () => {
+  const client = await loadApiClient({ localStorage: { mathagent_token: 'tok-question' } })
+  const renumbered = { success: true, questions: [{ question_number: '2.1' }, { question_number: '3' }] }
+  client.respond(() => ({ data: renumbered }))
+  const insert = { page_index: 0, action: 'insert', before_question_number: '3', new_question_number: '2.1' }
+
+  const result = await client.api.grade.templateQuestionEdit('tpl 1/2', insert)
+
+  assert.deepEqual(result, renumbered)
+  const remove = { page_index: 0, action: 'delete', question_number: '3' }
+  await client.api.grade.templateQuestionEdit('tpl 1/2', remove)
+  assert.equal(client.requests.length, 2)
+  client.requests.forEach((request) => {
+    assert.equal(request.method, 'put')
+    assert.equal(request.url, '/batch-grade/template/tpl%201%2F2/questions')
+    assert.equal(request.headers.Authorization, 'Bearer tok-question')
+  })
+  assert.deepEqual(client.requests.map((request) => JSON.parse(request.data)), [insert, remove])
 })
 
 test('空白与有痕迹模板都允许教师查看、编辑并保存多个豁免框', () => {

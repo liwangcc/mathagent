@@ -2,12 +2,32 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
+import { loadApiClient } from './helpers/apiClient.js'
 
 const read = (relative) => readFileSync(fileURLToPath(new URL(relative, import.meta.url)), 'utf8')
 const view = read('../src/views/AnswerSheet.vue')
 const api = read('../src/api/index.js')
 const router = read('../src/router/index.js')
 const layout = read('../src/views/Layout.vue')
+
+// Ids that need encodeURIComponent, so every path segment proves it is encoded.
+const SESSION = 's 1/x'
+const BASE = '/answer-sheet/sessions/s%201%2Fx'
+const SHEET_CODE = 'AS-1111-2222-3333-4444'
+const body = config => (typeof config.data === 'string' ? JSON.parse(config.data) : config.data)
+const sent = requests => requests.map(config => [config.method, config.url])
+const studentPage = () => new File(['front'], '张三_正面.jpg', { type: 'image/jpeg' })
+
+// SSE methods go through fetch, not axios: record each call and its Response.
+function recordFetch(t) {
+  const calls = []
+  t.mock.method(globalThis, 'fetch', async (url, options) => {
+    const response = new Response('', { status: 200 })
+    calls.push({ url, ...options, response })
+    return response
+  })
+  return calls
+}
 
 test('答题卡批阅是详细批改同级入口并使用独立懒加载路由', () => {
   assert.match(router, /path: 'answer-sheet'.*import\('@\/views\/AnswerSheet\.vue'\).*title: '答题卡批阅'/)
@@ -18,18 +38,64 @@ test('答题卡批阅是详细批改同级入口并使用独立懒加载路由',
   assert.match(layout, /<Tickets \/>/)
 })
 
-test('API 客户端覆盖当前后端已开放的会话、语义与版面合同', () => {
-  for (const method of [
-    'createSession', 'getSession', 'deleteSession', 'uploadSource', 'recognizeSource',
-    'confirmAnswers', 'uploadLayout', 'saveLayout', 'freezeLayout', 'layoutPageImage',
-    'startStudentUpload', 'uploadStudents', 'processStudentUploadStream', 'discardStudentUpload',
-  ]) {
-    assert.match(api, new RegExp(`${method}:`))
-  }
-  assert.match(api, /source\/upload/)
-  assert.match(api, /answers\/confirm/)
-  assert.match(api, /layout\/pages\/\$\{encodeURIComponent\(pageId\)\}\/image/)
-  assert.match(api, /responseType: 'blob'/)
+test('API 客户端覆盖当前后端已开放的会话、语义与版面合同', async (t) => {
+  const client = await loadApiClient()
+  const { answerSheet } = client.api
+  const sourceForm = new FormData()
+  const layoutForm = new FormData()
+  const questions = [{ question_no: '1', question_type: 'choice', standard_answer: 'A' }]
+  const layoutPayload = { answer_regions: [], identity_regions: [] }
+  const image = new Blob(['png'], { type: 'image/png' })
+  client.respond(config => ({ data: config.responseType === 'blob' ? image : {} }))
+  const created = []
+  t.mock.method(URL, 'createObjectURL', (blob) => {
+    created.push(blob)
+    return 'blob:layout-page'
+  })
+  const streams = recordFetch(t)
+  const { signal } = new AbortController()
+
+  await answerSheet.createSession({ paper_template_code: 'PT-AAAA-BBBB-CCCC-DDDD' })
+  await answerSheet.getSession(SESSION)
+  await answerSheet.deleteSession(SESSION)
+  await answerSheet.uploadSource(SESSION, sourceForm)
+  await answerSheet.recognizeSource(SESSION)
+  await answerSheet.confirmAnswers(SESSION, questions)
+  await answerSheet.uploadLayout(SESSION, layoutForm)
+  await answerSheet.saveLayout(SESSION, layoutPayload)
+  await answerSheet.freezeLayout(SESSION)
+  assert.equal(await answerSheet.layoutPageImage(SESSION, 'page/2'), 'blob:layout-page')
+  await answerSheet.startStudentUpload(SESSION)
+  await answerSheet.uploadStudents(SESSION, 'upload/1', studentPage())
+  await answerSheet.discardStudentUpload(SESSION, 'upload/1')
+  await answerSheet.processStudentUploadStream(SESSION, 'upload/1', signal)
+
+  assert.deepEqual(sent(client.requests), [
+    ['post', '/answer-sheet/sessions'],
+    ['get', BASE],
+    ['delete', BASE],
+    ['post', `${BASE}/source/upload`],
+    ['post', `${BASE}/source/recognize`],
+    ['post', `${BASE}/answers/confirm`],
+    ['post', `${BASE}/layout/upload`],
+    ['put', `${BASE}/layout`],
+    ['post', `${BASE}/layout/freeze`],
+    ['get', `${BASE}/layout/pages/page%2F2/image`],
+    ['post', `${BASE}/students/upload/start`],
+    ['post', `${BASE}/students/upload`],
+    ['delete', `${BASE}/students/upload/upload%2F1`],
+  ])
+  const [create, , , source, , confirm, layoutUpload, save, , pageImage] = client.requests
+  assert.deepEqual(body(create), { paper_template_code: 'PT-AAAA-BBBB-CCCC-DDDD' })
+  assert.equal(source.data, sourceForm)
+  assert.deepEqual(body(confirm), { questions })
+  assert.equal(layoutUpload.data, layoutForm)
+  assert.deepEqual(body(save), layoutPayload)
+  assert.equal(pageImage.responseType, 'blob')
+  assert.deepEqual(created, [image])
+  assert.deepEqual(streams.map(call => [call.method, call.url]), [
+    ['POST', `/api${BASE}/students/upload/upload%2F1/process/stream`],
+  ])
 })
 
 test('五阶段工作流持久化 session id 并从 GET 会话刷新恢复', () => {
@@ -58,9 +124,6 @@ test('答题卡可选复用模板码，新建模板仍兼容外部版式', () =>
 })
 
 test('模板码输入框显示当前教师历史并且复用路径不再定位', () => {
-  for (const method of ['locateLayout', 'templateHistory', 'useTemplateCode', 'publishTemplateCode']) {
-    assert.match(api, new RegExp(`${method}:`))
-  }
   assert.match(view, /v-for="item in templateCodeHistory"/)
   assert.match(view, /输入模板码，或从历史记录中选择/)
   assert.match(view, /api\.answerSheet\.templateHistory\(\)/)
@@ -71,6 +134,26 @@ test('模板码输入框显示当前教师历史并且复用路径不再定位',
   assert.match(view, /function confirmCurrentPageRegions\(\)/)
 })
 
+test('模板码历史、套用、发布与重新定位接口各自命中后端端点', async () => {
+  const client = await loadApiClient()
+  const { answerSheet } = client.api
+  const templates = [{ template_code: SHEET_CODE }]
+  client.respond(config => ({ data: config.url.endsWith('/templates/history') ? { templates } : {} }))
+
+  assert.deepEqual(await answerSheet.templateHistory(), { templates })
+  await answerSheet.useTemplateCode(SESSION, SHEET_CODE)
+  await answerSheet.publishTemplateCode(SESSION)
+  await answerSheet.locateLayout(SESSION)
+
+  assert.deepEqual(sent(client.requests), [
+    ['get', '/answer-sheet/templates/history'],
+    ['post', `${BASE}/layout/templates/use`],
+    ['post', `${BASE}/layout/templates/publish`],
+    ['post', `${BASE}/layout/locate`],
+  ])
+  assert.deepEqual(body(client.requests[1]), { template_code: SHEET_CODE })
+})
+
 test('模板页和学生答题卡使用各自的文件数量上限', () => {
   assert.equal((view.match(/:max-files="20"/g) || []).length, 3)
   assert.match(view, /:max-files="200"/)
@@ -79,7 +162,6 @@ test('模板页和学生答题卡使用各自的文件数量上限', () => {
 })
 
 test('答题卡页面失败关闭整链路状态并在故障时保留已有证据查看', () => {
-  assert.match(api, /availability: \(\) => http\.get\('\/answer-sheet\/availability', \{\s*timeout: AVAILABILITY_TIMEOUT_MS,\s*suppressErrorToast: true,/)
   for (const label of ['检测中', '可用', '需排队', '暂不可用', '链路故障']) assert.match(view, new RegExp(label))
   assert.match(view, /window\.setInterval\(refreshAvailability, 15000\)/)
   assert.match(view, /\['checking', 'unavailable', 'fault'\]\.includes\(serviceState\.value\.status\)/)
@@ -89,6 +171,31 @@ test('答题卡页面失败关闭整链路状态并在故障时保留已有证�
   assert.match(view, /\.workflow-readonly \.review-student-tabs/)
   assert.match(view, /\.workflow-readonly \.student-paper-pane/)
   assert.doesNotMatch(api, /active_teachers|queue_length|free_slots|queue_position/)
+})
+
+test('答题卡可用性探测以 10 秒超时无参 GET 且失败不弹全局提示，硬件归一化只输出状态与文案', async () => {
+  const client = await loadApiClient()
+  client.respond(() => ({ status: 503, data: { detail: '答题卡服务暂不可用' } }))
+
+  await assert.rejects(client.api.answerSheet.availability(), { message: '答题卡服务暂不可用' })
+  assert.deepEqual(client.messages, [])
+  // The same failure on an ordinary request is toasted, so the silence above is availability's own opt-out.
+  await assert.rejects(client.api.answerSheet.listSessions())
+  assert.deepEqual(client.messages, [{ type: 'error', message: '答题卡服务暂不可用' }])
+
+  const [probe] = client.requests
+  assert.equal(probe.method, 'get')
+  assert.equal(probe.url, '/answer-sheet/availability')
+  assert.equal(probe.timeout, 10000)
+  assert.equal(probe.params, undefined)
+  assert.equal(probe.data, undefined)
+
+  const queueInternals = { active_teachers: 5, queue_length: 3, free_slots: 0, queue_position: 2 }
+  const hardware = { status: 'waiting_accelerator', message: '排队等待加速节点' }
+  assert.deepEqual(
+    client.module.normalizeHardwareAvailability({ ...queueInternals, hardware: { ...hardware, ...queueInternals } }),
+    hardware,
+  )
 })
 
 test('答题卡可用性轮询单飞并保持运行期链路故障，未知状态也失败关闭', () => {
@@ -103,11 +210,6 @@ test('答题卡可用性轮询单飞并保持运行期链路故障，未知状�
 })
 
 test('答题卡页面消费机会式硬件状态，等待节点不锁死恢复，故障节点关闭新图像工作', () => {
-  for (const status of ['ready', 'waiting_accelerator', 'unavailable', 'fault', 'bypass']) {
-    assert.match(api, new RegExp(`'${status}'`))
-  }
-  assert.match(api, /waiting_accelerator: 'queued'/)
-  assert.match(api, /message: message \|\| HARDWARE_STATUS_FALLBACK_MESSAGES\[status\] \|\| ''/)
   assert.match(view, /normalizeHardwareAvailability\(state\)/)
   assert.match(view, /mergeHardwareAvailabilityStatus\(state\.status, hardware\.status\)/)
   assert.match(view, /hardware\.message \|\| state\.message/)
@@ -115,6 +217,23 @@ test('答题卡页面消费机会式硬件状态，等待节点不锁死恢复�
   assert.match(view, /workflowReadonly = computed\(\(\) => serviceBlocksNewWork\.value && session\.value\?\.status !== 'archived'\)/)
   assert.match(view, /const hardwareServiceStatus = mergeHardwareAvailabilityStatus\('available', hardware\.status\)/)
   assert.match(view, /hardwareServiceStatus === effectiveStatus[\s\S]*hardware\.message \|\| state\.message[\s\S]*state\.message \|\| hardware\.message/)
+})
+
+test('硬件状态只认五种机会式状态，等待节点映射为需排队，空文案按状态回退', async () => {
+  const { module } = await loadApiClient()
+  const { normalizeHardwareAvailability: normalize, mergeHardwareAvailabilityStatus: merge } = module
+
+  for (const status of ['ready', 'waiting_accelerator', 'unavailable', 'fault', 'bypass']) {
+    assert.deepEqual(normalize({ hardware: { status, message: ' 节点自述 ' } }), { status, message: '节点自述' })
+  }
+  assert.equal(normalize({ hardware: { status: 'overloaded', message: '节点自述' } }).status, 'fault')
+  assert.equal(merge('available', 'waiting_accelerator'), 'queued')
+
+  const fallbacks = ['waiting_accelerator', 'unavailable', 'fault']
+    .map(status => normalize({ hardware: { status, message: '  ' } }).message)
+  for (const message of fallbacks) assert.ok(message.length > 0)
+  assert.equal(new Set(fallbacks).size, fallbacks.length)
+  for (const status of ['ready', 'bypass']) assert.equal(normalize({ hardware: { status } }).message, '')
 })
 
 test('答题卡新任务有函数级硬件门禁，不仅依赖鼠标样式', () => {
@@ -138,20 +257,33 @@ test('答题卡写操作把网络、5xx 与长请求超时升级为链路故障'
   for (const code of ['ECONNABORTED', 'ETIMEDOUT', 'ERR_NETWORK']) assert.match(view, new RegExp(code))
   assert.match(view, /isSseServiceFault\(normalizeServiceError\(error\)\)/)
   assert.match(view, /markServiceFault\('答题卡批阅链路中断/)
-  assert.match(api, /const GRADING_OPERATION_TIMEOUT_MS = 660000/)
-  assert.ok((api.match(/timeout: GRADING_OPERATION_TIMEOUT_MS/g) || []).length >= 7)
+})
+
+test('答题卡长耗时写操作统一使用 660 秒请求超时', async () => {
+  const client = await loadApiClient()
+  const { answerSheet } = client.api
+  const form = new FormData()
+
+  await answerSheet.uploadSource(SESSION, form)
+  await answerSheet.recognizeSource(SESSION)
+  await answerSheet.uploadLayout(SESSION, form)
+  await answerSheet.processLayout(SESSION)
+  await answerSheet.locateLayout(SESSION)
+  await answerSheet.useTemplateCode(SESSION, SHEET_CODE)
+  await answerSheet.publishTemplateCode(SESSION)
+  await answerSheet.uploadStudents(SESSION, 'upload/1', studentPage())
+  await answerSheet.confirmOrientation(SESSION, 'paper/1', 1)
+  await answerSheet.recognizeStudents(SESSION)
+  await answerSheet.gradingDraft(SESSION)
+
+  assert.equal(client.requests.length, 11)
+  for (const request of client.requests) assert.equal(request.timeout, 660000, request.url)
 })
 
 test('三条长链路使用有心跳的 SSE 并可从持久化检查点恢复', () => {
   for (const method of ['recognizeSourceStream', 'recognizeStudentsStream', 'gradingDraftStream']) {
-    assert.match(api, new RegExp(`${method}:`))
     assert.match(view, new RegExp(`api\\.answerSheet\\.${method}`))
   }
-  for (const endpoint of [
-    '/source/recognize/stream',
-    '/students/recognize/stream',
-    '/grading/draft/stream',
-  ]) assert.match(api, new RegExp(endpoint))
   assert.match(view, /consumeSse\(response/)
   assert.match(view, /new SseTransportError/)
   assert.match(view, /answerSheetStreamController\.abort\(\)/)
@@ -159,6 +291,32 @@ test('三条长链路使用有心跳的 SSE 并可从持久化检查点恢复', 
   assert.match(view, /recognition_checkpoint/)
   assert.match(view, /grading_draft_checkpoint/)
   assert.match(view, /进度会自动保存/)
+})
+
+test('三条长链路 SSE 带登录令牌与取消信号 POST 到各自流式端点，并交回原始响应', async (t) => {
+  const client = await loadApiClient({ localStorage: { mathagent_token: 'teacher-token' } })
+  const { answerSheet } = client.api
+  const streams = recordFetch(t)
+  const { signal } = new AbortController()
+
+  const responses = [
+    await answerSheet.recognizeSourceStream(SESSION, signal),
+    await answerSheet.recognizeStudentsStream(SESSION, signal),
+    await answerSheet.gradingDraftStream(SESSION, signal),
+  ]
+
+  assert.deepEqual(streams.map(call => call.url), [
+    `/api${BASE}/source/recognize/stream`,
+    `/api${BASE}/students/recognize/stream`,
+    `/api${BASE}/grading/draft/stream`,
+  ])
+  for (const [index, call] of streams.entries()) {
+    assert.equal(call.method, 'POST')
+    assert.equal(call.signal, signal)
+    assert.equal(call.headers.Authorization, 'Bearer teacher-token')
+    assert.equal(responses[index], call.response)
+  }
+  assert.equal(client.requests.length, 0)
 })
 
 test('SSE 加速节点状态区分等待、不可用与故障，并保留已保存进度', () => {
@@ -198,9 +356,6 @@ test('版面表单支持归一化矩形、题号绑定、身份区域、保存�
 })
 
 test('学生答题卡阶段调用真实上传、方向、识别、复核、判分与归档接口', () => {
-  for (const method of ['uploadStudents', 'confirmOrientation', 'recognizeStudents', 'confirmStudentReview', 'gradingDraft', 'archive']) {
-    assert.match(api, new RegExp(`${method}:`))
-  }
   assert.match(view, /api\.answerSheet\.uploadStudents/)
   assert.match(view, /api\.answerSheet\.confirmOrientation/)
   assert.match(view, /api\.answerSheet\.recognizeStudents/)
@@ -210,19 +365,31 @@ test('学生答题卡阶段调用真实上传、方向、识别、复核、判�
   assert.doesNotMatch(view, /后端接口待开放/)
 })
 
+test('学生答题卡的上传、方向、识别、复核、判分与归档接口命中真实端点', async () => {
+  const client = await loadApiClient()
+  const { answerSheet } = client.api
+  const review = { student_id: 7, answers: { 1: 'A', 2: '3/4' } }
+
+  await answerSheet.uploadStudents(SESSION, 'upload/1', studentPage())
+  await answerSheet.confirmOrientation(SESSION, 'paper/1', 3)
+  await answerSheet.recognizeStudents(SESSION)
+  await answerSheet.confirmStudentReview(SESSION, 'paper/1', review)
+  await answerSheet.gradingDraft(SESSION)
+  await answerSheet.archive(SESSION)
+
+  assert.deepEqual(sent(client.requests), [
+    ['post', `${BASE}/students/upload`],
+    ['post', `${BASE}/students/paper%2F1/orientation`],
+    ['post', `${BASE}/students/recognize`],
+    ['post', `${BASE}/students/paper%2F1/review-confirm`],
+    ['post', `${BASE}/grading/draft`],
+    ['post', `${BASE}/grading/archive`],
+  ])
+  assert.deepEqual(body(client.requests[1]), { quarter_turns_clockwise: 3 })
+  assert.deepEqual(body(client.requests[3]), review)
+})
+
 test('学生答题卡按单文件请求持久上传并可恢复处理', () => {
-  assert.match(api, /students\/upload\/start/)
-  assert.match(api, /\{ restart: Boolean\(restart\) \}/)
-  assert.match(api, /students\/upload\/\$\{encodeURIComponent\(uploadId\)\}\/process\/stream/)
-  assert.match(api, /discardStudentUpload: \(sessionId, uploadId\) => http\.delete/)
-
-  const apiUploadStart = api.indexOf('uploadStudents: (sessionId, uploadId, file, sourcePath')
-  const apiUploadEnd = api.indexOf('processStudentUploadStream:', apiUploadStart)
-  assert.ok(apiUploadStart >= 0 && apiUploadEnd > apiUploadStart)
-  const apiUpload = api.slice(apiUploadStart, apiUploadEnd)
-  assert.equal((apiUpload.match(/formData\.append\('files', file\)/g) || []).length, 1)
-  assert.doesNotMatch(apiUpload, /forEach|for \(/)
-
   const viewUploadStart = view.indexOf('async function uploadStudents()')
   const viewUploadEnd = view.indexOf('async function restartStudentUpload()', viewUploadStart)
   assert.ok(viewUploadStart >= 0 && viewUploadEnd > viewUploadStart)
@@ -239,4 +406,36 @@ test('学生答题卡按单文件请求持久上传并可恢复处理', () => {
   for (const field of ['uploaded_count', 'processed_count', 'total_bytes']) {
     assert.match(view, new RegExp(field))
   }
+})
+
+test('学生答题卡上传接口一次请求只带一个文件，持久批次可重开、处理与丢弃', async (t) => {
+  const client = await loadApiClient()
+  const { answerSheet } = client.api
+  const streams = recordFetch(t)
+  const { signal } = new AbortController()
+  const page = studentPage()
+
+  await answerSheet.startStudentUpload(SESSION)
+  await answerSheet.startStudentUpload(SESSION, 1)
+  await answerSheet.uploadStudents(SESSION, 'upload/1', page)
+  await answerSheet.discardStudentUpload(SESSION, 'upload/1')
+  await answerSheet.processStudentUploadStream(SESSION, 'upload/1', signal)
+
+  assert.deepEqual(sent(client.requests), [
+    ['post', `${BASE}/students/upload/start`],
+    ['post', `${BASE}/students/upload/start`],
+    ['post', `${BASE}/students/upload`],
+    ['delete', `${BASE}/students/upload/upload%2F1`],
+  ])
+  const [fresh, restart, upload] = client.requests
+  assert.deepEqual(body(fresh), { restart: false })
+  assert.deepEqual(body(restart), { restart: true })
+  const files = upload.data.getAll('files')
+  assert.equal(files.length, 1)
+  assert.equal(files[0], page)
+  assert.equal(upload.data.get('upload_id'), 'upload/1')
+  assert.deepEqual(streams.map(call => [call.method, call.url]), [
+    ['POST', `/api${BASE}/students/upload/upload%2F1/process/stream`],
+  ])
+  assert.equal(streams[0].signal, signal)
 })
