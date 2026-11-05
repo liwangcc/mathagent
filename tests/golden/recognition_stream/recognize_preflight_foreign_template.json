@@ -1,0 +1,15 @@
+{
+ "status_code": 403,
+ "body": {
+  "detail": "无权访问该模板"
+ },
+ "events": [],
+ "meta": null,
+ "batch_dirs": [],
+ "lock_released": null,
+ "ledger": [],
+ "ocr_calls": [],
+ "identity_calls": [],
+ "limiter_calls": [],
+ "template_status": "confirmed"
+}

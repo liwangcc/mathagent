@@ -1,0 +1,230 @@
+{
+ "status_code": 200,
+ "body": null,
+ "events": [
+  [
+   "error",
+   {
+    "code": "BATCH_SOURCE_MODE_INVALID",
+    "message": "该批次缺少有效的模板流程标识，请重新上传试卷",
+    "error_info": {
+     "code": "PROCESSING_FAILED",
+     "stage": "grading",
+     "correlation_id": "<ID32#1>",
+     "error_id": "<ID32#2>",
+     "message": "判分：处理发生异常",
+     "action": "联系管理员并提供诊断编号。",
+     "retryable": false
+    }
+   }
+  ]
+ ],
+ "meta": {
+  "batch_id": "resume-characterization",
+  "teaching_context": {},
+  "status": "recognition_interrupted",
+  "created_at": "<created_at>",
+  "teacher_id": 1,
+  "class_id": 1,
+  "identity_mode": "anonymous",
+  "identity_inheritance": false,
+  "source_mode": "",
+  "template_id": "characterization-template",
+  "template_mode": "",
+  "category": "daily",
+  "exam_name": "",
+  "grade_mode": "auto",
+  "uploads": [
+   {
+    "paper_id": "paper-0",
+    "filename": "paper-0.png",
+    "image_path": "<TMP>/quick_batch_resume-characterization/paper-0.png",
+    "source_sha256": "source-0",
+    "working_sha256": "working-0",
+    "orientation_status": "auto_passed",
+    "orientation_reason": "normal_angle",
+    "orientation_confidence": 1.0,
+    "detected_tilt_degrees": 0.0
+   },
+   {
+    "paper_id": "paper-1",
+    "filename": "paper-1.png",
+    "image_path": "<TMP>/quick_batch_resume-characterization/paper-1.png",
+    "source_sha256": "source-1",
+    "working_sha256": "working-1",
+    "orientation_status": "auto_passed",
+    "orientation_reason": "normal_angle",
+    "orientation_confidence": 1.0,
+    "detected_tilt_degrees": 0.0
+   },
+   {
+    "paper_id": "paper-2",
+    "filename": "paper-2.png",
+    "image_path": "<TMP>/quick_batch_resume-characterization/paper-2.png",
+    "source_sha256": "source-2",
+    "working_sha256": "working-2",
+    "orientation_status": "auto_passed",
+    "orientation_reason": "normal_angle",
+    "orientation_confidence": 1.0,
+    "detected_tilt_degrees": 0.0
+   }
+  ],
+  "pending_uploads": [],
+  "recognition_resume_generation": 0,
+  "ocr_jobs": [
+   {
+    "job_id": "ocr-0-paper-0.png",
+    "paper_id": "paper-0",
+    "filename": "paper-0.png",
+    "image_path": "<TMP>/quick_batch_resume-characterization/paper-0.png",
+    "status": "succeeded",
+    "attempts": 1,
+    "last_error": "",
+    "retryable": false,
+    "error_code": ""
+   },
+   {
+    "job_id": "ocr-1-paper-1.png",
+    "paper_id": "paper-1",
+    "filename": "paper-1.png",
+    "image_path": "<TMP>/quick_batch_resume-characterization/paper-1.png",
+    "status": "succeeded",
+    "attempts": 1,
+    "last_error": "",
+    "retryable": false,
+    "error_code": ""
+   },
+   {
+    "job_id": "ocr-2-paper-2.png",
+    "paper_id": "paper-2",
+    "filename": "paper-2.png",
+    "image_path": "<TMP>/quick_batch_resume-characterization/paper-2.png",
+    "status": "queued",
+    "attempts": 0,
+    "last_error": "",
+    "retryable": false,
+    "error_code": ""
+   }
+  ],
+  "questions": [
+   {
+    "question_no": "1",
+    "question_text": "1+1=?",
+    "question_type": "fill"
+   }
+  ],
+  "papers": [
+   {
+    "paper_id": "paper-0",
+    "filename": "paper-0.png",
+    "image_path": "<TMP>/quick_batch_resume-characterization/paper-0.png",
+    "source_sha256": "source-0",
+    "working_sha256": "working-0",
+    "orientation_status": "auto_passed",
+    "orientation_reason": "normal_angle",
+    "orientation_confidence": 1.0,
+    "detected_tilt_degrees": 0.0,
+    "student_name": "",
+    "student_no": "",
+    "identity": {
+     "status": "anonymous"
+    },
+    "questions": [
+     {
+      "question_no": "1",
+      "question_type": "fill",
+      "student_answer": "2"
+     }
+    ]
+   },
+   {
+    "paper_id": "paper-1",
+    "filename": "paper-1.png",
+    "image_path": "<TMP>/quick_batch_resume-characterization/paper-1.png",
+    "source_sha256": "source-1",
+    "working_sha256": "working-1",
+    "orientation_status": "auto_passed",
+    "orientation_reason": "normal_angle",
+    "orientation_confidence": 1.0,
+    "detected_tilt_degrees": 0.0,
+    "student_name": "",
+    "student_no": "",
+    "identity": {
+     "status": "anonymous"
+    },
+    "questions": [
+     {
+      "question_no": "1",
+      "question_type": "fill",
+      "student_answer": "2"
+     }
+    ]
+   }
+  ],
+  "confirmation_questions": [],
+  "answer_map": {},
+  "results": [],
+  "review_results": [],
+  "review_ready_at": "",
+  "review_archived_at": "",
+  "grading_started_at": "",
+  "grading_elapsed_seconds": null,
+  "asset_lifecycle": {},
+  "grading_contract_hash": "",
+  "grading_contract": {},
+  "grading_rubric_hash": "",
+  "template_contract_hash": "",
+  "review_revision": 0,
+  "report_status": "not_started",
+  "report_text": "",
+  "report_stats": {},
+  "report_error": "",
+  "report_input_hash": "",
+  "report_updated_at": "",
+  "error": "识别连接中断，等待恢复"
+ },
+ "batch_dirs": [
+  "quick_batch_resume-characterization"
+ ],
+ "lock_released": true,
+ "ledger": [
+  [
+   "checkpoint",
+   {
+    "status": "recognition_interrupted",
+    "error": "识别连接中断，等待恢复",
+    "resume_generation": 0,
+    "jobs": [
+     [
+      "succeeded",
+      1
+     ],
+     [
+      "succeeded",
+      1
+     ],
+     [
+      "queued",
+      0
+     ]
+    ],
+    "pending_uploads": 0,
+    "papers": 2,
+    "results": 0,
+    "confirmation_questions": 0
+   }
+  ],
+  [
+   "lock",
+   "batch",
+   "acquire"
+  ],
+  [
+   "lock",
+   "batch",
+   "release"
+  ]
+ ],
+ "ocr_calls": [],
+ "identity_calls": []
+}

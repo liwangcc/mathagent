@@ -1,0 +1,367 @@
+{
+ "status_code": 200,
+ "body": null,
+ "events": [
+  [
+   "progress",
+   {
+    "batch_id": "<ID12#1>",
+    "message": "开始识别",
+    "current": 0,
+    "total": 2
+   }
+  ],
+  [
+   "progress",
+   {
+    "message": "排队识别剩余 2 张",
+    "current": 0,
+    "total": 2
+   }
+  ],
+  [
+   "progress",
+   {
+    "message": "识别失败 paper-0.ocr-ready-v1.jpg，继续处理其余试卷",
+    "current": 1,
+    "total": 2
+   }
+  ],
+  [
+   "paper",
+   {
+    "batch_id": "<ID12#1>",
+    "paper_id": "<ID12#2>",
+    "filename": "paper-0.ocr-ready-v1.jpg",
+    "student_name": "匿名页 1",
+    "student_no": "",
+    "questions_count": 0,
+    "matched_count": 0,
+    "error": "视觉服务超时",
+    "error_info": {},
+    "requires_manual_review": false,
+    "orientation_status": "auto_passed",
+    "orientation_reason": "client_ocr_ready_v1",
+    "orientation_confidence": 1.0,
+    "detected_tilt_degrees": 0.0,
+    "exif_orientation": 1,
+    "orientation_coordinate_space": "client_normalized_pixels"
+   }
+  ],
+  [
+   "progress",
+   {
+    "message": "识别失败 paper-1.ocr-ready-v1.jpg，继续处理其余试卷",
+    "current": 2,
+    "total": 2
+   }
+  ],
+  [
+   "paper",
+   {
+    "batch_id": "<ID12#1>",
+    "paper_id": "<ID12#3>",
+    "filename": "paper-1.ocr-ready-v1.jpg",
+    "student_name": "匿名页 2",
+    "student_no": "",
+    "questions_count": 0,
+    "matched_count": 0,
+    "error": "视觉服务超时",
+    "error_info": {},
+    "requires_manual_review": false,
+    "orientation_status": "auto_passed",
+    "orientation_reason": "client_ocr_ready_v1",
+    "orientation_confidence": 1.0,
+    "detected_tilt_degrees": 0.0,
+    "exif_orientation": 1,
+    "orientation_coordinate_space": "client_normalized_pixels"
+   }
+  ],
+  [
+   "error",
+   {
+    "message": "本批次所有试卷均未识别成功。请检查视觉模型服务、网络或降低并发后重试；失败文件已保留在列表中。",
+    "error_info": {
+     "code": "PROCESSING_FAILED",
+     "stage": "grading",
+     "correlation_id": "<ID32#1>",
+     "error_id": "<ID32#2>",
+     "message": "判分：处理发生异常",
+     "action": "联系管理员并提供诊断编号。",
+     "retryable": false
+    }
+   }
+  ]
+ ],
+ "meta": {
+  "batch_id": "<ID12#1>",
+  "teaching_context": {},
+  "status": "failed",
+  "created_at": "<created_at>",
+  "teacher_id": 1,
+  "class_id": null,
+  "identity_mode": "anonymous",
+  "identity_inheritance": false,
+  "source_mode": "template",
+  "template_id": "characterization-template",
+  "template_mode": "marked",
+  "category": "daily",
+  "exam_name": "",
+  "grade_mode": "auto",
+  "uploads": [
+   {
+    "paper_id": "<ID12#2>",
+    "filename": "paper-0.ocr-ready-v1.jpg",
+    "source_relative_path": "",
+    "image_path": "<TMP>/quick_batch_<ID12#1>/<ID32#3>.ocr-ready-v1.jpg",
+    "original_image_path": "<TMP>/quick_batch_<ID12#1>/<ID32#3>.ocr-ready-v1.jpg",
+    "source_sha256": "dae67da4e16569a875626fbcd81c26b389173bf687059bf27cdd67e8e1dc5081",
+    "working_sha256": "dae67da4e16569a875626fbcd81c26b389173bf687059bf27cdd67e8e1dc5081",
+    "manual_quarter_turns": 0,
+    "orientation_history": [],
+    "orientation_status": "auto_passed",
+    "orientation_reason": "client_ocr_ready_v1",
+    "orientation_confidence": 1.0,
+    "detected_tilt_degrees": 0.0,
+    "exif_orientation": 1,
+    "orientation_coordinate_space": "client_normalized_pixels"
+   },
+   {
+    "paper_id": "<ID12#3>",
+    "filename": "paper-1.ocr-ready-v1.jpg",
+    "source_relative_path": "",
+    "image_path": "<TMP>/quick_batch_<ID12#1>/<ID32#4>.ocr-ready-v1.jpg",
+    "original_image_path": "<TMP>/quick_batch_<ID12#1>/<ID32#4>.ocr-ready-v1.jpg",
+    "source_sha256": "8a83d94d44b74afe4f81305048bf6e5b3f5f5ba22a2947652fdcf5b83290fc8c",
+    "working_sha256": "8a83d94d44b74afe4f81305048bf6e5b3f5f5ba22a2947652fdcf5b83290fc8c",
+    "manual_quarter_turns": 0,
+    "orientation_history": [],
+    "orientation_status": "auto_passed",
+    "orientation_reason": "client_ocr_ready_v1",
+    "orientation_confidence": 1.0,
+    "detected_tilt_degrees": 0.0,
+    "exif_orientation": 1,
+    "orientation_coordinate_space": "client_normalized_pixels"
+   }
+  ],
+  "pending_uploads": [],
+  "recognition_resume_generation": 0,
+  "ocr_jobs": [
+   {
+    "job_id": "ocr-0-<ID32#3>.ocr-ready-v1.jpg",
+    "paper_id": "<ID12#2>",
+    "filename": "paper-0.ocr-ready-v1.jpg",
+    "image_path": "<TMP>/quick_batch_<ID12#1>/<ID32#3>.ocr-ready-v1.jpg",
+    "status": "failed",
+    "attempts": 1,
+    "last_error": "视觉服务超时",
+    "retryable": true,
+    "error_code": "provider_timeout"
+   },
+   {
+    "job_id": "ocr-1-<ID32#4>.ocr-ready-v1.jpg",
+    "paper_id": "<ID12#3>",
+    "filename": "paper-1.ocr-ready-v1.jpg",
+    "image_path": "<TMP>/quick_batch_<ID12#1>/<ID32#4>.ocr-ready-v1.jpg",
+    "status": "failed",
+    "attempts": 1,
+    "last_error": "视觉服务超时",
+    "retryable": true,
+    "error_code": "provider_timeout"
+   }
+  ],
+  "questions": [
+   {
+    "question_no": "1",
+    "question_text": "1+1=?",
+    "question_type": "fill"
+   }
+  ],
+  "papers": [],
+  "confirmation_questions": [],
+  "answer_map": {
+   "1": {
+    "matched": true,
+    "standard_answer": "2",
+    "answer_variants": [],
+    "solution_steps": [],
+    "max_score": null,
+    "blank_count": 1,
+    "answer_slots": [],
+    "fill_scoring_mode": "equal",
+    "blank_scores": [],
+    "subquestion_count": 1,
+    "subquestion_scores": [],
+    "grading_method": "equivalent",
+    "question_text": "1+1=?",
+    "question_type": "fill",
+    "choice_mode": "unknown",
+    "question_bank_id": null,
+    "chapter": "",
+    "topic": "",
+    "difficulty": 3,
+    "source": "template_confirmed"
+   }
+  },
+  "results": [],
+  "review_results": [],
+  "review_ready_at": "",
+  "review_archived_at": "",
+  "grading_started_at": "",
+  "grading_elapsed_seconds": null,
+  "asset_lifecycle": {},
+  "grading_contract_hash": "",
+  "grading_contract": {},
+  "grading_rubric_hash": "7f9dc4a2949856d09539b2ff95184ff8e938aefc804855f5169bbb67b52b90af",
+  "template_contract_hash": "4dfcf5496f1e62ba4165fb63a94288fd95329d9e31638eb6ca532c1cc6123ec5",
+  "review_revision": 0,
+  "report_status": "not_started",
+  "report_text": "",
+  "report_stats": {},
+  "report_error": "",
+  "report_input_hash": "",
+  "report_updated_at": "",
+  "error": "所有试卷识别失败"
+ },
+ "batch_dirs": [
+  "quick_batch_<ID12#1>"
+ ],
+ "lock_released": true,
+ "ledger": [
+  [
+   "checkpoint",
+   {
+    "status": "recognizing_remaining",
+    "error": null,
+    "resume_generation": 0,
+    "jobs": [
+     [
+      "queued",
+      0
+     ],
+     [
+      "queued",
+      0
+     ]
+    ],
+    "pending_uploads": 0,
+    "papers": 0,
+    "results": 0,
+    "confirmation_questions": 0
+   }
+  ],
+  [
+   "lock",
+   "template",
+   "acquire"
+  ],
+  [
+   "lock",
+   "template",
+   "release"
+  ],
+  [
+   "lock",
+   "batch",
+   "acquire"
+  ],
+  [
+   "checkpoint",
+   {
+    "status": "recognizing_remaining",
+    "error": null,
+    "resume_generation": 0,
+    "jobs": [
+     [
+      "failed",
+      1
+     ],
+     [
+      "running",
+      1
+     ]
+    ],
+    "pending_uploads": 0,
+    "papers": 0,
+    "results": 0,
+    "confirmation_questions": 0
+   }
+  ],
+  [
+   "checkpoint",
+   {
+    "status": "recognizing_remaining",
+    "error": null,
+    "resume_generation": 0,
+    "jobs": [
+     [
+      "failed",
+      1
+     ],
+     [
+      "failed",
+      1
+     ]
+    ],
+    "pending_uploads": 0,
+    "papers": 0,
+    "results": 0,
+    "confirmation_questions": 0
+   }
+  ],
+  [
+   "checkpoint",
+   {
+    "status": "failed",
+    "error": "所有试卷识别失败",
+    "resume_generation": 0,
+    "jobs": [
+     [
+      "failed",
+      1
+     ],
+     [
+      "failed",
+      1
+     ]
+    ],
+    "pending_uploads": 0,
+    "papers": 0,
+    "results": 0,
+    "confirmation_questions": 0
+   }
+  ],
+  [
+   "lock",
+   "batch",
+   "release"
+  ]
+ ],
+ "ocr_calls": [
+  {
+   "page": "page-0",
+   "file": "<ID32#3>.ocr-ready-v1.jpg",
+   "batch_id": "<ID12#1>",
+   "teacher_id": "1",
+   "paper_id": "<ID12#2>",
+   "vision_phase_key": "initial-recognition",
+   "vision_retry_phase_key": "initial-recognition",
+   "vision_batch_paper_count": 2,
+   "vision_route_ordinal": 0,
+   "grading_teacher_id": "1"
+  },
+  {
+   "page": "page-1",
+   "file": "<ID32#4>.ocr-ready-v1.jpg",
+   "batch_id": "<ID12#1>",
+   "teacher_id": "1",
+   "paper_id": "<ID12#3>",
+   "vision_phase_key": "initial-recognition",
+   "vision_retry_phase_key": "initial-recognition",
+   "vision_batch_paper_count": 2,
+   "vision_route_ordinal": 1,
+   "grading_teacher_id": "1"
+  }
+ ],
+ "identity_calls": []
+}

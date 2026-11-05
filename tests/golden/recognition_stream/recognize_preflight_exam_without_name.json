@@ -1,0 +1,15 @@
+{
+ "status_code": 400,
+ "body": {
+  "detail": "exam 类型需要 exam_name"
+ },
+ "events": [],
+ "meta": null,
+ "batch_dirs": [],
+ "lock_released": null,
+ "ledger": [],
+ "ocr_calls": [],
+ "identity_calls": [],
+ "limiter_calls": [],
+ "template_status": "confirmed"
+}

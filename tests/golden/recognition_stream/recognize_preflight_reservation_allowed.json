@@ -1,0 +1,1040 @@
+{
+ "status_code": 200,
+ "body": null,
+ "events": [
+  [
+   "progress",
+   {
+    "batch_id": "<ID12#1>",
+    "message": "开始识别",
+    "current": 0,
+    "total": 2
+   }
+  ],
+  [
+   "progress",
+   {
+    "message": "排队识别剩余 2 张",
+    "current": 0,
+    "total": 2
+   }
+  ],
+  [
+   "progress",
+   {
+    "message": "已识别 paper-0.ocr-ready-v1.jpg",
+    "current": 1,
+    "total": 2
+   }
+  ],
+  [
+   "progress",
+   {
+    "message": "已识别 paper-1.ocr-ready-v1.jpg",
+    "current": 2,
+    "total": 2
+   }
+  ],
+  [
+   "result",
+   {
+    "teaching_context": {},
+    "review_id": "<ID12#2>",
+    "student_name": "匿名页 1",
+    "grading_result_id": null,
+    "profile_id": null,
+    "score": null,
+    "max_score": null,
+    "correct_rate": 1.0,
+    "category": "daily",
+    "exam_name": "",
+    "correct": 1,
+    "partial": 0,
+    "wrong": 0,
+    "needs_review": 0,
+    "total": 1,
+    "details": [
+     {
+      "question_no": "1",
+      "question_number": "1",
+      "parent_question_no": "1",
+      "subquestion_no": "",
+      "question": "1+1=?",
+      "student_answer": "2",
+      "standard_answer": "2",
+      "correct_answer": "2",
+      "model_answer": "",
+      "result": "correct",
+      "explanation": "",
+      "hint": "",
+      "question_type": "fill",
+      "choice_mode": "unknown",
+      "answer_variants": [],
+      "solution_steps": [],
+      "options": [],
+      "subquestion_count": 1,
+      "answer_slots": [],
+      "figure_fingerprint": "",
+      "figure_description": "",
+      "grading_method": "equivalent",
+      "match_method": "llm",
+      "max_score": null,
+      "awarded_score": null,
+      "text_grading_context_hash": "2e717b34d38e3c8cd324592a99925540cf7cb195cf832400ee530f3a6ed751e3"
+     }
+    ],
+    "grading_mode": "auto",
+    "idempotent": false,
+    "needs_name_confirm": false,
+    "paper_id": "<ID12#2>",
+    "disposition": "active",
+    "grading_rubric_hash": "7f9dc4a2949856d09539b2ff95184ff8e938aefc804855f5169bbb67b52b90af",
+    "template_contract_hash": "4dfcf5496f1e62ba4165fb63a94288fd95329d9e31638eb6ca532c1cc6123ec5"
+   }
+  ],
+  [
+   "result",
+   {
+    "teaching_context": {},
+    "review_id": "<ID12#3>",
+    "student_name": "匿名页 2",
+    "grading_result_id": null,
+    "profile_id": null,
+    "score": null,
+    "max_score": null,
+    "correct_rate": 1.0,
+    "category": "daily",
+    "exam_name": "",
+    "correct": 1,
+    "partial": 0,
+    "wrong": 0,
+    "needs_review": 0,
+    "total": 1,
+    "details": [
+     {
+      "question_no": "1",
+      "question_number": "1",
+      "parent_question_no": "1",
+      "subquestion_no": "",
+      "question": "1+1=?",
+      "student_answer": "2",
+      "standard_answer": "2",
+      "correct_answer": "2",
+      "model_answer": "",
+      "result": "correct",
+      "explanation": "",
+      "hint": "",
+      "question_type": "fill",
+      "choice_mode": "unknown",
+      "answer_variants": [],
+      "solution_steps": [],
+      "options": [],
+      "subquestion_count": 1,
+      "answer_slots": [],
+      "figure_fingerprint": "",
+      "figure_description": "",
+      "grading_method": "equivalent",
+      "match_method": "llm",
+      "max_score": null,
+      "awarded_score": null,
+      "text_grading_context_hash": "2e717b34d38e3c8cd324592a99925540cf7cb195cf832400ee530f3a6ed751e3"
+     }
+    ],
+    "grading_mode": "auto",
+    "idempotent": false,
+    "needs_name_confirm": false,
+    "paper_id": "<ID12#3>",
+    "disposition": "active",
+    "grading_rubric_hash": "7f9dc4a2949856d09539b2ff95184ff8e938aefc804855f5169bbb67b52b90af",
+    "template_contract_hash": "4dfcf5496f1e62ba4165fb63a94288fd95329d9e31638eb6ca532c1cc6123ec5"
+   }
+  ],
+  [
+   "paper",
+   {
+    "batch_id": "<ID12#1>",
+    "filename": "paper-0.ocr-ready-v1.jpg",
+    "student_name": "匿名页 1",
+    "student_no": "",
+    "paper_id": "<ID12#2>",
+    "identity": {
+     "status": "anonymous",
+     "student_id": null,
+     "reason": "anonymous_batch"
+    },
+    "questions_count": 1,
+    "matched_count": 1,
+    "orientation_status": "auto_passed",
+    "orientation_reason": "client_ocr_ready_v1",
+    "detected_tilt_degrees": 0.0
+   }
+  ],
+  [
+   "paper",
+   {
+    "batch_id": "<ID12#1>",
+    "filename": "paper-1.ocr-ready-v1.jpg",
+    "student_name": "匿名页 2",
+    "student_no": "",
+    "paper_id": "<ID12#3>",
+    "identity": {
+     "status": "anonymous",
+     "student_id": null,
+     "reason": "anonymous_batch"
+    },
+    "questions_count": 1,
+    "matched_count": 1,
+    "orientation_status": "auto_passed",
+    "orientation_reason": "client_ocr_ready_v1",
+    "detected_tilt_degrees": 0.0
+   }
+  ],
+  [
+   "done",
+   {
+    "batch_id": "<ID12#1>",
+    "status": "ocr_done",
+    "teaching_context": {},
+    "mode": "auto",
+    "total_papers": 2,
+    "questions": [
+     {
+      "question_no": "1",
+      "content": "1+1=?",
+      "question_type": "fill",
+      "answer": "2",
+      "answer_variants": [],
+      "solution_steps": [],
+      "max_score": null,
+      "blank_count": 1,
+      "answer_slots": [],
+      "fill_scoring_mode": "equal",
+      "blank_scores": [],
+      "subquestion_count": 1,
+      "subquestion_scores": [],
+      "grading_method": "equivalent",
+      "chapter": "",
+      "topic": "",
+      "matched": true,
+      "source": "template_confirmed"
+     }
+    ],
+    "uploaded_papers": 2,
+    "succeeded_papers": 2,
+    "manual_review_papers": 0,
+    "failed_papers": 0,
+    "excluded_papers": 0,
+    "retryable_failed_papers": 0,
+    "unresolved_papers": 0,
+    "can_grade": true
+   }
+  ]
+ ],
+ "meta": {
+  "batch_id": "<ID12#1>",
+  "teaching_context": {},
+  "status": "ocr_done",
+  "created_at": "<created_at>",
+  "teacher_id": 1,
+  "class_id": null,
+  "identity_mode": "anonymous",
+  "identity_inheritance": false,
+  "source_mode": "template",
+  "template_id": "characterization-template",
+  "template_mode": "marked",
+  "category": "daily",
+  "exam_name": "",
+  "grade_mode": "auto",
+  "uploads": [
+   {
+    "paper_id": "<ID12#2>",
+    "filename": "paper-0.ocr-ready-v1.jpg",
+    "source_relative_path": "",
+    "image_path": "<TMP>/quick_batch_<ID12#1>/<ID32#1>.ocr-ready-v1.jpg",
+    "original_image_path": "<TMP>/quick_batch_<ID12#1>/<ID32#1>.ocr-ready-v1.jpg",
+    "source_sha256": "dae67da4e16569a875626fbcd81c26b389173bf687059bf27cdd67e8e1dc5081",
+    "working_sha256": "dae67da4e16569a875626fbcd81c26b389173bf687059bf27cdd67e8e1dc5081",
+    "manual_quarter_turns": 0,
+    "orientation_history": [],
+    "orientation_status": "auto_passed",
+    "orientation_reason": "client_ocr_ready_v1",
+    "orientation_confidence": 1.0,
+    "detected_tilt_degrees": 0.0,
+    "exif_orientation": 1,
+    "orientation_coordinate_space": "client_normalized_pixels"
+   },
+   {
+    "paper_id": "<ID12#3>",
+    "filename": "paper-1.ocr-ready-v1.jpg",
+    "source_relative_path": "",
+    "image_path": "<TMP>/quick_batch_<ID12#1>/<ID32#2>.ocr-ready-v1.jpg",
+    "original_image_path": "<TMP>/quick_batch_<ID12#1>/<ID32#2>.ocr-ready-v1.jpg",
+    "source_sha256": "8a83d94d44b74afe4f81305048bf6e5b3f5f5ba22a2947652fdcf5b83290fc8c",
+    "working_sha256": "8a83d94d44b74afe4f81305048bf6e5b3f5f5ba22a2947652fdcf5b83290fc8c",
+    "manual_quarter_turns": 0,
+    "orientation_history": [],
+    "orientation_status": "auto_passed",
+    "orientation_reason": "client_ocr_ready_v1",
+    "orientation_confidence": 1.0,
+    "detected_tilt_degrees": 0.0,
+    "exif_orientation": 1,
+    "orientation_coordinate_space": "client_normalized_pixels"
+   }
+  ],
+  "pending_uploads": [],
+  "recognition_resume_generation": 0,
+  "ocr_jobs": [
+   {
+    "job_id": "ocr-0-<ID32#1>.ocr-ready-v1.jpg",
+    "paper_id": "<ID12#2>",
+    "filename": "paper-0.ocr-ready-v1.jpg",
+    "image_path": "<TMP>/quick_batch_<ID12#1>/<ID32#1>.ocr-ready-v1.jpg",
+    "status": "succeeded",
+    "attempts": 1,
+    "last_error": "",
+    "retryable": false,
+    "error_code": ""
+   },
+   {
+    "job_id": "ocr-1-<ID32#2>.ocr-ready-v1.jpg",
+    "paper_id": "<ID12#3>",
+    "filename": "paper-1.ocr-ready-v1.jpg",
+    "image_path": "<TMP>/quick_batch_<ID12#1>/<ID32#2>.ocr-ready-v1.jpg",
+    "status": "succeeded",
+    "attempts": 1,
+    "last_error": "",
+    "retryable": false,
+    "error_code": ""
+   }
+  ],
+  "questions": [
+   {
+    "question_no": "1",
+    "question_text": "1+1=?",
+    "question_type": "fill"
+   }
+  ],
+  "papers": [
+   {
+    "paper_id": "<ID12#2>",
+    "filename": "paper-0.ocr-ready-v1.jpg",
+    "student_name": "匿名页 1",
+    "student_no": "",
+    "identity": {
+     "status": "anonymous",
+     "student_id": null,
+     "reason": "anonymous_batch"
+    },
+    "identity_ocr_source": "disabled",
+    "identity_ocr_confidence": 0.0,
+    "identity_roster_candidates": [],
+    "identity_roster_match_status": "",
+    "identity_name_written": null,
+    "identity_clue_source": "",
+    "image_path": "<TMP>/quick_batch_<ID12#1>/<ID32#1>.ocr-ready-v1.jpg",
+    "source_relative_path": "",
+    "original_image_path": "<TMP>/quick_batch_<ID12#1>/<ID32#1>.ocr-ready-v1.jpg",
+    "source_sha256": "dae67da4e16569a875626fbcd81c26b389173bf687059bf27cdd67e8e1dc5081",
+    "working_sha256": "dae67da4e16569a875626fbcd81c26b389173bf687059bf27cdd67e8e1dc5081",
+    "manual_quarter_turns": 0,
+    "orientation_history": [],
+    "orientation_status": "auto_passed",
+    "orientation_reason": "client_ocr_ready_v1",
+    "orientation_confidence": 1.0,
+    "detected_tilt_degrees": 0.0,
+    "exif_orientation": 1,
+    "orientation_coordinate_space": "client_normalized_pixels",
+    "unexpected_page_type": false,
+    "page_type_error": "",
+    "ocr_answers_only": false,
+    "ocr_page_type": "",
+    "ocr_local_template_evidence": false,
+    "ocr_full_page_transcription": false,
+    "ocr_transcription_only": false,
+    "ocr_requires_separate_grading": false,
+    "questions": [
+     {
+      "question_no": "1",
+      "student_answer": "2",
+      "answer_state": "",
+      "question_type": "fill",
+      "_ocr_local_recovery": false
+     }
+    ]
+   },
+   {
+    "paper_id": "<ID12#3>",
+    "filename": "paper-1.ocr-ready-v1.jpg",
+    "student_name": "匿名页 2",
+    "student_no": "",
+    "identity": {
+     "status": "anonymous",
+     "student_id": null,
+     "reason": "anonymous_batch"
+    },
+    "identity_ocr_source": "disabled",
+    "identity_ocr_confidence": 0.0,
+    "identity_roster_candidates": [],
+    "identity_roster_match_status": "",
+    "identity_name_written": null,
+    "identity_clue_source": "",
+    "image_path": "<TMP>/quick_batch_<ID12#1>/<ID32#2>.ocr-ready-v1.jpg",
+    "source_relative_path": "",
+    "original_image_path": "<TMP>/quick_batch_<ID12#1>/<ID32#2>.ocr-ready-v1.jpg",
+    "source_sha256": "8a83d94d44b74afe4f81305048bf6e5b3f5f5ba22a2947652fdcf5b83290fc8c",
+    "working_sha256": "8a83d94d44b74afe4f81305048bf6e5b3f5f5ba22a2947652fdcf5b83290fc8c",
+    "manual_quarter_turns": 0,
+    "orientation_history": [],
+    "orientation_status": "auto_passed",
+    "orientation_reason": "client_ocr_ready_v1",
+    "orientation_confidence": 1.0,
+    "detected_tilt_degrees": 0.0,
+    "exif_orientation": 1,
+    "orientation_coordinate_space": "client_normalized_pixels",
+    "unexpected_page_type": false,
+    "page_type_error": "",
+    "ocr_answers_only": false,
+    "ocr_page_type": "",
+    "ocr_local_template_evidence": false,
+    "ocr_full_page_transcription": false,
+    "ocr_transcription_only": false,
+    "ocr_requires_separate_grading": false,
+    "questions": [
+     {
+      "question_no": "1",
+      "student_answer": "2",
+      "answer_state": "",
+      "question_type": "fill",
+      "_ocr_local_recovery": false
+     }
+    ]
+   }
+  ],
+  "confirmation_questions": [
+   {
+    "question_no": "1",
+    "content": "1+1=?",
+    "question_type": "fill",
+    "answer": "2",
+    "answer_variants": [],
+    "solution_steps": [],
+    "max_score": null,
+    "blank_count": 1,
+    "answer_slots": [],
+    "fill_scoring_mode": "equal",
+    "blank_scores": [],
+    "subquestion_count": 1,
+    "subquestion_scores": [],
+    "grading_method": "equivalent",
+    "chapter": "",
+    "topic": "",
+    "matched": true,
+    "source": "template_confirmed"
+   }
+  ],
+  "answer_map": {
+   "1": {
+    "matched": true,
+    "standard_answer": "2",
+    "answer_variants": [],
+    "solution_steps": [],
+    "max_score": null,
+    "blank_count": 1,
+    "answer_slots": [],
+    "fill_scoring_mode": "equal",
+    "blank_scores": [],
+    "subquestion_count": 1,
+    "subquestion_scores": [],
+    "grading_method": "equivalent",
+    "question_text": "1+1=?",
+    "question_type": "fill",
+    "choice_mode": "unknown",
+    "question_bank_id": null,
+    "chapter": "",
+    "topic": "",
+    "difficulty": 3,
+    "source": "template_confirmed"
+   }
+  },
+  "results": [
+   {
+    "teaching_context": {},
+    "review_id": "<ID12#2>",
+    "student_name": "匿名页 1",
+    "grading_result_id": null,
+    "profile_id": null,
+    "score": null,
+    "max_score": null,
+    "correct_rate": 1.0,
+    "category": "daily",
+    "exam_name": "",
+    "correct": 1,
+    "partial": 0,
+    "wrong": 0,
+    "needs_review": 0,
+    "total": 1,
+    "details": [
+     {
+      "question_no": "1",
+      "question_number": "1",
+      "parent_question_no": "1",
+      "subquestion_no": "",
+      "question": "1+1=?",
+      "student_answer": "2",
+      "standard_answer": "2",
+      "correct_answer": "2",
+      "model_answer": "",
+      "result": "correct",
+      "explanation": "",
+      "hint": "",
+      "question_type": "fill",
+      "choice_mode": "unknown",
+      "answer_variants": [],
+      "solution_steps": [],
+      "options": [],
+      "subquestion_count": 1,
+      "answer_slots": [],
+      "figure_fingerprint": "",
+      "figure_description": "",
+      "grading_method": "equivalent",
+      "match_method": "llm",
+      "max_score": null,
+      "awarded_score": null,
+      "text_grading_context_hash": "2e717b34d38e3c8cd324592a99925540cf7cb195cf832400ee530f3a6ed751e3"
+     }
+    ],
+    "grading_mode": "auto",
+    "idempotent": false,
+    "needs_name_confirm": false,
+    "paper_id": "<ID12#2>",
+    "disposition": "active",
+    "grading_rubric_hash": "7f9dc4a2949856d09539b2ff95184ff8e938aefc804855f5169bbb67b52b90af",
+    "template_contract_hash": "4dfcf5496f1e62ba4165fb63a94288fd95329d9e31638eb6ca532c1cc6123ec5"
+   },
+   {
+    "teaching_context": {},
+    "review_id": "<ID12#3>",
+    "student_name": "匿名页 2",
+    "grading_result_id": null,
+    "profile_id": null,
+    "score": null,
+    "max_score": null,
+    "correct_rate": 1.0,
+    "category": "daily",
+    "exam_name": "",
+    "correct": 1,
+    "partial": 0,
+    "wrong": 0,
+    "needs_review": 0,
+    "total": 1,
+    "details": [
+     {
+      "question_no": "1",
+      "question_number": "1",
+      "parent_question_no": "1",
+      "subquestion_no": "",
+      "question": "1+1=?",
+      "student_answer": "2",
+      "standard_answer": "2",
+      "correct_answer": "2",
+      "model_answer": "",
+      "result": "correct",
+      "explanation": "",
+      "hint": "",
+      "question_type": "fill",
+      "choice_mode": "unknown",
+      "answer_variants": [],
+      "solution_steps": [],
+      "options": [],
+      "subquestion_count": 1,
+      "answer_slots": [],
+      "figure_fingerprint": "",
+      "figure_description": "",
+      "grading_method": "equivalent",
+      "match_method": "llm",
+      "max_score": null,
+      "awarded_score": null,
+      "text_grading_context_hash": "2e717b34d38e3c8cd324592a99925540cf7cb195cf832400ee530f3a6ed751e3"
+     }
+    ],
+    "grading_mode": "auto",
+    "idempotent": false,
+    "needs_name_confirm": false,
+    "paper_id": "<ID12#3>",
+    "disposition": "active",
+    "grading_rubric_hash": "7f9dc4a2949856d09539b2ff95184ff8e938aefc804855f5169bbb67b52b90af",
+    "template_contract_hash": "4dfcf5496f1e62ba4165fb63a94288fd95329d9e31638eb6ca532c1cc6123ec5"
+   }
+  ],
+  "review_results": [
+   {
+    "teaching_context": {},
+    "review_id": "<ID12#2>",
+    "paper_id": "<ID12#2>",
+    "filename": "paper-0.ocr-ready-v1.jpg",
+    "student_name": "匿名页 1",
+    "student_no": "",
+    "identity_assignment": {
+     "action": "anonymous",
+     "student_id": null,
+     "name": "匿名页 1",
+     "student_no": ""
+    },
+    "image_path": "<TMP>/quick_batch_<ID12#1>/<ID32#1>.ocr-ready-v1.jpg",
+    "image_content_hash": "dae67da4e16569a875626fbcd81c26b389173bf687059bf27cdd67e8e1dc5081",
+    "ocr_raw_name": "匿名页 1",
+    "ocr_raw_json": {
+     "paper_id": "<ID12#2>",
+     "filename": "paper-0.ocr-ready-v1.jpg",
+     "student_name": "匿名页 1",
+     "student_no": "",
+     "identity": {
+      "status": "anonymous",
+      "student_id": null,
+      "reason": "anonymous_batch"
+     },
+     "identity_ocr_source": "disabled",
+     "identity_ocr_confidence": 0.0,
+     "identity_roster_candidates": [],
+     "identity_roster_match_status": "",
+     "identity_name_written": null,
+     "identity_clue_source": "",
+     "image_path": "<TMP>/quick_batch_<ID12#1>/<ID32#1>.ocr-ready-v1.jpg",
+     "source_relative_path": "",
+     "original_image_path": "<TMP>/quick_batch_<ID12#1>/<ID32#1>.ocr-ready-v1.jpg",
+     "source_sha256": "dae67da4e16569a875626fbcd81c26b389173bf687059bf27cdd67e8e1dc5081",
+     "working_sha256": "dae67da4e16569a875626fbcd81c26b389173bf687059bf27cdd67e8e1dc5081",
+     "manual_quarter_turns": 0,
+     "orientation_history": [],
+     "orientation_status": "auto_passed",
+     "orientation_reason": "client_ocr_ready_v1",
+     "orientation_confidence": 1.0,
+     "detected_tilt_degrees": 0.0,
+     "exif_orientation": 1,
+     "orientation_coordinate_space": "client_normalized_pixels",
+     "unexpected_page_type": false,
+     "page_type_error": "",
+     "ocr_answers_only": false,
+     "ocr_page_type": "",
+     "ocr_local_template_evidence": false,
+     "ocr_full_page_transcription": false,
+     "ocr_transcription_only": false,
+     "ocr_requires_separate_grading": false,
+     "questions": [
+      {
+       "question_no": "1",
+       "student_answer": "2",
+       "answer_state": "",
+       "question_type": "fill"
+      }
+     ]
+    },
+    "category": "daily",
+    "exam_name": "",
+    "grading_mode": "auto",
+    "result": {
+     "student_name": "匿名页 1",
+     "score": null,
+     "max_score": null,
+     "correct_rate": 1.0,
+     "scoring_version": 2,
+     "correct_count": 1,
+     "partial_count": 0,
+     "wrong_count": 0,
+     "needs_review_count": 0,
+     "total": 1,
+     "details": [
+      {
+       "question_no": "1",
+       "question_number": "1",
+       "parent_question_no": "1",
+       "subquestion_no": "",
+       "question": "1+1=?",
+       "student_answer": "2",
+       "standard_answer": "2",
+       "correct_answer": "2",
+       "model_answer": "",
+       "result": "correct",
+       "explanation": "",
+       "hint": "",
+       "question_type": "fill",
+       "choice_mode": "unknown",
+       "answer_variants": [],
+       "solution_steps": [],
+       "options": [],
+       "subquestion_count": 1,
+       "answer_slots": [],
+       "figure_fingerprint": "",
+       "figure_description": "",
+       "grading_method": "equivalent",
+       "match_method": "llm",
+       "max_score": null,
+       "awarded_score": null,
+       "text_grading_context_hash": "2e717b34d38e3c8cd324592a99925540cf7cb195cf832400ee530f3a6ed751e3"
+      }
+     ]
+    },
+    "knowledge_items": [
+     {
+      "question_no": "1",
+      "detail_question_no": "1",
+      "question_bank_id": null,
+      "chapter": "未知",
+      "topic": "未知",
+      "difficulty": 3
+     }
+    ],
+    "disposition": "active",
+    "manual_corrections": [],
+    "voided_at": "",
+    "void_reason": "",
+    "archived_grading_result_id": null,
+    "archived_profile_id": null,
+    "grading_rubric_hash": "7f9dc4a2949856d09539b2ff95184ff8e938aefc804855f5169bbb67b52b90af",
+    "template_contract_hash": "4dfcf5496f1e62ba4165fb63a94288fd95329d9e31638eb6ca532c1cc6123ec5"
+   },
+   {
+    "teaching_context": {},
+    "review_id": "<ID12#3>",
+    "paper_id": "<ID12#3>",
+    "filename": "paper-1.ocr-ready-v1.jpg",
+    "student_name": "匿名页 2",
+    "student_no": "",
+    "identity_assignment": {
+     "action": "anonymous",
+     "student_id": null,
+     "name": "匿名页 2",
+     "student_no": ""
+    },
+    "image_path": "<TMP>/quick_batch_<ID12#1>/<ID32#2>.ocr-ready-v1.jpg",
+    "image_content_hash": "8a83d94d44b74afe4f81305048bf6e5b3f5f5ba22a2947652fdcf5b83290fc8c",
+    "ocr_raw_name": "匿名页 2",
+    "ocr_raw_json": {
+     "paper_id": "<ID12#3>",
+     "filename": "paper-1.ocr-ready-v1.jpg",
+     "student_name": "匿名页 2",
+     "student_no": "",
+     "identity": {
+      "status": "anonymous",
+      "student_id": null,
+      "reason": "anonymous_batch"
+     },
+     "identity_ocr_source": "disabled",
+     "identity_ocr_confidence": 0.0,
+     "identity_roster_candidates": [],
+     "identity_roster_match_status": "",
+     "identity_name_written": null,
+     "identity_clue_source": "",
+     "image_path": "<TMP>/quick_batch_<ID12#1>/<ID32#2>.ocr-ready-v1.jpg",
+     "source_relative_path": "",
+     "original_image_path": "<TMP>/quick_batch_<ID12#1>/<ID32#2>.ocr-ready-v1.jpg",
+     "source_sha256": "8a83d94d44b74afe4f81305048bf6e5b3f5f5ba22a2947652fdcf5b83290fc8c",
+     "working_sha256": "8a83d94d44b74afe4f81305048bf6e5b3f5f5ba22a2947652fdcf5b83290fc8c",
+     "manual_quarter_turns": 0,
+     "orientation_history": [],
+     "orientation_status": "auto_passed",
+     "orientation_reason": "client_ocr_ready_v1",
+     "orientation_confidence": 1.0,
+     "detected_tilt_degrees": 0.0,
+     "exif_orientation": 1,
+     "orientation_coordinate_space": "client_normalized_pixels",
+     "unexpected_page_type": false,
+     "page_type_error": "",
+     "ocr_answers_only": false,
+     "ocr_page_type": "",
+     "ocr_local_template_evidence": false,
+     "ocr_full_page_transcription": false,
+     "ocr_transcription_only": false,
+     "ocr_requires_separate_grading": false,
+     "questions": [
+      {
+       "question_no": "1",
+       "student_answer": "2",
+       "answer_state": "",
+       "question_type": "fill"
+      }
+     ]
+    },
+    "category": "daily",
+    "exam_name": "",
+    "grading_mode": "auto",
+    "result": {
+     "student_name": "匿名页 2",
+     "score": null,
+     "max_score": null,
+     "correct_rate": 1.0,
+     "scoring_version": 2,
+     "correct_count": 1,
+     "partial_count": 0,
+     "wrong_count": 0,
+     "needs_review_count": 0,
+     "total": 1,
+     "details": [
+      {
+       "question_no": "1",
+       "question_number": "1",
+       "parent_question_no": "1",
+       "subquestion_no": "",
+       "question": "1+1=?",
+       "student_answer": "2",
+       "standard_answer": "2",
+       "correct_answer": "2",
+       "model_answer": "",
+       "result": "correct",
+       "explanation": "",
+       "hint": "",
+       "question_type": "fill",
+       "choice_mode": "unknown",
+       "answer_variants": [],
+       "solution_steps": [],
+       "options": [],
+       "subquestion_count": 1,
+       "answer_slots": [],
+       "figure_fingerprint": "",
+       "figure_description": "",
+       "grading_method": "equivalent",
+       "match_method": "llm",
+       "max_score": null,
+       "awarded_score": null,
+       "text_grading_context_hash": "2e717b34d38e3c8cd324592a99925540cf7cb195cf832400ee530f3a6ed751e3"
+      }
+     ]
+    },
+    "knowledge_items": [
+     {
+      "question_no": "1",
+      "detail_question_no": "1",
+      "question_bank_id": null,
+      "chapter": "未知",
+      "topic": "未知",
+      "difficulty": 3
+     }
+    ],
+    "disposition": "active",
+    "manual_corrections": [],
+    "voided_at": "",
+    "void_reason": "",
+    "archived_grading_result_id": null,
+    "archived_profile_id": null,
+    "grading_rubric_hash": "7f9dc4a2949856d09539b2ff95184ff8e938aefc804855f5169bbb67b52b90af",
+    "template_contract_hash": "4dfcf5496f1e62ba4165fb63a94288fd95329d9e31638eb6ca532c1cc6123ec5"
+   }
+  ],
+  "review_ready_at": "",
+  "review_archived_at": "",
+  "grading_started_at": "<grading_started_at>",
+  "grading_elapsed_seconds": null,
+  "asset_lifecycle": {},
+  "grading_contract_hash": "",
+  "grading_contract": {},
+  "grading_rubric_hash": "7f9dc4a2949856d09539b2ff95184ff8e938aefc804855f5169bbb67b52b90af",
+  "template_contract_hash": "4dfcf5496f1e62ba4165fb63a94288fd95329d9e31638eb6ca532c1cc6123ec5",
+  "review_revision": 0,
+  "report_status": "not_started",
+  "report_text": "",
+  "report_stats": {},
+  "report_error": "",
+  "report_input_hash": "",
+  "report_updated_at": "",
+  "error": null
+ },
+ "batch_dirs": [
+  "quick_batch_<ID12#1>"
+ ],
+ "lock_released": true,
+ "ledger": [
+  [
+   "checkpoint",
+   {
+    "status": "recognizing_remaining",
+    "error": null,
+    "resume_generation": 0,
+    "jobs": [
+     [
+      "queued",
+      0
+     ],
+     [
+      "queued",
+      0
+     ]
+    ],
+    "pending_uploads": 0,
+    "papers": 0,
+    "results": 0,
+    "confirmation_questions": 0
+   }
+  ],
+  [
+   "lock",
+   "template",
+   "acquire"
+  ],
+  [
+   "lock",
+   "template",
+   "release"
+  ],
+  [
+   "lock",
+   "batch",
+   "acquire"
+  ],
+  [
+   "checkpoint",
+   {
+    "status": "recognizing_remaining",
+    "error": null,
+    "resume_generation": 0,
+    "jobs": [
+     [
+      "succeeded",
+      1
+     ],
+     [
+      "running",
+      1
+     ]
+    ],
+    "pending_uploads": 0,
+    "papers": 1,
+    "results": 0,
+    "confirmation_questions": 0
+   }
+  ],
+  [
+   "checkpoint",
+   {
+    "status": "recognizing_remaining",
+    "error": null,
+    "resume_generation": 0,
+    "jobs": [
+     [
+      "succeeded",
+      1
+     ],
+     [
+      "running",
+      1
+     ]
+    ],
+    "pending_uploads": 0,
+    "papers": 1,
+    "results": 1,
+    "confirmation_questions": 0
+   }
+  ],
+  [
+   "checkpoint",
+   {
+    "status": "recognizing_remaining",
+    "error": null,
+    "resume_generation": 0,
+    "jobs": [
+     [
+      "succeeded",
+      1
+     ],
+     [
+      "succeeded",
+      1
+     ]
+    ],
+    "pending_uploads": 0,
+    "papers": 2,
+    "results": 1,
+    "confirmation_questions": 0
+   }
+  ],
+  [
+   "checkpoint",
+   {
+    "status": "recognizing_remaining",
+    "error": null,
+    "resume_generation": 0,
+    "jobs": [
+     [
+      "succeeded",
+      1
+     ],
+     [
+      "succeeded",
+      1
+     ]
+    ],
+    "pending_uploads": 0,
+    "papers": 2,
+    "results": 2,
+    "confirmation_questions": 0
+   }
+  ],
+  [
+   "checkpoint",
+   {
+    "status": "ocr_done",
+    "error": null,
+    "resume_generation": 0,
+    "jobs": [
+     [
+      "succeeded",
+      1
+     ],
+     [
+      "succeeded",
+      1
+     ]
+    ],
+    "pending_uploads": 0,
+    "papers": 2,
+    "results": 2,
+    "confirmation_questions": 1
+   }
+  ],
+  [
+   "lock",
+   "batch",
+   "release"
+  ]
+ ],
+ "ocr_calls": [
+  {
+   "page": "page-0",
+   "file": "<ID32#1>.ocr-ready-v1.jpg",
+   "batch_id": "<ID12#1>",
+   "teacher_id": "1",
+   "paper_id": "<ID12#2>",
+   "vision_phase_key": "initial-recognition",
+   "vision_retry_phase_key": "initial-recognition",
+   "vision_batch_paper_count": 2,
+   "vision_route_ordinal": 0,
+   "grading_teacher_id": "1"
+  },
+  {
+   "page": "page-1",
+   "file": "<ID32#2>.ocr-ready-v1.jpg",
+   "batch_id": "<ID12#1>",
+   "teacher_id": "1",
+   "paper_id": "<ID12#3>",
+   "vision_phase_key": "initial-recognition",
+   "vision_retry_phase_key": "initial-recognition",
+   "vision_batch_paper_count": 2,
+   "vision_route_ordinal": 1,
+   "grading_teacher_id": "1"
+  }
+ ],
+ "identity_calls": [],
+ "limiter_calls": [
+  [
+   "check_daily_image_limit",
+   1,
+   2
+  ],
+  [
+   "reserve_student_images",
+   1,
+   2,
+   "student-upload-<ID12#1>"
+  ]
+ ],
+ "template_status": "frozen"
+}

@@ -1,0 +1,15 @@
+{
+ "status_code": 400,
+ "body": {
+  "detail": "请先选择班级后再批改"
+ },
+ "events": [],
+ "meta": null,
+ "batch_dirs": [],
+ "lock_released": null,
+ "ledger": [],
+ "ocr_calls": [],
+ "identity_calls": [],
+ "limiter_calls": [],
+ "template_status": "confirmed"
+}

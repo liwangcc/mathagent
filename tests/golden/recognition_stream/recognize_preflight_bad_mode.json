@@ -1,0 +1,15 @@
+{
+ "status_code": 400,
+ "body": {
+  "detail": "mode 必须是 precise/auto/simple"
+ },
+ "events": [],
+ "meta": null,
+ "batch_dirs": [],
+ "lock_released": null,
+ "ledger": [],
+ "ocr_calls": [],
+ "identity_calls": [],
+ "limiter_calls": [],
+ "template_status": "confirmed"
+}

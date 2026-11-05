@@ -1,0 +1,15 @@
+{
+ "status_code": 400,
+ "body": {
+  "detail": "模板未保存或不存在，请先保存模板"
+ },
+ "events": [],
+ "meta": null,
+ "batch_dirs": [],
+ "lock_released": null,
+ "ledger": [],
+ "ocr_calls": [],
+ "identity_calls": [],
+ "limiter_calls": [],
+ "template_status": "pending"
+}

@@ -1,0 +1,15 @@
+{
+ "status_code": 400,
+ "body": {
+  "detail": "请先导入并确认模板后再开始批改"
+ },
+ "events": [],
+ "meta": null,
+ "batch_dirs": [],
+ "lock_released": null,
+ "ledger": [],
+ "ocr_calls": [],
+ "identity_calls": [],
+ "limiter_calls": [],
+ "template_status": "confirmed"
+}

@@ -1,0 +1,136 @@
+{
+ "status_code": 200,
+ "body": null,
+ "events": [
+  [
+   "error",
+   {
+    "code": "BATCH_RECOGNITION_BUSY",
+    "message": "该批次正在执行识别，请等待当前任务完成，不要重复提交",
+    "error_info": {
+     "code": "PROCESSING_FAILED",
+     "stage": "grading",
+     "correlation_id": "<ID32#1>",
+     "error_id": "<ID32#2>",
+     "message": "判分：处理发生异常",
+     "action": "联系管理员并提供诊断编号。",
+     "retryable": false
+    }
+   }
+  ]
+ ],
+ "meta": {
+  "batch_id": "<ID12#1>",
+  "teaching_context": {},
+  "status": "recognizing_remaining",
+  "created_at": "<created_at>",
+  "teacher_id": 1,
+  "class_id": null,
+  "identity_mode": "anonymous",
+  "identity_inheritance": false,
+  "source_mode": "template",
+  "template_id": "characterization-template",
+  "template_mode": "marked",
+  "category": "daily",
+  "exam_name": "",
+  "grade_mode": "auto",
+  "uploads": [
+   {
+    "paper_id": "<ID12#2>",
+    "filename": "paper-0.ocr-ready-v1.jpg",
+    "source_relative_path": "",
+    "image_path": "<TMP>/quick_batch_<ID12#1>/<ID32#3>.ocr-ready-v1.jpg",
+    "original_image_path": "<TMP>/quick_batch_<ID12#1>/<ID32#3>.ocr-ready-v1.jpg",
+    "source_sha256": "dae67da4e16569a875626fbcd81c26b389173bf687059bf27cdd67e8e1dc5081",
+    "working_sha256": "dae67da4e16569a875626fbcd81c26b389173bf687059bf27cdd67e8e1dc5081",
+    "manual_quarter_turns": 0,
+    "orientation_history": [],
+    "orientation_status": "auto_passed",
+    "orientation_reason": "client_ocr_ready_v1",
+    "orientation_confidence": 1.0,
+    "detected_tilt_degrees": 0.0,
+    "exif_orientation": 1,
+    "orientation_coordinate_space": "client_normalized_pixels"
+   }
+  ],
+  "pending_uploads": [],
+  "recognition_resume_generation": 0,
+  "ocr_jobs": [
+   {
+    "job_id": "ocr-0-<ID32#3>.ocr-ready-v1.jpg",
+    "paper_id": "<ID12#2>",
+    "filename": "paper-0.ocr-ready-v1.jpg",
+    "image_path": "<TMP>/quick_batch_<ID12#1>/<ID32#3>.ocr-ready-v1.jpg",
+    "status": "queued",
+    "attempts": 0,
+    "last_error": "",
+    "retryable": false,
+    "error_code": ""
+   }
+  ],
+  "questions": [],
+  "papers": [],
+  "confirmation_questions": [],
+  "answer_map": {},
+  "results": [],
+  "review_results": [],
+  "review_ready_at": "",
+  "review_archived_at": "",
+  "grading_started_at": "",
+  "grading_elapsed_seconds": null,
+  "asset_lifecycle": {},
+  "grading_contract_hash": "",
+  "grading_contract": {},
+  "grading_rubric_hash": "",
+  "template_contract_hash": "",
+  "review_revision": 0,
+  "report_status": "not_started",
+  "report_text": "",
+  "report_stats": {},
+  "report_error": "",
+  "report_input_hash": "",
+  "report_updated_at": "",
+  "error": null
+ },
+ "batch_dirs": [
+  "quick_batch_<ID12#1>"
+ ],
+ "lock_released": true,
+ "ledger": [
+  [
+   "checkpoint",
+   {
+    "status": "recognizing_remaining",
+    "error": null,
+    "resume_generation": 0,
+    "jobs": [
+     [
+      "queued",
+      0
+     ]
+    ],
+    "pending_uploads": 0,
+    "papers": 0,
+    "results": 0,
+    "confirmation_questions": 0
+   }
+  ],
+  [
+   "lock",
+   "template",
+   "acquire"
+  ],
+  [
+   "lock",
+   "template",
+   "release"
+  ],
+  [
+   "lock",
+   "batch",
+   "busy"
+  ]
+ ],
+ "ocr_calls": [],
+ "identity_calls": []
+}

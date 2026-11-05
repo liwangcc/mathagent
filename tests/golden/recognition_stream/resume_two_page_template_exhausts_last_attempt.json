@@ -1,0 +1,311 @@
+{
+ "status_code": 200,
+ "body": null,
+ "events": [
+  [
+   "progress",
+   {
+    "batch_id": "resume-characterization",
+    "message": "正在恢复未完成的识别任务",
+    "current": 0,
+    "total": 1
+   }
+  ],
+  [
+   "progress",
+   {
+    "batch_id": "resume-characterization",
+    "message": "识别失败 paper-0.png，继续处理其余试卷",
+    "current": 1,
+    "total": 1
+   }
+  ],
+  [
+   "paper",
+   {
+    "batch_id": "resume-characterization",
+    "paper_id": "paper-0",
+    "filename": "paper-0.png",
+    "student_name": "匿名页 1",
+    "student_no": "",
+    "questions_count": 0,
+    "matched_count": 0,
+    "error": "视觉服务超时",
+    "error_info": {},
+    "requires_manual_review": false,
+    "orientation_status": "auto_passed",
+    "orientation_reason": "normal_angle",
+    "orientation_confidence": 1.0,
+    "detected_tilt_degrees": 0.0
+   }
+  ],
+  [
+   "error",
+   {
+    "code": "OCR_RETRY_EXHAUSTED",
+    "message": "可恢复识别次数已用尽；请检查原图，若均正常请联系管理员检查模型服务。",
+    "uploaded_papers": 1,
+    "succeeded_papers": 0,
+    "manual_review_papers": 0,
+    "failed_papers": 1,
+    "excluded_papers": 0,
+    "retryable_failed_papers": 0,
+    "unresolved_papers": 0,
+    "can_grade": false,
+    "error_info": {
+     "code": "PROCESSING_FAILED",
+     "stage": "grading",
+     "correlation_id": "<ID32#1>",
+     "error_id": "<ID32#2>",
+     "message": "判分：处理发生异常",
+     "action": "联系管理员并提供诊断编号。",
+     "retryable": false
+    }
+   }
+  ]
+ ],
+ "meta": {
+  "batch_id": "resume-characterization",
+  "teaching_context": {},
+  "status": "failed",
+  "created_at": "<created_at>",
+  "teacher_id": 1,
+  "class_id": 1,
+  "identity_mode": "anonymous",
+  "identity_inheritance": false,
+  "source_mode": "template",
+  "template_id": "characterization-template",
+  "template_mode": "",
+  "category": "daily",
+  "exam_name": "",
+  "grade_mode": "auto",
+  "uploads": [
+   {
+    "paper_id": "paper-0",
+    "filename": "paper-0.png",
+    "image_path": "<TMP>/quick_batch_resume-characterization/paper-0.png",
+    "source_sha256": "source-0",
+    "working_sha256": "working-0",
+    "orientation_status": "auto_passed",
+    "orientation_reason": "normal_angle",
+    "orientation_confidence": 1.0,
+    "detected_tilt_degrees": 0.0
+   }
+  ],
+  "pending_uploads": [],
+  "recognition_resume_generation": 1,
+  "ocr_jobs": [
+   {
+    "job_id": "ocr-0-paper-0.png",
+    "paper_id": "paper-0",
+    "filename": "paper-0.png",
+    "image_path": "<TMP>/quick_batch_resume-characterization/paper-0.png",
+    "status": "failed",
+    "attempts": 2,
+    "last_error": "视觉服务超时",
+    "retryable": false,
+    "error_code": "provider_timeout"
+   }
+  ],
+  "questions": [
+   {
+    "question_no": "1",
+    "question_text": "1+1=?",
+    "question_type": "fill"
+   },
+   {
+    "question_no": "2",
+    "question_text": "2+1=?",
+    "question_type": "fill"
+   }
+  ],
+  "papers": [],
+  "confirmation_questions": [],
+  "answer_map": {
+   "1": {
+    "matched": true,
+    "standard_answer": "2",
+    "answer_variants": [],
+    "solution_steps": [],
+    "max_score": null,
+    "blank_count": 1,
+    "answer_slots": [],
+    "fill_scoring_mode": "equal",
+    "blank_scores": [],
+    "subquestion_count": 1,
+    "subquestion_scores": [],
+    "grading_method": "equivalent",
+    "question_text": "1+1=?",
+    "question_type": "fill",
+    "choice_mode": "unknown",
+    "question_bank_id": null,
+    "chapter": "",
+    "topic": "",
+    "difficulty": 3,
+    "source": "template_confirmed"
+   },
+   "2": {
+    "matched": true,
+    "standard_answer": "3",
+    "answer_variants": [],
+    "solution_steps": [],
+    "max_score": null,
+    "blank_count": 1,
+    "answer_slots": [],
+    "fill_scoring_mode": "equal",
+    "blank_scores": [],
+    "subquestion_count": 1,
+    "subquestion_scores": [],
+    "grading_method": "equivalent",
+    "question_text": "2+1=?",
+    "question_type": "fill",
+    "choice_mode": "unknown",
+    "question_bank_id": null,
+    "chapter": "",
+    "topic": "",
+    "difficulty": 3,
+    "source": "template_confirmed"
+   }
+  },
+  "results": [],
+  "review_results": [],
+  "review_ready_at": "",
+  "review_archived_at": "",
+  "grading_started_at": "",
+  "grading_elapsed_seconds": null,
+  "asset_lifecycle": {},
+  "grading_contract_hash": "",
+  "grading_contract": {},
+  "grading_rubric_hash": "305eecf0011884a09565d3809f0da07b108c7ff9adccae6e1541e484f46ad1f2",
+  "template_contract_hash": "f84beeafc0efeba2e4959695a40aaab312487273d417a1be3ebceb6f0d6a9db9",
+  "review_revision": 0,
+  "report_status": "not_started",
+  "report_text": "",
+  "report_stats": {},
+  "report_error": "",
+  "report_input_hash": "",
+  "report_updated_at": "",
+  "error": "可恢复识别次数已用尽"
+ },
+ "batch_dirs": [
+  "quick_batch_resume-characterization"
+ ],
+ "lock_released": true,
+ "ledger": [
+  [
+   "checkpoint",
+   {
+    "status": "recognition_interrupted",
+    "error": "识别连接中断，等待恢复",
+    "resume_generation": 0,
+    "jobs": [
+     [
+      "queued",
+      1
+     ]
+    ],
+    "pending_uploads": 0,
+    "papers": 0,
+    "results": 0,
+    "confirmation_questions": 0
+   }
+  ],
+  [
+   "lock",
+   "batch",
+   "acquire"
+  ],
+  [
+   "checkpoint",
+   {
+    "status": "recognition_interrupted",
+    "error": "识别连接中断，等待恢复",
+    "resume_generation": 1,
+    "jobs": [
+     [
+      "queued",
+      1
+     ]
+    ],
+    "pending_uploads": 0,
+    "papers": 0,
+    "results": 0,
+    "confirmation_questions": 0
+   }
+  ],
+  [
+   "checkpoint",
+   {
+    "status": "recognizing_remaining",
+    "error": null,
+    "resume_generation": 1,
+    "jobs": [
+     [
+      "queued",
+      1
+     ]
+    ],
+    "pending_uploads": 1,
+    "papers": 0,
+    "results": 0,
+    "confirmation_questions": 0
+   }
+  ],
+  [
+   "checkpoint",
+   {
+    "status": "recognizing_remaining",
+    "error": null,
+    "resume_generation": 1,
+    "jobs": [
+     [
+      "failed",
+      2
+     ]
+    ],
+    "pending_uploads": 0,
+    "papers": 0,
+    "results": 0,
+    "confirmation_questions": 0
+   }
+  ],
+  [
+   "checkpoint",
+   {
+    "status": "failed",
+    "error": "可恢复识别次数已用尽",
+    "resume_generation": 1,
+    "jobs": [
+     [
+      "failed",
+      2
+     ]
+    ],
+    "pending_uploads": 0,
+    "papers": 0,
+    "results": 0,
+    "confirmation_questions": 0
+   }
+  ],
+  [
+   "lock",
+   "batch",
+   "release"
+  ]
+ ],
+ "ocr_calls": [
+  {
+   "page": "page-0",
+   "file": "paper-0.png",
+   "batch_id": "resume-characterization",
+   "teacher_id": "1",
+   "paper_id": "paper-0",
+   "vision_phase_key": "recognition-resume:1",
+   "vision_retry_phase_key": "recognition-resume",
+   "vision_batch_paper_count": 1,
+   "vision_route_ordinal": 0,
+   "grading_teacher_id": "1"
+  }
+ ],
+ "identity_calls": []
+}

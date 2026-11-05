@@ -1,0 +1,69 @@
+{
+ "status_code": 403,
+ "body": {
+  "detail": {
+   "error": "DAILY_IMAGE_LIMIT_EXCEEDED",
+   "message": "今日学生试卷图片额度不足，请减少本次上传张数",
+   "allowed": false,
+   "current": 9,
+   "limit": 10,
+   "requested": 2
+  }
+ },
+ "events": [],
+ "meta": null,
+ "batch_dirs": [
+  "quick_batch_<ID12#1>"
+ ],
+ "lock_released": true,
+ "ledger": [
+  [
+   "checkpoint",
+   {
+    "status": "recognizing_remaining",
+    "error": null,
+    "resume_generation": 0,
+    "jobs": [
+     [
+      "queued",
+      0
+     ],
+     [
+      "queued",
+      0
+     ]
+    ],
+    "pending_uploads": 0,
+    "papers": 0,
+    "results": 0,
+    "confirmation_questions": 0
+   }
+  ],
+  [
+   "lock",
+   "template",
+   "acquire"
+  ],
+  [
+   "lock",
+   "template",
+   "release"
+  ]
+ ],
+ "ocr_calls": [],
+ "identity_calls": [],
+ "limiter_calls": [
+  [
+   "check_daily_image_limit",
+   1,
+   2
+  ],
+  [
+   "reserve_student_images",
+   1,
+   2,
+   "student-upload-<ID12#1>"
+  ]
+ ],
+ "template_status": "frozen"
+}

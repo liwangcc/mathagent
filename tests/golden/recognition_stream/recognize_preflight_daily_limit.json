@@ -1,0 +1,30 @@
+{
+ "status_code": 403,
+ "body": {
+  "detail": {
+   "error": "DAILY_IMAGE_LIMIT_EXCEEDED",
+   "message": "今日学生试卷图片额度不足（已用 9 / 10 张，本次 2 张）",
+   "allowed": false,
+   "current": 9,
+   "limit": 10,
+   "requested": 2,
+   "remaining": 1,
+   "reset_time": "tomorrow"
+  }
+ },
+ "events": [],
+ "meta": null,
+ "batch_dirs": [],
+ "lock_released": null,
+ "ledger": [],
+ "ocr_calls": [],
+ "identity_calls": [],
+ "limiter_calls": [
+  [
+   "check_daily_image_limit",
+   1,
+   2
+  ]
+ ],
+ "template_status": "confirmed"
+}

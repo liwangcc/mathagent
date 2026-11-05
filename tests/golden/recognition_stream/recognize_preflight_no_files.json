@@ -1,0 +1,25 @@
+{
+ "status_code": 422,
+ "body": {
+  "detail": [
+   {
+    "type": "missing",
+    "loc": [
+     "body",
+     "files"
+    ],
+    "msg": "Field required",
+    "input": null
+   }
+  ]
+ },
+ "events": [],
+ "meta": null,
+ "batch_dirs": [],
+ "lock_released": null,
+ "ledger": [],
+ "ocr_calls": [],
+ "identity_calls": [],
+ "limiter_calls": [],
+ "template_status": "confirmed"
+}
