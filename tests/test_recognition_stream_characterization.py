@@ -914,6 +914,242 @@ def test_resume_disconnect_while_page_is_recognized(monkeypatch, tmp_path):
     _assert_golden("resume_disconnect_while_page_is_recognized", observed)
 
 
+# ── clients that stop reading mid-stream ────────────────────────────────────
+#
+# A client that goes away leaves the generator suspended at a ``yield``; the
+# stream is then closed (GeneratorExit), not cancelled.  Where it was
+# suspended decides whether the batch is reopened as interrupted.
+
+
+def _decode(chunk) -> list:
+    text = chunk.decode("utf-8") if isinstance(chunk, bytes) else chunk
+    lines = text.splitlines()
+    event = next(line[7:] for line in lines if line.startswith("event: "))
+    return [event, json.loads(next(line[6:] for line in lines if line.startswith("data: ")))]
+
+
+async def _read_until_then_close(response, stop) -> list[list]:
+    """Read events until ``stop(event, payload)`` holds, then close like a client."""
+    iterator = response.body_iterator
+    seen = []
+    async for chunk in iterator:
+        seen.append(_decode(chunk))
+        if stop(*seen[-1]):
+            break
+    await iterator.aclose()
+    return seen
+
+
+_STOPS = {
+    "first_inspection": lambda event, payload: event == "progress" and payload["message"].startswith(("已完成", "恢复时已检查")),
+    "first_ocr_outcome": lambda event, payload: event == "progress" and payload["message"].startswith("已识别"),
+    "first_result": lambda event, payload: event == "result",
+    "first_paper": lambda event, payload: event == "paper",
+    "error": lambda event, payload: event == "error",
+    "done": lambda event, payload: event == "done",
+}
+
+
+def _closed_stream_observation(tmp_path, batch_id: str, seen: list, boundary: _Boundary) -> dict:
+    return _Normalizer(tmp_path)({
+        "events": seen,
+        "meta": _raw_meta(batch_id, tmp_path),
+        "lock_released": _lock_released(batch_id, tmp_path),
+        "ledger": list(_LEDGER),
+        **boundary.record(),
+    })
+
+
+def _direct_recognize(Session, count: int):
+    import routers.grade as grade
+
+    async def call():
+        db = Session()
+        try:
+            return await grade.batch_grade_recognize(
+                files=[UploadFile(filename=f"paper-{index}.ocr-ready-v1.jpg",
+                                  file=BytesIO(f"synthetic-{index}".encode()))
+                       for index in range(count)],
+                category="daily", exam_name="", template_id=TEMPLATE_ID, mode="auto",
+                anonymous=True, source_paths="", inherit_identity=False,
+                user=User(id=1, name="老师", role="teacher", current_class_id=1, education_stage="senior"),
+                db=db,
+            )
+        finally:
+            db.close()
+
+    return call()
+
+
+@pytest.mark.parametrize("stop_at", ["first_ocr_outcome", "first_result", "first_paper", "done"])
+def test_recognize_client_closes_stream(monkeypatch, tmp_path, stop_at):
+    _client, Session = _recognition_client(monkeypatch, tmp_path)
+    _template(tmp_path)
+    boundary = _Boundary(monkeypatch)
+
+    async def scenario():
+        return await _read_until_then_close(await _direct_recognize(Session, 3), _STOPS[stop_at])
+
+    seen = asyncio.run(scenario())
+    assert _STOPS[stop_at](*seen[-1]), seen
+    batch_id = _batch_dirs(tmp_path)[0].name.removeprefix("quick_batch_")
+    _assert_golden(f"recognize_client_closes_at_{stop_at}",
+                   _closed_stream_observation(tmp_path, batch_id, seen, boundary))
+
+
+def test_recognize_client_closes_during_inspection(monkeypatch, tmp_path):
+    _client, Session = _recognition_client(monkeypatch, tmp_path)
+    _template(tmp_path)
+    boundary = _Boundary(monkeypatch)
+    import routers.grade as grade
+
+    inspected = grade._client_ocr_ready_orientation
+    saving = {"active": True}
+    real_save = grade._save_batch_uploads
+
+    async def save_without_diagnostics(*args, **kwargs):
+        saved = await real_save(*args, **kwargs)
+        saving["active"] = False
+        return [(name, path, "") for name, path, _sha in saved]
+
+    monkeypatch.setattr(grade, "_save_batch_uploads", save_without_diagnostics)
+    monkeypatch.setattr(grade, "_client_ocr_ready_orientation",
+                        lambda filename: {} if saving["active"] else inspected(filename))
+
+    async def scenario():
+        return await _read_until_then_close(await _direct_recognize(Session, 3), _STOPS["first_inspection"])
+
+    seen = asyncio.run(scenario())
+    assert _STOPS["first_inspection"](*seen[-1]), seen
+    batch_id = _batch_dirs(tmp_path)[0].name.removeprefix("quick_batch_")
+    _assert_golden("recognize_client_closes_during_inspection",
+                   _closed_stream_observation(tmp_path, batch_id, seen, boundary))
+
+
+def test_recognize_cancelled_while_page_is_recognized(monkeypatch, tmp_path):
+    _client, Session = _recognition_client(monkeypatch, tmp_path)
+    _template(tmp_path)
+    boundary = _Boundary(monkeypatch)
+    import routers.grade as grade
+
+    started = asyncio.Event()
+    scripted = boundary.recognize
+
+    async def second_page_blocks(image_path, *args, **kwargs):
+        result = await scripted(image_path, *args, **kwargs)
+        if _page_of(image_path) == "page-1":
+            started.set()
+            await asyncio.Event().wait()
+        return result
+
+    monkeypatch.setattr(grade, "recognize_paper_with_cache", second_page_blocks)
+
+    async def scenario():
+        response = await _direct_recognize(Session, 2)
+        chunks = []
+
+        async def consume():
+            async for chunk in response.body_iterator:
+                chunks.append(_decode(chunk))
+
+        consumer = asyncio.create_task(consume())
+        await asyncio.wait_for(started.wait(), timeout=5)
+        consumer.cancel()
+        with pytest.raises(asyncio.CancelledError):
+            await consumer
+        return chunks
+
+    seen = asyncio.run(scenario())
+    batch_id = _batch_dirs(tmp_path)[0].name.removeprefix("quick_batch_")
+    _assert_golden("recognize_cancelled_while_page_is_recognized",
+                   _closed_stream_observation(tmp_path, batch_id, seen, boundary))
+
+
+def _direct_resume():
+    import routers.grade as grade
+
+    return grade.batch_grade_resume_recognition(
+        "resume-characterization",
+        User(id=1, name="老师", role="teacher", current_class_id=1),
+    )
+
+
+@pytest.mark.parametrize("stop_at", ["first_inspection", "first_ocr_outcome", "first_paper", "done"])
+def test_resume_client_closes_stream(monkeypatch, tmp_path, stop_at):
+    _setup(monkeypatch, tmp_path)
+    batch = _checkpoint(tmp_path, jobs=("succeeded", "queued", "queued"))
+    if stop_at == "first_inspection":
+        for upload in batch.uploads[1:]:
+            for key in ("source_sha256", "working_sha256", "orientation_status", "orientation_reason",
+                        "orientation_confidence", "detected_tilt_degrees"):
+                upload.pop(key)
+        batch.save_meta()
+    boundary = _Boundary(monkeypatch)
+
+    async def scenario():
+        return await _read_until_then_close(await _direct_resume(), _STOPS[stop_at])
+
+    seen = asyncio.run(scenario())
+    assert _STOPS[stop_at](*seen[-1]), seen
+    _assert_golden(f"resume_client_closes_at_{stop_at}",
+                   _closed_stream_observation(tmp_path, "resume-characterization", seen, boundary))
+
+
+def test_client_closes_at_partial_done(monkeypatch, tmp_path):
+    """A done event over a partially failed ledger is final once it is sent."""
+    _client, Session = _recognition_client(monkeypatch, tmp_path)
+    _template(tmp_path)
+    boundary = _Boundary(monkeypatch, answers={"page-1": _RETRYABLE_FAILURE})
+
+    async def scenario():
+        return await _read_until_then_close(await _direct_recognize(Session, 2), _STOPS["done"])
+
+    seen = asyncio.run(scenario())
+    assert seen[-1][0] == "done" and seen[-1][1]["status"] == "ocr_partial_failed", seen
+    batch_id = _batch_dirs(tmp_path)[0].name.removeprefix("quick_batch_")
+    _assert_golden("recognize_client_closes_at_partial_done",
+                   _closed_stream_observation(tmp_path, batch_id, seen, boundary))
+
+
+def test_resume_client_closes_at_partial_done(monkeypatch, tmp_path):
+    _setup(monkeypatch, tmp_path)
+    _checkpoint(tmp_path, jobs=("succeeded", "queued"))
+    boundary = _Boundary(monkeypatch, answers={"page-1": _RETRYABLE_FAILURE})
+
+    async def scenario():
+        return await _read_until_then_close(await _direct_resume(), _STOPS["done"])
+
+    seen = asyncio.run(scenario())
+    assert seen[-1][0] == "done" and seen[-1][1]["status"] == "ocr_partial_failed", seen
+    _assert_golden("resume_client_closes_at_partial_done",
+                   _closed_stream_observation(tmp_path, "resume-characterization", seen, boundary))
+
+
+@pytest.mark.parametrize("outcome", ["no_retryable_work", "accelerator_wait", "every_page_fails"])
+def test_resume_client_closes_on_final_error(monkeypatch, tmp_path, outcome):
+    """The final error event is sent before the outcome counts as delivered."""
+    _setup(monkeypatch, tmp_path)
+    if outcome == "no_retryable_work":
+        _checkpoint(tmp_path, jobs=("succeeded", "succeeded"), with_papers=[True, False])
+        boundary = _Boundary(monkeypatch)
+    elif outcome == "accelerator_wait":
+        _checkpoint(tmp_path)
+        boundary = _Boundary(monkeypatch, answers={"page-2": _ACCELERATOR_PENDING})
+    else:
+        _checkpoint(tmp_path, jobs=("queued", "queued"))
+        boundary = _Boundary(monkeypatch, answers={
+            "page-0": _RETRYABLE_FAILURE, "page-1": _RETRYABLE_FAILURE,
+        })
+
+    async def scenario():
+        return await _read_until_then_close(await _direct_resume(), _STOPS["error"])
+
+    seen = asyncio.run(scenario())
+    assert seen[-1][0] == "error", seen
+    _assert_golden(f"resume_client_closes_on_final_error_{outcome}",
+                   _closed_stream_observation(tmp_path, "resume-characterization", seen, boundary))
+
+
 @pytest.mark.parametrize("case", ["missing", "foreign", "not_template", "no_template", "not_resumable"])
 def test_resume_preflight(monkeypatch, tmp_path, case):
     client, _Session = _setup(monkeypatch, tmp_path)
