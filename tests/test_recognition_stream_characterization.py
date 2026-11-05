@@ -54,6 +54,7 @@ _LEDGER: list[list] = []
 def deterministic_runtime(monkeypatch):
     from services import task_queue
     import routers.grade as grade
+    from routers import grade_recognition
 
     async def inline_to_thread(func, /, *args, **kwargs):
         return func(*args, **kwargs)
@@ -65,8 +66,8 @@ def deterministic_runtime(monkeypatch):
     monkeypatch.setattr(task_queue, "_grading_queue", None)
     monkeypatch.setattr(grade, "_start_batch_report_generation", no_report)
     # These come from the environment; the interleaving depends on them.
-    monkeypatch.setattr(grade, "OCR_BATCH_DISPATCH_CONCURRENT", 3)
-    monkeypatch.setattr(grade, "OCR_TEACHER_WAVE_SIZE", 3)
+    monkeypatch.setattr(grade_recognition, "OCR_BATCH_DISPATCH_CONCURRENT", 3)
+    monkeypatch.setattr(grade_recognition, "OCR_TEACHER_WAVE_SIZE", 3)
     monkeypatch.setattr(grade, "OCR_PREPROCESS_LOCAL_MAX_CONCURRENT", 2)
 
 

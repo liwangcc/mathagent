@@ -987,9 +987,10 @@ def test_template_batch_respects_ocr_dispatch_concurrency(monkeypatch, tmp_path)
             active -= 1
 
     import routers.grade as grade_router
+    from routers import grade_recognition
     monkeypatch.setattr(grade_router, "recognize_paper_with_cache", fake_cached)
-    monkeypatch.setattr(grade_router, "OCR_BATCH_DISPATCH_CONCURRENT", 3)
-    monkeypatch.setattr(grade_router, "OCR_TEACHER_WAVE_SIZE", 7)
+    monkeypatch.setattr(grade_recognition, "OCR_BATCH_DISPATCH_CONCURRENT", 3)
+    monkeypatch.setattr(grade_recognition, "OCR_TEACHER_WAVE_SIZE", 7)
     async def fake_identity(*_args, **_kwargs):
         return {
             "name": "张三",
@@ -1040,9 +1041,10 @@ def test_template_resume_after_accelerator_wait_dispatches_at_batch_window(
     client, _Session = _setup(monkeypatch, tmp_path, education_stage="senior")
     _confirmed_template(tmp_path, "resume-window-template")
     import routers.grade as grade_router
+    from routers import grade_recognition
 
     window = 4
-    monkeypatch.setattr(grade_router, "OCR_BATCH_DISPATCH_CONCURRENT", window)
+    monkeypatch.setattr(grade_recognition, "OCR_BATCH_DISPATCH_CONCURRENT", window)
     monkeypatch.setattr(
         grade_router, "OCR_TEMPLATE_LOCAL_DISPATCH_CONCURRENT", 1, raising=False,
     )

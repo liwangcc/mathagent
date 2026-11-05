@@ -82,7 +82,7 @@ def test_resume_normalizes_stale_running_only_after_exclusive_lock(
     monkeypatch, tmp_path, attempts,
 ):
     client, _ = _setup(monkeypatch, tmp_path)
-    import routers.grade as grade_router
+    from routers import grade_recognition
 
     batch = _pending_batch(tmp_path, count=1)
     batch.ocr_jobs[0].update(status="running", attempts=attempts)
@@ -93,7 +93,7 @@ def test_resume_normalizes_stale_running_only_after_exclusive_lock(
         calls.append(path)
         return _recognized()
 
-    monkeypatch.setattr(grade_router, "_recognize_batch_upload", recognized)
+    monkeypatch.setattr(grade_recognition, "_recognize_batch_upload", recognized)
     before = Path(batch.meta_path).read_bytes()
     with batch_operation_lock(batch.batch_id, str(tmp_path)):
         response = client.post(f"/api/batch-grade/{batch.batch_id}/recognize/resume")
@@ -121,6 +121,7 @@ def test_dispatcher_error_refunds_cancelled_ocr_attempts_and_allows_resume(
 ):
     client, _ = _setup(monkeypatch, tmp_path)
     import routers.grade as grade_router
+    from routers import grade_recognition
 
     batch = _pending_batch(tmp_path)
     batch.ocr_jobs[0]["attempts"] = 1
@@ -140,8 +141,8 @@ def test_dispatcher_error_refunds_cancelled_ocr_attempts_and_allows_resume(
         await asyncio.Event().wait()
 
     monkeypatch.setattr(grade_router._PerPaperGradingPipeline, "dispatch", failing_dispatch)
-    monkeypatch.setattr(grade_router, "_recognize_batch_upload", recognized)
-    monkeypatch.setattr(grade_router, "OCR_BATCH_DISPATCH_CONCURRENT", 2)
+    monkeypatch.setattr(grade_recognition, "_recognize_batch_upload", recognized)
+    monkeypatch.setattr(grade_recognition, "OCR_BATCH_DISPATCH_CONCURRENT", 2)
 
     def request():
         return client.post(f"/api/batch-grade/{batch.batch_id}/recognize/resume")
@@ -172,9 +173,10 @@ def test_repeated_disconnect_cancellation_settles_pipeline_before_releasing_lock
 ):
     _client, Session = _setup(monkeypatch, tmp_path, education_stage="senior")
     import routers.grade as grade_router
+    from routers import grade_recognition
 
     batch = _pending_batch(tmp_path, count=3)
-    monkeypatch.setattr(grade_router, "OCR_BATCH_DISPATCH_CONCURRENT", 3)
+    monkeypatch.setattr(grade_recognition, "OCR_BATCH_DISPATCH_CONCURRENT", 3)
     captured_locks = []
     locked_batch_ids = []
     effects = {"exited": False, "db_closed": False, "resets": set()}
@@ -263,7 +265,7 @@ def test_repeated_disconnect_cancellation_settles_pipeline_before_releasing_lock
                 cancellations.append(asyncio.current_task().cancelling())
                 cleanup_finished.set()
 
-        monkeypatch.setattr(grade_router, "_recognize_batch_upload", recognized)
+        monkeypatch.setattr(grade_recognition, "_recognize_batch_upload", recognized)
         monkeypatch.setattr(grade_router, "_grade_paper_core", blocked_grade)
         monkeypatch.setattr(grade_router, "_save_quick_batch_meta", observed_save)
         if initial:
@@ -377,7 +379,7 @@ def test_repeated_disconnect_cancellation_settles_pipeline_before_releasing_lock
         resumed_ocr.append(path)
         return _recognized()
 
-    monkeypatch.setattr(grade_router, "_recognize_batch_upload", resume_recognized)
+    monkeypatch.setattr(grade_recognition, "_recognize_batch_upload", resume_recognized)
     events = _events(_client.post(f"/api/batch-grade/{active_batch_id}/recognize/resume"))
     assert events[-1][0] == "done", events
     assert resumed_ocr == [pending_path], "Durable OCR must not be called again"

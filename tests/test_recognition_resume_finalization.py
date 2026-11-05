@@ -72,11 +72,14 @@ def checkpoint(tmp_path, *, status="recognition_interrupted", count=3):
 
 def forbid_ocr(monkeypatch):
     import routers.grade as grade
+    from routers import grade_recognition
 
     async def forbidden(*_args, **_kwargs):
         pytest.fail("Already checkpointed OCR must not be requested again")
 
     monkeypatch.setattr(grade, "recognize_paper_with_cache", forbidden)
+    # Per-upload OCR inspects in grade_recognition, batch inspections in routers.grade.
+    monkeypatch.setattr(grade_recognition, "_ensure_batch_upload_inspected", forbidden)
     monkeypatch.setattr(grade, "_ensure_batch_upload_inspected", forbidden)
 
 

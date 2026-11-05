@@ -209,6 +209,7 @@ def test_recognition_stream_pipelines_grading_per_paper(monkeypatch, tmp_path):
     _confirmed_template(tmp_path, "pipeline-template")
     from models import Student
     import routers.grade as grade_router
+    from routers import grade_recognition
 
     with Session() as db:
         db.add_all([
@@ -247,7 +248,8 @@ def test_recognition_stream_pipelines_grading_per_paper(monkeypatch, tmp_path):
 
     monkeypatch.setattr(grade_router, "recognize_student_info_with_roster", blank_identity)
     monkeypatch.setattr(grade_router, "recognize_paper_with_cache", recognized_answers)
-    monkeypatch.setattr(grade_router, "_pipeline_result_sse", observe_result_sse)
+    # The held OCR waits for a result streamed during the OCR phase itself.
+    monkeypatch.setattr(grade_recognition, "_pipeline_result_sse", observe_result_sse)
 
     source_paths = ["收集.zip/张三/a.jpg", "收集.zip/李四/b.jpg", "收集.zip/王五/c.jpg"]
     response = _recognize(
@@ -626,6 +628,7 @@ def test_blank_pages_inherit_the_previous_page_identity_only_when_enabled(monkey
     _two_page_template(tmp_path, "inherit-template")
     from models import Student
     import routers.grade as grade_router
+    from routers import grade_recognition
     from routers import grade_review
 
     with Session() as db:
@@ -677,7 +680,7 @@ def test_blank_pages_inherit_the_previous_page_identity_only_when_enabled(monkey
     monkeypatch.setattr(grade_router, "recognize_student_info_with_roster", identity)
     monkeypatch.setattr(grade_router, "recognize_paper_with_cache", answers)
     monkeypatch.setattr(grade_router, "_ingest_recognized_paper", observe_ingest)
-    monkeypatch.setattr(grade_router, "OCR_BATCH_DISPATCH_CONCURRENT", 5)
+    monkeypatch.setattr(grade_recognition, "OCR_BATCH_DISPATCH_CONCURRENT", 5)
 
     # The browser order is shuffled; inheritance must follow the file names.
     names = ["scan_4", "scan_2", "scan_10", "scan_3", "scan_1"]
