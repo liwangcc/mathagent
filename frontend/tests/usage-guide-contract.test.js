@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { buildUsageTourSteps, SERVICE_STATE_LEGEND } from '../src/utils/usageTour.js'
 import { isRouteBusy, setRouteBusy } from '../src/utils/routeBusy.js'
+import { createDesktopBindingManager, desktopProcessorReady } from '../src/composables/useDesktopBindingDialog.js'
 
 function source(relativePath) {
   return readFileSync(fileURLToPath(new URL(relativePath, import.meta.url)), 'utf8')
@@ -17,7 +18,6 @@ const exercise = source('../src/views/Exercise.vue')
 const layout = source('../src/views/Layout.vue')
 const home = source('../src/views/Home.vue')
 const app = source('../src/App.vue')
-const bindingManager = source('../src/composables/useDesktopBindingDialog.js')
 
 test('登录后布局提供长期可见的使用引导入口并初始化首次引导', () => {
   assert.match(layout, /<UsageGuideDialog ref="usageGuideRef" \/>/)
@@ -135,11 +135,8 @@ test('桌面首次向导必须处理真实设备授权与本机处理器检测',
   assert.match(guide, /desktopInvoke\('runtime_info'\)/)
   assert.match(guide, /desktopInvoke\('desktop_binding_status'\)/)
   assert.match(guide, /bindingManager\.open\('guide'\)/)
-  assert.match(bindingManager, /invoke\('bind_teacher_desktop'/)
-  assert.match(bindingManager, /bearerToken: expected\.token/)
   assert.match(guide, /if \(!auth\.token\) \{\s*bindingAttempted\.value = true/)
   assert.match(guide, /desktopInvoke\('get_worker_status'\)/)
-  assert.match(bindingManager, /invoke\('resume_worker'\)/)
   assert.match(guide, /handoffReady/)
   assert.match(guide, /handoff\?\.running === true/)
   assert.match(guide, /handoff\?\.connected === true/)
@@ -148,7 +145,6 @@ test('桌面首次向导必须处理真实设备授权与本机处理器检测',
   assert.match(guide, /!initialized\.value \|\| desktopRuntime\.value/)
   assert.match(guide, /desktopSetupResolved\.value = outcome\.verified && !outcome\.error && processorReady\.value/)
   assert.doesNotMatch(guide, /desktopInvoke\('(bind|rotate|unbind)_teacher_desktop'/)
-  assert.match(bindingManager, /for \(let attempt = 0; attempt < 6; attempt \+= 1\)/)
   assert.match(guide, /const cloudFallbackStillValid = storedResolution === 'cloud'/)
   assert.match(guide, /webFallbackRequired === true[\s\S]*statusReadFailed === true/)
   assert.match(guide, /storedResolution === nodeId/)
@@ -163,6 +159,58 @@ test('桌面首次向导必须处理真实设备授权与本机处理器检测',
   assert.match(guide, /:disabled="desktopSetupRequired && !desktopSetupResolved"/)
   assert.match(guide, /if \(desktopSetupRequired\.value && !desktopSetupResolved\.value\) return/)
   assert.match(guide, /visible\.value = false\n  if \(tourAfterSetup\.value\) startTour\(\)/)
+})
+
+const readyWorker = () => ({
+  localProcessingAvailable: true, paused: false,
+  handoff: { configured: true, running: true, connected: true, lastErrorCode: null },
+})
+const disconnectedWorker = () => ({ ...readyWorker(), handoff: { configured: true, running: true, connected: false } })
+
+// The guide hands binding to the shared manager; drive it with injected native
+// commands, session and wait so no real IPC or timer runs.
+function bindingFixture(replies) {
+  const calls = []
+  const waits = []
+  const manager = createDesktopBindingManager({
+    getSession: () => ({ accountId: 910001, token: 'teacher-session-token' }),
+    wait: async (ms) => { waits.push(ms) },
+    invoke: async (command, args) => {
+      calls.push({ command, args })
+      if (command === 'bind_teacher_desktop') return { configured: true, nodeId: 'synthetic-node' }
+      return replies[command]()
+    },
+  })
+  manager.open('guide')
+  return { manager, calls, waits }
+}
+
+test('桌面向导的绑定用当前教师令牌请求本机授权，并恢复暂停的处理器', async () => {
+  let reads = 0
+  const { manager, calls } = bindingFixture({
+    get_worker_status: () => ((reads += 1) === 1 ? { ...readyWorker(), paused: true } : readyWorker()),
+    resume_worker: readyWorker,
+  })
+  assert.equal(await manager.bind(), true)
+  assert.deepEqual(calls.map((call) => call.command), ['bind_teacher_desktop', 'get_worker_status', 'resume_worker'])
+  assert.deepEqual(calls[0].args, { bearerToken: 'teacher-session-token' })
+  assert.equal(manager.state.verified, true)
+  assert.equal(desktopProcessorReady(manager.state.binding, manager.state.worker), true)
+})
+
+test('桌面向导等待处理器连上服务最多再查 6 次，连上即停止', async () => {
+  const statusReads = (calls) => calls.filter((call) => call.command === 'get_worker_status').length
+  const never = bindingFixture({ get_worker_status: disconnectedWorker })
+  assert.equal(await never.manager.bind(), true)
+  assert.equal(statusReads(never.calls), 1 + 6, 'one read after binding, then six polling attempts')
+  assert.equal(never.waits.length, 5, 'polls after the first wait through the injected delay')
+  assert.equal(desktopProcessorReady(never.manager.state.binding, never.manager.state.worker), false)
+
+  let reads = 0
+  const soon = bindingFixture({ get_worker_status: () => ((reads += 1) < 3 ? disconnectedWorker() : readyWorker()) })
+  assert.equal(await soon.manager.bind(), true)
+  assert.equal(statusReads(soon.calls), 3)
+  assert.equal(desktopProcessorReady(soon.manager.state.binding, soon.manager.state.worker), true)
 })
 
 test('班级初始化失败也不会跳过首次使用引导', () => {

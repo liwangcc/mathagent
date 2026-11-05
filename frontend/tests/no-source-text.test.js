@@ -22,7 +22,7 @@ const KNOWN_SOURCE_TEXT_READS = {
   'bank-profile-scope-runtime.test.js': ['views/Bank.vue'],
   'bank-stage-contract.test.js': ['views/Bank.vue', 'views/BankPhotoImport.vue', 'views/PendingAnswers.vue'],
   'batch-report.test.js': ['views/Upload.vue'],
-  'browser-image-offload.test.js': ['utils/uploadValidation.js', 'views/AnswerSheet.vue', 'views/Upload.vue'],
+  'browser-image-offload.test.js': ['views/AnswerSheet.vue', 'views/Upload.vue'],
   'class-table-render-contract.test.js': ['views/ClassTable.vue'],
   'collection-import.test.js': ['views/Upload.vue'],
   'courseware-covers.test.js': ['components/CoursewareCover.vue', 'views/Courseware.vue'],
@@ -32,7 +32,7 @@ const KNOWN_SOURCE_TEXT_READS = {
   'desktop-startup-splash.test.js': ['main.js'],
   'drawing-assessment.test.mjs': ['components/DrawingAssessment.vue'],
   'drawing-reference.test.mjs': ['components/DrawingReferenceEditor.vue'],
-  'education-stage-profile.test.js': ['router/index.js', 'stores/auth.js'],
+  'education-stage-profile.test.js': ['router/index.js'],
   'exercise-mode-contract.test.js': ['views/Exercise.vue'],
   'exercise-profile-stage.test.js': ['views/Exercise.vue'],
   'exercise-restore-runtime.test.js': ['views/Exercise.vue'],
@@ -78,8 +78,8 @@ const KNOWN_SOURCE_TEXT_READS = {
   'template-skip-answer-confirm.test.js': ['views/Upload.vue'],
   'template-slot-binding.test.mjs': ['views/Upload.vue'],
   'text-grading-method.test.mjs': ['views/AnswerSheet.vue', 'views/Upload.vue'],
-  'theme-mode.test.js': ['composables/useTheme.js', 'views/Login.vue', 'views/Profile.vue'],
-  'usage-guide-contract.test.js': ['App.vue', 'components/GuidedTour.vue', 'components/UsageGuideDialog.vue', 'composables/useDesktopBindingDialog.js', 'views/ClassTable.vue', 'views/Exercise.vue', 'views/Home.vue', 'views/Layout.vue', 'views/Upload.vue'],
+  'theme-mode.test.js': ['views/Login.vue', 'views/Profile.vue'],
+  'usage-guide-contract.test.js': ['App.vue', 'components/GuidedTour.vue', 'components/UsageGuideDialog.vue', 'views/ClassTable.vue', 'views/Exercise.vue', 'views/Home.vue', 'views/Layout.vue', 'views/Upload.vue'],
 }
 
 const IMPORT_SPECIFIERS = [

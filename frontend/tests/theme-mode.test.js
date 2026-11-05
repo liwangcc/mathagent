@@ -1,21 +1,60 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
+import { COLOR_MODES, getColorMode, initTheme, setColorMode } from '../src/composables/useTheme.js'
+import { memoryStorage } from './helpers/browser.js'
 
-const theme = fs.readFileSync(new URL('../src/composables/useTheme.js', import.meta.url), 'utf8')
 const profile = fs.readFileSync(new URL('../src/views/Profile.vue', import.meta.url), 'utf8')
 const globalCss = fs.readFileSync(new URL('../src/styles/global.css', import.meta.url), 'utf8')
 const login = fs.readFileSync(new URL('../src/views/Login.vue', import.meta.url), 'utf8')
 const index = fs.readFileSync(new URL('../index.html', import.meta.url), 'utf8')
 
+// useTheme touches only localStorage and document.documentElement's
+// setAttribute/style, so the test provides just those two globals.
+function installThemeGlobals(entries = {}) {
+  const previous = { localStorage: globalThis.localStorage, document: globalThis.document }
+  const attributes = {}
+  const root = { attributes, style: {}, setAttribute(name, value) { attributes[name] = String(value) } }
+  const define = (name, value) => Object.defineProperty(globalThis, name, { value, configurable: true, writable: true })
+  define('localStorage', memoryStorage(entries))
+  define('document', { documentElement: root })
+  const restore = () => {
+    for (const [name, value] of Object.entries(previous)) {
+      if (value === undefined) delete globalThis[name]
+      else define(name, value)
+    }
+  }
+  return { root, storage: globalThis.localStorage, restore }
+}
+
 test('明暗模式支持浅色、深色和跟随系统并持久化', () => {
-  assert.match(theme, /COLOR_MODE_STORAGE_KEY = 'mathagent_color_mode'/)
-  assert.match(theme, /const COLOR_MODES = \['light', 'dark', 'system'\]/)
-  assert.match(theme, /export function getColorMode\(\)/)
-  assert.match(theme, /export function setColorMode\(name\)/)
-  assert.match(theme, /root\.setAttribute\('data-color-mode', mode\)/)
-  assert.match(theme, /mode === 'system' \? 'light dark' : mode/)
-  assert.match(theme, /applyColorMode\(getColorMode\(\)\)/)
+  assert.deepEqual(COLOR_MODES, ['light', 'dark', 'system'])
+  const env = installThemeGlobals()
+  try {
+    for (const mode of ['light', 'dark', 'system']) {
+      assert.equal(setColorMode(mode), mode)
+      assert.equal(env.storage.getItem('mathagent_color_mode'), mode)
+      assert.equal(getColorMode(), mode)
+      assert.equal(env.root.attributes['data-color-mode'], mode)
+      assert.equal(env.root.style.colorScheme, mode === 'system' ? 'light dark' : mode)
+    }
+    assert.equal(setColorMode('sepia'), 'light', 'only the three modes are accepted')
+    assert.equal(env.storage.getItem('mathagent_color_mode'), 'light')
+  } finally {
+    env.restore()
+  }
+
+  for (const [stored, colorScheme] of [['dark', 'dark'], ['system', 'light dark']]) {
+    const boot = installThemeGlobals({ mathagent_color_mode: stored })
+    try {
+      assert.equal(getColorMode(), stored)
+      initTheme()
+      assert.equal(boot.root.attributes['data-color-mode'], stored, 'boot applies the persisted mode')
+      assert.equal(boot.root.style.colorScheme, colorScheme)
+    } finally {
+      boot.restore()
+    }
+  }
 })
 
 test('个人资料页提供三种明暗模式选择，并支持键盘切换', () => {
