@@ -1,0 +1,2678 @@
+{
+ "fill_blank_one_column": {
+  "result": {
+   "page_type_id": "page_1",
+   "evidence_png_sha256": [
+    "6ce093d5c3a2869e4664d016c208bb8313e05c27301f4ca995b47c3d7ac8094d"
+   ],
+   "evidence_path_is_first": true,
+   "question_numbers": [
+    "1",
+    "2",
+    "3"
+   ],
+   "blank_question_numbers": [],
+   "diagnostics": {
+    "selected_page_type_id": "page_1",
+    "template_width": 600,
+    "template_height": 400,
+    "evidence_width": 600,
+    "evidence_height": 400,
+    "ownership": "full_column_difference",
+    "difference_algorithm": "difference-v2-cleaner",
+    "evidence_columns": [
+     {
+      "column_index": 1,
+      "sheet_id": "column_01",
+      "width": 600,
+      "height": 400,
+      "question_numbers": [
+       "1",
+       "2",
+       "3"
+      ],
+      "label_placements": [
+       {
+        "question_number": "1",
+        "source": "template_answer_region",
+        "region_index": 0,
+        "region_bbox_1000": [
+         300,
+         120,
+         720,
+         260
+        ],
+        "label_text": "Q1",
+        "label_bbox": [
+         111,
+         56,
+         167,
+         95
+        ],
+        "label_fully_visible": true,
+        "label_left_of_region": true,
+        "label_at_printed_question_number": true,
+        "fixed_position_overwrite_allowed": false,
+        "foreground_preserved": true,
+        "label_opacity": 1.0,
+        "label_style": "blue-hollow-box-v2",
+        "label_background_opacity": 0,
+        "label_border_width_px": 1,
+        "orientation": "horizontal",
+        "placement_offset_px": [
+         0,
+         0
+        ],
+        "placement_mode": "safe_whitespace",
+        "target_anchor_px": [
+         180,
+         76.0
+        ],
+        "connector_line": [
+         [
+          168,
+          75
+         ],
+         [
+          179,
+          76
+         ]
+        ]
+       },
+       {
+        "question_number": "2",
+        "source": "template_answer_region",
+        "region_index": 0,
+        "region_bbox_1000": [
+         180,
+         450,
+         520,
+         600
+        ],
+        "label_text": "Q2",
+        "label_bbox": [
+         39,
+         190,
+         95,
+         229
+        ],
+        "label_fully_visible": true,
+        "label_left_of_region": true,
+        "label_at_printed_question_number": true,
+        "fixed_position_overwrite_allowed": false,
+        "foreground_preserved": true,
+        "label_opacity": 1.0,
+        "label_style": "blue-hollow-box-v2",
+        "label_background_opacity": 0,
+        "label_border_width_px": 1,
+        "orientation": "horizontal",
+        "placement_offset_px": [
+         0,
+         0
+        ],
+        "placement_mode": "safe_whitespace",
+        "target_anchor_px": [
+         108,
+         210.0
+        ],
+        "connector_line": [
+         [
+          96,
+          209
+         ],
+         [
+          107,
+          210
+         ]
+        ]
+       },
+       {
+        "question_number": "3",
+        "source": "template_answer_region",
+        "region_index": 0,
+        "region_bbox_1000": [
+         620,
+         720,
+         950,
+         880
+        ],
+        "label_text": "Q3",
+        "label_bbox": [
+         303,
+         300,
+         359,
+         339
+        ],
+        "label_fully_visible": true,
+        "label_left_of_region": true,
+        "label_at_printed_question_number": true,
+        "fixed_position_overwrite_allowed": false,
+        "foreground_preserved": true,
+        "label_opacity": 1.0,
+        "label_style": "blue-hollow-box-v2",
+        "label_background_opacity": 0,
+        "label_border_width_px": 1,
+        "orientation": "horizontal",
+        "placement_offset_px": [
+         0,
+         0
+        ],
+        "placement_mode": "safe_whitespace",
+        "target_anchor_px": [
+         372,
+         320.0
+        ],
+        "connector_line": [
+         [
+          360,
+          319
+         ],
+         [
+          371,
+          320
+         ]
+        ]
+       }
+      ],
+      "separator_lines": [],
+      "label_layout": {
+       "version": "non-occluding-labels-v1",
+       "source_offset_px": [
+        0,
+        0
+       ],
+       "source_size_px": [
+        600,
+        400
+       ],
+       "source_rect_px": [
+        0,
+        0,
+        600,
+        400
+       ],
+       "foreground_preserved": true,
+       "foreground_preserved_outside_labels": true,
+       "foreground_preserved_outside_translucent_labels": true,
+       "source_pixels_recoverable": false
+      },
+      "crop_left_px": 0,
+      "crop_right_px": 600
+     }
+    ],
+    "question_anchor_count": 3,
+    "template_handwriting_exemptions": 3,
+    "template_answer_regions": 3,
+    "template_text_removed": true,
+    "template_baseline_prewhitened": false,
+    "answer_source_complete": true,
+    "qwen37_label_contract": {
+     "version": "qwen37-blue-box-labels-v6",
+     "label_style": "blue-hollow-box-v2",
+     "slot_orientation_policy": null,
+     "label_boxes": true,
+     "label_box_color": "blue",
+     "label_background_opacity": 0,
+     "foreground_preserved": true,
+     "foreground_preserved_outside_labels": true,
+     "foreground_preserved_outside_translucent_labels": true,
+     "source_pixels_recoverable": false,
+     "question_number_boxes": false,
+     "answer_region_overlays": false,
+     "labels_left_of_regions": true,
+     "labels_fully_visible": true
+    },
+    "blank_label_safety": {
+     "version": "blank-label-foreground-safe-v1",
+     "expected_region_labels": 3,
+     "placed_region_labels": 3,
+     "all_regions_labeled": true,
+     "foreground_preserved": true,
+     "foreground_preserved_outside_fixed_solve_labels": true,
+     "foreground_preserved_outside_translucent_labels": true,
+     "foreground_preserved_outside_labels": true
+    }
+   }
+  },
+  "layout_unchanged": true,
+  "output_dir_exists": true,
+  "files_left": 1
+ },
+ "fill_marked_two_columns": {
+  "result": {
+   "page_type_id": "page_1",
+   "evidence_png_sha256": [
+    "334dc8bd494f83fa86a4596492d374b1e651b333c31d672b093adf5f0a318de9",
+    "8c18a50e5e144d237a2c2d457cafb6caef742cf75c187dacda82231dce4ec8c2"
+   ],
+   "evidence_path_is_first": true,
+   "question_numbers": [
+    "1",
+    "2",
+    "3"
+   ],
+   "blank_question_numbers": [],
+   "diagnostics": {
+    "selected_page_type_id": "page_1",
+    "template_width": 600,
+    "template_height": 400,
+    "evidence_width": 600,
+    "evidence_height": 400,
+    "ownership": "full_column_difference",
+    "difference_algorithm": "difference-v2-cleaner",
+    "evidence_columns": [
+     {
+      "column_index": 1,
+      "sheet_id": "column_01",
+      "width": 300,
+      "height": 400,
+      "question_numbers": [
+       "1",
+       "2"
+      ],
+      "label_placements": [
+       {
+        "question_number": "1",
+        "source": "template_answer_region",
+        "region_index": 0,
+        "region_bbox_1000": [
+         300,
+         120,
+         720,
+         260
+        ],
+        "label_text": "Q1",
+        "label_bbox": [
+         111,
+         56,
+         167,
+         95
+        ],
+        "label_fully_visible": true,
+        "label_left_of_region": true,
+        "label_at_printed_question_number": true,
+        "fixed_position_overwrite_allowed": false,
+        "foreground_preserved": true,
+        "label_opacity": 1.0,
+        "label_style": "blue-hollow-box-v2",
+        "label_background_opacity": 0,
+        "label_border_width_px": 1,
+        "orientation": "horizontal",
+        "placement_offset_px": [
+         0,
+         0
+        ],
+        "placement_mode": "safe_whitespace",
+        "target_anchor_px": [
+         180,
+         76.0
+        ],
+        "connector_line": [
+         [
+          168,
+          75
+         ],
+         [
+          179,
+          76
+         ]
+        ]
+       },
+       {
+        "question_number": "2",
+        "source": "template_answer_region",
+        "region_index": 0,
+        "region_bbox_1000": [
+         180,
+         450,
+         520,
+         600
+        ],
+        "label_text": "Q2",
+        "label_bbox": [
+         39,
+         190,
+         95,
+         229
+        ],
+        "label_fully_visible": true,
+        "label_left_of_region": true,
+        "label_at_printed_question_number": true,
+        "fixed_position_overwrite_allowed": false,
+        "foreground_preserved": true,
+        "label_opacity": 1.0,
+        "label_style": "blue-hollow-box-v2",
+        "label_background_opacity": 0,
+        "label_border_width_px": 1,
+        "orientation": "horizontal",
+        "placement_offset_px": [
+         0,
+         0
+        ],
+        "placement_mode": "safe_whitespace",
+        "target_anchor_px": [
+         108,
+         210.0
+        ],
+        "connector_line": [
+         [
+          96,
+          209
+         ],
+         [
+          107,
+          210
+         ]
+        ]
+       }
+      ],
+      "separator_lines": [],
+      "label_layout": {
+       "version": "non-occluding-labels-v1",
+       "source_offset_px": [
+        0,
+        0
+       ],
+       "source_size_px": [
+        300,
+        400
+       ],
+       "source_rect_px": [
+        0,
+        0,
+        300,
+        400
+       ],
+       "foreground_preserved": true,
+       "foreground_preserved_outside_labels": true,
+       "foreground_preserved_outside_translucent_labels": true,
+       "source_pixels_recoverable": false
+      },
+      "crop_left_px": 0,
+      "crop_right_px": 300
+     },
+     {
+      "column_index": 2,
+      "sheet_id": "column_02",
+      "width": 300,
+      "height": 400,
+      "question_numbers": [
+       "1",
+       "2",
+       "3"
+      ],
+      "label_placements": [
+       {
+        "question_number": "1",
+        "source": "template_answer_region",
+        "region_index": 0,
+        "region_bbox_1000": [
+         300,
+         120,
+         720,
+         260
+        ],
+        "label_text": "Q1",
+        "label_bbox": [
+         144,
+         56,
+         200,
+         95
+        ],
+        "label_fully_visible": true,
+        "label_left_of_region": false,
+        "label_at_printed_question_number": false,
+        "fixed_position_overwrite_allowed": false,
+        "foreground_preserved": true,
+        "label_opacity": 1.0,
+        "label_style": "blue-hollow-box-v2",
+        "label_background_opacity": 0,
+        "label_border_width_px": 1,
+        "orientation": "horizontal",
+        "placement_offset_px": [
+         213,
+         0
+        ],
+        "placement_mode": "safe_whitespace",
+        "target_anchor_px": [
+         0,
+         76.0
+        ],
+        "connector_line": [
+         [
+          143,
+          75
+         ],
+         [
+          132,
+          76
+         ]
+        ]
+       },
+       {
+        "question_number": "2",
+        "source": "template_answer_region",
+        "region_index": 0,
+        "region_bbox_1000": [
+         180,
+         450,
+         520,
+         600
+        ],
+        "label_text": "Q2",
+        "label_bbox": [
+         24,
+         190,
+         80,
+         229
+        ],
+        "label_fully_visible": true,
+        "label_left_of_region": false,
+        "label_at_printed_question_number": false,
+        "fixed_position_overwrite_allowed": false,
+        "foreground_preserved": true,
+        "label_opacity": 1.0,
+        "label_style": "blue-hollow-box-v2",
+        "label_background_opacity": 0,
+        "label_border_width_px": 1,
+        "orientation": "horizontal",
+        "placement_offset_px": [
+         93,
+         0
+        ],
+        "placement_mode": "safe_whitespace",
+        "target_anchor_px": [
+         0,
+         210.0
+        ],
+        "connector_line": [
+         [
+          23,
+          209
+         ],
+         [
+          12,
+          210
+         ]
+        ]
+       },
+       {
+        "question_number": "3",
+        "source": "template_answer_region",
+        "region_index": 0,
+        "region_bbox_1000": [
+         620,
+         720,
+         950,
+         880
+        ],
+        "label_text": "Q3",
+        "label_bbox": [
+         3,
+         300,
+         59,
+         339
+        ],
+        "label_fully_visible": true,
+        "label_left_of_region": true,
+        "label_at_printed_question_number": true,
+        "fixed_position_overwrite_allowed": false,
+        "foreground_preserved": true,
+        "label_opacity": 1.0,
+        "label_style": "blue-hollow-box-v2",
+        "label_background_opacity": 0,
+        "label_border_width_px": 1,
+        "orientation": "horizontal",
+        "placement_offset_px": [
+         0,
+         0
+        ],
+        "placement_mode": "safe_whitespace",
+        "target_anchor_px": [
+         72,
+         320.0
+        ],
+        "connector_line": [
+         [
+          60,
+          319
+         ],
+         [
+          71,
+          320
+         ]
+        ]
+       }
+      ],
+      "separator_lines": [],
+      "label_layout": {
+       "version": "non-occluding-labels-v1",
+       "source_offset_px": [
+        0,
+        0
+       ],
+       "source_size_px": [
+        300,
+        400
+       ],
+       "source_rect_px": [
+        0,
+        0,
+        300,
+        400
+       ],
+       "foreground_preserved": true,
+       "foreground_preserved_outside_labels": true,
+       "foreground_preserved_outside_translucent_labels": true,
+       "source_pixels_recoverable": false
+      },
+      "crop_left_px": 300,
+      "crop_right_px": 600
+     }
+    ],
+    "question_anchor_count": 3,
+    "template_handwriting_exemptions": 3,
+    "template_answer_regions": 3,
+    "template_text_removed": true,
+    "template_baseline_prewhitened": false,
+    "answer_source_complete": true,
+    "qwen37_label_contract": {
+     "version": "qwen37-blue-box-labels-v6",
+     "label_style": "blue-hollow-box-v2",
+     "slot_orientation_policy": null,
+     "label_boxes": true,
+     "label_box_color": "blue",
+     "label_background_opacity": 0,
+     "foreground_preserved": true,
+     "foreground_preserved_outside_labels": true,
+     "foreground_preserved_outside_translucent_labels": true,
+     "source_pixels_recoverable": false,
+     "question_number_boxes": false,
+     "answer_region_overlays": false,
+     "labels_left_of_regions": false,
+     "labels_fully_visible": true
+    },
+    "blank_label_safety": {
+     "version": "blank-label-foreground-safe-v1",
+     "expected_region_labels": 5,
+     "placed_region_labels": 5,
+     "all_regions_labeled": true,
+     "foreground_preserved": true,
+     "foreground_preserved_outside_fixed_solve_labels": true,
+     "foreground_preserved_outside_translucent_labels": true,
+     "foreground_preserved_outside_labels": true
+    },
+    "layout_context": {},
+    "frozen_columns": [
+     {
+      "column_index": 1,
+      "x1_1000": 0,
+      "x2_1000": 500
+     },
+     {
+      "column_index": 2,
+      "x1_1000": 500,
+      "x2_1000": 1000
+     }
+    ]
+   }
+  },
+  "layout_unchanged": true,
+  "output_dir_exists": true,
+  "files_left": 2
+ },
+ "solve_with_regions_two_columns": {
+  "result": {
+   "page_type_id": "page_1",
+   "evidence_png_sha256": [
+    "334dc8bd494f83fa86a4596492d374b1e651b333c31d672b093adf5f0a318de9",
+    "8c18a50e5e144d237a2c2d457cafb6caef742cf75c187dacda82231dce4ec8c2"
+   ],
+   "evidence_path_is_first": true,
+   "question_numbers": [
+    "1",
+    "2",
+    "3"
+   ],
+   "blank_question_numbers": [],
+   "diagnostics": {
+    "selected_page_type_id": "page_1",
+    "template_width": 600,
+    "template_height": 400,
+    "evidence_width": 600,
+    "evidence_height": 400,
+    "ownership": "full_column_difference",
+    "difference_algorithm": "difference-v2-cleaner",
+    "evidence_columns": [
+     {
+      "column_index": 1,
+      "sheet_id": "column_01",
+      "width": 300,
+      "height": 400,
+      "question_numbers": [
+       "1",
+       "2"
+      ],
+      "label_placements": [
+       {
+        "question_number": "1",
+        "source": "template_answer_region",
+        "region_index": 0,
+        "region_bbox_1000": [
+         300,
+         120,
+         720,
+         260
+        ],
+        "label_text": "Q1",
+        "label_bbox": [
+         111,
+         56,
+         167,
+         95
+        ],
+        "label_fully_visible": true,
+        "label_left_of_region": true,
+        "label_at_printed_question_number": true,
+        "fixed_position_overwrite_allowed": false,
+        "foreground_preserved": true,
+        "label_opacity": 1.0,
+        "label_style": "blue-hollow-box-v2",
+        "label_background_opacity": 0,
+        "label_border_width_px": 1,
+        "orientation": "horizontal",
+        "placement_offset_px": [
+         0,
+         0
+        ],
+        "placement_mode": "safe_whitespace",
+        "target_anchor_px": [
+         180,
+         76.0
+        ],
+        "connector_line": [
+         [
+          168,
+          75
+         ],
+         [
+          179,
+          76
+         ]
+        ]
+       },
+       {
+        "question_number": "2",
+        "source": "template_answer_region",
+        "region_index": 0,
+        "region_bbox_1000": [
+         180,
+         450,
+         520,
+         600
+        ],
+        "label_text": "Q2",
+        "label_bbox": [
+         39,
+         190,
+         95,
+         229
+        ],
+        "label_fully_visible": true,
+        "label_left_of_region": true,
+        "label_at_printed_question_number": true,
+        "fixed_position_overwrite_allowed": false,
+        "foreground_preserved": true,
+        "label_opacity": 1.0,
+        "label_style": "blue-hollow-box-v2",
+        "label_background_opacity": 0,
+        "label_border_width_px": 1,
+        "orientation": "horizontal",
+        "placement_offset_px": [
+         0,
+         0
+        ],
+        "placement_mode": "safe_whitespace",
+        "target_anchor_px": [
+         108,
+         210.0
+        ],
+        "connector_line": [
+         [
+          96,
+          209
+         ],
+         [
+          107,
+          210
+         ]
+        ]
+       }
+      ],
+      "separator_lines": [],
+      "label_layout": {
+       "version": "non-occluding-labels-v1",
+       "source_offset_px": [
+        0,
+        0
+       ],
+       "source_size_px": [
+        300,
+        400
+       ],
+       "source_rect_px": [
+        0,
+        0,
+        300,
+        400
+       ],
+       "foreground_preserved": true,
+       "foreground_preserved_outside_labels": true,
+       "foreground_preserved_outside_translucent_labels": true,
+       "source_pixels_recoverable": false
+      },
+      "crop_left_px": 0,
+      "crop_right_px": 300
+     },
+     {
+      "column_index": 2,
+      "sheet_id": "column_02",
+      "width": 300,
+      "height": 400,
+      "question_numbers": [
+       "1",
+       "2",
+       "3"
+      ],
+      "label_placements": [
+       {
+        "question_number": "1",
+        "source": "template_answer_region",
+        "region_index": 0,
+        "region_bbox_1000": [
+         300,
+         120,
+         720,
+         260
+        ],
+        "label_text": "Q1",
+        "label_bbox": [
+         144,
+         56,
+         200,
+         95
+        ],
+        "label_fully_visible": true,
+        "label_left_of_region": false,
+        "label_at_printed_question_number": false,
+        "fixed_position_overwrite_allowed": false,
+        "foreground_preserved": true,
+        "label_opacity": 1.0,
+        "label_style": "blue-hollow-box-v2",
+        "label_background_opacity": 0,
+        "label_border_width_px": 1,
+        "orientation": "horizontal",
+        "placement_offset_px": [
+         213,
+         0
+        ],
+        "placement_mode": "safe_whitespace",
+        "target_anchor_px": [
+         0,
+         76.0
+        ],
+        "connector_line": [
+         [
+          143,
+          75
+         ],
+         [
+          132,
+          76
+         ]
+        ]
+       },
+       {
+        "question_number": "2",
+        "source": "template_answer_region",
+        "region_index": 0,
+        "region_bbox_1000": [
+         180,
+         450,
+         520,
+         600
+        ],
+        "label_text": "Q2",
+        "label_bbox": [
+         24,
+         190,
+         80,
+         229
+        ],
+        "label_fully_visible": true,
+        "label_left_of_region": false,
+        "label_at_printed_question_number": false,
+        "fixed_position_overwrite_allowed": false,
+        "foreground_preserved": true,
+        "label_opacity": 1.0,
+        "label_style": "blue-hollow-box-v2",
+        "label_background_opacity": 0,
+        "label_border_width_px": 1,
+        "orientation": "horizontal",
+        "placement_offset_px": [
+         93,
+         0
+        ],
+        "placement_mode": "safe_whitespace",
+        "target_anchor_px": [
+         0,
+         210.0
+        ],
+        "connector_line": [
+         [
+          23,
+          209
+         ],
+         [
+          12,
+          210
+         ]
+        ]
+       },
+       {
+        "question_number": "3",
+        "source": "template_answer_region",
+        "region_index": 0,
+        "region_bbox_1000": [
+         620,
+         720,
+         950,
+         880
+        ],
+        "label_text": "Q3",
+        "label_bbox": [
+         3,
+         300,
+         59,
+         339
+        ],
+        "label_fully_visible": true,
+        "label_left_of_region": true,
+        "label_at_printed_question_number": true,
+        "fixed_position_overwrite_allowed": false,
+        "foreground_preserved": true,
+        "label_opacity": 1.0,
+        "label_style": "blue-hollow-box-v2",
+        "label_background_opacity": 0,
+        "label_border_width_px": 1,
+        "orientation": "horizontal",
+        "placement_offset_px": [
+         0,
+         0
+        ],
+        "placement_mode": "safe_whitespace",
+        "target_anchor_px": [
+         72,
+         320.0
+        ],
+        "connector_line": [
+         [
+          60,
+          319
+         ],
+         [
+          71,
+          320
+         ]
+        ]
+       }
+      ],
+      "separator_lines": [],
+      "label_layout": {
+       "version": "non-occluding-labels-v1",
+       "source_offset_px": [
+        0,
+        0
+       ],
+       "source_size_px": [
+        300,
+        400
+       ],
+       "source_rect_px": [
+        0,
+        0,
+        300,
+        400
+       ],
+       "foreground_preserved": true,
+       "foreground_preserved_outside_labels": true,
+       "foreground_preserved_outside_translucent_labels": true,
+       "source_pixels_recoverable": false
+      },
+      "crop_left_px": 300,
+      "crop_right_px": 600
+     }
+    ],
+    "question_anchor_count": 3,
+    "template_handwriting_exemptions": 3,
+    "template_answer_regions": 3,
+    "template_text_removed": true,
+    "template_baseline_prewhitened": false,
+    "answer_source_complete": true,
+    "qwen37_label_contract": {
+     "version": "qwen37-blue-box-labels-v6",
+     "label_style": "blue-hollow-box-v2",
+     "slot_orientation_policy": null,
+     "label_boxes": true,
+     "label_box_color": "blue",
+     "label_background_opacity": 0,
+     "foreground_preserved": true,
+     "foreground_preserved_outside_labels": true,
+     "foreground_preserved_outside_translucent_labels": true,
+     "source_pixels_recoverable": false,
+     "question_number_boxes": false,
+     "answer_region_overlays": false,
+     "labels_left_of_regions": false,
+     "labels_fully_visible": true
+    },
+    "blank_label_safety": {
+     "version": "blank-label-foreground-safe-v1",
+     "expected_region_labels": 5,
+     "placed_region_labels": 5,
+     "all_regions_labeled": true,
+     "foreground_preserved": true,
+     "foreground_preserved_outside_fixed_solve_labels": true,
+     "foreground_preserved_outside_translucent_labels": true,
+     "foreground_preserved_outside_labels": true
+    },
+    "layout_context": {},
+    "frozen_columns": [
+     {
+      "column_index": 1,
+      "x1_1000": 0,
+      "x2_1000": 500
+     },
+     {
+      "column_index": 2,
+      "x1_1000": 500,
+      "x2_1000": 1000
+     }
+    ]
+   }
+  },
+  "layout_unchanged": true,
+  "output_dir_exists": true,
+  "files_left": 2
+ },
+ "solve_printed_numbers_one_column": {
+  "result": {
+   "page_type_id": "page_1",
+   "evidence_png_sha256": [
+    "75e94fe3c19feac8e5c532d5be79041b2a565b146a4dcbeb5f5ce8592ce9d744"
+   ],
+   "evidence_path_is_first": true,
+   "question_numbers": [
+    "1",
+    "2",
+    "3"
+   ],
+   "blank_question_numbers": [],
+   "diagnostics": {
+    "selected_page_type_id": "page_1",
+    "template_width": 600,
+    "template_height": 400,
+    "evidence_width": 693,
+    "evidence_height": 400,
+    "ownership": "full_column_difference",
+    "difference_algorithm": "difference-v2-cleaner",
+    "evidence_columns": [
+     {
+      "column_index": 1,
+      "sheet_id": "column_01",
+      "width": 693,
+      "height": 400,
+      "question_numbers": [
+       "1",
+       "2",
+       "3"
+      ],
+      "label_placements": [
+       {
+        "question_number": "1",
+        "source": "printed_question_number",
+        "question_number_bbox": [
+         15,
+         45,
+         70,
+         80
+        ],
+        "label_text": "Q1",
+        "label_bbox": [
+         12,
+         6,
+         68,
+         45
+        ],
+        "label_fully_visible": true,
+        "label_left_of_region": true,
+        "label_at_printed_question_number": false,
+        "fixed_position_overwrite_allowed": false,
+        "foreground_preserved": true,
+        "label_opacity": 1.0,
+        "label_style": "blue-hollow-box-v2",
+        "label_background_opacity": 0,
+        "label_border_width_px": 1,
+        "orientation": "horizontal",
+        "placement_offset_px": [
+         26,
+         0
+        ],
+        "placement_mode": "external_rail",
+        "target_anchor_px": [
+         135,
+         25.0
+        ],
+        "connector_line": [
+         [
+          69,
+          25
+         ],
+         [
+          135,
+          25
+         ]
+        ]
+       },
+       {
+        "question_number": "2",
+        "source": "printed_question_number",
+        "question_number_bbox": [
+         15,
+         370,
+         70,
+         405
+        ],
+        "label_text": "Q2",
+        "label_bbox": [
+         12,
+         136,
+         68,
+         175
+        ],
+        "label_fully_visible": true,
+        "label_left_of_region": true,
+        "label_at_printed_question_number": false,
+        "fixed_position_overwrite_allowed": false,
+        "foreground_preserved": true,
+        "label_opacity": 1.0,
+        "label_style": "blue-hollow-box-v2",
+        "label_background_opacity": 0,
+        "label_border_width_px": 1,
+        "orientation": "horizontal",
+        "placement_offset_px": [
+         26,
+         0
+        ],
+        "placement_mode": "external_rail",
+        "target_anchor_px": [
+         135,
+         155.0
+        ],
+        "connector_line": [
+         [
+          69,
+          155
+         ],
+         [
+          135,
+          155
+         ]
+        ]
+       },
+       {
+        "question_number": "3",
+        "source": "printed_question_number",
+        "question_number_bbox": [
+         515,
+         670,
+         570,
+         705
+        ],
+        "label_text": "Q3",
+        "label_bbox": [
+         12,
+         256,
+         68,
+         295
+        ],
+        "label_fully_visible": true,
+        "label_left_of_region": true,
+        "label_at_printed_question_number": false,
+        "fixed_position_overwrite_allowed": false,
+        "foreground_preserved": true,
+        "label_opacity": 1.0,
+        "label_style": "blue-hollow-box-v2",
+        "label_background_opacity": 0,
+        "label_border_width_px": 1,
+        "orientation": "horizontal",
+        "placement_offset_px": [
+         -274,
+         0
+        ],
+        "placement_mode": "external_rail",
+        "target_anchor_px": [
+         435,
+         275.0
+        ],
+        "connector_line": [
+         [
+          69,
+          275
+         ],
+         [
+          435,
+          275
+         ]
+        ]
+       }
+      ],
+      "separator_lines": [],
+      "label_layout": {
+       "version": "non-occluding-labels-v1",
+       "source_offset_px": [
+        93,
+        0
+       ],
+       "source_size_px": [
+        600,
+        400
+       ],
+       "source_rect_px": [
+        93,
+        0,
+        693,
+        400
+       ],
+       "foreground_preserved": true,
+       "foreground_preserved_outside_labels": true,
+       "foreground_preserved_outside_translucent_labels": true,
+       "source_pixels_recoverable": false
+      },
+      "crop_left_px": 0,
+      "crop_right_px": 600
+     }
+    ],
+    "question_anchor_count": 3,
+    "template_handwriting_exemptions": 0,
+    "template_answer_regions": 0,
+    "template_text_removed": true,
+    "template_baseline_prewhitened": false,
+    "answer_source_complete": true,
+    "qwen37_label_contract": {
+     "version": "qwen37-blue-box-labels-v6",
+     "label_style": "blue-hollow-box-v2",
+     "slot_orientation_policy": null,
+     "label_boxes": true,
+     "label_box_color": "blue",
+     "label_background_opacity": 0,
+     "foreground_preserved": true,
+     "foreground_preserved_outside_labels": true,
+     "foreground_preserved_outside_translucent_labels": true,
+     "source_pixels_recoverable": false,
+     "question_number_boxes": false,
+     "answer_region_overlays": false,
+     "labels_left_of_regions": true,
+     "labels_fully_visible": true
+    },
+    "printed_solve_label_policy": {
+     "version": "printed-number-safe-label-v2",
+     "expected_labels": 3,
+     "placed_labels": 3,
+     "fixed_position_overwrite_allowed": false,
+     "coordinate_mapping": "evidence_columns.label_layout"
+    }
+   }
+  },
+  "layout_unchanged": true,
+  "output_dir_exists": true,
+  "files_left": 1
+ },
+ "solve_printed_numbers_two_columns": {
+  "result": {
+   "page_type_id": "page_1",
+   "evidence_png_sha256": [
+    "2aa230699654d17241c656aaf6c2d368cf58b8d3b8b68e23295e0212b08b709b",
+    "14da57f3b15f589a3e934293a3a3d0ef96359de207599f3a957a194ebd3c3dcc"
+   ],
+   "evidence_path_is_first": true,
+   "question_numbers": [
+    "1",
+    "2",
+    "3"
+   ],
+   "blank_question_numbers": [],
+   "diagnostics": {
+    "selected_page_type_id": "page_1",
+    "template_width": 600,
+    "template_height": 400,
+    "evidence_width": 786,
+    "evidence_height": 400,
+    "ownership": "full_column_difference",
+    "difference_algorithm": "difference-v2-cleaner",
+    "evidence_columns": [
+     {
+      "column_index": 1,
+      "sheet_id": "column_01",
+      "width": 393,
+      "height": 400,
+      "question_numbers": [
+       "1",
+       "2"
+      ],
+      "label_placements": [
+       {
+        "question_number": "1",
+        "source": "printed_question_number",
+        "question_number_bbox": [
+         15,
+         45,
+         70,
+         80
+        ],
+        "label_text": "Q1",
+        "label_bbox": [
+         12,
+         6,
+         68,
+         45
+        ],
+        "label_fully_visible": true,
+        "label_left_of_region": true,
+        "label_at_printed_question_number": false,
+        "fixed_position_overwrite_allowed": false,
+        "foreground_preserved": true,
+        "label_opacity": 1.0,
+        "label_style": "blue-hollow-box-v2",
+        "label_background_opacity": 0,
+        "label_border_width_px": 1,
+        "orientation": "horizontal",
+        "placement_offset_px": [
+         26,
+         0
+        ],
+        "placement_mode": "external_rail",
+        "target_anchor_px": [
+         135,
+         25.0
+        ],
+        "connector_line": [
+         [
+          69,
+          25
+         ],
+         [
+          135,
+          25
+         ]
+        ]
+       },
+       {
+        "question_number": "2",
+        "source": "printed_question_number",
+        "question_number_bbox": [
+         15,
+         370,
+         70,
+         405
+        ],
+        "label_text": "Q2",
+        "label_bbox": [
+         12,
+         136,
+         68,
+         175
+        ],
+        "label_fully_visible": true,
+        "label_left_of_region": true,
+        "label_at_printed_question_number": false,
+        "fixed_position_overwrite_allowed": false,
+        "foreground_preserved": true,
+        "label_opacity": 1.0,
+        "label_style": "blue-hollow-box-v2",
+        "label_background_opacity": 0,
+        "label_border_width_px": 1,
+        "orientation": "horizontal",
+        "placement_offset_px": [
+         26,
+         0
+        ],
+        "placement_mode": "external_rail",
+        "target_anchor_px": [
+         135,
+         155.0
+        ],
+        "connector_line": [
+         [
+          69,
+          155
+         ],
+         [
+          135,
+          155
+         ]
+        ]
+       }
+      ],
+      "separator_lines": [],
+      "label_layout": {
+       "version": "non-occluding-labels-v1",
+       "source_offset_px": [
+        93,
+        0
+       ],
+       "source_size_px": [
+        300,
+        400
+       ],
+       "source_rect_px": [
+        93,
+        0,
+        393,
+        400
+       ],
+       "foreground_preserved": true,
+       "foreground_preserved_outside_labels": true,
+       "foreground_preserved_outside_translucent_labels": true,
+       "source_pixels_recoverable": false
+      },
+      "crop_left_px": 0,
+      "crop_right_px": 300
+     },
+     {
+      "column_index": 2,
+      "sheet_id": "column_02",
+      "width": 393,
+      "height": 400,
+      "question_numbers": [
+       "3"
+      ],
+      "label_placements": [
+       {
+        "question_number": "3",
+        "source": "printed_question_number",
+        "question_number_bbox": [
+         515,
+         670,
+         570,
+         705
+        ],
+        "label_text": "Q3",
+        "label_bbox": [
+         12,
+         256,
+         68,
+         295
+        ],
+        "label_fully_visible": true,
+        "label_left_of_region": true,
+        "label_at_printed_question_number": false,
+        "fixed_position_overwrite_allowed": false,
+        "foreground_preserved": true,
+        "label_opacity": 1.0,
+        "label_style": "blue-hollow-box-v2",
+        "label_background_opacity": 0,
+        "label_border_width_px": 1,
+        "orientation": "horizontal",
+        "placement_offset_px": [
+         26,
+         0
+        ],
+        "placement_mode": "external_rail",
+        "target_anchor_px": [
+         135,
+         275.0
+        ],
+        "connector_line": [
+         [
+          69,
+          275
+         ],
+         [
+          135,
+          275
+         ]
+        ]
+       }
+      ],
+      "separator_lines": [],
+      "label_layout": {
+       "version": "non-occluding-labels-v1",
+       "source_offset_px": [
+        93,
+        0
+       ],
+       "source_size_px": [
+        300,
+        400
+       ],
+       "source_rect_px": [
+        93,
+        0,
+        393,
+        400
+       ],
+       "foreground_preserved": true,
+       "foreground_preserved_outside_labels": true,
+       "foreground_preserved_outside_translucent_labels": true,
+       "source_pixels_recoverable": false
+      },
+      "crop_left_px": 300,
+      "crop_right_px": 600
+     }
+    ],
+    "question_anchor_count": 3,
+    "template_handwriting_exemptions": 0,
+    "template_answer_regions": 0,
+    "template_text_removed": true,
+    "template_baseline_prewhitened": false,
+    "answer_source_complete": true,
+    "qwen37_label_contract": {
+     "version": "qwen37-blue-box-labels-v6",
+     "label_style": "blue-hollow-box-v2",
+     "slot_orientation_policy": null,
+     "label_boxes": true,
+     "label_box_color": "blue",
+     "label_background_opacity": 0,
+     "foreground_preserved": true,
+     "foreground_preserved_outside_labels": true,
+     "foreground_preserved_outside_translucent_labels": true,
+     "source_pixels_recoverable": false,
+     "question_number_boxes": false,
+     "answer_region_overlays": false,
+     "labels_left_of_regions": true,
+     "labels_fully_visible": true
+    },
+    "printed_solve_label_policy": {
+     "version": "printed-number-safe-label-v2",
+     "expected_labels": 3,
+     "placed_labels": 3,
+     "fixed_position_overwrite_allowed": false,
+     "coordinate_mapping": "evidence_columns.label_layout"
+    },
+    "layout_context": {},
+    "frozen_columns": [
+     {
+      "column_index": 1,
+      "x1_1000": 0,
+      "x2_1000": 500
+     },
+     {
+      "column_index": 2,
+      "x1_1000": 500,
+      "x2_1000": 1000
+     }
+    ]
+   }
+  },
+  "layout_unchanged": true,
+  "output_dir_exists": true,
+  "files_left": 2
+ },
+ "legacy_solve_fallback": {
+  "result": {
+   "page_type_id": "page_1",
+   "evidence_png_sha256": [
+    "33e3181020f46068ebeef29a9da63ab019e6d81b477d0e6c39dfed679703af77"
+   ],
+   "evidence_path_is_first": true,
+   "question_numbers": [
+    "1",
+    "2",
+    "3"
+   ],
+   "blank_question_numbers": [],
+   "diagnostics": {
+    "legacy_solve_label_policy": {
+     "version": "pre-printed-solve-artifact-v1",
+     "question_numbers": [
+      "2"
+     ],
+     "reason": "persisted_artifact_without_printed_solve_policy_or_number_box"
+    },
+    "selected_page_type_id": "page_1",
+    "template_width": 600,
+    "template_height": 400,
+    "evidence_width": 693,
+    "evidence_height": 400,
+    "ownership": "full_column_difference",
+    "difference_algorithm": "difference-v2-cleaner",
+    "evidence_columns": [
+     {
+      "column_index": 1,
+      "sheet_id": "column_01",
+      "width": 693,
+      "height": 400,
+      "question_numbers": [
+       "1",
+       "3"
+      ],
+      "label_placements": [
+       {
+        "question_number": "1",
+        "source": "printed_question_number",
+        "question_number_bbox": [
+         15,
+         45,
+         70,
+         80
+        ],
+        "label_text": "Q1",
+        "label_bbox": [
+         12,
+         6,
+         68,
+         45
+        ],
+        "label_fully_visible": true,
+        "label_left_of_region": true,
+        "label_at_printed_question_number": false,
+        "fixed_position_overwrite_allowed": false,
+        "foreground_preserved": true,
+        "label_opacity": 1.0,
+        "label_style": "blue-hollow-box-v2",
+        "label_background_opacity": 0,
+        "label_border_width_px": 1,
+        "orientation": "horizontal",
+        "placement_offset_px": [
+         26,
+         0
+        ],
+        "placement_mode": "external_rail",
+        "target_anchor_px": [
+         135,
+         25.0
+        ],
+        "connector_line": [
+         [
+          69,
+          25
+         ],
+         [
+          135,
+          25
+         ]
+        ]
+       },
+       {
+        "question_number": "3",
+        "source": "printed_question_number",
+        "question_number_bbox": [
+         515,
+         670,
+         570,
+         705
+        ],
+        "label_text": "Q3",
+        "label_bbox": [
+         12,
+         256,
+         68,
+         295
+        ],
+        "label_fully_visible": true,
+        "label_left_of_region": true,
+        "label_at_printed_question_number": false,
+        "fixed_position_overwrite_allowed": false,
+        "foreground_preserved": true,
+        "label_opacity": 1.0,
+        "label_style": "blue-hollow-box-v2",
+        "label_background_opacity": 0,
+        "label_border_width_px": 1,
+        "orientation": "horizontal",
+        "placement_offset_px": [
+         -274,
+         0
+        ],
+        "placement_mode": "external_rail",
+        "target_anchor_px": [
+         435,
+         275.0
+        ],
+        "connector_line": [
+         [
+          69,
+          275
+         ],
+         [
+          435,
+          275
+         ]
+        ]
+       }
+      ],
+      "separator_lines": [],
+      "label_layout": {
+       "version": "non-occluding-labels-v1",
+       "source_offset_px": [
+        93,
+        0
+       ],
+       "source_size_px": [
+        600,
+        400
+       ],
+       "source_rect_px": [
+        93,
+        0,
+        693,
+        400
+       ],
+       "foreground_preserved": true,
+       "foreground_preserved_outside_labels": true,
+       "foreground_preserved_outside_translucent_labels": true,
+       "source_pixels_recoverable": false
+      },
+      "crop_left_px": 0,
+      "crop_right_px": 600
+     }
+    ],
+    "question_anchor_count": 3,
+    "template_handwriting_exemptions": 0,
+    "template_answer_regions": 0,
+    "template_text_removed": true,
+    "template_baseline_prewhitened": false,
+    "answer_source_complete": true,
+    "qwen37_label_contract": {
+     "version": "qwen37-blue-box-labels-v6",
+     "label_style": "blue-hollow-box-v2",
+     "slot_orientation_policy": null,
+     "label_boxes": true,
+     "label_box_color": "blue",
+     "label_background_opacity": 0,
+     "foreground_preserved": true,
+     "foreground_preserved_outside_labels": true,
+     "foreground_preserved_outside_translucent_labels": true,
+     "source_pixels_recoverable": false,
+     "question_number_boxes": false,
+     "answer_region_overlays": false,
+     "labels_left_of_regions": true,
+     "labels_fully_visible": true
+    },
+    "printed_solve_label_policy": {
+     "version": "printed-number-safe-label-v2",
+     "expected_labels": 2,
+     "placed_labels": 2,
+     "fixed_position_overwrite_allowed": false,
+     "coordinate_mapping": "evidence_columns.label_layout"
+    }
+   }
+  },
+  "layout_unchanged": true,
+  "output_dir_exists": true,
+  "files_left": 1
+ },
+ "prewhitened_baseline": {
+  "result": {
+   "page_type_id": "page_1",
+   "evidence_png_sha256": [
+    "6ce093d5c3a2869e4664d016c208bb8313e05c27301f4ca995b47c3d7ac8094d"
+   ],
+   "evidence_path_is_first": true,
+   "question_numbers": [
+    "1",
+    "2",
+    "3"
+   ],
+   "blank_question_numbers": [],
+   "diagnostics": {
+    "selected_page_type_id": "page_1",
+    "template_width": 600,
+    "template_height": 400,
+    "evidence_width": 600,
+    "evidence_height": 400,
+    "ownership": "full_column_difference",
+    "difference_algorithm": "difference-v2-cleaner",
+    "evidence_columns": [
+     {
+      "column_index": 1,
+      "sheet_id": "column_01",
+      "width": 600,
+      "height": 400,
+      "question_numbers": [
+       "1",
+       "2",
+       "3"
+      ],
+      "label_placements": [
+       {
+        "question_number": "1",
+        "source": "template_answer_region",
+        "region_index": 0,
+        "region_bbox_1000": [
+         300,
+         120,
+         720,
+         260
+        ],
+        "label_text": "Q1",
+        "label_bbox": [
+         111,
+         56,
+         167,
+         95
+        ],
+        "label_fully_visible": true,
+        "label_left_of_region": true,
+        "label_at_printed_question_number": true,
+        "fixed_position_overwrite_allowed": false,
+        "foreground_preserved": true,
+        "label_opacity": 1.0,
+        "label_style": "blue-hollow-box-v2",
+        "label_background_opacity": 0,
+        "label_border_width_px": 1,
+        "orientation": "horizontal",
+        "placement_offset_px": [
+         0,
+         0
+        ],
+        "placement_mode": "safe_whitespace",
+        "target_anchor_px": [
+         180,
+         76.0
+        ],
+        "connector_line": [
+         [
+          168,
+          75
+         ],
+         [
+          179,
+          76
+         ]
+        ]
+       },
+       {
+        "question_number": "2",
+        "source": "template_answer_region",
+        "region_index": 0,
+        "region_bbox_1000": [
+         180,
+         450,
+         520,
+         600
+        ],
+        "label_text": "Q2",
+        "label_bbox": [
+         39,
+         190,
+         95,
+         229
+        ],
+        "label_fully_visible": true,
+        "label_left_of_region": true,
+        "label_at_printed_question_number": true,
+        "fixed_position_overwrite_allowed": false,
+        "foreground_preserved": true,
+        "label_opacity": 1.0,
+        "label_style": "blue-hollow-box-v2",
+        "label_background_opacity": 0,
+        "label_border_width_px": 1,
+        "orientation": "horizontal",
+        "placement_offset_px": [
+         0,
+         0
+        ],
+        "placement_mode": "safe_whitespace",
+        "target_anchor_px": [
+         108,
+         210.0
+        ],
+        "connector_line": [
+         [
+          96,
+          209
+         ],
+         [
+          107,
+          210
+         ]
+        ]
+       },
+       {
+        "question_number": "3",
+        "source": "template_answer_region",
+        "region_index": 0,
+        "region_bbox_1000": [
+         620,
+         720,
+         950,
+         880
+        ],
+        "label_text": "Q3",
+        "label_bbox": [
+         303,
+         300,
+         359,
+         339
+        ],
+        "label_fully_visible": true,
+        "label_left_of_region": true,
+        "label_at_printed_question_number": true,
+        "fixed_position_overwrite_allowed": false,
+        "foreground_preserved": true,
+        "label_opacity": 1.0,
+        "label_style": "blue-hollow-box-v2",
+        "label_background_opacity": 0,
+        "label_border_width_px": 1,
+        "orientation": "horizontal",
+        "placement_offset_px": [
+         0,
+         0
+        ],
+        "placement_mode": "safe_whitespace",
+        "target_anchor_px": [
+         372,
+         320.0
+        ],
+        "connector_line": [
+         [
+          360,
+          319
+         ],
+         [
+          371,
+          320
+         ]
+        ]
+       }
+      ],
+      "separator_lines": [],
+      "label_layout": {
+       "version": "non-occluding-labels-v1",
+       "source_offset_px": [
+        0,
+        0
+       ],
+       "source_size_px": [
+        600,
+        400
+       ],
+       "source_rect_px": [
+        0,
+        0,
+        600,
+        400
+       ],
+       "foreground_preserved": true,
+       "foreground_preserved_outside_labels": true,
+       "foreground_preserved_outside_translucent_labels": true,
+       "source_pixels_recoverable": false
+      },
+      "crop_left_px": 0,
+      "crop_right_px": 600
+     }
+    ],
+    "question_anchor_count": 3,
+    "template_handwriting_exemptions": 3,
+    "template_answer_regions": 3,
+    "template_text_removed": true,
+    "template_baseline_prewhitened": true,
+    "answer_source_complete": true,
+    "qwen37_label_contract": {
+     "version": "qwen37-blue-box-labels-v6",
+     "label_style": "blue-hollow-box-v2",
+     "slot_orientation_policy": null,
+     "label_boxes": true,
+     "label_box_color": "blue",
+     "label_background_opacity": 0,
+     "foreground_preserved": true,
+     "foreground_preserved_outside_labels": true,
+     "foreground_preserved_outside_translucent_labels": true,
+     "source_pixels_recoverable": false,
+     "question_number_boxes": false,
+     "answer_region_overlays": false,
+     "labels_left_of_regions": true,
+     "labels_fully_visible": true
+    },
+    "blank_label_safety": {
+     "version": "blank-label-foreground-safe-v1",
+     "expected_region_labels": 3,
+     "placed_region_labels": 3,
+     "all_regions_labeled": true,
+     "foreground_preserved": true,
+     "foreground_preserved_outside_fixed_solve_labels": true,
+     "foreground_preserved_outside_translucent_labels": true,
+     "foreground_preserved_outside_labels": true
+    }
+   }
+  },
+  "layout_unchanged": true,
+  "output_dir_exists": true,
+  "files_left": 1
+ },
+ "caller_diagnostics_kept": {
+  "result": {
+   "page_type_id": "page_1",
+   "evidence_png_sha256": [
+    "6ce093d5c3a2869e4664d016c208bb8313e05c27301f4ca995b47c3d7ac8094d"
+   ],
+   "evidence_path_is_first": true,
+   "question_numbers": [
+    "1",
+    "2",
+    "3"
+   ],
+   "blank_question_numbers": [],
+   "diagnostics": {
+    "caller": "kept",
+    "order": [
+     1,
+     2
+    ],
+    "selected_page_type_id": "page_1",
+    "template_width": 600,
+    "template_height": 400,
+    "evidence_width": 600,
+    "evidence_height": 400,
+    "ownership": "full_column_difference",
+    "difference_algorithm": "difference-v2-cleaner",
+    "evidence_columns": [
+     {
+      "column_index": 1,
+      "sheet_id": "column_01",
+      "width": 600,
+      "height": 400,
+      "question_numbers": [
+       "1",
+       "2",
+       "3"
+      ],
+      "label_placements": [
+       {
+        "question_number": "1",
+        "source": "template_answer_region",
+        "region_index": 0,
+        "region_bbox_1000": [
+         300,
+         120,
+         720,
+         260
+        ],
+        "label_text": "Q1",
+        "label_bbox": [
+         111,
+         56,
+         167,
+         95
+        ],
+        "label_fully_visible": true,
+        "label_left_of_region": true,
+        "label_at_printed_question_number": true,
+        "fixed_position_overwrite_allowed": false,
+        "foreground_preserved": true,
+        "label_opacity": 1.0,
+        "label_style": "blue-hollow-box-v2",
+        "label_background_opacity": 0,
+        "label_border_width_px": 1,
+        "orientation": "horizontal",
+        "placement_offset_px": [
+         0,
+         0
+        ],
+        "placement_mode": "safe_whitespace",
+        "target_anchor_px": [
+         180,
+         76.0
+        ],
+        "connector_line": [
+         [
+          168,
+          75
+         ],
+         [
+          179,
+          76
+         ]
+        ]
+       },
+       {
+        "question_number": "2",
+        "source": "template_answer_region",
+        "region_index": 0,
+        "region_bbox_1000": [
+         180,
+         450,
+         520,
+         600
+        ],
+        "label_text": "Q2",
+        "label_bbox": [
+         39,
+         190,
+         95,
+         229
+        ],
+        "label_fully_visible": true,
+        "label_left_of_region": true,
+        "label_at_printed_question_number": true,
+        "fixed_position_overwrite_allowed": false,
+        "foreground_preserved": true,
+        "label_opacity": 1.0,
+        "label_style": "blue-hollow-box-v2",
+        "label_background_opacity": 0,
+        "label_border_width_px": 1,
+        "orientation": "horizontal",
+        "placement_offset_px": [
+         0,
+         0
+        ],
+        "placement_mode": "safe_whitespace",
+        "target_anchor_px": [
+         108,
+         210.0
+        ],
+        "connector_line": [
+         [
+          96,
+          209
+         ],
+         [
+          107,
+          210
+         ]
+        ]
+       },
+       {
+        "question_number": "3",
+        "source": "template_answer_region",
+        "region_index": 0,
+        "region_bbox_1000": [
+         620,
+         720,
+         950,
+         880
+        ],
+        "label_text": "Q3",
+        "label_bbox": [
+         303,
+         300,
+         359,
+         339
+        ],
+        "label_fully_visible": true,
+        "label_left_of_region": true,
+        "label_at_printed_question_number": true,
+        "fixed_position_overwrite_allowed": false,
+        "foreground_preserved": true,
+        "label_opacity": 1.0,
+        "label_style": "blue-hollow-box-v2",
+        "label_background_opacity": 0,
+        "label_border_width_px": 1,
+        "orientation": "horizontal",
+        "placement_offset_px": [
+         0,
+         0
+        ],
+        "placement_mode": "safe_whitespace",
+        "target_anchor_px": [
+         372,
+         320.0
+        ],
+        "connector_line": [
+         [
+          360,
+          319
+         ],
+         [
+          371,
+          320
+         ]
+        ]
+       }
+      ],
+      "separator_lines": [],
+      "label_layout": {
+       "version": "non-occluding-labels-v1",
+       "source_offset_px": [
+        0,
+        0
+       ],
+       "source_size_px": [
+        600,
+        400
+       ],
+       "source_rect_px": [
+        0,
+        0,
+        600,
+        400
+       ],
+       "foreground_preserved": true,
+       "foreground_preserved_outside_labels": true,
+       "foreground_preserved_outside_translucent_labels": true,
+       "source_pixels_recoverable": false
+      },
+      "crop_left_px": 0,
+      "crop_right_px": 600
+     }
+    ],
+    "question_anchor_count": 3,
+    "template_handwriting_exemptions": 3,
+    "template_answer_regions": 3,
+    "template_text_removed": true,
+    "template_baseline_prewhitened": false,
+    "answer_source_complete": true,
+    "qwen37_label_contract": {
+     "version": "qwen37-blue-box-labels-v6",
+     "label_style": "blue-hollow-box-v2",
+     "slot_orientation_policy": null,
+     "label_boxes": true,
+     "label_box_color": "blue",
+     "label_background_opacity": 0,
+     "foreground_preserved": true,
+     "foreground_preserved_outside_labels": true,
+     "foreground_preserved_outside_translucent_labels": true,
+     "source_pixels_recoverable": false,
+     "question_number_boxes": false,
+     "answer_region_overlays": false,
+     "labels_left_of_regions": true,
+     "labels_fully_visible": true
+    },
+    "blank_label_safety": {
+     "version": "blank-label-foreground-safe-v1",
+     "expected_region_labels": 3,
+     "placed_region_labels": 3,
+     "all_regions_labeled": true,
+     "foreground_preserved": true,
+     "foreground_preserved_outside_fixed_solve_labels": true,
+     "foreground_preserved_outside_translucent_labels": true,
+     "foreground_preserved_outside_labels": true
+    }
+   }
+  },
+  "layout_unchanged": true,
+  "output_dir_exists": true,
+  "files_left": 1
+ },
+ "unmarked_answer_moves_across_columns": {
+  "result": {
+   "page_type_id": "page_1",
+   "evidence_png_sha256": [
+    "f2929034f229d64b445ffb2592336bc8185a7ef13d771d0aba874e427c3320d2",
+    "8df3433f29856ab86ee65118f1826570c110256dfb34f1bff7674bdb7289f10b"
+   ],
+   "evidence_path_is_first": true,
+   "question_numbers": [
+    "1",
+    "2",
+    "3"
+   ],
+   "blank_question_numbers": [],
+   "diagnostics": {
+    "answer_position_routing": [
+     {
+      "question_number": "2",
+      "slot_id": null,
+      "number_bbox_px": [
+       180,
+       180,
+       210,
+       192
+      ],
+      "box_px": [
+       360,
+       176,
+       540,
+       240
+      ],
+      "before_number_px": [
+       60,
+       174,
+       180,
+       198
+      ],
+      "after_stem_px": null,
+      "ink_px": {
+       "box": 0,
+       "before_number": 1836
+      },
+      "min_ink_px": 12,
+      "decision": "before_number",
+      "label_region_1000": [
+       73,
+       435,
+       257,
+       500
+      ]
+     }
+    ],
+    "answer_position_review": [],
+    "selected_page_type_id": "page_1",
+    "template_width": 600,
+    "template_height": 400,
+    "evidence_width": 600,
+    "evidence_height": 400,
+    "ownership": "full_column_difference",
+    "difference_algorithm": "difference-v2-cleaner",
+    "evidence_columns": [
+     {
+      "column_index": 1,
+      "sheet_id": "column_01",
+      "width": 300,
+      "height": 400,
+      "question_numbers": [
+       "1",
+       "2"
+      ],
+      "label_placements": [
+       {
+        "question_number": "1",
+        "source": "template_answer_region",
+        "region_index": 0,
+        "region_bbox_1000": [
+         300,
+         120,
+         720,
+         260
+        ],
+        "label_text": "Q1",
+        "label_bbox": [
+         111,
+         56,
+         167,
+         95
+        ],
+        "label_fully_visible": true,
+        "label_left_of_region": true,
+        "label_at_printed_question_number": true,
+        "fixed_position_overwrite_allowed": false,
+        "foreground_preserved": true,
+        "label_opacity": 1.0,
+        "label_style": "blue-hollow-box-v2",
+        "label_background_opacity": 0,
+        "label_border_width_px": 1,
+        "orientation": "horizontal",
+        "placement_offset_px": [
+         0,
+         0
+        ],
+        "placement_mode": "safe_whitespace",
+        "target_anchor_px": [
+         180,
+         76.0
+        ],
+        "connector_line": [
+         [
+          168,
+          75
+         ],
+         [
+          179,
+          76
+         ]
+        ]
+       },
+       {
+        "question_number": "2",
+        "source": "template_answer_region",
+        "region_index": 0,
+        "region_bbox_1000": [
+         73,
+         435,
+         257,
+         500
+        ],
+        "label_text": "Q2",
+        "label_bbox": [
+         166,
+         168,
+         222,
+         207
+        ],
+        "label_fully_visible": true,
+        "label_left_of_region": false,
+        "label_at_printed_question_number": false,
+        "fixed_position_overwrite_allowed": false,
+        "foreground_preserved": true,
+        "label_opacity": 1.0,
+        "label_style": "blue-hollow-box-v2",
+        "label_background_opacity": 0,
+        "label_border_width_px": 1,
+        "orientation": "horizontal",
+        "placement_offset_px": [
+         191,
+         0
+        ],
+        "placement_mode": "safe_whitespace",
+        "target_anchor_px": [
+         44,
+         187.0
+        ],
+        "connector_line": [
+         [
+          165,
+          187
+         ],
+         [
+          154,
+          187
+         ]
+        ]
+       }
+      ],
+      "separator_lines": [],
+      "label_layout": {
+       "version": "non-occluding-labels-v1",
+       "source_offset_px": [
+        0,
+        0
+       ],
+       "source_size_px": [
+        300,
+        400
+       ],
+       "source_rect_px": [
+        0,
+        0,
+        300,
+        400
+       ],
+       "foreground_preserved": true,
+       "foreground_preserved_outside_labels": true,
+       "foreground_preserved_outside_translucent_labels": true,
+       "source_pixels_recoverable": false
+      },
+      "crop_left_px": 0,
+      "crop_right_px": 300
+     },
+     {
+      "column_index": 2,
+      "sheet_id": "column_02",
+      "width": 300,
+      "height": 400,
+      "question_numbers": [
+       "1",
+       "3"
+      ],
+      "label_placements": [
+       {
+        "question_number": "1",
+        "source": "template_answer_region",
+        "region_index": 0,
+        "region_bbox_1000": [
+         300,
+         120,
+         720,
+         260
+        ],
+        "label_text": "Q1",
+        "label_bbox": [
+         144,
+         56,
+         200,
+         95
+        ],
+        "label_fully_visible": true,
+        "label_left_of_region": false,
+        "label_at_printed_question_number": false,
+        "fixed_position_overwrite_allowed": false,
+        "foreground_preserved": true,
+        "label_opacity": 1.0,
+        "label_style": "blue-hollow-box-v2",
+        "label_background_opacity": 0,
+        "label_border_width_px": 1,
+        "orientation": "horizontal",
+        "placement_offset_px": [
+         213,
+         0
+        ],
+        "placement_mode": "safe_whitespace",
+        "target_anchor_px": [
+         0,
+         76.0
+        ],
+        "connector_line": [
+         [
+          143,
+          75
+         ],
+         [
+          132,
+          76
+         ]
+        ]
+       },
+       {
+        "question_number": "3",
+        "source": "template_answer_region",
+        "region_index": 0,
+        "region_bbox_1000": [
+         620,
+         720,
+         950,
+         880
+        ],
+        "label_text": "Q3",
+        "label_bbox": [
+         3,
+         300,
+         59,
+         339
+        ],
+        "label_fully_visible": true,
+        "label_left_of_region": true,
+        "label_at_printed_question_number": true,
+        "fixed_position_overwrite_allowed": false,
+        "foreground_preserved": true,
+        "label_opacity": 1.0,
+        "label_style": "blue-hollow-box-v2",
+        "label_background_opacity": 0,
+        "label_border_width_px": 1,
+        "orientation": "horizontal",
+        "placement_offset_px": [
+         0,
+         0
+        ],
+        "placement_mode": "safe_whitespace",
+        "target_anchor_px": [
+         72,
+         320.0
+        ],
+        "connector_line": [
+         [
+          60,
+          319
+         ],
+         [
+          71,
+          320
+         ]
+        ]
+       }
+      ],
+      "separator_lines": [],
+      "label_layout": {
+       "version": "non-occluding-labels-v1",
+       "source_offset_px": [
+        0,
+        0
+       ],
+       "source_size_px": [
+        300,
+        400
+       ],
+       "source_rect_px": [
+        0,
+        0,
+        300,
+        400
+       ],
+       "foreground_preserved": true,
+       "foreground_preserved_outside_labels": true,
+       "foreground_preserved_outside_translucent_labels": true,
+       "source_pixels_recoverable": false
+      },
+      "crop_left_px": 300,
+      "crop_right_px": 600
+     }
+    ],
+    "question_anchor_count": 3,
+    "template_handwriting_exemptions": 3,
+    "template_answer_regions": 3,
+    "template_text_removed": true,
+    "template_baseline_prewhitened": false,
+    "answer_source_complete": true,
+    "qwen37_label_contract": {
+     "version": "qwen37-blue-box-labels-v6",
+     "label_style": "blue-hollow-box-v2",
+     "slot_orientation_policy": null,
+     "label_boxes": true,
+     "label_box_color": "blue",
+     "label_background_opacity": 0,
+     "foreground_preserved": true,
+     "foreground_preserved_outside_labels": true,
+     "foreground_preserved_outside_translucent_labels": true,
+     "source_pixels_recoverable": false,
+     "question_number_boxes": false,
+     "answer_region_overlays": false,
+     "labels_left_of_regions": false,
+     "labels_fully_visible": true
+    },
+    "blank_label_safety": {
+     "version": "blank-label-foreground-safe-v1",
+     "expected_region_labels": 4,
+     "placed_region_labels": 4,
+     "all_regions_labeled": true,
+     "foreground_preserved": true,
+     "foreground_preserved_outside_fixed_solve_labels": true,
+     "foreground_preserved_outside_translucent_labels": true,
+     "foreground_preserved_outside_labels": true
+    },
+    "layout_context": {},
+    "frozen_columns": [
+     {
+      "column_index": 1,
+      "x1_1000": 0,
+      "x2_1000": 500
+     },
+     {
+      "column_index": 2,
+      "x1_1000": 500,
+      "x2_1000": 1000
+     }
+    ]
+   }
+  },
+  "layout_unchanged": true,
+  "output_dir_exists": true,
+  "files_left": 2
+ },
+ "snapshot_not_dict_beats_bad_image": {
+  "raised": [
+   "TemplateEvidenceError",
+   "layout snapshot is invalid"
+  ],
+  "layout_unchanged": true,
+  "output_dir_exists": false,
+  "files_left": 0
+ },
+ "bad_page_type_beats_bad_image": {
+  "raised": [
+   "TemplateEvidenceError",
+   "layout snapshot page_type_id is invalid"
+  ],
+  "layout_unchanged": true,
+  "output_dir_exists": false,
+  "files_left": 0
+ },
+ "bad_image_beats_bad_mask": {
+  "raised": [
+   "TemplateEvidenceError",
+   "aligned or template image is invalid"
+  ],
+  "layout_unchanged": true,
+  "output_dir_exists": false,
+  "files_left": 0
+ },
+ "bad_mask_beats_bad_sequence": {
+  "raised": [
+   "TemplateEvidenceError",
+   "aligned source mask is invalid"
+  ],
+  "layout_unchanged": true,
+  "output_dir_exists": false,
+  "files_left": 0
+ },
+ "bad_sequence": {
+  "raised": [
+   "TemplateEvidenceError",
+   "layout question sequence is invalid"
+  ],
+  "layout_unchanged": true,
+  "output_dir_exists": false,
+  "files_left": 0
+ },
+ "anchors_do_not_match": {
+  "raised": [
+   "TemplateEvidenceError",
+   "question anchors do not match question sequence"
+  ],
+  "layout_unchanged": true,
+  "output_dir_exists": false,
+  "files_left": 0
+ },
+ "schema_does_not_match": {
+  "raised": [
+   "TemplateEvidenceError",
+   "question schema does not match question sequence"
+  ],
+  "layout_unchanged": true,
+  "output_dir_exists": false,
+  "files_left": 0
+ },
+ "solve_without_box_or_number": {
+  "raised": [
+   "TemplateEvidenceError",
+   "第 2 题缺少作答框或印刷题号位置，请教师补充"
+  ],
+  "layout_unchanged": true,
+  "output_dir_exists": false,
+  "files_left": 0
+ },
+ "blank_region_missing": {
+  "raised": [
+   "TemplateEvidenceError",
+   "模板作答框未覆盖全部题号，请教师补充或复核作答框"
+  ],
+  "layout_unchanged": true,
+  "output_dir_exists": false,
+  "files_left": 0
+ },
+ "prewhitened_not_bool": {
+  "raised": [
+   "TemplateEvidenceError",
+   "layout snapshot template_baseline_prewhitened is invalid"
+  ],
+  "layout_unchanged": true,
+  "output_dir_exists": false,
+  "files_left": 0
+ },
+ "sequence_beats_prewhitened": {
+  "raised": [
+   "TemplateEvidenceError",
+   "layout question sequence is invalid"
+  ],
+  "layout_unchanged": true,
+  "output_dir_exists": false,
+  "files_left": 0
+ },
+ "coverage_beats_prewhitened": {
+  "raised": [
+   "TemplateEvidenceError",
+   "模板作答框未覆盖全部题号，请教师补充或复核作答框"
+  ],
+  "layout_unchanged": true,
+  "output_dir_exists": false,
+  "files_left": 0
+ }
+}
