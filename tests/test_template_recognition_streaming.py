@@ -10,6 +10,9 @@ client and the next request observe:
   and a heartbeat can only come from the deadline-enforcing poll loop;
 * the import deadline scales with the uploaded pages; when it passes during a
   step the step is cancelled first, then the template is persisted as failed;
+* a reader that closes the stream between two events gets the running step
+  cancelled and awaited before its inputs are removed and the template is
+  persisted as interrupted;
 * recognized pages, their page roles and frozen artifacts are persisted;
 * every checkpoint of these streams is written off the event loop thread.
 
@@ -379,6 +382,102 @@ def test_stopped_import_cancels_the_running_step_and_marks_the_template_interrup
     session = run.session()
     assert (session.status, session.error_code) == ("failed", "TEMPLATE_IMPORT_INTERRUPTED")
     assert run.saves[-1]["on_event_loop"] is False
+
+
+def _read_import_stream_directly(monkeypatch, run: _TemplateImport) -> dict:
+    """Make the test the import stream's only reader instead of the relay task.
+
+    The relay never pauses between two events, so a stop always lands inside a
+    step's poll, which settles the step itself.  A reader that closes the stream
+    between two events (a disconnecting client) leaves it parked at a ``yield``
+    with the step still running; only the stream's own cleanup can stop it.
+    """
+    captured: dict = {}
+    import_events = run.grade_template._template_import_events
+
+    def recording_import_events(job):
+        captured["job"] = job
+        return import_events(job)
+
+    async def no_relay():
+        return None
+
+    def capture_stream(source, _events, _sess):
+        captured["stream"] = source
+        return no_relay()
+
+    monkeypatch.setattr(run.grade_template, "_template_import_events", recording_import_events)
+    monkeypatch.setattr(run.grade_template, "_relay_template_recognition", capture_stream)
+    return captured
+
+
+def _hold_until_cancelled(monkeypatch, run: _TemplateImport, step: str, captured: dict) -> dict:
+    """Hold async ``step``'s component until it is cancelled; record its task.
+
+    Its cleanup is asynchronous, so it has only run if the stream awaited the
+    cancelled component rather than just requesting the cancellation.
+    """
+    name, kind = _STEP_COMPONENTS[step]
+    assert kind == "async", step
+    held: dict = {}
+
+    async def component(*_args, **_kwargs):
+        held["task"] = asyncio.current_task()
+        try:
+            await asyncio.Event().wait()  # only a cancellation ends it
+        finally:
+            candidate_dir = captured["job"].candidate_dir
+            present = await asyncio.to_thread(Path(candidate_dir).is_dir)
+            run.trace.append(("cleaned", step, present))
+
+    monkeypatch.setattr(run.grade_template, name, component)
+    return held
+
+
+@pytest.mark.parametrize("step", ["layout", "model"])
+def test_reader_closing_the_stream_between_events_settles_the_running_step_first(
+    monkeypatch, tmp_path, step,
+):
+    run = _TemplateImport(monkeypatch, tmp_path)
+    captured = _read_import_stream_directly(monkeypatch, run)
+    held = _hold_until_cancelled(monkeypatch, run, step, captured)
+
+    async def scenario():
+        await run.start(canonical=True)
+        stream = captured["stream"]
+        async for chunk in stream:
+            if any(_is_step_heartbeat(step, *event) for event in _sse_chunk_events(chunk)):
+                break
+        candidate_dir = Path(captured["job"].candidate_dir)
+        assert candidate_dir.is_dir() and not held["task"].done()
+        await stream.aclose()  # the client goes away while the step is running
+        # Observed when the stream has closed; the loop's own shutdown would
+        # cancel a stranded component later and hide the leak.
+        task = held["task"]
+        return {
+            "task_done": task.done(),
+            "task_cancelled": task.cancelled(),
+            "trace": list(run.trace),
+            "candidate_dir_exists": candidate_dir.exists(),
+            "session": run.session(),
+        }
+
+    closed = _run(scenario, releases=run.releases)
+    assert (closed["task_done"], closed["task_cancelled"]) == (True, True), closed["trace"]
+    # The component finished its cleanup while its inputs were still on disk,
+    # and before the template was recorded as failed.
+    trace = closed["trace"]
+    assert ("cleaned", step, True) in trace, trace
+    assert trace.index(("cleaned", step, True)) < trace.index(("save", "failed")), trace
+    assert closed["candidate_dir_exists"] is False
+    session = closed["session"]
+    assert (session.status, session.error_code) == ("failed", "TEMPLATE_IMPORT_INTERRUPTED")
+    assert session.error == (
+        "模板导入连接已中断，所有在途步骤均已清理；本次模板不可用，请重新发起导入"
+    )
+    assert run.saves[-1] == {"on_event_loop": False, "status": "failed",
+                             "error_code": "TEMPLATE_IMPORT_INTERRUPTED",
+                             "pages": 0, "artifacts": 0}
 
 
 def _built_artifacts(monkeypatch, run: _TemplateImport) -> list[dict]:
