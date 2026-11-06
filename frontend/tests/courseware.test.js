@@ -161,3 +161,30 @@ test('课件库列出本学段全部章节课件和常用章节捷径，不截�
   await listed.page.flush()
   assert.deepEqual(titles(listed), ['分数的意义', '同分母分数加减'])
 })
+
+test('推荐路由的课件接口失败时清空卡片，不回退到无关的内置课件', async (t) => {
+  const library = await openCourseware(t, {
+    path: '/courseware?knowledge_point=一次函数的图像',
+    reply: config => (config.url === '/courseware/recommendations'
+      ? { status: 503, data: { detail: '课件服务暂不可用' } }
+      : undefined),
+  })
+  assert.deepEqual(library.client.requests.map(request => request.url), ['/courseware/recommendations'])
+  assert.deepEqual(library.client.requests[0].params, { chapter: undefined, knowledge_point: '一次函数的图像', limit: 3 })
+  assert.deepEqual(library.cards(), [])
+  const empty = library.page.root.find(el => el.tagName === 'el-empty')
+  assert.equal(empty.getAttribute('description'), '暂无与该知识点匹配的课件')
+  assert.deepEqual(library.page.errors, [])
+})
+
+test('普通课件库的接口失败时保留本学段的内置章节卡片', async (t) => {
+  const offline = await openCourseware(t, {
+    reply: config => (config.url === '/courseware' ? { status: 503, data: { detail: '课件服务暂不可用' } } : undefined),
+  })
+  const bundled = offline.cards().map(card => card.byTag('h3')[0]?.text)
+  offline.close()
+  const online = await openCourseware(t)
+  assert.ok(bundled.length > 0)
+  assert.deepEqual(bundled, online.cards().map(card => card.byTag('h3')[0]?.text))
+  assert.deepEqual(offline.page.errors, [])
+})

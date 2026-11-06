@@ -90,10 +90,10 @@ async function openPreview(card) {
   }
 }
 async function loadCourseware() {
+  // Recommended cards are already matched server-side (by knowledge point or
+  // chapter); never re-filter them by the raw knowledge-point text here.
+  const recommended = Boolean(recommendTarget.value)
   try {
-    // Recommended cards are already matched server-side (by knowledge point or
-    // chapter); never re-filter them by the raw knowledge-point text here.
-    const recommended = Boolean(recommendTarget.value)
     const params = recommended ? { chapter: route.query.chapter, knowledge_point: route.query.knowledge_point, limit: 3 } : { limit: 100 }
     const data = recommended ? await api.courseware.recommendations(params) : await api.courseware.list(params)
     if (recommended && data?.matched === false) { coursewareCards.value = []; return }

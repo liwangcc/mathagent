@@ -4,6 +4,7 @@
 //
 //   const library = await openCourseware(t)                       // the bundled chapter cards
 //   const library = await openCourseware(t, { items: [...] })      // the backend lists these
+//   const library = await openCourseware(t, { path: '/courseware?knowledge_point=…', reply })
 //   await library.card('分数的认识与运算：同分母分数大小比较').byText('el-button', '预览演示').dispatch('click')
 //   library.backend.requests      // fetches of the bundled samples (url, init)
 //   library.client.requests       // API calls (preview, download, list)
@@ -13,7 +14,8 @@
 // list at all, so the page keeps its bundled chapter cards), GET
 // /courseware/<id>/preview with previewHtml(id) and GET
 // /courseware/<id>/download with a file; the bundled samples under
-// /courseware/samples/ are served as sampleHtml(url).
+// /courseware/samples/ are served as sampleHtml(url). `reply(config)` answers
+// first for any request it returns an answer for; `path` is the page's route.
 import './srcModules.js'
 import { loadApiClient } from './apiClient.js'
 import { installFetch } from './memoryFetch.js'
@@ -27,11 +29,13 @@ export const PRIMARY_TEACHER = { id: 1, role: 'teacher', education_stage: 'prima
 export const previewHtml = id => `<!doctype html><html><head></head><body><svg id="s"></svg>后端课件 ${id}</body></html>`
 export const sampleHtml = url => `<!doctype html><html><head></head><body><svg id="s"></svg>离线样例 ${decodeURIComponent(url)}</body></html>`
 
-export async function openCourseware(t, { items } = {}) {
+export async function openCourseware(t, { items, path = '/courseware', reply = () => undefined } = {}) {
   const client = await loadApiClient({
     localStorage: { mathagent_token: 'teacher-token', mathagent_user: JSON.stringify(PRIMARY_TEACHER) },
   })
   client.respond((config) => {
+    const answer = reply(config)
+    if (answer !== undefined) return answer
     if (config.url === '/courseware') {
       return { data: items ? { items } : {} }
     }
@@ -44,7 +48,7 @@ export async function openCourseware(t, { items } = {}) {
   const backend = installFetch(t, ({ url }) => (
     url.startsWith('/courseware/samples/') ? new Response(sampleHtml(url)) : new Response('', { status: 404 })
   ))
-  const page = await mountComponent(t, Courseware, { path: '/courseware' })
+  const page = await mountComponent(t, Courseware, { path })
   // A download hands the browser an <a download> and later revokes its object
   // URL: the link is recorded, the revoke is not scheduled on a real clock.
   page.win.URL = URL
