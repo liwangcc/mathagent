@@ -35,3 +35,49 @@ export function sourceTextReads(text) {
   }
   return [...reads].sort()
 }
+
+// Relative module specifiers a file imports (static, re-export or dynamic).
+const LOCAL_IMPORTS = [
+  /\b(?:import|export)\b[^'"`;]*?\bfrom\s*(['"])(\.{1,2}\/[^'"\n]*)\1/g,
+  /\bimport\s*(['"])(\.{1,2}\/[^'"\n]*)\1/g,
+  /\bimport\s*\(\s*(['"`])(\.{1,2}\/[^'"`\n]*)\1\s*\)/g,
+]
+
+function localImports(text) {
+  return LOCAL_IMPORTS.flatMap(pattern => [...text.matchAll(pattern)].map(match => match[2]))
+}
+
+// Reads per file of a set of test files ({ 'dir/name.js': text }, paths
+// relative to tests/), counting what a file reads itself and what every test
+// file it imports reads, transitively: a helper that reads source text for a
+// test is the same reading. `exempt` files are imported but never read from.
+export function sourceTextReadsOf(files, { exempt = [] } = {}) {
+  const direct = Object.fromEntries(Object.entries(files).map(([name, text]) => [
+    name, exempt.includes(name) ? [] : sourceTextReads(text),
+  ]))
+  const imports = Object.fromEntries(Object.entries(files).map(([name, text]) => {
+    const base = new URL(name, 'file:///tests/')
+    const targets = localImports(text)
+      .map(specifier => new URL(specifier.split('?')[0], base).pathname)
+      .filter(path => path.startsWith('/tests/'))
+      .map(path => decodeURIComponent(path.slice('/tests/'.length)))
+      .filter(target => Object.hasOwn(files, target))
+    return [name, targets]
+  }))
+  const readsOf = (name) => {
+    const seen = new Set([name])
+    const pending = [name]
+    while (pending.length) {
+      for (const target of imports[pending.pop()]) {
+        if (!seen.has(target)) {
+          seen.add(target)
+          pending.push(target)
+        }
+      }
+    }
+    return [...new Set([...seen].flatMap(file => direct[file]))].sort()
+  }
+  return Object.fromEntries(Object.keys(files).sort()
+    .map(name => [name, readsOf(name)])
+    .filter(([, reads]) => reads.length))
+}

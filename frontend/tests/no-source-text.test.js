@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { readdirSync, readFileSync } from 'node:fs'
 import test from 'node:test'
-import { sourceTextReads } from './helpers/sourceTextReads.js'
+import { sourceTextReads, sourceTextReadsOf } from './helpers/sourceTextReads.js'
 
 // Frontend tests check behaviour: import the module under test and call it
 // (helpers/srcModules.js loads modules that use the `@/` alias), or drive it.
@@ -11,9 +11,11 @@ import { sourceTextReads } from './helpers/sourceTextReads.js'
 // A test file reads source text when it names a frontend/src .vue, .js or .ts
 // file anywhere other than as an import specifier (readFileSync, readFile, a
 // `read()` helper, a URL, a path), or builds a path from a bare src directory
-// segment (listed as `*`). KNOWN_SOURCE_TEXT_READS lists what each existing
-// file still reads. It may only shrink: a new read fails, and so does a listed
-// read that a file no longer has.
+// segment (listed as `*`), or imports a test helper that does either: a helper
+// reading source on a test's behalf is the same reading, and both are listed.
+// KNOWN_SOURCE_TEXT_READS lists what each existing file still reads. It may
+// only shrink: a new read fails, and so does a listed read that a file no
+// longer has.
 const KNOWN_SOURCE_TEXT_READS = {
   'anonymous-grade.test.js': ['views/AnonymousGrade.vue', 'views/Layout.vue', 'views/Upload.vue'],
   'answer-sheet-pairing.test.js': ['views/AnswerSheet.vue'],
@@ -84,21 +86,25 @@ const KNOWN_SOURCE_TEXT_READS = {
   'usage-guide-contract.test.js': ['App.vue', 'components/GuidedTour.vue', 'components/UsageGuideDialog.vue', 'views/ClassTable.vue', 'views/Exercise.vue', 'views/Home.vue', 'views/Layout.vue', 'views/Upload.vue'],
 }
 
-// Points at src/ only to resolve and load src modules (the `@/` alias,
-// import.meta.env, .vue stand-ins); it reads no source text.
+// Points at src/ only to resolve and load src modules the way the build does
+// (the `@/` alias, import.meta.env, .vue files): Node's loader hands it a
+// module's text, which it turns into the module and never gives to a test.
 const MODULE_RESOLUTION = ['helpers/srcModuleHooks.js']
 
-function testFileReads() {
-  const here = new URL('./', import.meta.url)
+const here = new URL('./', import.meta.url)
+
+function testFiles() {
   return Object.fromEntries(
     readdirSync(here, { recursive: true })
       .map(name => name.split('\\').join('/'))
       .filter(name => /\.m?js$/.test(name) && name !== 'no-source-text.test.js')
-      .filter(name => !MODULE_RESOLUTION.includes(name))
       .sort()
-      .map(name => [name, sourceTextReads(readFileSync(new URL(name, here), 'utf8'))])
-      .filter(([, reads]) => reads.length),
+      .map(name => [name, readFileSync(new URL(name, here), 'utf8')]),
   )
+}
+
+function testFileReads() {
+  return sourceTextReadsOf(testFiles(), { exempt: MODULE_RESOLUTION })
 }
 
 test('frontend tests read no frontend source text beyond the shrinking known list', () => {
@@ -117,8 +123,37 @@ test('frontend tests read no frontend source text beyond the shrinking known lis
   assert.deepEqual(stale, {}, 'remove what these tests no longer read from KNOWN_SOURCE_TEXT_READS')
 })
 
+test('a test reads what the test helpers it imports read, transitively', () => {
+  const files = {
+    'uses-reader.test.js': "import { view } from './helpers/views.js'\nview('Upload')",
+    'helpers/views.js': "import { read } from './read.js'\nexport const view = name => read(`views/${name}.vue`)",
+    'helpers/read.js': "export const read = rel => readFileSync(new URL('../../src/' + rel, import.meta.url), 'utf8')",
+    'uses-loader.test.js': "import './helpers/loader.js'\nconst { default: Upload } = await import('../src/views/Upload.vue?sfc')",
+    'helpers/loader.js': "register('./hooks.js', import.meta.url)",
+    'helpers/hooks.js': "const SRC = new URL('../../src/', import.meta.url)",
+    'plain.test.js': "import { messages } from './helpers/elementPlus.js'",
+    'helpers/elementPlus.js': 'export const messages = []',
+  }
+  assert.deepEqual(sourceTextReadsOf(files, { exempt: ['helpers/hooks.js'] }), {
+    'helpers/read.js': ['*'],
+    'helpers/views.js': ['*'],
+    'uses-reader.test.js': ['*'],
+  })
+  // Only the exemption keeps the hooks' own src URL from counting as a read.
+  assert.deepEqual(sourceTextReadsOf(files)['helpers/hooks.js'], ['*'])
+})
+
+test('the module-resolution hooks get src modules from the loader chain, never from the disk', () => {
+  for (const name of MODULE_RESOLUTION) {
+    const text = readFileSync(new URL(name, here), 'utf8')
+    assert.doesNotMatch(text, /\b(?:readFile|readFileSync|createReadStream|openSync|readSync|readdir|readdirSync)\b/, name)
+    assert.doesNotMatch(text, /\bfrom\s*['"](?:node:)?fs\/promises['"]/, name)
+  }
+})
+
 test('source text detection tells reads from imports', () => {
   const samples = {
+    "const { default: Upload } = await import('../src/views/Upload.vue?sfc')": [],
     "readFileSync(new URL('../src/views/Upload.vue', import.meta.url), 'utf8')": ['views/Upload.vue'],
     "await readFile(new URL('../src/api/index.js', import.meta.url), 'utf8')": ['api/index.js'],
     "const view = read('../src/views/AnswerSheet.vue')": ['views/AnswerSheet.vue'],
