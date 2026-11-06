@@ -27,7 +27,9 @@ def seed(tmp_path):
 
 def test_http_eight_slot_swap_save_confirm_reopen_and_score(monkeypatch,tmp_path):
     import routers.grade as grade
+    from routers import grade_pipeline
     from routers import grade_template
+    _,factory=_make_app_and_session(); monkeypatch.setattr(grade_pipeline,'UPLOAD_DIR',str(tmp_path))
     _,factory=_make_app_and_session(); monkeypatch.setattr(grade,'UPLOAD_DIR',str(tmp_path))
     monkeypatch.setattr(grade_template,'_classify_confirmed_template_knowledge',AsyncMock())
     sess,boxes,anchors=seed(tmp_path); client=_client(factory,raise_server_exceptions=True)
@@ -61,6 +63,8 @@ def test_http_eight_slot_swap_save_confirm_reopen_and_score(monkeypatch,tmp_path
 
 def test_http_explicit_slot_removal_persists_sparse_ids(monkeypatch,tmp_path):
     import routers.grade as grade
+    from routers import grade_pipeline
+    _,factory=_make_app_and_session(); monkeypatch.setattr(grade_pipeline,'UPLOAD_DIR',str(tmp_path))
     _,factory=_make_app_and_session(); monkeypatch.setattr(grade,'UPLOAD_DIR',str(tmp_path))
     sess,boxes,anchors=seed(tmp_path); client=_client(factory,raise_server_exceptions=True)
     q=copy.deepcopy(sess.pages[0]['questions'][0])
@@ -85,7 +89,9 @@ def test_http_deleting_last_drawing_slot_drops_its_figure_and_confirms(monkeypat
     layout save or the confirm (diagnostic 2b5e7b509d74481aa71a931d450af93d).
     """
     import routers.grade as grade
+    from routers import grade_pipeline
     from routers import grade_template
+    _,factory=_make_app_and_session(); monkeypatch.setattr(grade_pipeline,'UPLOAD_DIR',str(tmp_path))
     _,factory=_make_app_and_session(); monkeypatch.setattr(grade,'UPLOAD_DIR',str(tmp_path))
     monkeypatch.setattr(grade_template,'_classify_confirmed_template_knowledge',AsyncMock())
     stem,text=[80,60,900,140],[80,300,450,420]
@@ -125,6 +131,8 @@ def test_http_regions_arriving_in_another_order_rebind_by_slot_id(monkeypatch,tm
     """A box drawn later for a kept position arrives last; the slot ID, not the
     list position, is its identity (fuzz finding: 'saved slot IDs disagree')."""
     import routers.grade as grade
+    from routers import grade_pipeline
+    _,factory=_make_app_and_session(); monkeypatch.setattr(grade_pipeline,'UPLOAD_DIR',str(tmp_path))
     _,factory=_make_app_and_session(); monkeypatch.setattr(grade,'UPLOAD_DIR',str(tmp_path))
     sess,boxes,anchors=seed(tmp_path); client=_client(factory,raise_server_exceptions=True)
     q=copy.deepcopy(sess.pages[0]['questions'][0])
@@ -146,7 +154,9 @@ def test_http_teacher_deleting_every_position_clears_slots_and_confirms(monkeypa
     """Every box of a mixed question deleted: its slot numbers and drawing kind go
     with the boxes (sent as slot_ids null), nothing stale survives to confirm."""
     import routers.grade as grade
+    from routers import grade_pipeline
     from routers import grade_template
+    _,factory=_make_app_and_session(); monkeypatch.setattr(grade_pipeline,'UPLOAD_DIR',str(tmp_path))
     _,factory=_make_app_and_session(); monkeypatch.setattr(grade,'UPLOAD_DIR',str(tmp_path))
     monkeypatch.setattr(grade_template,'_classify_confirmed_template_knowledge',AsyncMock())
     stem,text=[80,60,900,140],[80,300,450,420]

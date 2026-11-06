@@ -15,6 +15,7 @@ from pathlib import Path
 import pytest
 
 from routers import grade
+from routers import grade_pipeline
 from routers import grade_review
 from routers import grade_template
 from services.grading_contract import AnswerSpec
@@ -26,7 +27,9 @@ from tests.test_template_session import _client, _make_app_and_session
 @pytest.fixture
 def edit_client(tmp_path, monkeypatch):
     engine, Session = _make_app_and_session()
+    monkeypatch.setattr(grade_pipeline, "UPLOAD_DIR", str(tmp_path))
     monkeypatch.setattr(grade, "UPLOAD_DIR", str(tmp_path))
+    monkeypatch.setattr(grade_pipeline, "SessionLocal", Session)
     monkeypatch.setattr(grade, "SessionLocal", Session)
 
     async def no_background_model(*_args, **_kwargs):
@@ -209,7 +212,9 @@ def edit_boundary_client(tmp_path, monkeypatch):
     from services.processing_http import install_processing_errors
 
     engine, Session = _make_app_and_session()
+    monkeypatch.setattr(grade_pipeline, "UPLOAD_DIR", str(tmp_path))
     monkeypatch.setattr(grade, "UPLOAD_DIR", str(tmp_path))
+    monkeypatch.setattr(grade_pipeline, "SessionLocal", Session)
     monkeypatch.setattr(grade, "SessionLocal", Session)
 
     async def no_background_model(*_args, **_kwargs):

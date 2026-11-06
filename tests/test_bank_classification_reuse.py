@@ -325,10 +325,12 @@ def _template_classifier(delay, calls):
 def test_template_bank_import_waits_for_in_flight_template_labels(sessions, tmp_path, monkeypatch):
     import asyncio
     import routers.grade as grade
+    from routers import grade_pipeline
     from routers import grade_template
 
     db = sessions()
 
+    monkeypatch.setattr(grade_pipeline, "UPLOAD_DIR", str(tmp_path))
     monkeypatch.setattr(grade, "UPLOAD_DIR", str(tmp_path))
     calls = []
     monkeypatch.setattr(grade, "_template_knowledge_classifier", _template_classifier(0.2, calls))
@@ -346,10 +348,12 @@ def test_template_bank_import_waits_for_in_flight_template_labels(sessions, tmp_
 def test_template_bank_import_does_not_block_past_its_bound(sessions, tmp_path, monkeypatch):
     import asyncio
     import routers.grade as grade
+    from routers import grade_pipeline
     from routers import grade_template
 
     db = sessions()
 
+    monkeypatch.setattr(grade_pipeline, "UPLOAD_DIR", str(tmp_path))
     monkeypatch.setattr(grade, "UPLOAD_DIR", str(tmp_path))
     monkeypatch.setattr(grade_template, "TEMPLATE_BANK_IMPORT_KNOWLEDGE_WAIT_S", 0.1)
     monkeypatch.setattr(grade, "_template_knowledge_classifier", _template_classifier(5, []))

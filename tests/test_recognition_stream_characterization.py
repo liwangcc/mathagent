@@ -54,6 +54,7 @@ _LEDGER: list[list] = []
 def deterministic_runtime(monkeypatch):
     from services import task_queue
     import routers.grade as grade
+    from routers import grade_pipeline
     from routers import grade_recognition
 
     async def inline_to_thread(func, /, *args, **kwargs):
@@ -64,6 +65,7 @@ def deterministic_runtime(monkeypatch):
 
     monkeypatch.setattr(asyncio, "to_thread", inline_to_thread)
     monkeypatch.setattr(task_queue, "_grading_queue", None)
+    monkeypatch.setattr(grade_pipeline, "_start_batch_report_generation", no_report)
     monkeypatch.setattr(grade, "_start_batch_report_generation", no_report)
     # These come from the environment; the interleaving depends on them.
     monkeypatch.setattr(grade_recognition, "OCR_BATCH_DISPATCH_CONCURRENT", 3)
@@ -75,6 +77,7 @@ def deterministic_runtime(monkeypatch):
 def record_ledger(monkeypatch):
     """Record each persisted snapshot and each lock transition, in order."""
     import routers.grade as grade
+    from routers import grade_pipeline
 
     _LEDGER.clear()
     save_meta = QuickBatch.save_meta
@@ -113,6 +116,7 @@ def record_ledger(monkeypatch):
             return self.inner.__exit__(*exc_info)
 
     monkeypatch.setattr(QuickBatch, "save_meta", recording_save_meta)
+    monkeypatch.setattr(grade_pipeline, "batch_operation_lock", RecordingLock)
     monkeypatch.setattr(grade, "batch_operation_lock", RecordingLock)
 
 
@@ -349,12 +353,15 @@ class _FailingQuerySession:
 
 def _break_stream_database(monkeypatch, Session):
     import routers.grade as grade
+    from routers import grade_pipeline
 
+    monkeypatch.setattr(grade_pipeline, "SessionLocal", lambda: _FailingQuerySession(Session()))
     monkeypatch.setattr(grade, "SessionLocal", lambda: _FailingQuerySession(Session()))
 
 
 def _busy_lock(monkeypatch):
     import routers.grade as grade
+    from routers import grade_pipeline
 
     real_lock = grade.batch_operation_lock
 
@@ -364,6 +371,7 @@ def _busy_lock(monkeypatch):
         _LEDGER.append(["lock", "batch", "busy"])
         raise BatchOperationBusy("synthetic concurrent recognition")
 
+    monkeypatch.setattr(grade_pipeline, "batch_operation_lock", busy)
     monkeypatch.setattr(grade, "batch_operation_lock", busy)
 
 
@@ -838,6 +846,7 @@ def test_resume_busy_batch_lock(monkeypatch, tmp_path):
 def test_resume_checkpoint_changed_before_lock(monkeypatch, tmp_path, change):
     client, _Session = _setup(monkeypatch, tmp_path)
     import routers.grade as grade
+    from routers import grade_pipeline
 
     _checkpoint(tmp_path)
     boundary = _Boundary(monkeypatch)
@@ -850,6 +859,7 @@ def test_resume_checkpoint_changed_before_lock(monkeypatch, tmp_path, change):
         meta.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
         return real_lock(batch_id, upload_dir)
 
+    monkeypatch.setattr(grade_pipeline, "batch_operation_lock", lock_after_concurrent_change)
     monkeypatch.setattr(grade, "batch_operation_lock", lock_after_concurrent_change)
 
     response = _resume(client)

@@ -11,6 +11,7 @@ import pytest
 from PIL import Image, ImageDraw
 
 from routers import grade
+from routers import grade_pipeline
 from routers import grade_template
 from services.template_anchor_crops import build_anchor_crop_plan
 from services.template_evidence import build_template_artifact
@@ -25,7 +26,9 @@ from tests.test_template_session import _client, _make_app_and_session
 @pytest.fixture
 def directory_client(tmp_path, monkeypatch):
     engine, Session = _make_app_and_session()
+    monkeypatch.setattr(grade_pipeline, "UPLOAD_DIR", str(tmp_path))
     monkeypatch.setattr(grade, "UPLOAD_DIR", str(tmp_path))
+    monkeypatch.setattr(grade_pipeline, "SessionLocal", Session)
     monkeypatch.setattr(grade, "SessionLocal", Session)
 
     async def no_background_model(*_args, **_kwargs):

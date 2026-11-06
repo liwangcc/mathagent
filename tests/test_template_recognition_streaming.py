@@ -144,10 +144,12 @@ class _TemplateImport:
 
     def __init__(self, monkeypatch, tmp_path):
         import routers.grade as grade
+        from routers import grade_pipeline
         from routers import grade_template
 
         self.grade_template = grade_template
         self.tmp_path = tmp_path
+        monkeypatch.setattr(grade_pipeline, "UPLOAD_DIR", str(tmp_path))
         monkeypatch.setattr(grade, "UPLOAD_DIR", str(tmp_path))
         monkeypatch.setattr(grade, "_check_limits_or_raise", lambda db, uid: None)
         # Heartbeat cadence only; nothing below waits for an interval to pass.

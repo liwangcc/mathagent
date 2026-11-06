@@ -341,11 +341,13 @@ def test_expired_batch_image_endpoint_returns_privacy_message(monkeypatch, tmp_p
     from fastapi.testclient import TestClient
 
     import routers.grade as grade_router
+    from routers import grade_pipeline
     from routers import grade_review
     from routers import grade_template
     from routers.auth import _require_user
 
     uploads = tmp_path / "uploads"
+    monkeypatch.setattr(grade_pipeline, "UPLOAD_DIR", str(uploads))
     monkeypatch.setattr(grade_router, "UPLOAD_DIR", str(uploads))
     batch = QuickBatch("abc123def456", str(uploads))
     batch.teacher_id = 1

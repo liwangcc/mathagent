@@ -51,6 +51,7 @@ def identity_app(monkeypatch, tmp_path):
     db.close()
 
     import routers.grade as grade_router
+    from routers import grade_pipeline
     from routers import grade_review
     from routers import grade_template
     import services.grading_persistence as persistence
@@ -65,7 +66,9 @@ def identity_app(monkeypatch, tmp_path):
         available,
     )
     upload_dir = tmp_path / "uploads"
+    monkeypatch.setattr(grade_pipeline, "UPLOAD_DIR", str(upload_dir))
     monkeypatch.setattr(grade_router, "UPLOAD_DIR", str(upload_dir))
+    monkeypatch.setattr(grade_pipeline, "SessionLocal", Session)
     monkeypatch.setattr(grade_router, "SessionLocal", Session)
     monkeypatch.setattr(persistence, "ARCHIVE_DIR", str(tmp_path / "archive"))
 
@@ -90,7 +93,7 @@ def identity_app(monkeypatch, tmp_path):
         }
 
     # Identity tests must not depend on configured or reachable model keys.
-    monkeypatch.setattr(grade_router, "grade_paper_unified", _offline_grade)
+    monkeypatch.setattr(grade_pipeline, "grade_paper_unified", _offline_grade)
 
     app = FastAPI()
     app.state.upload_dir = str(upload_dir)
@@ -244,8 +247,8 @@ def test_incomplete_ocr_batch_blocks_confirm_before_grader(identity_app, monkeyp
             "details": [],
         }
 
-    import routers.grade as grade_router
-    monkeypatch.setattr(grade_router, "grade_paper_unified", fake_grade_paper_unified)
+    from routers import grade_pipeline
+    monkeypatch.setattr(grade_pipeline, "grade_paper_unified", fake_grade_paper_unified)
 
     response = client.post(
         "/api/batch-grade/confirm",

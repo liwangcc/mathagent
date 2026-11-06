@@ -36,16 +36,20 @@ GRADING_WAIT = "正在批阅已识别的试卷，请保持页面打开"
 @pytest.fixture(autouse=True)
 def fast_heartbeats(monkeypatch):
     import routers.grade as grade
+    from routers import grade_pipeline
     from routers import grade_recognition
     from services import task_queue
 
     async def no_report(*_args):
         return None
 
-    # The OCR multiplexer waits in grade_recognition, the grading drain in routers.grade.
+    # The OCR multiplexer waits in grade_recognition, the grading drain and the
+    # upload inspection in routers.grade, the per-paper pipeline in grade_pipeline.
     monkeypatch.setattr(grade_recognition, "_GRADE_HEARTBEAT_SECONDS", 0.01)
+    monkeypatch.setattr(grade_pipeline, "_GRADE_HEARTBEAT_SECONDS", 0.01)
     monkeypatch.setattr(grade, "_GRADE_HEARTBEAT_SECONDS", 0.01)
     monkeypatch.setattr(task_queue, "_grading_queue", None)
+    monkeypatch.setattr(grade_pipeline, "_start_batch_report_generation", no_report)
     monkeypatch.setattr(grade, "_start_batch_report_generation", no_report)
 
 

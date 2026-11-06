@@ -5,6 +5,7 @@ import copy
 import pytest
 
 from routers import grade
+from routers import grade_pipeline
 from routers import grade_template
 from tests.test_template_directory_routes import _session
 from tests.test_template_session import _client, _make_app_and_session
@@ -22,7 +23,9 @@ def _reference(*, mode="fixed", point=(800, 450)):
 @pytest.fixture
 def reference_client(tmp_path, monkeypatch):
     engine, Session = _make_app_and_session()
+    monkeypatch.setattr(grade_pipeline, "UPLOAD_DIR", str(tmp_path))
     monkeypatch.setattr(grade, "UPLOAD_DIR", str(tmp_path))
+    monkeypatch.setattr(grade_pipeline, "SessionLocal", Session)
     monkeypatch.setattr(grade, "SessionLocal", Session)
 
     async def forbidden_model(*_args, **_kwargs):

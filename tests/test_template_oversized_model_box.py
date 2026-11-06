@@ -38,8 +38,10 @@ def _one_question_pipeline(box):
 def _import(monkeypatch, tmp_path, box):
     _engine, Session = _make_app_and_session()
     import routers.grade as gr_router
+    from routers import grade_pipeline
     from routers import grade_template
 
+    monkeypatch.setattr(grade_pipeline, "UPLOAD_DIR", str(tmp_path))
     monkeypatch.setattr(gr_router, "UPLOAD_DIR", str(tmp_path))
     monkeypatch.setattr(gr_router, "_check_limits_or_raise", lambda db, uid: None)
     _patch_template_layout(monkeypatch, gr_router)

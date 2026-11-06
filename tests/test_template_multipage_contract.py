@@ -214,8 +214,10 @@ def _two_page_pipeline(calls):
 def test_multi_page_template_import_confirm_and_build_have_unique_numbers(monkeypatch, tmp_path):
     _engine, Session = _make_app_and_session()
     import routers.grade as gr_router
+    from routers import grade_pipeline
     from routers import grade_template
 
+    monkeypatch.setattr(grade_pipeline, "UPLOAD_DIR", str(tmp_path))
     monkeypatch.setattr(gr_router, "UPLOAD_DIR", str(tmp_path))
     monkeypatch.setattr(gr_router, "_check_limits_or_raise", lambda db, uid: None)
     _patch_template_layout(monkeypatch, gr_router)
@@ -647,8 +649,10 @@ def test_ingest_keeps_not_graded_page_out_of_ocr_failures(monkeypatch, tmp_path)
 def test_import_with_teacher_roles_skips_ungraded_page_and_confirms(monkeypatch, tmp_path):
     _engine, Session = _make_app_and_session()
     import routers.grade as gr_router
+    from routers import grade_pipeline
     from routers import grade_template
 
+    monkeypatch.setattr(grade_pipeline, "UPLOAD_DIR", str(tmp_path))
     monkeypatch.setattr(gr_router, "UPLOAD_DIR", str(tmp_path))
     monkeypatch.setattr(gr_router, "_check_limits_or_raise", lambda db, uid: None)
     _patch_template_layout(monkeypatch, gr_router)
@@ -744,6 +748,8 @@ def test_old_template_without_page_role_loads_as_answer_page_and_still_confirms(
     # The unconfirmed legacy draft still confirms through the endpoint.
     _engine, Session = _make_app_and_session()
     import routers.grade as gr_router
+    from routers import grade_pipeline
+    monkeypatch.setattr(grade_pipeline, "UPLOAD_DIR", str(tmp_path))
     monkeypatch.setattr(gr_router, "UPLOAD_DIR", str(tmp_path))
     draft = TemplateSession("legacy-draft", str(tmp_path), teacher_id=1)
     draft.status = "ocr_done"

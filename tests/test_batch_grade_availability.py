@@ -9,6 +9,7 @@ from fastapi import HTTPException
 
 from models_user import User
 from routers import grade
+from routers import grade_pipeline
 from routers import grade_template
 from services import (
     analyzer,
@@ -862,7 +863,13 @@ def test_confirm_rechecks_readiness_before_first_grading_side_effect(
         "get_public_hardware_readiness",
         lambda *_args, **_kwargs: pytest.fail("grading rechecked accelerator hardware"),
     )
+    monkeypatch.setattr(grade_pipeline, "SessionLocal", _ReadOnlyDB)
     monkeypatch.setattr(grade, "SessionLocal", _ReadOnlyDB)
+    monkeypatch.setattr(
+        grade_pipeline,
+        "batch_operation_lock",
+        lambda *_args, **_kwargs: nullcontext(),
+    )
     monkeypatch.setattr(
         grade,
         "batch_operation_lock",
@@ -932,7 +939,13 @@ def test_completed_confirm_replay_does_not_require_live_chain(tmp_path, monkeypa
     monkeypatch.setattr(batch, "save_meta", lambda: pytest.fail("replay wrote metadata"))
     monkeypatch.setattr(grade, "_batch_grade_scoring_availability", must_not_check)
     monkeypatch.setattr(grade, "batch_grade_availability", must_not_check)
+    monkeypatch.setattr(grade_pipeline, "SessionLocal", _ReadOnlyDB)
     monkeypatch.setattr(grade, "SessionLocal", _ReadOnlyDB)
+    monkeypatch.setattr(
+        grade_pipeline,
+        "batch_operation_lock",
+        lambda *_args, **_kwargs: nullcontext(),
+    )
     monkeypatch.setattr(
         grade,
         "batch_operation_lock",

@@ -78,10 +78,12 @@ def _client(monkeypatch, uploads):
     from fastapi.testclient import TestClient
 
     import routers.grade as grade_router
+    from routers import grade_pipeline
     from routers import grade_review
     from routers import grade_template
     from routers.auth import _require_user
 
+    monkeypatch.setattr(grade_pipeline, "UPLOAD_DIR", str(uploads))
     monkeypatch.setattr(grade_router, "UPLOAD_DIR", str(uploads))
     app = FastAPI()
     app.include_router(grade_router.router, prefix="/api")

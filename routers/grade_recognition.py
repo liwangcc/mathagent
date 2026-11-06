@@ -184,12 +184,15 @@ async def _ocr_phase_events(
 # ``logger`` is routers.grade's, so these records keep their logger name.
 from routers.grade import (  # noqa: E402
     _GRADE_HEARTBEAT_SECONDS,
-    _PerPaperGradingPipeline,
     _RecognitionRun,
     _ensure_batch_upload_inspected,
-    _pipeline_result_sse,
     _recognize_batch_upload,
     _settle_template_component,
     _sse,
     logger,
+)
+# The per-paper grading pipeline lives in routers/grade_pipeline.py.
+from routers.grade_pipeline import (  # noqa: E402
+    _PerPaperGradingPipeline,
+    _pipeline_result_sse,
 )

@@ -52,10 +52,13 @@ def _setup_review_batch(monkeypatch, tmp_path):
     db.close()
 
     import routers.grade as grade_router
+    from routers import grade_pipeline
     from routers import grade_review
     from routers import grade_template
     upload_dir = tmp_path / "uploads"
+    monkeypatch.setattr(grade_pipeline, "UPLOAD_DIR", str(upload_dir))
     monkeypatch.setattr(grade_router, "UPLOAD_DIR", str(upload_dir))
+    monkeypatch.setattr(grade_pipeline, "SessionLocal", Session)
     monkeypatch.setattr(grade_router, "SessionLocal", Session)
 
     batch = QuickBatch("review-batch", str(upload_dir))

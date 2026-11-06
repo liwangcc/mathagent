@@ -131,9 +131,11 @@ def test_template_confirm_reopen_keeps_visual_attachment_and_independent_slots(t
     from tests.test_template_session import _make_app_and_session, _client
     from services.scoring_engine import build_grading_units
     import routers.grade as grade
+    from routers import grade_pipeline
     from routers import grade_template
 
     _engine, session = _make_app_and_session()
+    monkeypatch.setattr(grade_pipeline, "UPLOAD_DIR", str(tmp_path))
     monkeypatch.setattr(grade, "UPLOAD_DIR", str(tmp_path))
     monkeypatch.setattr(grade_template, "_classify_confirmed_template_knowledge", AsyncMock())
     template = TemplateSession("visual-context", str(tmp_path), teacher_id=1)

@@ -19,6 +19,7 @@ from tests.test_batch_calibration_flow import _confirmed_template, _events, _set
 def isolated_queue(monkeypatch):
     from services import task_queue
     import routers.grade as grade
+    from routers import grade_pipeline
 
     monkeypatch.setattr(task_queue, "_grading_queue", None)
 
@@ -29,6 +30,7 @@ def isolated_queue(monkeypatch):
         return None
 
     monkeypatch.setattr(grade, "_batch_grade_scoring_availability", available)
+    monkeypatch.setattr(grade_pipeline, "_start_batch_report_generation", no_report)
     monkeypatch.setattr(grade, "_start_batch_report_generation", no_report)
 
 

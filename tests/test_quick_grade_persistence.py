@@ -165,14 +165,17 @@ def test_batch_grade_confirm_stages_results_before_archive(monkeypatch, tmp_path
     db.close()
 
     import routers.grade as gr_router
+    from routers import grade_pipeline
     from routers import grade_review
     from routers import grade_template
     import services.grading_persistence as gp
     from services import grader as gr_svc
 
     upload_dir = tmp_path / "uploads"
+    monkeypatch.setattr(grade_pipeline, "UPLOAD_DIR", str(upload_dir))
     monkeypatch.setattr(gr_router, "UPLOAD_DIR", str(upload_dir))
     # SSE 生成器自建会话（脱离请求作用域），需指向测试内存库
+    monkeypatch.setattr(grade_pipeline, "SessionLocal", Session)
     monkeypatch.setattr(gr_router, "SessionLocal", Session)
     monkeypatch.setattr(gp, "ARCHIVE_DIR", str(tmp_path / "archive"))
     paper_path = upload_dir / "quick_batch_batch1" / "p1.png"
@@ -367,13 +370,16 @@ def test_confirm_checkpoints_each_paper_and_resumes_only_unfinished(monkeypatch,
     db.close()
 
     import routers.grade as gr_router
+    from routers import grade_pipeline
     from routers import grade_review
     from routers import grade_template
 
     upload_dir = tmp_path / "uploads"
+    monkeypatch.setattr(grade_pipeline, "UPLOAD_DIR", str(upload_dir))
     monkeypatch.setattr(gr_router, "UPLOAD_DIR", str(upload_dir))
+    monkeypatch.setattr(grade_pipeline, "SessionLocal", Session)
     monkeypatch.setattr(gr_router, "SessionLocal", Session)
-    monkeypatch.setattr(gr_router, "FLASH_LOCAL_MAX_CONCURRENT", 2)
+    monkeypatch.setattr(grade_pipeline, "FLASH_LOCAL_MAX_CONCURRENT", 2)
 
     batch = QuickBatch("resume-batch", str(upload_dir))
     batch.teacher_id = 1
@@ -462,7 +468,7 @@ def test_confirm_checkpoints_each_paper_and_resumes_only_unfinished(monkeypatch,
         }
 
     monkeypatch.setattr(
-        gr_router,
+        grade_pipeline,
         "grade_paper_unified",
         fail_first_after_second_finishes,
     )
@@ -507,7 +513,7 @@ def test_confirm_checkpoints_each_paper_and_resumes_only_unfinished(monkeypatch,
             "details": [{"question_no": "1", "result": "correct"}],
         }
 
-    monkeypatch.setattr(gr_router, "grade_paper_unified", finish_remaining)
+    monkeypatch.setattr(grade_pipeline, "grade_paper_unified", finish_remaining)
     resumed = client.post("/api/batch-grade/confirm", json=payload)
     resumed_events = _parse_sse(resumed.text)
     result_rows = [data for event, data in resumed_events if event == "result"]
@@ -531,6 +537,7 @@ def _one_paper_grading_client(monkeypatch, tmp_path, batch_id: str):
 
     from models_rate_limit import TeacherClass
     import routers.grade as gr_router
+    from routers import grade_pipeline
     from routers import grade_review
     from routers import grade_template
 
@@ -545,7 +552,9 @@ def _one_paper_grading_client(monkeypatch, tmp_path, batch_id: str):
     paper_path = upload_dir / f"quick_batch_{batch_id}" / "paper.png"
     paper_path.parent.mkdir(parents=True)
     paper_path.write_bytes(b"paper")
+    monkeypatch.setattr(grade_pipeline, "UPLOAD_DIR", str(upload_dir))
     monkeypatch.setattr(gr_router, "UPLOAD_DIR", str(upload_dir))
+    monkeypatch.setattr(grade_pipeline, "SessionLocal", Session)
     monkeypatch.setattr(gr_router, "SessionLocal", Session)
 
     batch = QuickBatch(batch_id, str(upload_dir))
@@ -624,11 +633,11 @@ def _confirm_errors(client, batch_id: str) -> list[dict]:
 def test_confirm_stops_at_batch_grading_deadline_and_preserves_pending(
     monkeypatch, tmp_path,
 ):
-    import routers.grade as gr_router
+    from routers import grade_pipeline
 
     client, upload_dir = _one_paper_grading_client(monkeypatch, tmp_path, "deadline-batch")
-    monkeypatch.setattr(gr_router, "FLASH_LOCAL_MAX_CONCURRENT", 1)
-    monkeypatch.setattr(gr_router, "_GRADE_BATCH_DEADLINE_S", 0.01)
+    monkeypatch.setattr(grade_pipeline, "FLASH_LOCAL_MAX_CONCURRENT", 1)
+    monkeypatch.setattr(grade_pipeline, "_GRADE_BATCH_DEADLINE_S", 0.01)
     cancelled = {"value": False}
 
     async def slow_grade(**_kwargs):
@@ -639,7 +648,7 @@ def test_confirm_stops_at_batch_grading_deadline_and_preserves_pending(
             raise
         raise AssertionError("the batch deadline did not cancel the active grade")
 
-    monkeypatch.setattr(gr_router, "grade_paper_unified", slow_grade)
+    monkeypatch.setattr(grade_pipeline, "grade_paper_unified", slow_grade)
     errors = _confirm_errors(client, "deadline-batch")
 
     assert [payload["code"] for payload in errors] == ["GRADING_BATCH_DEADLINE"]
@@ -651,7 +660,7 @@ def test_confirm_stops_at_batch_grading_deadline_and_preserves_pending(
 
 
 def test_confirm_defers_a_paper_whose_grading_model_stays_unavailable(monkeypatch, tmp_path):
-    import routers.grade as gr_router
+    from routers import grade_pipeline
     from services.grader import GradingModelUnavailable
 
     client, upload_dir = _one_paper_grading_client(monkeypatch, tmp_path, "pending-batch")
@@ -659,7 +668,7 @@ def test_confirm_defers_a_paper_whose_grading_model_stays_unavailable(monkeypatc
     async def unavailable(**_kwargs):
         raise GradingModelUnavailable("数学批改模型暂不可用")
 
-    monkeypatch.setattr(gr_router, "grade_paper_unified", unavailable)
+    monkeypatch.setattr(grade_pipeline, "grade_paper_unified", unavailable)
     errors = _confirm_errors(client, "pending-batch")
 
     assert [payload["code"] for payload in errors] == ["GRADING_PAPERS_PENDING"]
@@ -671,14 +680,14 @@ def test_confirm_defers_a_paper_whose_grading_model_stays_unavailable(monkeypatc
 
 
 def test_confirm_refuses_a_batch_that_is_already_being_graded(monkeypatch, tmp_path):
-    import routers.grade as gr_router
+    from routers import grade_pipeline
 
     client, upload_dir = _one_paper_grading_client(monkeypatch, tmp_path, "busy-batch")
 
     async def must_not_grade(**_kwargs):
         raise AssertionError("a locked batch must not be graded")
 
-    monkeypatch.setattr(gr_router, "grade_paper_unified", must_not_grade)
+    monkeypatch.setattr(grade_pipeline, "grade_paper_unified", must_not_grade)
     with batch_operation_lock("busy-batch", str(upload_dir)):
         errors = _confirm_errors(client, "busy-batch")
 
@@ -707,13 +716,16 @@ def test_same_name_conflict_requires_explicit_existing_resolution(monkeypatch, t
     db.close()
 
     import routers.grade as gr_router
+    from routers import grade_pipeline
     from routers import grade_review
     from routers import grade_template
     import services.grading_persistence as gp
     from services import grader as gr_svc
 
     upload_dir = tmp_path / "uploads"
+    monkeypatch.setattr(grade_pipeline, "UPLOAD_DIR", str(upload_dir))
     monkeypatch.setattr(gr_router, "UPLOAD_DIR", str(upload_dir))
+    monkeypatch.setattr(grade_pipeline, "SessionLocal", Session)
     monkeypatch.setattr(gr_router, "SessionLocal", Session)
     monkeypatch.setattr(gp, "ARCHIVE_DIR", str(tmp_path / "archive"))
     paper_path = upload_dir / "quick_batch_batch3" / "p1.png"
@@ -895,10 +907,13 @@ def test_confirm_rejected_when_no_class_selected(monkeypatch, tmp_path):
     db.close()
 
     import routers.grade as gr_router
+    from routers import grade_pipeline
     from routers import grade_review
     from routers import grade_template
     upload_dir = tmp_path / "uploads"
+    monkeypatch.setattr(grade_pipeline, "UPLOAD_DIR", str(upload_dir))
     monkeypatch.setattr(gr_router, "UPLOAD_DIR", str(upload_dir))
+    monkeypatch.setattr(grade_pipeline, "SessionLocal", Session)
     monkeypatch.setattr(gr_router, "SessionLocal", Session)
 
     batch = QuickBatch("batch_noclass", str(upload_dir))
