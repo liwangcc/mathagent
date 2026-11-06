@@ -26,9 +26,7 @@ const KNOWN_SOURCE_TEXT_READS = {
   'bank-profile-scope-runtime.test.js': ['views/Bank.vue'],
   'bank-stage-contract.test.js': ['views/Bank.vue', 'views/BankPhotoImport.vue', 'views/PendingAnswers.vue'],
   'batch-report.test.js': ['views/Upload.vue'],
-  'browser-image-offload.test.js': ['views/AnswerSheet.vue', 'views/Upload.vue'],
   'class-table-render-contract.test.js': ['views/ClassTable.vue'],
-  'collection-import.test.js': ['views/Upload.vue'],
   'courseware-covers.test.js': ['components/CoursewareCover.vue', 'views/Courseware.vue'],
   'courseware.test.js': ['*'],
   'derived-features.test.js': ['components/ChatBar.vue', 'views/${view}.vue', 'views/Layout.vue'],
@@ -65,7 +63,6 @@ const KNOWN_SOURCE_TEXT_READS = {
   'template-review.test.js': ['views/Upload.vue'],
   'template-skip-answer-confirm.test.js': ['views/Upload.vue'],
   'template-slot-binding.test.mjs': ['views/Upload.vue'],
-  'text-grading-method.test.mjs': ['views/AnswerSheet.vue', 'views/Upload.vue'],
   'theme-mode.test.js': ['views/Login.vue', 'views/Profile.vue'],
   'usage-guide-contract.test.js': ['App.vue', 'components/GuidedTour.vue', 'components/UsageGuideDialog.vue', 'views/ClassTable.vue', 'views/Exercise.vue', 'views/Home.vue', 'views/Layout.vue', 'views/Upload.vue'],
 }

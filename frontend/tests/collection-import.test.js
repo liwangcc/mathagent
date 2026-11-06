@@ -6,6 +6,7 @@ import { NodeArchiveWorker } from './helpers/archiveDecoder.js'
 import { extractImagesFromFileList, extractImagesFromDrop } from '../src/utils/fileExtraction.js'
 import { appendStudentUploadFiles, getUploadSourcePath, withUploadSourcePath } from '../src/utils/uploadSource.js'
 import { compressImageFiles, createRotatedOcrReadyFile } from '../src/utils/uploadValidation.js'
+import { mountUpload, TEACHER } from './helpers/uploadPage.js'
 
 globalThis.Worker = NodeArchiveWorker
 const jpeg = readFileSync(new URL('./fixtures/import/page.jpg', import.meta.url))
@@ -116,44 +117,148 @@ test('image preprocessing and rotation retain the original source path', async (
   }
 })
 
-const uploadSource = readFileSync(new URL('../src/views/Upload.vue', import.meta.url), 'utf8')
-function handlers() {
-  const state = { prepared: [], warnings: [], cleared: 0 }
-  const deps = {
-    recognitionAutoArmed: { value: true },
-    imagePreprocessing: { value: false }, imageExtracting: { value: false },
-    fileList: { value: [] }, extractionProgress: { value: {} }, isDragover: { value: false },
-    ElMessage: { warning: text => state.warnings.push(text), success() {}, error: text => assert.fail(text) },
-    requireRecognitionService: () => true,
-    clearReviewDisplay: () => { state.cleared += 1 },
-    validateUploadList: files => ({ files: files.map(item => item.raw), errors: [] }),
-    compressImageFiles: async files => { state.prepared.push(...files); return files },
-    extractImagesFromFileList: async () => [file('synthetic.jpg')],
-    extractImagesFromDrop: async () => [file('synthetic.jpg')],
-  }
-  const start = uploadSource.indexOf('async function processFiles(')
-  const end = uploadSource.indexOf('function resetFiles()', start)
-  assert.ok(start >= 0 && end > start)
-  const code = uploadSource.slice(start, end)
-  return { state, deps, ...new Function(...Object.keys(deps), `${code}\nreturn {onFileInputChange,onFolderInputChange,onDrop};`)(...Object.values(deps)) }
+// What the real Upload page does with each way of importing student papers
+// (选择文件 with an archive or images, 选择文件夹, dragging onto the upload
+// area): the extracted images are prepared and listed for recognition, and a
+// review still shown from the last batch is cleared.
+const REVIEW_POINTER = `mathagent_review_batch_id:${TEACHER.id}`
+
+async function pageWithLastReview(t) {
+  const upload = await mountUpload(t, {
+    localStorage: { [REVIEW_POINTER]: 'b-last' },
+    responses: {
+      'GET /api/batch-grade/review/b-last': {
+        batch_id: 'b-last',
+        status: 'review_ready',
+        results: [{ paper_id: 'old-paper', student_name: '上一批', disposition: 'active', correct: 1, total: 1, details: [{ question_no: '1', result: 'correct' }] }],
+        summary: { total: 1 },
+      },
+      'GET /api/batch-grade/report/b-last': { status: 'ready', text: '', stats: {} },
+    },
+  })
+  assert.ok(upload.page.root.byClass('review-board'), 'the last review is shown')
+  return upload
+}
+
+const gradeCard = upload => upload.page.root.byClass('grade-card')
+const folderInput = upload => gradeCard(upload).find(el => el.tagName === 'input' && el.type === 'file' && el.hasAttribute('webkitdirectory'))
+const uploadArea = upload => gradeCard(upload).byClass('upload-area')
+const studentSummary = upload => gradeCard(upload).byClass('file-summary')?.text ?? null
+
+// 选择文件夹: the folder picker's change event, as the browser fires it.
+async function pickFolder(upload, files) {
+  const input = folderInput(upload)
+  input.files = files
+  input.value = 'C:\\fakepath\\folder'
+  input.dispatch('change').catch(err => upload.page.errors.push({ err, info: 'change handler' }))
+  await upload.settle()
+  return input
+}
+
+// Dragging over the upload area, then dropping `items` (DataTransferItems).
+async function dropOnUploadArea(upload, items) {
+  const area = uploadArea(upload)
+  await area.dispatch('dragover')
+  await upload.settle()
+  assert.ok(area.classList.contains('is-dragover'))
+  area.dispatch('drop', { dataTransfer: { items, files: [] } }).catch(err => upload.page.errors.push({ err, info: 'drop handler' }))
+  await upload.settle()
+}
+
+async function zipOf(entries) {
+  const zip = new JSZip()
+  for (const [path, bytes] of entries) zip.file(path, bytes)
+  return zip.generateAsync({ type: 'uint8array' })
+}
+
+const IMPORTS = {
+  'onFileInputChange synthetic.zip': {
+    run: async upload => upload.choosePapers([new File([await zipOf([['synthetic.jpg', jpeg]])], 'synthetic.zip')]),
+    source: 'synthetic.zip/synthetic.jpg',
+  },
+  'onFolderInputChange synthetic.jpg': {
+    run: async (upload) => {
+      const picked = file('synthetic.jpg')
+      Object.defineProperty(picked, 'webkitRelativePath', { value: '收集/synthetic.jpg' })
+      const input = await pickFolder(upload, [picked])
+      assert.equal(input.value, '', 'the picker is cleared for the next selection')
+    },
+    source: '收集/synthetic.jpg',
+  },
+  'onDrop synthetic.jpg': {
+    run: async upload => dropOnUploadArea(upload, [{ kind: 'file', webkitGetAsEntry: () => entry('synthetic.jpg') }]),
+    source: 'synthetic.jpg',
+  },
+  'onFileInputChange synthetic.jpg': {
+    run: async upload => upload.choosePapers([file('synthetic.jpg')]),
+    source: 'synthetic.jpg',
+  },
 }
 
 for (const [handler, name] of [['onFileInputChange', 'synthetic.zip'], ['onFolderInputChange', 'synthetic.jpg'], ['onDrop', 'synthetic.jpg'], ['onFileInputChange', 'synthetic.jpg']]) {
-  test(`${handler} ${name} actually adds extracted images, not just a success message`, async () => {
-    const run = handlers()
-    await run[handler]({ target: { files: [file(name)], value: '' } })
-    await Promise.resolve()
-    assert.equal(run.deps.fileList.value.length, 1)
-    assert.equal(run.state.prepared.length, 1)
-    assert.equal(run.state.cleared, 1)
-    assert.deepEqual(run.state.warnings, [])
+  test(`${handler} ${name} actually adds extracted images, not just a success message`, async (t) => {
+    const upload = await pageWithLastReview(t)
+    const { run, source } = IMPORTS[`${handler} ${name}`]
+    await run(upload)
+    assert.deepEqual(upload.page.errors, [])
+    assert.equal(studentSummary(upload), '已选 1 个文件 清空')
+    // The listed image is the prepared, OCR-ready one, still carrying where it came from.
+    const [listed] = upload.page.setup.fileList
+    assert.equal(listed.name, 'synthetic.ocr-ready-v1.jpg')
+    assert.equal(listed.type, 'image/jpeg')
+    assert.equal(getUploadSourcePath(listed), source)
+    assert.equal(Boolean(upload.page.root.byClass('review-board')), false, 'the last review is cleared')
+    assert.equal(uploadArea(upload).classList.contains('is-dragover'), false)
+    assert.equal(uploadArea(upload).getAttribute('aria-busy'), null)
+    assert.deepEqual(upload.client.messages, [{ type: 'success', message: '成功导入 1 张图片' }])
   })
 }
 
-test('a second import cannot interrupt active extraction', async () => {
-  const run = handlers()
-  run.deps.imageExtracting.value = true
-  await run.onFolderInputChange({ target: { files: [file('a.jpg')], value: '' } })
-  assert.equal(run.state.prepared.length, 0)
-  assert.equal(run.deps.imageExtracting.value, true)
+test('a second import cannot interrupt active extraction', async (t) => {
+  const upload = await mountUpload(t)
+  // A dragged folder whose contents the browser hands over only later.
+  const listing = deferred()
+  const slowFolder = {
+    name: '主文件夹',
+    isDirectory: true,
+    createReader() {
+      let read = false
+      return {
+        readEntries(resolve) {
+          if (read) resolve([])
+          else { read = true; listing.promise.then(resolve) }
+        },
+      }
+    },
+  }
+  await dropOnUploadArea(upload, [{ kind: 'file', webkitGetAsEntry: () => slowFolder }])
+  assert.equal(uploadArea(upload).getAttribute('aria-busy'), 'true', 'the dragged folder is being extracted')
+  assert.equal(upload.button('选择文件夹').disabled, true)
+
+  // A second import arriving meanwhile is dropped: nothing is prepared or
+  // listed, and the running extraction keeps the import controls locked.
+  const picked = file('a.jpg')
+  Object.defineProperty(picked, 'webkitRelativePath', { value: '另一个/a.jpg' })
+  const input = await pickFolder(upload, [picked])
+  assert.equal(input.value, '', 'the picker is cleared for the next selection')
+  assert.equal(studentSummary(upload), null)
+  assert.deepEqual(upload.page.setup.fileList, [])
+  assert.equal(uploadArea(upload).getAttribute('aria-busy'), 'true')
+  assert.equal(upload.button('选择文件夹').disabled, true)
+  assert.deepEqual(upload.client.messages, [])
+
+  // The dragged folder then finishes and is the only import.
+  listing.resolve([entry('abc.jpg')])
+  await upload.settle()
+  assert.deepEqual(upload.page.errors, [])
+  assert.equal(studentSummary(upload), '已选 1 个文件 清空')
+  assert.deepEqual(upload.page.setup.fileList.map(getUploadSourcePath), ['主文件夹/abc.jpg'])
+  assert.equal(uploadArea(upload).getAttribute('aria-busy'), null)
+  assert.deepEqual(upload.client.messages, [{ type: 'success', message: '成功导入 1 张图片' }])
 })
+
+function deferred() {
+  let resolve
+  const promise = new Promise((done) => { resolve = done })
+  return { promise, resolve }
+}
