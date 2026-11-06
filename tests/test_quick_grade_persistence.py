@@ -373,6 +373,7 @@ def test_confirm_checkpoints_each_paper_and_resumes_only_unfinished(monkeypatch,
     from routers import grade_pipeline
     from routers import grade_review
     from routers import grade_template
+    from services.grader import GradingModelUnavailable
 
     upload_dir = tmp_path / "uploads"
     monkeypatch.setattr(grade_pipeline, "UPLOAD_DIR", str(upload_dir))
@@ -453,7 +454,7 @@ def test_confirm_checkpoints_each_paper_and_resumes_only_unfinished(monkeypatch,
         calls.append(student_name)
         if student_name == "student-a":
             await asyncio.sleep(0.04)
-            raise gr_router.GradingModelUnavailable("provider unavailable")
+            raise GradingModelUnavailable("provider unavailable")
         await asyncio.sleep(0.005)
         return {
             "score": None,
@@ -481,7 +482,11 @@ def test_confirm_checkpoints_each_paper_and_resumes_only_unfinished(monkeypatch,
 
     first = client.post("/api/batch-grade/confirm", json=payload)
     first_events = _parse_sse(first.text)
-    assert [event for event, _data in first_events if event == "error"]
+    errors = [data for event, data in first_events if event == "error"]
+    # The provider failure stays the one paper's: the run reports it as pending,
+    # not as a broken grading chain.
+    assert [error["code"] for error in errors] == ["GRADING_PAPERS_PENDING"]
+    assert [failure["paper_id"] for failure in errors[0]["failures"]] == ["paper-1"]
     interrupted = QuickBatch.load_meta("resume-batch", str(upload_dir))
     assert interrupted.status == "grading_interrupted"
     # Other papers continue after one paper exhausts its own retry path.
