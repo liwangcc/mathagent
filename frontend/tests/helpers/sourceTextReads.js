@@ -1,0 +1,37 @@
+// Which frontend/src files a test file names other than as an import, i.e. reads
+// as text (see no-source-text.test.js). Reads are reported relative to src/, and
+// as * for a path assembled from a bare src directory segment, such as
+// path.join(root, frontend, src, name), whose file is only known at run time.
+
+const IMPORT_SPECIFIERS = [
+  /\b(?:import|export)\b[^'"`;]*?\bfrom\s*(['"])[^'"\n]*\1/g,
+  /\bimport\s*(['"])[^'"\n]*\1/g,
+  /\bimport\s*\(\s*(['"`])[^'"`\n]*\1\s*\)/g,
+  // The Vite alias of browser tests (alias @ to resolve of src) builds the app.
+  /(['"])@\1\s*:\s*\w+\(\s*(['"])src\2\s*\)/g,
+]
+const STRING_LITERAL = /(['"`])((?:(?!\1)[^\\\n]|\\.)*)\1/g
+// src/ then a .vue/.js/.ts path, or a path with an interpolation in it.
+const SOURCE_PATH = /(?:^|[/.])src\/((?:[^'"`\n]*\.(?:vue|js|ts))|(?:[^'"`\n]*\$\{[^'"`\n]*))$/
+// ../src, frontend/src/, ../src/views/ and the like: a path into src that names
+// no file yet. Paths ending in another extension (.css, .json) are not code.
+const SOURCE_DIRECTORY = /(?:^|[/.])src(?:\/[^'"`\n]*)?$/
+const OTHER_FILE = /\.\w+$/
+// A bare src segment counts as a later argument of a call joining a path; as a
+// first argument it is usually something else, like an HTML attribute name.
+const LATER_ARGUMENT = /,\s*$/
+
+export function sourceTextReads(text) {
+  let code = text
+  for (const specifier of IMPORT_SPECIFIERS) code = code.replace(specifier, '')
+  const reads = new Set()
+  for (const match of code.matchAll(STRING_LITERAL)) {
+    const value = match[2]
+    const path = SOURCE_PATH.exec(value)
+    if (path) reads.add(path[1])
+    else if (SOURCE_DIRECTORY.test(value) && !OTHER_FILE.test(value) && (value !== 'src' || LATER_ARGUMENT.test(code.slice(Math.max(0, match.index - 16), match.index)))) {
+      reads.add('*')
+    }
+  }
+  return [...reads].sort()
+}
