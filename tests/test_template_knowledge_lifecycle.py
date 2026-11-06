@@ -2,6 +2,7 @@
 import asyncio
 import copy
 import json
+from pathlib import Path
 
 import pytest
 
@@ -31,10 +32,43 @@ def classified(items):
             for item in reversed(items)]
 
 
-async def wait_idle():
-    tasks = set(knowledge._tasks.values())
+def knowledge_tasks(root):
+    """The classification tasks of the ledgers under ``root`` (this test's)."""
+    prefix = str(Path(root).resolve())
+    return {task for (path, _identity), task in knowledge._tasks.items() if path.startswith(prefix)}
+
+
+async def wait_idle(root):
+    """Wait until this test's classification tasks have finished, ledger writes included."""
+    tasks = knowledge_tasks(root)
     if tasks:
-        await asyncio.wait_for(asyncio.gather(*tasks), 3)
+        await asyncio.gather(*tasks)
+
+
+async def first_settled(event, *tasks):
+    """Wait for ``event``, or until one of ``tasks``, which would set it, has ended.
+
+    Callers assert ``event.is_set()`` next: a task that ended first means the
+    event can no longer come, and the assertion says so instead of a hang.
+    """
+    waiter = asyncio.ensure_future(event.wait())
+    try:
+        await asyncio.wait({waiter, *tasks}, return_when=asyncio.FIRST_COMPLETED)
+    finally:
+        waiter.cancel()
+
+
+class ReconcileClock:
+    """The reconcile deadline's clock; it moves only when the test advances it."""
+
+    def __init__(self):
+        self.now = 0.0
+
+    def __call__(self):
+        return self.now
+
+    def advance(self, seconds):
+        self.now += seconds
 
 
 @pytest.mark.asyncio
@@ -48,6 +82,7 @@ async def test_transcription_starts_classifier_before_max_and_does_not_delay_rea
     source = tmp_path / "synthetic.png"
     Image.new("RGB", (300, 400), "white").save(source)
     max_started, max_release, classify_started, classify_release = (asyncio.Event() for _ in range(4))
+    transcribed = asyncio.Event()
     calls = []
 
     async def request(images, prompt, phase, validator, **kwargs):
@@ -58,7 +93,10 @@ async def test_transcription_starts_classifier_before_max_and_does_not_delay_rea
         if phase in {"template-directory-v1", contract.SOLVE_PHASE}:
             max_started.set()
             await max_release.wait()
-        return validator(copy.deepcopy(payloads[phase]))
+        result = validator(copy.deepcopy(payloads[phase]))
+        if phase == contract.TRANSCRIBE_PHASE:
+            transcribed.set()
+        return result
 
     async def classifier(items):
         calls.append(copy.deepcopy(items))
@@ -73,11 +111,18 @@ async def test_transcription_starts_classifier_before_max_and_does_not_delay_rea
         operation = asyncio.create_task(recognize_template_pipeline(
             str(source), layout_result={}, on_text_ready=lambda text: knowledge.start_page_classification(
                 sess, 0, text, classifier=classifier)))
-    await asyncio.wait_for(max_started.wait(), 2)
-    await asyncio.wait_for(classify_started.wait(), 2)
+    await first_settled(max_started, operation)
+    assert max_started.is_set(), operation
+    await first_settled(transcribed, operation)
+    assert transcribed.is_set(), operation
+    # The text-ready callback runs as the transcription returns, in the same step.
+    classification = knowledge_tasks(tmp_path)
+    assert classification
+    await first_settled(classify_started, *classification)
+    assert classify_started.is_set(), classification
     assert not max_release.is_set() and not operation.done()
     max_release.set()
-    result = await asyncio.wait_for(operation, 2)
+    result = await operation
     assert "error" not in result
     assert not classify_release.is_set()  # readiness never joins classification
     merged = globalize_page_numbers(result, 0, page_index=0)
@@ -90,7 +135,7 @@ async def test_transcription_starts_classifier_before_max_and_does_not_delay_rea
     frozen = sess.content_hash()
     waiter = asyncio.create_task(knowledge.ensure_session_knowledge(sess, classifier=classifier))
     classify_release.set()
-    assert (await asyncio.wait_for(waiter, 2))["status"] == "ready"
+    assert (await waiter)["status"] == "ready"
     # Simulate the remaining recognition stages overwriting a stale meta object.
     sess.knowledge_classifications = {}
     sess.save_meta()
@@ -151,13 +196,15 @@ async def test_late_pre_edit_result_cannot_label_new_text_or_replace_teacher_fie
     raw = globalize_page_numbers({"questions": [question(text="旧题")]}, 0, page_index=0)
     sess.add_page(0, raw["questions"])
     knowledge.bind_page_knowledge(sess, 0, raw["questions"])
-    await asyncio.wait_for(old_started.wait(), 2)
+    old = knowledge_tasks(tmp_path)
+    await first_settled(old_started, *old)
+    assert old_started.is_set(), old
     sess.pages[0]["questions"][0]["question_text"] = "教师新题"
     sess.pages[0]["questions"][0]["chapter"] = "教师章节"
     sess.save_meta()
     assert (await knowledge.ensure_session_knowledge(sess, classifier=classifier))["status"] == "ready"
     old_release.set()
-    await wait_idle()
+    await wait_idle(tmp_path)
     loaded = TemplateSession.load_meta(sess.template_id, str(tmp_path))
     answer = loaded.build_answer_map()["1"]
     assert answer["chapter"] == "教师章节"
@@ -237,7 +284,8 @@ async def test_pending_waiter_cancellation_and_foreign_lease_do_not_duplicate_ca
         return classified(items)
 
     first = asyncio.create_task(knowledge.ensure_session_knowledge(sess, classifier=classifier))
-    await asyncio.wait_for(started.wait(), 2)
+    await first_settled(started, first)
+    assert started.is_set(), first
     first.cancel()
     with pytest.raises(asyncio.CancelledError):
         await first
@@ -311,19 +359,32 @@ async def test_late_classification_updates_real_grading_review_report_without_sc
     monkeypatch.setattr(grade, "_template_knowledge_classifier", classifier)
     monkeypatch.setattr(grade_template, "_template_knowledge_classifier", classifier)
     monkeypatch.setattr(grade, "generate_batch_report", narrative)
+    # The report may wait for the labels as long as it takes: its deadline never comes.
+    monkeypatch.setattr(knowledge, "_reconcile_clock", ReconcileClock())
     pending = asyncio.create_task(knowledge.ensure_session_knowledge(sess, classifier=classifier))
-    await asyncio.wait_for(started.wait(), 2)
+    await first_settled(started, pending)
+    assert started.is_set(), pending
     batch = await make_graded_batch(tmp_path, monkeypatch, sess)
     original = copy.deepcopy(batch.to_dict())
     old_payload = build_batch_report_payload(batch)
     assert old_payload["stats"]["unclassified_knowledge_count"] == 1
+    reconciling = asyncio.Event()
+    reconcile = knowledge.ensure_session_knowledge
+
+    async def report_reconcile(*args, **kwargs):
+        reconciling.set()
+        return await reconcile(*args, **kwargs)
+
+    monkeypatch.setattr(knowledge, "ensure_session_knowledge", report_reconcile)
     await grade._start_batch_report_generation(batch, 7)
     report_task = grade._batch_report_tasks[batch.batch_id]
-    await asyncio.sleep(0.1)
+    await first_settled(reconciling, report_task)
+    assert reconciling.is_set(), report_task
+    # The report is waiting for the pending classification, not narrating stale labels.
     assert not report_inputs and not report_task.done()
     release.set()
     assert (await pending)["status"] == "ready"
-    await asyncio.wait_for(report_task, 3)
+    await report_task
     loaded = QuickBatch.load_meta(batch.batch_id, str(tmp_path))
     assert len(calls) == len(report_inputs) == 1
     assert loaded.report_status == "ready"
@@ -349,6 +410,8 @@ async def test_report_pending_and_failure_never_finalize_stale_labels_and_retry_
     batch = await make_graded_batch(tmp_path, monkeypatch, sess)
     started, release = asyncio.Event(), asyncio.Event()
     provider_calls, narrative_calls = [], []
+    clock = ReconcileClock()
+    monkeypatch.setattr(knowledge, "_reconcile_clock", clock)
     monkeypatch.setattr(knowledge, "RECONCILE_TIMEOUT", 0.1)
 
     async def failing(items):
@@ -366,15 +429,19 @@ async def test_report_pending_and_failure_never_finalize_stale_labels_and_retry_
     monkeypatch.setattr(grade, "generate_batch_report", narrative)
     await grade._start_batch_report_generation(batch, 7)
     task = grade._batch_report_tasks[batch.batch_id]
-    await asyncio.wait_for(started.wait(), 2)
-    await asyncio.wait_for(task, 3)
+    await first_settled(started, task)
+    assert started.is_set(), task
+    # The report started this classification, so its wait is already timed:
+    # let that wait run out while the provider is still working.
+    clock.advance(knowledge.RECONCILE_TIMEOUT)
+    await task
     pending = QuickBatch.load_meta(batch.batch_id, str(tmp_path))
     assert pending.report_status == "queued" and "知识点" in pending.report_error
     assert not narrative_calls and len(provider_calls) == 1
     release.set()
-    await wait_idle()
+    await wait_idle(tmp_path)
     await grade._ensure_batch_report_generation(pending, 7)
-    await asyncio.wait_for(grade._batch_report_tasks[batch.batch_id], 3)
+    await grade._batch_report_tasks[batch.batch_id]
     failed = QuickBatch.load_meta(batch.batch_id, str(tmp_path))
     assert failed.report_status == "failed" and "知识点" in failed.report_error
     assert not narrative_calls and len(provider_calls) == knowledge.MAX_ATTEMPTS
@@ -387,7 +454,7 @@ async def test_report_pending_and_failure_never_finalize_stale_labels_and_retry_
     monkeypatch.setattr(grade_template, "_template_knowledge_classifier", recovered)
     monkeypatch.setattr(knowledge, "RECONCILE_TIMEOUT", 2)
     await grade._ensure_batch_report_generation(failed, 7)
-    await asyncio.wait_for(grade._batch_report_tasks[batch.batch_id], 3)
+    await grade._batch_report_tasks[batch.batch_id]
     final = QuickBatch.load_meta(batch.batch_id, str(tmp_path))
     assert final.report_status == "ready" and len(narrative_calls) == 1
     assert final.report_stats["unclassified_knowledge_count"] == 0
@@ -438,6 +505,7 @@ async def test_real_template_route_wires_text_ready_and_global_binding(tmp_path,
     monkeypatch.setattr(grade_template, "get_public_hardware_readiness", hardware_ready)
     raw, branches = v4_payloads((1,))
     classifier_started, classifier_release, max_release = (asyncio.Event() for _ in range(3))
+    transcribed = asyncio.Event()
     calls = []
 
     async def request(images, prompt, phase, validator, **kwargs):
@@ -447,7 +515,10 @@ async def test_real_template_route_wires_text_ready_and_global_binding(tmp_path,
             raise ValueError("synthetic coarse hint unavailable")
         if phase in {contract.SOLVE_PHASE, "template-directory-v1"}:
             await max_release.wait()
-        return validator(copy.deepcopy(branches[phase]))
+        result = validator(copy.deepcopy(branches[phase]))
+        if phase == contract.TRANSCRIBE_PHASE:
+            transcribed.set()
+        return result
 
     async def classifier(items):
         calls.append(items)
@@ -463,10 +534,16 @@ async def test_real_template_route_wires_text_ready_and_global_binding(tmp_path,
         importing = asyncio.create_task(client.post(
             "/api/batch-grade/template/recognize", data={"template_mode": "marked", "category": "daily"},
             files=[("files", ("synthetic.png", _template_png_bytes(), "image/png"))]))
-        await asyncio.wait_for(classifier_started.wait(), 3)
+        await first_settled(transcribed, importing)
+        assert transcribed.is_set(), importing
+        # The text-ready callback runs as the transcription returns, in the same step.
+        classification = knowledge_tasks(tmp_path)
+        assert classification
+        await first_settled(classifier_started, *classification)
+        assert classifier_started.is_set(), classification
         assert not importing.done()
         max_release.set()
-        response = await asyncio.wait_for(importing, 5)
+        response = await importing
         events = _parse_sse(response.text)
         assert response.status_code == 200
         assert not [payload for event, payload in events if event == "error"], events
@@ -475,7 +552,7 @@ async def test_real_template_route_wires_text_ready_and_global_binding(tmp_path,
         before = copy.deepcopy(sess.pages)
         assert sess.status == "ocr_done" and not classifier_release.is_set()
         classifier_release.set()
-        await wait_idle()
+        await wait_idle(tmp_path)
         loaded = TemplateSession.load_meta(template_id, str(tmp_path))
         assert loaded.pages == before
         assert loaded.build_answer_map()["1"]["topic"] == "印刷题干1"
@@ -519,7 +596,7 @@ async def test_unavailable_choice_text_is_visible_without_phantom_pending_job(tm
     monkeypatch.setattr(grade_template, "_template_knowledge_classifier", forbidden)
     monkeypatch.setattr(grade, "generate_batch_report", narrative)
     await grade._start_batch_report_generation(batch, 7)
-    await asyncio.wait_for(grade._batch_report_tasks[batch.batch_id], 3)
+    await grade._batch_report_tasks[batch.batch_id]
     loaded = QuickBatch.load_meta(batch.batch_id, str(tmp_path))
     assert loaded.report_status == "ready"
     assert "缺少可分类文字" in loaded.report_error
@@ -556,7 +633,7 @@ async def test_cached_report_refreshes_late_metadata_and_preserves_concurrent_te
     latest.save_meta()
     monkeypatch.setattr(grade, "generate_batch_report", narrative)
     await grade._ensure_batch_report_generation(request_snapshot, 7)
-    await asyncio.wait_for(grade._batch_report_tasks[batch.batch_id], 3)
+    await grade._batch_report_tasks[batch.batch_id]
     loaded = QuickBatch.load_meta(batch.batch_id, str(tmp_path))
     assert loaded.report_status == "ready" and loaded.report_text == "新报告"
     assert loaded.review_revision == 9

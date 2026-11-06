@@ -384,25 +384,30 @@ async def _classify(sess, identities, classifier):
         await asyncio.to_thread(_mutate, sess, finish)
 
 
+def _reconcile_clock() -> float:
+    """Read the clock the reconcile deadline is measured on: the event loop's."""
+    return asyncio.get_running_loop().time()
+
+
 async def ensure_session_knowledge(sess, *, classifier=None, timeout=None) -> dict:
     """Await applicable work, shield shared tasks and return a recoverable state."""
     identities = await asyncio.to_thread(_prepare_session, sess)
-    deadline = asyncio.get_running_loop().time() + (RECONCILE_TIMEOUT if timeout is None else timeout)
+    deadline = _reconcile_clock() + (RECONCILE_TIMEOUT if timeout is None else timeout)
     attempted = {identity for identity in identities
                  if (task := _tasks.get((str(_path(sess).resolve()), identity))) is not None and not task.done()}
     while True:
         attempted.update(_schedule(sess, [identity for identity in identities if identity not in attempted], classifier))
         state = knowledge_state(sess)
-        if state["status"] != "pending" or asyncio.get_running_loop().time() >= deadline:
+        if state["status"] != "pending" or _reconcile_clock() >= deadline:
             # A failed row can have just been scheduled for retry. Await that
             # local task rather than reporting the previous failure prematurely.
             active = {task for identity in identities
                       if (task := _tasks.get((str(_path(sess).resolve()), identity))) is not None and not task.done()}
-            if not active or asyncio.get_running_loop().time() >= deadline:
+            if not active or _reconcile_clock() >= deadline:
                 if active:
                     return {"status": "pending", "error": "知识点分类仍在处理中，报告将等待最新标签"}
                 return state
-        await asyncio.sleep(min(0.05, max(0, deadline - asyncio.get_running_loop().time())))
+        await asyncio.sleep(min(0.05, max(0, deadline - _reconcile_clock())))
 
 
 def reconcile_batch_knowledge(batch, sess) -> bool:
