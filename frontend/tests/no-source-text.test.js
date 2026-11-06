@@ -15,11 +15,11 @@ import { sourceTextReads } from './helpers/sourceTextReads.js'
 // file still reads. It may only shrink: a new read fails, and so does a listed
 // read that a file no longer has.
 const KNOWN_SOURCE_TEXT_READS = {
-  'anonymous-grade.test.js': ['router/index.js', 'views/AnonymousGrade.vue', 'views/Layout.vue', 'views/Upload.vue'],
+  'anonymous-grade.test.js': ['views/AnonymousGrade.vue', 'views/Layout.vue', 'views/Upload.vue'],
   'answer-sheet-pairing.test.js': ['views/AnswerSheet.vue'],
   'answer-sheet-redesign.test.js': ['views/AnswerSheet.vue'],
   'answer-sheet-review-workbench.test.js': ['views/AnswerSheet.vue', 'views/GradeRecords.vue'],
-  'answer-sheet-workflow.test.js': ['api/index.js', 'router/index.js', 'views/AnswerSheet.vue', 'views/Layout.vue'],
+  'answer-sheet-workflow.test.js': ['api/index.js', 'views/AnswerSheet.vue', 'views/Layout.vue'],
   'bank-photo-stage-runtime.test.js': ['views/BankPhotoImport.vue'],
   'bank-profile-scope-runtime.test.js': ['views/Bank.vue'],
   'bank-stage-contract.test.js': ['views/Bank.vue', 'views/BankPhotoImport.vue', 'views/PendingAnswers.vue'],
@@ -35,7 +35,6 @@ const KNOWN_SOURCE_TEXT_READS = {
   'desktop-startup-splash.test.js': ['main.js'],
   'drawing-assessment.test.mjs': ['components/DrawingAssessment.vue'],
   'drawing-reference.test.mjs': ['components/DrawingReferenceEditor.vue'],
-  'education-stage-profile.test.js': ['router/index.js'],
   'exercise-mode-contract.test.js': ['views/Exercise.vue'],
   'exercise-profile-stage.test.js': ['views/Exercise.vue'],
   'exercise-restore-runtime.test.js': ['views/Exercise.vue'],
@@ -61,7 +60,6 @@ const KNOWN_SOURCE_TEXT_READS = {
   'report-center.test.js': ['${path}'],
   'stats-contract.test.js': ['views/Stats.vue'],
   'student-detail-error-state.test.js': ['views/StudentDetail.vue'],
-  'student-submission.test.js': ['router/index.js'],
   'system-notice.test.js': ['components/UsageGuideDialog.vue', 'views/Home.vue'],
   'template-auto-crop.test.js': ['views/Upload.vue'],
   'template-choice-no-transcription.test.mjs': ['views/Upload.vue'],
@@ -86,7 +84,8 @@ const KNOWN_SOURCE_TEXT_READS = {
   'usage-guide-contract.test.js': ['App.vue', 'components/GuidedTour.vue', 'components/UsageGuideDialog.vue', 'views/ClassTable.vue', 'views/Exercise.vue', 'views/Home.vue', 'views/Layout.vue', 'views/Upload.vue'],
 }
 
-// Points at src/ only to resolve `@/` imports the way vite.config.js does.
+// Points at src/ only to resolve and load src modules (the `@/` alias,
+// import.meta.env, .vue stand-ins); it reads no source text.
 const MODULE_RESOLUTION = ['helpers/srcModuleHooks.js']
 
 function testFileReads() {

@@ -3,11 +3,11 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { loadApiClient } from './helpers/apiClient.js'
+import { renderedFiles, signedInTeacherRouter } from './helpers/appRouter.js'
 
 const read = (relative) => readFileSync(fileURLToPath(new URL(relative, import.meta.url)), 'utf8')
 const view = read('../src/views/AnswerSheet.vue')
 const api = read('../src/api/index.js')
-const router = read('../src/router/index.js')
 const layout = read('../src/views/Layout.vue')
 
 // Ids that need encodeURIComponent, so every path segment proves it is encoded.
@@ -29,8 +29,18 @@ function recordFetch(t) {
   return calls
 }
 
-test('答题卡批阅是详细批改同级入口并使用独立懒加载路由', () => {
-  assert.match(router, /path: 'answer-sheet'.*import\('@\/views\/AnswerSheet\.vue'\).*title: '答题卡批阅'/)
+test('答题卡批阅路由在进入时才懒加载自己的页面，标题为答题卡批阅', async () => {
+  const router = await signedInTeacherRouter()
+  const record = router.resolve('/answer-sheet').matched.at(-1)
+  assert.equal(typeof record.components.default, 'function', '进入前只有加载函数')
+  await router.push('/answer-sheet')
+  const route = router.currentRoute.value
+  assert.equal(route.name, 'answer-sheet')
+  assert.equal(route.meta.title, '答题卡批阅')
+  assert.deepEqual(renderedFiles(route), ['views/Layout.vue', 'views/AnswerSheet.vue'])
+})
+
+test('答题卡批阅菜单位于详细批改与班级管理之间并使用票据图标', () => {
   const uploadIndex = layout.indexOf('index="/upload"')
   const answerSheetIndex = layout.indexOf('index="/answer-sheet"')
   const studentsIndex = layout.indexOf('index="/students"')

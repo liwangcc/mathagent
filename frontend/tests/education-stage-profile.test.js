@@ -1,6 +1,5 @@
 import './helpers/srcModules.js'
 import assert from 'node:assert/strict'
-import { readFileSync } from 'node:fs'
 import test from 'node:test'
 import { createPinia, setActivePinia } from 'pinia'
 import {
@@ -11,9 +10,9 @@ import {
   safeProfileRedirect,
 } from '../src/utils/educationStage.js'
 import { loadApiClient } from './helpers/apiClient.js'
+import { createAppRouter } from './helpers/appRouter.js'
 
 const { useAuthStore } = await import('../src/stores/auth.js')
-const routerSource = readFileSync(new URL('../src/router/index.js', import.meta.url), 'utf8')
 
 // A fresh auth store with empty storage whose api calls reach the recorded backend.
 async function signedOutStore() {
@@ -25,12 +24,14 @@ async function signedOutStore() {
 const storedUser = client => JSON.parse(client.localStorage.getItem('mathagent_user'))
 const sent = client => client.requests.map(request => `${request.method} ${request.url}`)
 
-function createGuard(auth) {
-  let guard
-  new Function('createRouter', 'createWebHistory', 'useAuthStore', 'educationProfileRedirect',
-    routerSource.replace(/^import .*$/gm, '').replace('export default router', ''))(
-    () => ({ beforeEach: callback => { guard = callback } }), () => ({}), () => auth, educationProfileRedirect)
-  return guard
+// A teacher session restored from storage, not yet verified with /me, and the
+// app router whose guard reads it.
+async function restoredSession(user = { id: 1 }) {
+  const client = await loadApiClient({
+    localStorage: { mathagent_token: 'test', mathagent_user: JSON.stringify(user) },
+  })
+  setActivePinia(createPinia())
+  return { client, store: useAuthStore(), router: createAppRouter() }
 }
 
 function deferred() {
@@ -69,34 +70,105 @@ test('missing profile redirects all teaching pages but permits profile and admin
   assert.equal(educationProfileRedirect({ name: 'upload', fullPath: '/upload', meta: {} }, auth).name, 'profile')
 })
 
+test('a signed-out visitor is sent to login, carrying the page asked for as redirect', async () => {
+  const client = await loadApiClient()
+  setActivePinia(createPinia())
+  const router = createAppRouter()
+  await router.push('/upload?batch=1')
+  assert.equal(router.currentRoute.value.name, 'login')
+  assert.equal(router.currentRoute.value.query.redirect, '/upload?batch=1')
+  assert.deepEqual(client.requests, [])
+})
+
 test('route guard verifies cached profile from /me before allowing direct entry', async () => {
-  const auth = {
-    token: 'test', userVerified: false,
-    user: { education_stage: 'senior', profile_complete: true },
-    async fetchMe() { this.user = { education_stage: null, profile_complete: false }; this.userVerified = true },
-  }
-  const result = await createGuard(auth)({ name: 'upload', fullPath: '/upload?batch=1', meta: {} })
-  assert.equal(result.name, 'profile')
-  assert.equal(result.query.redirect, '/upload?batch=1')
+  const { client, router } = await restoredSession({ id: 1, education_stage: 'senior', profile_complete: true })
+  client.respond(() => ({ data: { user: { id: 1, education_stage: null, profile_complete: false } } }))
+  await router.push('/upload?batch=1')
+  assert.deepEqual(sent(client), ['get /auth/me'])
+  const route = router.currentRoute.value
+  assert.equal(route.name, 'profile')
+  assert.equal(route.query.redirect, '/upload?batch=1')
 })
 
 test('profile-complete relogin passes; profile save and logout remain reachable', async () => {
-  const auth = {
-    token: 'test', userVerified: false,
-    async fetchMe() { this.user = { education_stage: 'junior', profile_complete: true }; this.userVerified = true },
+  const { client, store, router } = await restoredSession()
+  client.respond(() => ({ data: { user: { id: 1, education_stage: 'junior', profile_complete: true } } }))
+  // Each page is entered directly, not through a redirect.
+  const enters = async (path, name) => {
+    await router.push(path)
+    const route = router.currentRoute.value
+    assert.deepEqual([route.name, route.fullPath, route.redirectedFrom], [name, path, undefined])
   }
-  const guard = createGuard(auth)
-  assert.equal(await guard({ name: 'upload', fullPath: '/upload', meta: {} }), undefined)
-  auth.user.profile_complete = false
-  assert.equal(await guard({ name: 'profile', fullPath: '/profile', meta: {} }), undefined)
-  auth.token = ''
-  assert.equal(await guard({ name: 'login', fullPath: '/login', meta: { public: true } }), undefined)
+  await enters('/upload', 'upload')
+  store.user.profile_complete = false
+  await enters('/profile', 'profile')
+  store.clearSession()
+  await enters('/login', 'login')
+  assert.deepEqual(sent(client), ['get /auth/me'])
+})
+
+test('system settings open only to admins; a teacher is sent home', async () => {
+  for (const [role, page] of [['teacher', 'home'], ['admin', 'settings']]) {
+    const { client, router } = await restoredSession()
+    client.respond(() => ({ data: { user: { id: 1, role, education_stage: 'senior', profile_complete: true } } }))
+    await router.push('/settings')
+    assert.equal(router.currentRoute.value.name, page, role)
+  }
+})
+
+test('switching account while /me is pending stops the navigation unverified', async () => {
+  const { client, store, router } = await restoredSession()
+  const requested = deferred()
+  const me = deferred()
+  client.respond(() => {
+    requested.resolve()
+    return me.promise
+  })
+  const navigation = router.push('/upload')
+  await requested.promise
+  store.login('other-token', { id: 2, education_stage: 'senior', profile_complete: true })
+  me.resolve({ data: { user: { id: 1, education_stage: 'senior', profile_complete: true } } })
+  const failure = await navigation
+  assert.ok(failure, 'the navigation is aborted, not completed')
+  assert.equal(router.currentRoute.value.name, undefined, 'still at the start, not on /upload')
+  assert.equal(store.userVerified, false)
+  assert.equal(store.user.id, 2)
+})
+
+test('a verified teacher opening /login goes home; an expired one stays on login signed out', async () => {
+  const verified = await restoredSession()
+  verified.client.respond(() => ({ data: { user: { id: 1, education_stage: 'senior', profile_complete: true } } }))
+  await verified.router.push('/login')
+  assert.equal(verified.router.currentRoute.value.name, 'home')
+
+  const expired = await restoredSession()
+  expired.client.respond(() => ({ status: 401, data: { detail: '登录已过期，请重新登录' } }))
+  await expired.router.push('/login')
+  const route = expired.router.currentRoute.value
+  assert.deepEqual([route.name, route.query], ['login', {}])
+  assert.equal(expired.store.token, '')
+  assert.equal(expired.client.localStorage.getItem('mathagent_token'), null)
 })
 
 test('logout while a restored session is being verified cannot enter a teaching route', async () => {
-  const auth = { token: 'test', userVerified: false, async fetchMe() { this.token = ''; this.user = null } }
-  const result = await createGuard(auth)({ name: 'upload', fullPath: '/upload', meta: {} })
-  assert.equal(result.name, 'login')
+  const { client, store, router } = await restoredSession()
+  const requested = deferred()
+  const me = deferred()
+  client.respond((config) => {
+    if (config.url === '/auth/logout') return { data: { ok: true } }
+    requested.resolve()
+    return me.promise
+  })
+  const navigation = router.push('/upload')
+  await requested.promise
+  await store.logout()
+  me.resolve({ data: { user: { id: 1, education_stage: 'senior', profile_complete: true } } })
+  await navigation
+  assert.deepEqual(sent(client), ['get /auth/me', 'post /auth/logout'])
+  assert.equal(router.currentRoute.value.name, 'login')
+  assert.equal(router.currentRoute.value.query.redirect, '/upload')
+  assert.equal(store.token, '')
+  assert.equal(store.user, null)
 })
 
 test('login never trusts cached metadata and clears previous class list', async () => {

@@ -18,6 +18,7 @@ import {
   studentPageLabel,
   verificationState,
 } from '../src/utils/pastPapers.js'
+import { renderedFiles, signedInTeacherRouter } from './helpers/appRouter.js'
 
 const here = path.dirname(fileURLToPath(import.meta.url))
 const src = (rel) => fs.readFileSync(path.resolve(here, '..', 'src', rel), 'utf8')
@@ -181,9 +182,18 @@ test('actual Vue list and detail templates render truthful purchased and legacy 
   assert.doesNotMatch(view + src('utils/pastPapers.js'), /购买|付费/)
 })
 
-test('entry points, route and identity-only API calls are wired', () => {
-  const router = src('router/index.js')
-  assert.match(router, /path: 'bank\/past-papers', name: 'past-papers'.*PastPapers\.vue.*title: '整卷真题'/)
+test('the past-paper library opens at /bank/past-papers in the teacher layout', async () => {
+  const router = await signedInTeacherRouter()
+  const record = router.resolve('/bank/past-papers').matched.at(-1)
+  assert.equal(typeof record.components.default, 'function', 'the page loads only when opened')
+  await router.push('/bank/past-papers')
+  const route = router.currentRoute.value
+  assert.equal(route.name, 'past-papers')
+  assert.equal(route.meta.title, '整卷真题')
+  assert.deepEqual(renderedFiles(route), ['views/Layout.vue', 'views/PastPapers.vue'])
+})
+
+test('entry points and identity-only API calls are wired', () => {
   const layout = src('views/Layout.vue')
   assert.match(layout, /index="\/bank\/past-papers"[\s\S]*?整卷真题/)
   assert.match(layout, /startsWith\('\/bank\/past-papers'\)\) return '\/bank\/past-papers'/)

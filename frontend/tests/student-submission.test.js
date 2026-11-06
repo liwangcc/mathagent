@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
-import { readFileSync } from 'node:fs'
 import test from 'node:test'
+import { createPinia, setActivePinia } from 'pinia'
 import { getUploadSourcePath, normalizeUploadSourcePath } from '../src/utils/uploadSource.js'
 import {
   SUBMISSION_IMPORT_ROOT,
@@ -12,6 +12,8 @@ import {
   submissionImportEntries,
   submissionSourcePath,
 } from '../src/utils/studentSubmission.js'
+import { loadApiClient } from './helpers/apiClient.js'
+import { createAppRouter, renderedFiles } from './helpers/appRouter.js'
 
 test('page slots run to the highest uploaded page and keep gaps visible', () => {
   assert.deepEqual(pageSlots([]), [])
@@ -61,7 +63,24 @@ test('links use the page origin and warn when phones cannot reach it', () => {
   assert.equal(studentSubmitOriginWarning('https://example.edu'), '')
 })
 
-test('the student page is public and skips the login guard', () => {
-  const router = readFileSync(new URL('../src/router/index.js', import.meta.url), 'utf8')
-  assert.match(router, /path: '\/submit\/:token',[\s\S]*?meta: \{ public: true, standalone: true/)
+test('the student page is public and skips the login guard', async () => {
+  // A student's phone may still hold an expired teacher login.
+  const client = await loadApiClient({ localStorage: { mathagent_token: 'expired-teacher-token' } })
+  client.respond(() => ({ status: 401, data: { detail: '登录已过期，请重新登录' } }))
+  setActivePinia(createPinia())
+  const router = createAppRouter()
+
+  await router.push('/submit/class-link-token')
+  const page = router.currentRoute.value
+  assert.equal(page.name, 'student-submit')
+  assert.equal(page.params.token, 'class-link-token')
+  assert.deepEqual(page.meta, { public: true, standalone: true, title: '提交试卷照片' })
+  assert.deepEqual(renderedFiles(page), ['views/StudentSubmit.vue'])
+  assert.deepEqual(client.requests, [], 'the stale login is never verified on the student page')
+
+  // The same stale login on a teacher page is verified and sent to login.
+  await router.push('/upload')
+  assert.deepEqual(client.requests.map(({ method, url }) => `${method} ${url}`), ['get /auth/me'])
+  assert.equal(router.currentRoute.value.name, 'login')
+  assert.equal(router.currentRoute.value.query.redirect, '/upload')
 })
