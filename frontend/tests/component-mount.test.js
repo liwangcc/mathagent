@@ -187,3 +187,31 @@ test('streaming calls go through the client to an in-memory fetch', async (t) =>
   assert.equal(backend.requests[0].url, '/api/batch-grade/b1/recognize/resume')
   assert.equal(backend.requests[0].init.headers.Authorization, 'Bearer teacher-token')
 })
+
+test('flush() waits for a navigation the page started, however long its page takes to load', async (t) => {
+  // The next page loads only after more event-loop turns than flush() runs on
+  // its own, like a lazy page module read from a busy disk.
+  let turns = 0
+  const slowPage = () => new Promise((resolve) => {
+    const tick = () => (++turns === 20 ? resolve({ template: '<p class="next">下一页</p>' }) : setTimeout(tick, 0))
+    tick()
+  })
+  const Page = defineComponent({
+    setup() {
+      const router = useRouter()
+      // A click handler that does not return the navigation, as pages write them.
+      const next = () => { router.push('/next') }
+      return { next }
+    },
+    template: '<button class="go" @click="next">下一页</button>',
+  })
+  const page = await mountComponent(t, Page, {
+    path: '/start',
+    routes: [{ path: '/start', component: Page }, { path: '/next', component: slowPage }],
+  })
+  await page.root.byClass('go').dispatch('click')
+  await flush()
+  assert.equal(page.router.currentRoute.value.path, '/next')
+  assert.equal(page.root.byClass('next').text, '下一页')
+  assert.ok(turns >= 20)
+})

@@ -25,7 +25,8 @@
 //            mounting fails if any happen before it returns, unless
 //            `allowErrors` is set
 //   warnings Vue's warnings
-//   flush()  let pending promises, zero-delay timers and re-renders settle
+//   flush()  let pending promises, zero-delay timers, the page's own route
+//            navigations (lazy page modules included) and re-renders settle
 // Everything is unmounted and the globals restored after the test.
 import './srcModules.js'
 import { createPinia } from 'pinia'
@@ -46,10 +47,33 @@ function routesWithout(layout) {
   return appRoutes.map(record => (record.children ? { ...record, component: layout ?? Passthrough } : record))
 }
 
+// Navigations a mounted page started (router.push / replace). A page's click
+// handler rarely returns the navigation, and resolving it loads the lazy page
+// module from disk, which no fixed number of event-loop turns is sure to
+// cover; flush() waits for them.
+const navigations = new Set()
+
+function trackNavigations(router) {
+  for (const method of ['push', 'replace']) {
+    const navigate = router[method]
+    router[method] = (...args) => {
+      const navigation = navigate(...args)
+      navigations.add(navigation)
+      const done = () => navigations.delete(navigation)
+      navigation.then(done, done)
+      return navigation
+    }
+  }
+}
+
 export async function flush(rounds = 5) {
-  for (let i = 0; i < rounds; i++) {
-    await new Promise(resolve => setTimeout(resolve, 0))
-    await nextTick()
+  for (;;) {
+    for (let i = 0; i < rounds; i++) {
+      await new Promise(resolve => setTimeout(resolve, 0))
+      await nextTick()
+    }
+    if (!navigations.size) return
+    await Promise.allSettled([...navigations])
   }
 }
 
@@ -73,6 +97,7 @@ export async function mountComponent(t, component, {
     history: createMemoryHistory(),
     routes: routes ?? [{ path: '/__mounted__', component: { render: () => null } }, ...routesWithout(layout)],
   })
+  trackNavigations(router)
   const target = router.resolve(path).matched.at(-1)
   if (!target) throw new Error(`no route matches ${path}`)
   target.components = { ...target.components, default: component }
