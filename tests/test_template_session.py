@@ -530,7 +530,7 @@ def test_recognize_rejects_legacy_contract_until_teacher_reconfirms(monkeypatch,
     }])
     sess.save_meta()
 
-    client = _client(Session)
+    client = _client(Session, monkeypatch)
     rejected = client.post(
         "/api/batch-grade/recognize",
         data={"category": "daily", "template_id": "legacy-route"},
@@ -614,7 +614,7 @@ def test_recognize_rejects_confirmed_contract_whose_content_changed(monkeypatch,
     sess.pages[0]["questions"][0]["standard_answer"] = "3"
     sess.save_meta()
 
-    rejected = _client(Session).post(
+    rejected = _client(Session, monkeypatch).post(
         "/api/batch-grade/recognize",
         data={"category": "daily", "template_id": "changed-route"},
         files=[("files", ("student.png", b"\x89PNG\r\n\x1a\nimg", "image/png"))],
@@ -720,7 +720,7 @@ def test_blank_template_confirm_preserves_server_artifact_and_layout(monkeypatch
     }], artifact=artifact)
     sess.save_meta()
 
-    client = _client(Session)
+    client = _client(Session, monkeypatch)
     response = client.post("/api/batch-grade/template/confirm", json={
         "template_id": "blank-layout",
         "category": "daily",
@@ -775,7 +775,7 @@ def test_blank_template_unknown_choice_cannot_be_confirmed(monkeypatch, tmp_path
     }])
     sess.save_meta()
 
-    response = _client(Session).post("/api/batch-grade/template/confirm", json={
+    response = _client(Session, monkeypatch).post("/api/batch-grade/template/confirm", json={
         "template_id": "unknown-choice",
         "category": "daily",
         "pages": [{"page_index": 0, "questions": [{
@@ -817,7 +817,7 @@ def test_answered_template_confirm_cannot_drop_a_registered_page(monkeypatch, tm
     }])
     sess.save_meta()
 
-    response = _client(Session).post("/api/batch-grade/template/confirm", json={
+    response = _client(Session, monkeypatch).post("/api/batch-grade/template/confirm", json={
         "template_id": "answered-pages",
         "category": "daily",
         "pages": [{"page_index": 0, "questions": [{
@@ -854,7 +854,7 @@ def test_expired_or_invalid_correction_candidates_cannot_authorize_history_or_bl
     }])
     sess.save_meta()
 
-    response = _client(Session).post("/api/batch-grade/template/confirm", json={
+    response = _client(Session, monkeypatch).post("/api/batch-grade/template/confirm", json={
         "template_id": "invalid-correction",
         "category": "daily",
         "pages": [{"page_index": 0, "questions": [{
@@ -946,7 +946,7 @@ def test_saving_template_authorizes_discovered_history_unless_question_is_exclud
     db.commit()
     db.close()
 
-    client = _client(Session, raise_server_exceptions=True)
+    client = _client(Session, monkeypatch, raise_server_exceptions=True)
     candidates = client.post(
         "/api/batch-grade/template/correction-candidates",
         json={
@@ -1068,7 +1068,7 @@ def test_revoking_one_template_keeps_shared_correction_relation(monkeypatch, tmp
     db.commit()
     db.close()
 
-    client = _client(Session, raise_server_exceptions=True)
+    client = _client(Session, monkeypatch, raise_server_exceptions=True)
     payload = {
         "category": "daily",
         "pages": [{"page_index": 0, "questions": [question]}],
@@ -1123,11 +1123,15 @@ def _make_app_and_session():
     return engine, Session
 
 
-def _client(Session, *, raise_server_exceptions=False):
+def _client(Session, monkeypatch, *, raise_server_exceptions=False):
     import routers.grade as gr_router
+    from routers import grade_pipeline
     from routers import grade_review
     from routers import grade_template
-    gr_router.SessionLocal = Session
+    # Through monkeypatch, so the test database is gone again after the test,
+    # and grade_pipeline's own binding (patched first) uses it too.
+    monkeypatch.setattr(grade_pipeline, "SessionLocal", Session)
+    monkeypatch.setattr(gr_router, "SessionLocal", Session)
     app = FastAPI()
     app.include_router(gr_router.router, prefix="/api")
     app.include_router(grade_template.router, prefix="/api")
@@ -1145,6 +1149,23 @@ def _client(Session, *, raise_server_exceptions=False):
     return TestClient(app, raise_server_exceptions=raise_server_exceptions)
 
 
+def test_client_leaves_the_real_session_factory_in_place_after_the_test(monkeypatch):
+    # _client used to assign routers.grade.SessionLocal outright: every later
+    # test in the process then talked to this test's in-memory database, and
+    # grade_pipeline's own binding (split out of grade.py) never saw it at all.
+    import database
+    import routers.grade as gr_router
+    from routers import grade_pipeline
+
+    _engine, Session = _make_app_and_session()
+    with monkeypatch.context() as patch:
+        _client(Session, patch)
+        assert gr_router.SessionLocal is Session
+        assert grade_pipeline.SessionLocal is Session
+    assert gr_router.SessionLocal is database.SessionLocal
+    assert grade_pipeline.SessionLocal is database.SessionLocal
+
+
 def test_template_recognize_rejects_removed_review_category(monkeypatch, tmp_path):
     _engine, Session = _make_app_and_session()
     import routers.grade as gr_router
@@ -1152,7 +1173,7 @@ def test_template_recognize_rejects_removed_review_category(monkeypatch, tmp_pat
 
     monkeypatch.setattr(grade_pipeline, "UPLOAD_DIR", str(tmp_path))
     monkeypatch.setattr(gr_router, "UPLOAD_DIR", str(tmp_path))
-    response = _client(Session).post(
+    response = _client(Session, monkeypatch).post(
         "/api/batch-grade/template/recognize",
         data={"category": "review"},
         files=[("files", ("template.png", _template_png_bytes(), "image/png"))],
@@ -1274,7 +1295,7 @@ def test_template_recognize_ocrs_each_page(
              "standard_answer": "2", "answer_bbox": [500, 400, 850, 500]},
         ]}
     monkeypatch.setattr(grade_template, "recognize_template_pipeline", _mock_with_answers)
-    client = _client(Session)
+    client = _client(Session, monkeypatch)
     r = client.post(
         "/api/batch-grade/template/recognize",
         data={"has_answers": "true", "category": "exam", "exam_name": "期中考试"},
@@ -1351,7 +1372,7 @@ def test_template_recognize_builds_one_box_collection_for_both_roles(
         }
 
     monkeypatch.setattr(grade_template, "recognize_template_pipeline", _mock_with_unified_boxes)
-    client = _client(Session)
+    client = _client(Session, monkeypatch)
     r = client.post(
         "/api/batch-grade/template/recognize",
         data={"template_mode": "blank", "category": "exam", "exam_name": "期中考试"},
@@ -1436,7 +1457,7 @@ def test_template_anchor_review_keeps_questions_and_persists_candidates(
         "recognize_template_pipeline",
         reviewable_pipeline,
     )
-    client = _client(Session)
+    client = _client(Session, monkeypatch)
     response = client.post(
         "/api/batch-grade/template/recognize",
         data={"template_mode": "marked", "category": "daily"},
@@ -1589,7 +1610,7 @@ def test_template_multi_image_association_review_keeps_answers_and_blocks_confir
         "recognize_template_pipeline",
         reviewable_pipeline,
     )
-    client = _client(Session)
+    client = _client(Session, monkeypatch)
     response = client.post(
         "/api/batch-grade/template/recognize",
         data={"template_mode": "marked", "category": "daily"},
@@ -1702,7 +1723,7 @@ def test_template_nonsemantic_error_with_questions_still_fails(
         }
 
     monkeypatch.setattr(grade_template, "recognize_template_pipeline", failed_pipeline)
-    response = _client(Session).post(
+    response = _client(Session, monkeypatch).post(
         "/api/batch-grade/template/recognize",
         data={"template_mode": "marked", "category": "daily"},
         files=[("files", ("failed.png", _template_png_bytes(), "image/png"))],
@@ -1810,7 +1831,7 @@ def test_template_recognize_sends_canonical_page_without_legacy_ocr_crops(
         }]}
 
     monkeypatch.setattr(grade_template, "recognize_template_pipeline", fake_pipeline)
-    response = _client(Session).post(
+    response = _client(Session, monkeypatch).post(
         "/api/batch-grade/template/recognize",
         data={"has_answers": "false", "category": "daily"},
         files=[("files", ("stable.png", _template_png_bytes(), "image/png"))],
@@ -1834,7 +1855,7 @@ def test_template_recognition_status_is_owner_scoped(monkeypatch, tmp_path):
     sess.recognition_deadline_at = "2099-08-10T01:05:00+00:00"
     sess.save_meta()
 
-    client = _client(Session)
+    client = _client(Session, monkeypatch)
     own = client.get("/api/batch-grade/template/owned-recognition/recognition")
     assert own.status_code == 200
     assert own.json()["status"] == "recognizing"
@@ -1863,7 +1884,7 @@ def test_stale_template_recognition_is_reported_unusable(monkeypatch, tmp_path):
     sess.recognition_deadline_at = "2020-01-01T00:05:00+00:00"
     sess.save_meta()
 
-    state = _client(Session).get(
+    state = _client(Session, monkeypatch).get(
         "/api/batch-grade/template/stale-recognition/recognition"
     )
     assert state.status_code == 200
@@ -1912,7 +1933,7 @@ def test_template_recognize_accepts_desktop_canonical_bytes_without_server_fallb
         "batch_grade_availability",
         hardware_probe_forbidden,
     )
-    response = _client(Session).post(
+    response = _client(Session, monkeypatch).post(
         "/api/batch-grade/template/recognize",
         data={
             "has_answers": "true",
@@ -1969,7 +1990,7 @@ def test_template_recognize_uses_local_canonicalization_without_accelerator(
 
     monkeypatch.setattr(grade_template, "recognize_template_pipeline", fake_ocr)
 
-    response = _client(Session).post(
+    response = _client(Session, monkeypatch).post(
         "/api/batch-grade/template/recognize",
         data={"has_answers": "true", "category": "daily"},
         files=[("files", ("raw.png", _template_png_bytes(), "image/png"))],
@@ -2005,7 +2026,7 @@ def test_template_local_canonicalization_failure_keeps_source(
         raise OSError(f"local canonicalization {state}")
 
     monkeypatch.setattr(grade_template, "canonicalize_template_image", fail_local)
-    response = _client(Session).post(
+    response = _client(Session, monkeypatch).post(
         "/api/batch-grade/template/recognize",
         data={"has_answers": "true", "category": "daily"},
         files=[("files", ("raw.png", raw, "image/png"))],
@@ -2060,7 +2081,7 @@ def test_template_full_page_model_skips_legacy_ocr_evidence_accelerator(
 
     monkeypatch.setattr(grade_template, "recognize_template_pipeline", fake_ocr)
 
-    response = _client(Session).post(
+    response = _client(Session, monkeypatch).post(
         "/api/batch-grade/template/recognize",
         data={"has_answers": "true", "category": "daily"},
         files=[("files", ("raw.png", _template_png_bytes(), "image/png"))],
@@ -2091,7 +2112,7 @@ def test_template_recognize_rejects_desktop_hash_mismatch_without_fallback(
     raw = _template_png_bytes("HASH")
     canonical_bytes, metadata = _canonical_submission(tmp_path, raw, "hash")
     metadata["canonical_sha256"] = "0" * 64
-    response = _client(Session).post(
+    response = _client(Session, monkeypatch).post(
         "/api/batch-grade/template/recognize",
         data={
             "has_answers": "true",
@@ -2122,7 +2143,7 @@ def test_template_recognize_rejects_malformed_desktop_candidate_pair(monkeypatch
     monkeypatch.setattr(gr_router, "UPLOAD_DIR", str(tmp_path / "uploads"))
     monkeypatch.setattr(gr_router, "_check_limits_or_raise", lambda db, uid: None)
     raw = _template_png_bytes("PAIR")
-    response = _client(Session).post(
+    response = _client(Session, monkeypatch).post(
         "/api/batch-grade/template/recognize",
         data={"has_answers": "true", "category": "daily"},
         files=[
@@ -2134,7 +2155,7 @@ def test_template_recognize_rejects_malformed_desktop_candidate_pair(monkeypatch
     assert response.status_code == 422
     assert "canonical_metadata" in response.json()["detail"]
 
-    count_mismatch = _client(Session).post(
+    count_mismatch = _client(Session, monkeypatch).post(
         "/api/batch-grade/template/recognize",
         data={
             "has_answers": "true",
@@ -2152,7 +2173,7 @@ def test_template_recognize_rejects_malformed_desktop_candidate_pair(monkeypatch
 
     canonical_bytes, metadata = _canonical_submission(tmp_path, raw, "path-field")
     metadata["source_image"] = "C:/client/must-not-cross-wire.png"
-    client_path = _client(Session).post(
+    client_path = _client(Session, monkeypatch).post(
         "/api/batch-grade/template/recognize",
         data={
             "has_answers": "true",
@@ -2179,7 +2200,7 @@ def test_template_candidate_files_do_not_reduce_the_template_page_limit(monkeypa
     monkeypatch.setattr(grade_template, "MAX_TEMPLATE_PAGES", 1)
     raw = _template_png_bytes()
     canonical_bytes, metadata = _canonical_submission(tmp_path, raw, "count-limit")
-    response = _client(Session).post(
+    response = _client(Session, monkeypatch).post(
         "/api/batch-grade/template/recognize",
         data={
             "has_answers": "true",
@@ -2194,7 +2215,7 @@ def test_template_candidate_files_do_not_reduce_the_template_page_limit(monkeypa
 
     assert response.status_code == 200
 
-    over_limit = _client(Session).post(
+    over_limit = _client(Session, monkeypatch).post(
         "/api/batch-grade/template/recognize",
         data={"has_answers": "true", "category": "daily"},
         files=[
@@ -2234,7 +2255,7 @@ def test_blank_template_recognize_builds_server_owned_visual_artifact(monkeypatc
         }]}
 
     monkeypatch.setattr(grade_template, "recognize_template_pipeline", fake_blank)
-    response = _client(Session).post(
+    response = _client(Session, monkeypatch).post(
         "/api/batch-grade/template/recognize",
         data={"has_answers": "false", "category": "daily"},
         files=[("files", ("blank.png", _template_png_bytes(), "image/png"))],
@@ -2275,7 +2296,7 @@ def test_template_recognize_rejects_blank_before_ocr(monkeypatch, tmp_path):
     monkeypatch.setattr(grade_template, "recognize_template_pipeline", _unexpected_ocr)
     stream = io.BytesIO()
     Image.new("RGB", (600, 800), "white").save(stream, format="PNG")
-    response = _client(Session).post(
+    response = _client(Session, monkeypatch).post(
         "/api/batch-grade/template/recognize",
         data={"has_answers": "true", "category": "daily"},
         files=[("files", ("blank.png", stream.getvalue(), "image/png"))],
@@ -2305,7 +2326,7 @@ def test_blank_template_vision_auth_failure_never_creates_confirmable_empty_temp
         return {"error": "Client error '401 Unauthorized' for vision endpoint", "questions": []}
 
     monkeypatch.setattr(grade_template, "recognize_template_pipeline", _vision_auth_failed)
-    client = _client(Session)
+    client = _client(Session, monkeypatch)
 
     response = client.post(
         "/api/batch-grade/template/recognize",
@@ -2346,7 +2367,7 @@ def test_blank_template_empty_model_result_never_creates_confirmable_empty_templ
         return {"questions": []}
 
     monkeypatch.setattr(grade_template, "recognize_template_pipeline", _empty_result)
-    client = _client(Session)
+    client = _client(Session, monkeypatch)
     response = client.post(
         "/api/batch-grade/template/recognize",
         data={"has_answers": "false", "category": "daily"},
@@ -2376,7 +2397,7 @@ def test_template_contract_error_is_not_reported_as_visual_service_failure(monke
         return {"error": "模板 OCR 第 10 题题型无效", "questions": []}
 
     monkeypatch.setattr(grade_template, "recognize_template_pipeline", _invalid_contract)
-    response = _client(Session).post(
+    response = _client(Session, monkeypatch).post(
         "/api/batch-grade/template/recognize",
         data={"has_answers": "false", "category": "daily"},
         files=[("files", ("blank.png", _template_png_bytes(), "image/png"))],
@@ -2404,7 +2425,7 @@ def test_template_pool_timeout_has_a_truthful_retryable_error(monkeypatch, tmp_p
         return {"error": "absolute_attempt_ttl", "questions": []}
 
     monkeypatch.setattr(grade_template, "recognize_template_pipeline", _timed_out)
-    response = _client(Session).post(
+    response = _client(Session, monkeypatch).post(
         "/api/batch-grade/template/recognize",
         data={"has_answers": "false", "category": "daily"},
         files=[("files", ("blank.png", _template_png_bytes(), "image/png"))],
@@ -2448,7 +2469,7 @@ def test_template_total_deadline_reports_unusable_and_cleans_ocr_task(
             cancelled.set()
 
     monkeypatch.setattr(grade_template, "recognize_template_pipeline", hanging_ocr)
-    response = _client(Session).post(
+    response = _client(Session, monkeypatch).post(
         "/api/batch-grade/template/recognize",
         data={"has_answers": "false", "category": "daily"},
         files=[("files", ("blank.png", _template_png_bytes(), "image/png"))],
@@ -2501,7 +2522,7 @@ def test_template_deadline_during_layout_is_reported_as_the_import_timeout(
             cancelled.set()
 
     monkeypatch.setattr(grade_template, "recognize_column_layout", hanging_layout)
-    response = _client(Session).post(
+    response = _client(Session, monkeypatch).post(
         "/api/batch-grade/template/recognize",
         data={"has_answers": "false", "category": "daily"},
         files=[("files", ("blank.png", _template_png_bytes(), "image/png"))],
@@ -2618,7 +2639,7 @@ def test_template_recognition_progress_discloses_page_scaled_stop(monkeypatch, t
         }]}
 
     monkeypatch.setattr(grade_template, "recognize_template_pipeline", _success)
-    response = _client(Session).post(
+    response = _client(Session, monkeypatch).post(
         "/api/batch-grade/template/recognize",
         data={"has_answers": "false", "category": "daily"},
         files=[("files", ("blank.png", _template_png_bytes(), "image/png"))],
@@ -2659,7 +2680,7 @@ def test_partial_template_ocr_failure_can_never_be_confirmed(monkeypatch, tmp_pa
         return {"error": "401 Unauthorized", "questions": []}
 
     monkeypatch.setattr(grade_template, "recognize_template_pipeline", _first_page_then_auth_failure)
-    client = _client(Session)
+    client = _client(Session, monkeypatch)
     response = client.post(
         "/api/batch-grade/template/recognize",
         data={"has_answers": "false", "category": "daily"},
@@ -2712,7 +2733,7 @@ def test_template_confirm_rejects_foreign_owner(monkeypatch, tmp_path):
     with open(foreign.meta_path, "w", encoding="utf-8") as f:
         json.dump(foreign_meta, f)
 
-    response = _client(Session).post("/api/batch-grade/template/confirm", json={
+    response = _client(Session, monkeypatch).post("/api/batch-grade/template/confirm", json={
         "template_id": "foreign-template", "category": "daily",
         "pages": [{"page_index": 0, "questions": [{
             "question_no": "1", "question_text": "1+1=?",
@@ -2730,7 +2751,7 @@ def test_template_confirm_rejects_path_traversal_template_id(monkeypatch, tmp_pa
     monkeypatch.setattr(grade_pipeline, "UPLOAD_DIR", str(tmp_path))
     monkeypatch.setattr(gr_router, "UPLOAD_DIR", str(tmp_path))
 
-    response = _client(Session).post("/api/batch-grade/template/confirm", json={
+    response = _client(Session, monkeypatch).post("/api/batch-grade/template/confirm", json={
         "template_id": "/../../outside", "category": "daily", "pages": [],
     })
     assert response.status_code == 400
@@ -2751,7 +2772,7 @@ def test_template_save_is_repeatable_and_bank_import_is_separate_idempotent(monk
     sess.add_page(0, [{"question_number": "1", "question_text": "原始OCR题干", "standard_answer": "旧"}])
     sess.save_meta()
 
-    client = _client(Session)
+    client = _client(Session, monkeypatch)
     payload = {
         "template_id": "tplc", "category": "exam", "exam_name": "期中考试",
         "pages": [{"page_index": 0, "questions": [{
@@ -2811,7 +2832,7 @@ def test_template_confirm_skips_answerless_questions(monkeypatch, tmp_path):
     sess.add_page(0, [{"question_number": "1", "question_text": "题", "standard_answer": ""}])
     sess.save_meta()
 
-    client = _client(Session)
+    client = _client(Session, monkeypatch)
     r = client.post("/api/batch-grade/template/confirm", json={
         "template_id": "tpla",
         "category": "daily",
@@ -2852,7 +2873,7 @@ def test_template_confirm_preserves_custom_fill_score_contract(monkeypatch, tmp_
     }])
     sess.save_meta()
 
-    client = _client(Session)
+    client = _client(Session, monkeypatch)
     response = client.post("/api/batch-grade/template/confirm", json={
         "template_id": "tplfill", "category": "exam", "exam_name": "期末",
         "pages": [{"page_index": 0, "questions": [{
@@ -2923,7 +2944,7 @@ def test_recognize_with_template_uses_template_authority(monkeypatch, tmp_path):
         ]}
     monkeypatch.setattr(gr_router, "recognize_paper_with_cache", _mock_recognize_paper)
 
-    client = _client(Session)
+    client = _client(Session, monkeypatch)
     r = client.post(
         "/api/batch-grade/recognize",
         data={"category": "daily", "mode": "precise", "template_id": "tconf"},
@@ -2976,7 +2997,7 @@ def test_recognize_template_category_mismatch_keeps_confirmed(monkeypatch, tmp_p
     sess.add_page(0, [{"question_number": "1", "question_text": "题", "standard_answer": "A"}])
     sess.save_meta()
 
-    response = _client(Session).post(
+    response = _client(Session, monkeypatch).post(
         "/api/batch-grade/recognize",
         data={"category": "daily", "template_id": "category-mismatch"},
         files=[("files", ("s1.png", b"\x89PNG\r\n\x1a\nimg", "image/png"))],
@@ -3000,7 +3021,7 @@ def test_recognize_template_exam_name_mismatch_remains_editable(monkeypatch, tmp
     sess.add_page(0, [{"question_number": "1", "question_text": "旧题干", "standard_answer": "A"}])
     sess.save_meta()
 
-    client = _client(Session)
+    client = _client(Session, monkeypatch)
     rejected = client.post(
         "/api/batch-grade/recognize",
         data={"category": "exam", "exam_name": "期末", "template_id": "exam-mismatch"},
@@ -3037,7 +3058,7 @@ def test_recognize_upload_failures_do_not_freeze_template(monkeypatch, tmp_path)
     sess.add_page(0, [{"question_number": "1", "question_text": "题", "standard_answer": "A"}])
     sess.confirm_current_contract(1)
     sess.save_meta()
-    client = _client(Session)
+    client = _client(Session, monkeypatch)
 
     monkeypatch.setattr(
         gr_router,
@@ -3134,7 +3155,7 @@ def test_concurrent_template_recognize_cannot_overwrite_freeze(monkeypatch, tmp_
     monkeypatch.setattr(TemplateSession, "save_meta", _delayed_freeze)
 
     def _recognize():
-        with _client(Session) as client:
+        with _client(Session, monkeypatch) as client:
             return client.post(
                 "/api/batch-grade/recognize",
                 data={"category": "daily", "template_id": "concurrent-freeze"},
@@ -3192,7 +3213,7 @@ def test_recognize_with_template_preserves_custom_fill_scoring_contract(monkeypa
         }]}
     monkeypatch.setattr(gr_router, "recognize_paper_with_cache", _mock_recognize_paper)
 
-    response = _client(Session).post(
+    response = _client(Session, monkeypatch).post(
         "/api/batch-grade/recognize",
         data={"category": "exam", "exam_name": "期末", "mode": "precise", "template_id": "tfillcontract"},
         files=[(
@@ -3227,7 +3248,7 @@ def test_recognize_rejects_unconfirmed_template(monkeypatch, tmp_path):
     sess.add_page(0, [{"question_number": "1", "question_text": "题", "standard_answer": "A"}])
     sess.save_meta()
 
-    client = _client(Session)
+    client = _client(Session, monkeypatch)
     r = client.post(
         "/api/batch-grade/recognize",
         data={"category": "daily", "mode": "precise", "template_id": "tocr"},
@@ -3244,7 +3265,7 @@ def test_recognize_requires_a_confirmed_template(monkeypatch, tmp_path):
     monkeypatch.setattr(gr_router, "UPLOAD_DIR", str(tmp_path))
     monkeypatch.setattr(gr_router, "_check_limits_or_raise", lambda db, uid: None)
 
-    client = _client(Session)
+    client = _client(Session, monkeypatch)
     r = client.post(
         "/api/batch-grade/recognize",
         data={"category": "daily", "mode": "precise"},
@@ -3281,7 +3302,7 @@ def test_template_confirm_rejects_non_letter_choice_answer_without_side_effects(
     }])
     sess.save_meta()
 
-    response = _client(Session).post("/api/batch-grade/template/confirm", json={
+    response = _client(Session, monkeypatch).post("/api/batch-grade/template/confirm", json={
         "template_id": "invalid-choice", "category": "exam", "exam_name": "单元测验",
         "pages": [{"page_index": 0, "questions": [{
             "question_no": "4", "question_text": "求 x 的值", "question_type": "choice",
@@ -3330,7 +3351,7 @@ def _directory_confirmation_session(monkeypatch, tmp_path, *, question_type="sol
         }}}}
     sess.save_meta()
     payload = {"template_id": sess.template_id, "category": "daily", "pages": copy.deepcopy(sess.pages)}
-    return _client(Session), sess, payload
+    return _client(Session, monkeypatch), sess, payload
 
 
 def _teacher_reference(mode):
@@ -3497,7 +3518,7 @@ def test_current_one_three_import_confirm_and_reopen(monkeypatch, tmp_path):
     monkeypatch.setattr(httpx.AsyncClient, "send", forbidden)
     monkeypatch.setattr(flash_grading, "call_flash", flash)
     monkeypatch.setattr(pipeline, "call_gpt_vision", max_call)
-    client = _client(session_factory)
+    client = _client(session_factory, monkeypatch)
     response = client.post("/api/batch-grade/template/recognize", data={"template_mode": "marked", "category": "daily"},
                            files=[("files", ("synthetic-handoff.png", _template_png_bytes(), "image/png"))])
     assert response.status_code == 200, response.text
@@ -3610,7 +3631,7 @@ def _recognize_directory_timeout_draft(monkeypatch, tmp_path, phase, *,
                 "anchor_diagnostics": diagnostics}
     monkeypatch.setattr(pipeline, "recognize_directory_template", synthetic_directory)
     monkeypatch.setattr(grade_template, "recognize_template_pipeline", template_recognition.recognize_template_pipeline)
-    client = _client(Session)
+    client = _client(Session, monkeypatch)
     response = client.post(
         "/api/batch-grade/template/recognize",
         data={"template_mode": "marked", "category": "daily"},

@@ -533,7 +533,7 @@ async def test_real_template_route_wires_text_ready_and_global_binding(tmp_path,
     monkeypatch.setattr(pipeline, "_request", request)
     monkeypatch.setattr(grade, "_template_knowledge_classifier", classifier)
     monkeypatch.setattr(grade_template, "_template_knowledge_classifier", classifier)
-    app = _client(factory).app
+    app = _client(factory, monkeypatch).app
     async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://test") as client:
         importing = asyncio.create_task(client.post(
             "/api/batch-grade/template/recognize", data={"template_mode": "marked", "category": "daily"},

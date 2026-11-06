@@ -36,7 +36,7 @@ def reference_client(tmp_path, monkeypatch):
 
     monkeypatch.setattr(grade_template, "recognize_template_pipeline", forbidden_model)
     monkeypatch.setattr(grade_template, "_classify_confirmed_template_knowledge", no_classifier)
-    with _client(Session, raise_server_exceptions=True) as client:
+    with _client(Session, monkeypatch, raise_server_exceptions=True) as client:
         yield client
     engine.dispose()
 

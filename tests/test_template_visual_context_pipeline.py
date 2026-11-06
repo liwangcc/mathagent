@@ -150,7 +150,7 @@ def test_template_confirm_reopen_keeps_visual_attachment_and_independent_slots(t
         "solve_visual_context", "directory_node_id", "directory_parent_id"}}
     if edit_text:
         sent["question_text"] = "教师修改了题干"
-    response = _client(session).post("/api/batch-grade/template/confirm", json={
+    response = _client(session, monkeypatch).post("/api/batch-grade/template/confirm", json={
         "template_id": "visual-context", "category": "daily", "pages": [{"page_index": 0, "questions": [sent]}]})
     assert response.status_code == 200, response.text
     saved = TemplateSession.load_meta("visual-context", str(tmp_path))

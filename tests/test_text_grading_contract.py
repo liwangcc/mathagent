@@ -223,7 +223,7 @@ def test_method_survives_real_template_save_confirm_reopen_and_dispatch_payload(
     monkeypatch.setattr(grade, "UPLOAD_DIR", str(tmp_path))
     monkeypatch.setattr(grade_template, "_classify_confirmed_template_knowledge", AsyncMock())
     session, boxes, anchors = seed(tmp_path)
-    client = _client(factory, raise_server_exceptions=True)
+    client = _client(factory, monkeypatch, raise_server_exceptions=True)
     q = copy.deepcopy(session.pages[0]["questions"][0])
     q.update(question_type="solve", grading_method=method)
     payload = {

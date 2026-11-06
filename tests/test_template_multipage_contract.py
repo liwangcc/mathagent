@@ -223,7 +223,7 @@ def test_multi_page_template_import_confirm_and_build_have_unique_numbers(monkey
     _patch_template_layout(monkeypatch, gr_router)
     calls = []
     monkeypatch.setattr(grade_template, "recognize_template_pipeline", _two_page_pipeline(calls))
-    client = _client(Session)
+    client = _client(Session, monkeypatch)
 
     response = client.post(
         "/api/batch-grade/template/recognize",
@@ -658,7 +658,7 @@ def test_import_with_teacher_roles_skips_ungraded_page_and_confirms(monkeypatch,
     _patch_template_layout(monkeypatch, gr_router)
     calls = []
     monkeypatch.setattr(grade_template, "recognize_template_pipeline", _two_page_pipeline(calls))
-    client = _client(Session)
+    client = _client(Session, monkeypatch)
 
     rejected = client.post(
         "/api/batch-grade/template/recognize",
@@ -756,7 +756,7 @@ def test_old_template_without_page_role_loads_as_answer_page_and_still_confirms(
     draft.add_page(0, [{"question_number": "1", "question_text": "1+1=?",
                         "question_type": "fill", "standard_answer": "2"}])
     draft.save_meta()
-    response = _client(Session).post("/api/batch-grade/template/confirm", json={
+    response = _client(Session, monkeypatch).post("/api/batch-grade/template/confirm", json={
         "template_id": "legacy-draft", "category": "daily",
         "pages": [{"page_index": 0, "questions": [{
             "question_no": "1", "question_text": "1+1=?", "question_type": "fill",

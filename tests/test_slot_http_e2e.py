@@ -32,7 +32,7 @@ def test_http_eight_slot_swap_save_confirm_reopen_and_score(monkeypatch,tmp_path
     _,factory=_make_app_and_session(); monkeypatch.setattr(grade_pipeline,'UPLOAD_DIR',str(tmp_path))
     _,factory=_make_app_and_session(); monkeypatch.setattr(grade,'UPLOAD_DIR',str(tmp_path))
     monkeypatch.setattr(grade_template,'_classify_confirmed_template_knowledge',AsyncMock())
-    sess,boxes,anchors=seed(tmp_path); client=_client(factory,raise_server_exceptions=True)
+    sess,boxes,anchors=seed(tmp_path); client=_client(factory,monkeypatch,raise_server_exceptions=True)
     q=copy.deepcopy(sess.pages[0]['questions'][0]); changed=copy.deepcopy(boxes)
     changed[1],changed[2]=changed[2],changed[1]
     payload={'page_index':0,'columns':[{'column_index':1,'x1_1000':0,'x2_1000':1000}],
@@ -66,7 +66,7 @@ def test_http_explicit_slot_removal_persists_sparse_ids(monkeypatch,tmp_path):
     from routers import grade_pipeline
     _,factory=_make_app_and_session(); monkeypatch.setattr(grade_pipeline,'UPLOAD_DIR',str(tmp_path))
     _,factory=_make_app_and_session(); monkeypatch.setattr(grade,'UPLOAD_DIR',str(tmp_path))
-    sess,boxes,anchors=seed(tmp_path); client=_client(factory,raise_server_exceptions=True)
+    sess,boxes,anchors=seed(tmp_path); client=_client(factory,monkeypatch,raise_server_exceptions=True)
     q=copy.deepcopy(sess.pages[0]['questions'][0])
     for key in ['slot_ids','region_kinds','answer_slots']: q[key].pop(1)
     q['blank_count']=7; q['subquestion_count']=7
@@ -108,7 +108,7 @@ def test_http_deleting_last_drawing_slot_drops_its_figure_and_confirms(monkeypat
     artifact=build_template_artifact(str(source),sess.template_dir,0,[q],question_anchors=anchors,template_answer_regions=regions,template_handwriting_regions=regions,template_mode='marked')
     sess.add_page(0,[q],artifact=artifact); sess.status='ocr_done'; sess.category='daily'; sess.template_mode='marked'; sess.save_meta()
     assert TemplateSession.load_meta(sess.template_id,str(tmp_path)).pages[0]['questions'][0]['drawing_reference']
-    client=_client(factory,raise_server_exceptions=True)
+    client=_client(factory,monkeypatch,raise_server_exceptions=True)
     kept={'slot_ids':['3[1]'],'region_kinds':['answer']}
     layout={'page_index':0,'columns':[{'column_index':1,'x1_1000':0,'x2_1000':1000}],'question_anchors':anchors,
         'template_answer_regions':[{'question_number':'3','regions':[text],**kept}],
@@ -134,7 +134,7 @@ def test_http_regions_arriving_in_another_order_rebind_by_slot_id(monkeypatch,tm
     from routers import grade_pipeline
     _,factory=_make_app_and_session(); monkeypatch.setattr(grade_pipeline,'UPLOAD_DIR',str(tmp_path))
     _,factory=_make_app_and_session(); monkeypatch.setattr(grade,'UPLOAD_DIR',str(tmp_path))
-    sess,boxes,anchors=seed(tmp_path); client=_client(factory,raise_server_exceptions=True)
+    sess,boxes,anchors=seed(tmp_path); client=_client(factory,monkeypatch,raise_server_exceptions=True)
     q=copy.deepcopy(sess.pages[0]['questions'][0])
     order=[7,0,1,2,3,4,5,6]
     payload={'page_index':0,'columns':[{'column_index':1,'x1_1000':0,'x2_1000':1000}],'question_anchors':anchors,
@@ -171,7 +171,7 @@ def test_http_teacher_deleting_every_position_clears_slots_and_confirms(monkeypa
     sess=TemplateSession('slot-cleared',str(tmp_path),teacher_id=1)
     artifact=build_template_artifact(str(source),sess.template_dir,0,[q],question_anchors=anchors,template_answer_regions=regions,template_handwriting_regions=regions,template_mode='marked')
     sess.add_page(0,[q],artifact=artifact); sess.status='ocr_done'; sess.category='daily'; sess.template_mode='marked'; sess.save_meta()
-    client=_client(factory,raise_server_exceptions=True)
+    client=_client(factory,monkeypatch,raise_server_exceptions=True)
     layout={'page_index':0,'columns':[{'column_index':1,'x1_1000':0,'x2_1000':1000}],'question_anchors':anchors,
         'template_answer_regions':[{'question_number':'3','regions':[]}],
         'template_handwriting_regions':[{'question_number':'3','regions':[]}],

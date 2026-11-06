@@ -35,7 +35,7 @@ def directory_client(tmp_path, monkeypatch):
         return None
 
     monkeypatch.setattr(grade_template, "_classify_confirmed_template_knowledge", no_background_model)
-    with _client(Session, raise_server_exceptions=True) as client:
+    with _client(Session, monkeypatch, raise_server_exceptions=True) as client:
         yield client
     engine.dispose()
 

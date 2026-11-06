@@ -46,7 +46,7 @@ def _import(monkeypatch, tmp_path, box):
     monkeypatch.setattr(gr_router, "_check_limits_or_raise", lambda db, uid: None)
     _patch_template_layout(monkeypatch, gr_router)
     monkeypatch.setattr(grade_template, "recognize_template_pipeline", _one_question_pipeline(box))
-    response = _client(Session).post(
+    response = _client(Session, monkeypatch).post(
         "/api/batch-grade/template/recognize",
         data={"template_mode": "blank", "category": "daily"},
         files=[("files", ("page-1.png", _template_png_bytes("P1"), "image/png"))],
