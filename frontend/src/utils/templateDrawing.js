@@ -18,9 +18,11 @@ export function templateDrawingReferenceRegionsFor(page, question) {
   return page.drawingBoxes.filter((box) => String(box.question_number) === String(question?.question_no)).map((box) => box.bbox)
 }
 
-export function markTemplateReferenceImageReady(page, question) {
+// The editor reports whether the question's template image has loaded: false
+// on mount, while a new image loads and after it fails, true once it is there.
+export function markTemplateReferenceImageReady(page, question, ready) {
   page.referenceImageReadyNumbers ||= {}
-  page.referenceImageReadyNumbers[String(question?.question_no || '')] = true
+  page.referenceImageReadyNumbers[String(question?.question_no || '')] = ready === true
 }
 
 export function templateDrawingReferenceSummary(question) {

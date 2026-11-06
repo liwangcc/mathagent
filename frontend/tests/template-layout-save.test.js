@@ -145,11 +145,15 @@ async function openTemplateEditor(t, {
     messageBox,
   })
   const { page, client } = upload
-  // The page images finish loading, as a browser would report it.
-  for (const img of page.root.findAll(el => el.tagName === 'img' && el.getAttribute('alt') === '教师模板原图')) {
-    await img.dispatch('load')
+  // The page images finish loading, as a browser would report it (also for an
+  // editor that appears later, such as a question turned into 作图题).
+  const loadImages = async () => {
+    for (const img of page.root.findAll(el => el.tagName === 'img' && el.getAttribute('alt') === '教师模板原图')) {
+      await img.dispatch('load')
+    }
+    await upload.settle()
   }
-  await upload.settle()
+  await loadImages()
   assert.equal(page.errors.length, 0, String(page.errors[0]?.err?.stack))
   const mark = { requests: client.requests.length, messages: client.messages.length }
   const dialog = () => page.root.find(el => el.tagName === 'el-dialog' && el.attributes.title === '编辑本次模板')
@@ -158,6 +162,7 @@ async function openTemplateEditor(t, {
     setup: page.setup,
     root: page.root,
     locks,
+    loadImages,
     // Requests and toasts since the editor opened.
     sent: () => client.requests.slice(mark.requests).map(routeOf),
     bodies: route => client.requests.slice(mark.requests).filter(config => routeOf(config) === route).map(config => JSON.parse(config.data)),
@@ -376,6 +381,7 @@ test('a question due for removal raises no geometry conflict before it leaves', 
   assert.match(editor.reviewRows('保存时删除的题目').join('\n'), /第 1 题的作答框和画图区已全部删除/)
   await edit(editor, drawingKindSelect(editor.card(0, 0), '1'), 'drawing')
   assert.equal(editor.pageAlert(0), '')
+  await editor.loadImages() // Q1's 作图 editor shows the template image
   await editor.save()
   assert.doesNotMatch(editor.lastWarning(), /还没有画图区/)
   assert.deepEqual(editor.sent(), [QUESTION_EDIT(), LAYOUT(), CONFIRM])
@@ -436,6 +442,7 @@ test('model geometry conflicts are shown to the teacher before any layout reques
   await edit(editor, kind, 'drawing')
   assert.equal(kind.value, 'drawing')
   assert.equal(editor.pageAlert(0), '')
+  await editor.loadImages() // Q5's 作图 editor shows the template image
   await editor.save()
   assert.deepEqual(editor.sent(), [LAYOUT(), CONFIRM])
   const [schema] = editor.bodies(LAYOUT())[0].question_schema

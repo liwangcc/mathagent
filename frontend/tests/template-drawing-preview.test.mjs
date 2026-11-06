@@ -412,14 +412,10 @@ test('the shared canvas shows the template image loading and failing, and a load
   assert.deepEqual(imageWarnings(editor), [])
 })
 
-// Production defect, so a todo: DrawingReferenceEditor reports image-ready
-// with `false` as soon as it mounts, and the page's @image-ready handler marks
-// the question's image ready whatever the event says, so today the final save
-// goes out before the template image has loaded (or after it failed). Fixing
-// the handler to follow the event turns this test green.
-test('image readiness propagates to the final template confirmation gate, not only editor checkbox', {
-  todo: '生产缺陷：DrawingReferenceEditor 挂载即 emit image-ready(false)，Upload.vue 的 @image-ready 不看 $event',
-}, async (t) => {
+// DrawingReferenceEditor reports image-ready with `false` as soon as it mounts
+// (and while a new image loads, or after it failed), `true` once it is there;
+// the final save follows what it reports.
+test('image readiness propagates to the final template confirmation gate, not only editor checkbox', async (t) => {
   const editor = await openTemplateEditor(t, template(standardPage()))
   // The image has not loaded yet: the final save stops and says why.
   await editor.save()

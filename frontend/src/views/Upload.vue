@@ -1113,7 +1113,7 @@
               canvas-class="tpl-cut-preview-stage"
               :canvas-visible="templateReferenceCanvasVisible(page, q)"
               @update:model-value="q && updateDrawingReference(q, $event)"
-              @image-ready="q && markTemplateReferenceImageReady(page, q)"
+              @image-ready="q && markTemplateReferenceImageReady(page, q, $event)"
               @selection-change="q && setTemplateStrokeSelection(page, $event)"
               @edit-request="q && selectTemplateDrawingReference(page, q.question_no)"
               @pointermove="moveTemplateGeometry"
