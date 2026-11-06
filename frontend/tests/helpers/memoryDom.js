@@ -37,6 +37,31 @@ export class MComment extends MNode {
   get textContent() { return '' }
 }
 
+// A selector list for MElement's matches / closest / querySelector(All): one
+// test per comma-separated compound selector, built from a tag, `#id`,
+// `.class` and `[attr]` / `[attr="value"]` parts. Combinators and
+// pseudo-classes are not supported and throw, rather than match nothing.
+const SELECTOR_PART = /^(?:([a-zA-Z][\w-]*)|#([\w-]+)|\.([\w-]+)|\[([\w:-]+)(?:=(?:"([^"]*)"|'([^']*)'|([\w-]+)))?\])/
+function selectorTests(selector) {
+  return String(selector).split(',').map((compound) => {
+    let rest = compound.trim()
+    const parts = []
+    while (rest) {
+      const match = SELECTOR_PART.exec(rest)
+      if (!match) throw new SyntaxError(`memoryDom: unsupported selector "${selector}"`)
+      const [text, tag, id, className, attribute, ...values] = match
+      const value = values.find(item => item !== undefined)
+      if (tag) parts.push(el => el.tagName === tag)
+      else if (id) parts.push(el => el.id === id)
+      else if (className) parts.push(el => el.classList.contains(className))
+      else parts.push(el => el.hasAttribute(attribute) && (value === undefined || el.getAttribute(attribute) === value))
+      rest = rest.slice(text.length)
+    }
+    if (!parts.length) throw new SyntaxError(`memoryDom: unsupported selector "${selector}"`)
+    return el => parts.every(part => part(el))
+  })
+}
+
 // The event a listener prop is for, as Vue names it: `onClickOnce` -> `click`,
 // `onUpdate:modelValue` -> `update:modelValue`, `onRowClick` -> `rowClick`.
 const eventName = (key) => {
@@ -114,6 +139,20 @@ export class MElement extends MNode {
     for (let current = node; current; current = current.parentNode) if (current === this) return true
     return false
   }
+  // The element queries pages call, for simple selectors only (see selectorTests).
+  matches(selector) {
+    return selectorTests(selector).some(test => test(this))
+  }
+  closest(selector) {
+    const tests = selectorTests(selector)
+    for (let node = this; node instanceof MElement; node = node.parentNode) if (tests.some(test => test(node))) return node
+    return null
+  }
+  querySelectorAll(selector) {
+    const tests = selectorTests(selector)
+    return this.findAll(el => tests.some(test => test(el)))
+  }
+  querySelector(selector) { return this.querySelectorAll(selector)[0] ?? null }
   cloneNode() {
     const clone = new MElement(this.tagName, this.namespace)
     Object.assign(clone.attributes, this.attributes)

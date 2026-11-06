@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
-import { readFileSync } from 'node:fs'
 import test from 'node:test'
+import { MElement } from './helpers/memoryDom.js'
+import { cutPage, openTemplateEditor } from './helpers/templateDrawingSlots.js'
 import {
   prepareTemplateSlots, templateSlotBoxes, templateSlotIdsValid, templateSlotLabel,
   swapTemplateSlotGeometry, serializeTemplateSlots, addTemplateSlot, removeTemplateSlot, convertTemplateDrawingSlots,
@@ -12,7 +13,6 @@ import {
   templateMaxFlagEntries, templateMaxFlagNotice, keepTemplateMaxFlags,
 } from '../src/utils/templateReview.js'
 
-const source = readFileSync(new URL('../src/views/Upload.vue', import.meta.url), 'utf8')
 const clone = value => structuredClone(value)
 function fixture({ typed = false, ids = false, sameBBox = false } = {}) {
   const boxes = [[10, 20, 200, 100], [10, 120, 200, 200], [10, 220, 200, 300]]
@@ -32,14 +32,60 @@ function fixture({ typed = false, ids = false, sameBBox = false } = {}) {
   }
   return { page, question }
 }
-function uploadFunctions(names, dependencies = {}) {
-  const functions = names.map(name => {
-    const match = source.match(new RegExp(`(?:async )?function ${name}\\([^]*?\\n\\}`))
-    assert.ok(match, `${name} remains a real Upload.vue function`)
-    return match[0]
-  }).join('\n')
-  return new Function(...Object.keys(dependencies), `${functions}\nreturn { ${names.join(',')} }`)(...Object.values(dependencies))
+
+// The same Q2.3 as fixture() as the server sends it to the real Upload page:
+// the recognized question (templatePages) and its stored cut page (answer
+// regions with their slot IDs, schema). `located` lists the slot positions
+// the cut page has a box for; `reviewPending` marks the page's geometry as
+// still under review, the only state in which a slot may lack its box.
+const BOXES = [[10, 20, 200, 100], [10, 120, 200, 200], [10, 220, 200, 300]]
+const IDS = ['2.3[2]', '2.3[5]', '2.3[9]']
+function serverSlots({ typed = false, pageIndex = 0, answers, located = [0, 1, 2], questionIds = IDS, reviewPending = false, question: extra = {} } = {}) {
+  const question = {
+    question_no: '2.3', question_type: 'solve', question_text: '解下列方程组并作图', blank_count: 3, subquestion_count: 3,
+    answer_slots: answers ?? ['x = 1\ny = 2', typed ? '' : 'second', 'third'],
+    standard_answer: 'original summary', blank_scores: [2, 3, 5], subquestion_scores: [2, 3, 5],
+    slot_ids: [...questionIds],
+    ...(typed ? { region_kinds: ['answer', 'drawing', 'answer'], answer_kind: 'mixed' } : { answer_kind: 'non_graphic' }),
+    ...extra,
+  }
+  const schema = {
+    question_number: '2.3', answer_kind: question.answer_kind, slot_ids: [...IDS],
+    ...(typed ? { region_kinds: ['answer', 'drawing', 'answer'], drawing_regions: located.includes(1) ? [BOXES[1]] : [] } : {}),
+  }
+  return {
+    question,
+    cut: cutPage({
+      pageIndex,
+      anchors: ['2.3'],
+      answerRegions: [{ question_number: '2.3', regions: located.map(i => BOXES[i]), slot_ids: located.map(i => IDS[i]) }],
+      schema: [schema],
+      ...(reviewPending ? { geometry_review_pending: true } : {}),
+    }),
+  }
 }
+const otherQuestion = (number = '1') => ({ question_no: number, question_type: 'solve', question_text: `第 ${number} 题题干`, standard_answer: '2', answer_kind: 'non_graphic' })
+const otherCut = (pageIndex, number = '1') => cutPage({
+  pageIndex, anchors: [number],
+  answerRegions: [{ question_number: number, regions: [[300, 500, 700, 600]] }],
+  schema: [{ question_number: number, answer_kind: 'non_graphic' }],
+})
+
+// The 作答槽顺序 rows of a page, by slot ID: the locate button and the answer shown.
+function slotRows(editor, pageIndex) {
+  return Object.fromEntries(editor.article(pageIndex).allByClass('tpl-slot-row').map(row => [row.dataset.templateSlotRow, {
+    row,
+    button: row.find(el => el.tagName === 'button'),
+    answer: row.find(el => el.tagName === 'span').textContent,
+  }]))
+}
+const answerOverlays = (editor, pageIndex) => editor.article(pageIndex).allByClass('tpl-handwriting-region')
+const drawingOverlays = (editor, pageIndex) => editor.article(pageIndex).allByClass('tpl-drawing-region')
+const contractError = (editor, pageIndex) => editor.article(pageIndex).find(el => el.tagName === 'p' && el.attributes.role === 'alert')?.text ?? ''
+const pageCounts = (editor, pageIndex) => editor.article(pageIndex).byClass('tpl-page-counts').text
+const hint = (editor, pageIndex) => editor.article(pageIndex).byClass('tpl-pointer-hint').text
+const boxStyle = ([left, top, right, bottom]) => ({ left: `${left / 10}%`, top: `${top / 10}%`, width: `${(right - left) / 10}%`, height: `${(bottom - top) / 10}%` })
+const styleOf = el => ({ left: el.style.left, top: el.style.top, width: el.style.width, height: el.style.height })
 
 test('prepare stages legacy multi-slot IDs and leaves legacy single-box contracts untouched', () => {
   const { page, question } = fixture()
@@ -213,22 +259,35 @@ test('identical physical bboxes still serialize independent slots and repeated a
   assert.deepEqual(wire.regions, Array.from({ length: 3 }, () => [10, 20, 200, 100]))
 })
 
-test('real Upload initializer surfaces contract errors and per-slot UI answers remain page-scoped', () => {
-  const { page, question } = fixture({ typed: true, ids: true })
-  const methods = uploadFunctions(['initializeTemplatePageSlots', 'templateSlotAnswer'], {
-    prepareTemplateSlots, templateFillAnswerSlots,
-    templatePages: { value: [{ page_index: 99, questions: [] }, { page_index: 0, questions: [question] }] },
+test('real Upload initializer surfaces contract errors and per-slot UI answers remain page-scoped', async (t) => {
+  const { question, cut } = serverSlots({ typed: true })
+  // The recognized pages arrive out of page order, and page 1 has a Q2.3 of
+  // its own: page 0's slot rows must show page 0's answers.
+  const elsewhere = { ...serverSlots().question, answer_slots: ['page 1 first', 'page 1 second', 'page 1 third'] }
+  const editor = await openTemplateEditor(t, {
+    pages: [{ page_index: 1, questions: [elsewhere] }, { page_index: 0, questions: [question] }],
+    cutPages: [cut],
   })
-  methods.initializeTemplatePageSlots(page)
-  assert.equal(page.slotContractError, '')
-  assert.equal(methods.templateSlotAnswer(page, page.answerBoxes[0]), 'x = 1\ny = 2')
-  assert.equal(methods.templateSlotAnswer(page, page.answerBoxes[1]), '作图（不填文字）')
-  assert.equal(methods.templateSlotAnswer(page, { question_number: '2.3', slot_id: 'missing' }), '答案未绑定')
-  question.answer_slots_text[2] = ''
-  assert.equal(methods.templateSlotAnswer(page, page.answerBoxes[2]), '待填写答案')
-  question.slot_ids[0] = '2.3[88]'
-  methods.initializeTemplatePageSlots(page)
-  assert.match(page.slotContractError, /回包不一致/)
+  assert.equal(contractError(editor, 0), '')
+  const rows = slotRows(editor, 0)
+  assert.deepEqual(Object.keys(rows).sort(), [...IDS].sort())
+  assert.equal(rows['2.3[2]'].answer, 'x = 1\ny = 2')
+  assert.equal(rows['2.3[5]'].answer, '作图（不填文字）')
+  assert.equal(rows['2.3[9]'].answer, 'third')
+  // The teacher clears the third answer in the question's own card.
+  const third = editor.questionCard(1, '2.3').find(el => el.tagName === 'input' && el.attributes['aria-label'] === '第 2.3 题第 3 空答案')
+  third.value = ''
+  await third.dispatch('change')
+  await editor.upload.settle()
+  assert.equal(slotRows(editor, 0)['2.3[9]'].answer, '待填写答案')
+  editor.upload.unmount()
+
+  // The recognized question names other slot IDs than the stored page: the
+  // page reports the mismatch, and a position it cannot bind says so.
+  const stale = serverSlots({ typed: true, questionIds: ['2.3[88]', '2.3[5]', '2.3[9]'] })
+  const reopened = await openTemplateEditor(t, { pages: [{ page_index: 0, questions: [stale.question] }], cutPages: [stale.cut] })
+  assert.match(contractError(reopened, 0), /回包不一致/)
+  assert.equal(slotRows(reopened, 0)['2.3[2]'].answer, '答案未绑定')
 })
 
 test('missing-answer notices preserve slot identities and clear after filling or deleting an extra region', () => {
@@ -248,7 +307,7 @@ test('missing-answer notices preserve slot identities and clear after filling or
   assert.deepEqual(templateFillAnswerSlots(question), ['6', '']) // drawing stays empty
 })
 
-test('review drafts retain unlocated middle slots without guessing boxes or shifting answers', () => {
+test('review drafts retain unlocated middle slots without guessing boxes or shifting answers', async (t) => {
   const { page, question } = fixture({ ids: true })
   prepareTemplateSlots(page, [question])
   page.geometryReviewPending = true
@@ -261,116 +320,129 @@ test('review drafts retain unlocated middle slots without guessing boxes or shif
   assert.equal(pending.pendingGeometry, true)
   assert.deepEqual(question.answer_slots_text, ['x = 1\ny = 2', 'second', 'third'])
   assert.throws(() => serializeTemplateSlots(page, [question], page.questionSchema), /还没有框选位置/)
-  const methods = uploadFunctions(['templateVisibleAnswerBoxes'], {})
-  assert.equal(methods.templateVisibleAnswerBoxes(page).length, 2)
   removeTemplateSlot(page, question, pending.slot_id)
   assert.deepEqual(serializeTemplateSlots(page, [question], page.questionSchema)[0].answer_slots, ['x = 1\ny = 2', 'third'])
+
+  // The real page shows the same review draft: the middle slot keeps its
+  // answer and waits to be boxed, without a guessed box on the page.
+  const draft = serverSlots({ located: [0, 2], reviewPending: true })
+  const editor = await openTemplateEditor(t, { pages: [{ page_index: 0, questions: [draft.question] }], cutPages: [draft.cut] })
+  assert.deepEqual(answerOverlays(editor, 0).map(el => el.dataset.templateSlotId), ['2.3[2]', '2.3[9]'])
+  assert.match(pageCounts(editor, 0), /· 2 个作答框 ·/)
+  const rows = slotRows(editor, 0)
+  assert.deepEqual(Object.keys(rows).sort(), [...IDS].sort())
+  assert.equal(rows['2.3[5]'].button.text, 'Q2.3[5] 待框选')
+  assert.deepEqual(IDS.map(id => rows[id].answer), ['x = 1\ny = 2', 'second', 'third'])
 })
 
-test('drawing a pending slot fills its existing identity rather than appending another slot', () => {
-  const { page, question } = fixture({ ids: true })
-  prepareTemplateSlots(page, [question])
-  page.geometryReviewPending = true
-  page.answerBoxes.splice(1, 1)
-  prepareTemplateSlots(page, [question])
-  const pending = page.answerBoxes.find(b => b.slot_id === '2.3[5]')
-  page.questionAnchors = [{ question_number: '2.3' }]
-  page.pendingSlotId = pending.slot_id
-  page.geometryDraft = [300, 400, 600, 700]
-  const methods = uploadFunctions(['commitTemplateGeometryCreation', 'selectTemplateGeometryTarget', 'clearTemplateSelection', 'templateAnswerQuestion'], {
-    addTemplateSlot,
-    templatePages: { value: [{ page_index: 0, questions: [question] }] },
-    normalizeTemplateBBoxForPage: value => [...value],
-    markTemplateGeometryConfirmed: box => { box.human_confirmed = true },
-    markTemplatePageGeometryDirty: page => { page.dirty = true },
-    templateHasDrawingQuestion: () => false, activeTemplateReferenceEditor: () => null,
-    ElMessage: { warning: message => assert.fail(message) },
-  })
-  methods.commitTemplateGeometryCreation({ page, kind: 'answer', questionNumber: '2.3', width: 1000, height: 1000 })
-  assert.equal(page.answerBoxes.length, 3)
-  assert.deepEqual(pending.bbox, [300, 400, 600, 700])
-  assert.equal(pending.pendingGeometry, undefined)
-  assert.equal(page.pendingSlotId, '')
-  assert.equal(page.geometrySelection.target, pending)
-  assert.deepEqual(serializeTemplateSlots(page, [question], page.questionSchema)[0].slot_ids, question.slot_ids)
+test('drawing a pending slot fills its existing identity rather than appending another slot', async (t) => {
+  const draft = serverSlots({ located: [0, 2], reviewPending: true })
+  const editor = await openTemplateEditor(t, { pages: [{ page_index: 0, questions: [draft.question] }], cutPages: [draft.cut] })
+  await slotRows(editor, 0)['2.3[5]'].button.dispatch('click')
+  await editor.upload.settle()
+  assert.match(hint(editor, 0), /请在原图上为 Q2\.3\[5\] 划出作答区域/)
+  await editor.drawBox(0, [300, 400, 600, 700])
+  assert.deepEqual(editor.warnings(), [])
+  const overlays = answerOverlays(editor, 0)
+  assert.equal(overlays.length, 3, 'the box fills the pending slot instead of adding another one')
+  const filled = overlays.find(el => el.dataset.templateSlotId === '2.3[5]')
+  assert.deepEqual(styleOf(filled), boxStyle([300, 400, 600, 700]))
+  assert.ok(filled.classList.contains('is-selected'), 'the filled box is the selection')
+  const rows = slotRows(editor, 0)
+  assert.deepEqual(Object.keys(rows).sort(), [...IDS].sort())
+  assert.equal(rows['2.3[5]'].button.text, 'Q2.3[5]')
+  assert.ok(rows['2.3[5]'].row.classList.contains('is-selected'))
+  assert.doesNotMatch(hint(editor, 0), /划出作答区域/, 'no slot waits for a box any more')
+  // Saving sends the same slot identities, the drawn box in the middle one.
+  await editor.save()
+  const [schema] = editor.layoutSaves()[0].question_schema
+  assert.deepEqual(schema.slot_ids, IDS)
+  assert.deepEqual(schema.regions, [BOXES[0], [300, 400, 600, 700], BOXES[2]])
 })
 
-test('go-to-review selects the right page and missing slot, or arms drawing for an unlocated slot', async () => {
-  const { page, question } = fixture({ ids: true })
-  page.pageIndex = 7
-  question.answer_slots[1] = ''
-  prepareTemplateSlots(page, [question])
-  const selectedBox = page.answerBoxes[1]
-  const scrolled = []
-  const overlay = { dataset: { templateSlotId: selectedBox.slot_id }, scrollIntoView: () => scrolled.push('box') }
-  const row = { dataset: { templateSlotRow: selectedBox.slot_id }, scrollIntoView: () => scrolled.push('row') }
-  const root = { scrollIntoView: () => scrolled.push('page'), querySelectorAll: selector => selector === '[data-template-slot-row]' ? [row] : selectedBox.bbox.length ? [overlay] : [] }
-  const activePage = { value: 0 }
-  const entry = { pageIndex: 1, questionIndex: 0, question }
-  const methods = uploadFunctions([
-    'openTemplateMissingAnswers', 'locateTemplateReviewSlot', 'selectTemplatePreviewPage',
-    'selectTemplateGeometryTarget', 'clearTemplateSelection', 'templateSlotNeedsAnswer',
-  ], {
-    templateMissingAnswerSlots, templateSlotBoxes,
-    templatePages: { value: [{ page_index: 0, questions: [] }, { page_index: 7, questions: [question] }] },
-    templateCutPreviewPages: { value: [page] }, templateActivePreviewPage: activePage,
-    templatePageEditingLocked: () => false, templateCropGesture: { value: null },
-    templateHasDrawingQuestion: () => false, activeTemplateReferenceEditor: () => null,
-    nextTick: async fn => fn?.(),
-    document: { getElementById: id => { assert.equal(id, 'template-reference-page-7'); return root } },
+test('go-to-review selects the right page and missing slot, or arms drawing for an unlocated slot', async (t) => {
+  const scrolls = t.mock.method(MElement.prototype, 'scrollIntoView')
+  const lastScrolled = () => scrolls.mock.calls.at(-1)?.this
+  const missingReview = editor => editor.page.root.find(el => el.tagName === 'section' && el.attributes['aria-label'] === '待补充标准答案')
+  const goToReview = async (editor) => {
+    await missingReview(editor).byText('button', '去处理').dispatch('click')
+    await editor.upload.settle()
+  }
+  // Template page 7 is the second page; its Q2.3 has no answer for 2.3[5].
+  const boxed = serverSlots({ pageIndex: 7, answers: ['x = 1\ny = 2', '', 'third'] })
+  let editor = await openTemplateEditor(t, {
+    pages: [{ page_index: 0, questions: [otherQuestion()] }, { page_index: 7, questions: [boxed.question] }],
+    cutPages: [otherCut(0), boxed.cut],
   })
-  await methods.openTemplateMissingAnswers(entry)
-  assert.equal(activePage.value, 7)
-  assert.equal(page.geometrySelection.target, selectedBox)
-  assert.equal(scrolled.at(-1), 'box')
-  assert.equal(question._open, true)
-  assert.equal(methods.templateSlotNeedsAnswer(page, selectedBox), true)
-  assert.equal(methods.templateSlotNeedsAnswer(page, page.answerBoxes[0]), false)
-  selectedBox.bbox = []
-  await methods.openTemplateMissingAnswers(entry)
-  assert.equal(scrolled.at(-1), 'row')
-  assert.equal(page.pendingSlotId, selectedBox.slot_id)
-  assert.equal(page.geometryTool, 'answer')
-  methods.clearTemplateSelection(page)
-  assert.equal(page.pendingSlotId, '')
-  assert.equal(page.geometryTool, '')
+  assert.ok(editor.shown(editor.article(0)) && !editor.shown(editor.article(7)), 'the editor opens on its first page')
+  const card = () => editor.questionCard(1, '2.3')
+  await card().byClass('tpl-q-toggle').dispatch('click')
+  await editor.upload.settle()
+  assert.ok(card().classList.contains('is-collapsed'), 'the teacher folded the question card')
+  assert.match(missingReview(editor).text, /第 2\.3 题有 1 个作答区域未设置标准答案/)
+  await goToReview(editor)
+  assert.ok(editor.shown(editor.article(7)) && !editor.shown(editor.article(0)), 'page 7 is shown')
+  const overlay = id => answerOverlays(editor, 7).find(el => el.dataset.templateSlotId === id)
+  assert.ok(overlay('2.3[5]').classList.contains('is-selected'))
+  assert.equal(lastScrolled(), overlay('2.3[5]'), 'scrolled to the missing slot\'s box')
+  assert.equal(card().classList.contains('is-collapsed'), false)
+  assert.equal(card().byClass('tpl-q-toggle').attributes['aria-expanded'], 'true')
+  assert.ok(overlay('2.3[5]').classList.contains('is-missing-answer'))
+  assert.equal(overlay('2.3[2]').classList.contains('is-missing-answer'), false)
+  editor.upload.unmount()
+
+  // The missing slot has no box yet: go to its row and arm the box tool for it.
+  const unboxed = serverSlots({ pageIndex: 7, answers: ['x = 1\ny = 2', '', 'third'], located: [0, 2], reviewPending: true })
+  editor = await openTemplateEditor(t, {
+    pages: [{ page_index: 0, questions: [otherQuestion()] }, { page_index: 7, questions: [unboxed.question] }],
+    cutPages: [otherCut(0), unboxed.cut],
+  })
+  await goToReview(editor)
+  assert.ok(editor.shown(editor.article(7)))
+  assert.equal(lastScrolled(), slotRows(editor, 7)['2.3[5]'].row, 'scrolled to the slot\'s row')
+  assert.equal(editor.article(7).byClass('tpl-draw-surface').attributes['aria-label'], '在原图上新增蓝色作答框')
+  assert.match(hint(editor, 7), /请在原图上为 Q2\.3\[5\] 划出作答区域/)
+  // Pressing on the bare page clears the selection and disarms the slot's tool.
+  await editor.article(7).byClass('tpl-reference-geometry').dispatch('pointerdown')
+  await editor.upload.settle()
+  assert.equal(editor.article(7).byClass('tpl-draw-surface'), null)
+  assert.doesNotMatch(hint(editor, 7), /划出作答区域/)
 })
 
 
-test('drawing a pending drawing slot also registers its drawing region', () => {
-  const { page, question } = fixture({ typed: true, ids: true })
-  prepareTemplateSlots(page, [question])
-  page.geometryReviewPending = true
-  page.answerBoxes.splice(1, 1)
-  page.drawingBoxes = []
-  prepareTemplateSlots(page, [question])
-  const pending = page.answerBoxes.find(b => b.slot_id === '2.3[5]')
-  assert.equal(pending.region_kind, 'drawing')
-  page.questionAnchors = [{ question_number: '2.3' }]
-  page.pendingSlotId = pending.slot_id
-  page.geometryDraft = [300, 400, 600, 700]
-  const warnings = []
-  const methods = uploadFunctions(['commitTemplateGeometryCreation', 'selectTemplateGeometryTarget', 'clearTemplateSelection', 'templateAnswerQuestion'], {
-    addTemplateSlot,
-    templatePages: { value: [{ page_index: 0, questions: [question] }] },
-    normalizeTemplateBBoxForPage: value => [...value],
-    markTemplateGeometryConfirmed: box => { box.human_confirmed = true },
-    markTemplatePageGeometryDirty: page => { page.dirty = true },
-    templateHasDrawingQuestion: () => true, activeTemplateReferenceEditor: () => null,
-    ensureTemplateDrawingLabel: () => {},
-    ElMessage: { warning: message => warnings.push(message) },
-  })
-  // The wrong tool never fills a drawing identity with a text box.
-  methods.commitTemplateGeometryCreation({ page, kind: 'answer', questionNumber: '2.3', width: 1000, height: 1000 })
-  assert.match(warnings[0], /作图区/)
-  assert.deepEqual(pending.bbox, [])
-  page.pendingSlotId = pending.slot_id
-  methods.commitTemplateGeometryCreation({ page, kind: 'drawing', questionNumber: '2.3', width: 1000, height: 1000 })
-  assert.deepEqual(pending.bbox, [300, 400, 600, 700])
-  assert.deepEqual(page.drawingBoxes.map(b => [b.slot_id, b.bbox]), [['2.3[5]', [300, 400, 600, 700]]])
-  assert.equal(page.geometrySelection.target, page.drawingBoxes[0])
-  assert.deepEqual(serializeTemplateDrawingReview(page.questionSchema, page.drawingBoxes, [])[0].drawing_regions, [[300, 400, 600, 700]])
-  assert.deepEqual(serializeTemplateSlots(page, [question], page.questionSchema)[0].regions[1], [300, 400, 600, 700])
+test('drawing a pending drawing slot also registers its drawing region', async (t) => {
+  const draft = serverSlots({ typed: true, located: [0, 2], reviewPending: true })
+  const editor = await openTemplateEditor(t, { pages: [{ page_index: 0, questions: [draft.question] }], cutPages: [draft.cut] })
+  const pending = () => slotRows(editor, 0)['2.3[5]']
+  assert.equal(pending().button.text, 'Q2.3[5] 待框选')
+  assert.equal(pending().answer, '作图（不填文字）')
+  assert.equal(drawingOverlays(editor, 0).length, 0)
+  await pending().button.dispatch('click')
+  await editor.upload.settle()
+  assert.equal(editor.article(0).byClass('tpl-draw-surface').attributes['aria-label'], '在原图上新增绿色画图区', 'a drawing slot arms the drawing tool')
+  // A text-box tool (the page never arms one for this slot) cannot fill the
+  // drawing identity with a text box.
+  editor.page.setup.templateCutPreviewPages[0].geometryTool = 'answer'
+  await editor.upload.settle()
+  await editor.drawBox(0, [300, 400, 600, 700])
+  assert.match(editor.warnings()[0], /Q2\.3\[5\] 是作图区/)
+  assert.equal(pending().button.text, 'Q2.3[5] 待框选')
+  assert.equal(answerOverlays(editor, 0).length + drawingOverlays(editor, 0).length, 2)
+  // With the drawing tool the box fills the slot and becomes its drawing region.
+  await pending().button.dispatch('click')
+  await editor.upload.settle()
+  await editor.drawBox(0, [300, 400, 600, 700])
+  const regions = drawingOverlays(editor, 0)
+  assert.deepEqual(regions.map(el => el.dataset.templateSlotId), ['2.3[5]'])
+  assert.deepEqual(styleOf(regions[0]), boxStyle([300, 400, 600, 700]))
+  assert.ok(regions[0].classList.contains('is-selected'), 'the drawing region is the selection')
+  assert.equal(pending().button.text, 'Q2.3[5]')
+  await editor.loadImages()
+  await editor.save()
+  const [schema] = editor.layoutSaves()[0].question_schema
+  assert.deepEqual(schema.drawing_regions, [[300, 400, 600, 700]])
+  assert.deepEqual(schema.regions[1], [300, 400, 600, 700])
+  assert.deepEqual(schema.region_kinds, ['answer', 'drawing', 'answer'])
 })
 
 test('Max extra/refused reports block until the slot is deleted or explicitly kept', () => {
@@ -395,10 +467,40 @@ test('Max extra/refused reports block until the slot is deleted or explicitly ke
   assert.deepEqual(whole.max_flags_kept, ['*'])
 })
 
-test('save gate reports Max reports before missing answers and sends teacher keep decisions', () => {
-  assert.match(source, /const maxFlagNotice = templateMaxFlagNotice\(question\)\n\s+if \(maxFlagNotice\) blockers\.push\(maxFlagNotice\)\n\s+const missingNotice/)
-  assert.match(source, /max_flags_kept: Array\.isArray\(q\.max_flags_kept\) \? \[\.\.\.q\.max_flags_kept\] : \[\]/)
-  assert.match(source, /@click="keepTemplateMaxFlags\(entry\.question\)">确认保留<\/button>/)
+test('save gate reports Max reports before missing answers and sends teacher keep decisions', async (t) => {
+  const flagged = serverSlots({
+    answers: ['', 'second', 'third'],
+    question: { max_flags: [{ scope: 'slot', slot_id: '2.3[9]', status: 'extra', reason: '印刷示意图', source: 'locator' }] },
+  })
+  const other = otherCut(0)
+  const editor = await openTemplateEditor(t, {
+    pages: [{ page_index: 0, questions: [otherQuestion(), flagged.question] }],
+    cutPages: [cutPage({
+      anchors: ['1', '2.3'],
+      answerRegions: [...other.template_answer_regions, ...flagged.cut.template_answer_regions],
+      schema: [...other.question_schema, ...flagged.cut.question_schema],
+    })],
+  })
+  await editor.save()
+  assert.equal(editor.confirms().length, 0)
+  const [warning] = editor.warnings()
+  const max = warning.indexOf('第 2.3 题：Max 判定作答位 Q2.3[9]为目录多余项（印刷示意图）')
+  const missing = warning.indexOf('第 2.3 题有 1 个作答区域未设置标准答案')
+  assert.ok(max >= 0 && missing > max, `the Max report comes before the missing answer: ${warning}`)
+  // 确认保留 on the Max row keeps the reported position.
+  const maxReview = () => editor.page.root.find(el => el.tagName === 'section' && el.attributes['aria-label'] === 'Max 判定待核对')
+  await maxReview().byText('button', '确认保留').dispatch('click')
+  await editor.upload.settle()
+  assert.equal(maxReview(), null, 'the kept report no longer blocks')
+  const first = editor.questionCard(0, '2.3').find(el => el.tagName === 'input' && el.attributes['aria-label'] === '第 2.3 题第 1 空答案')
+  first.value = 'x = 1'
+  await first.dispatch('change')
+  await editor.upload.settle()
+  await editor.save()
+  const [payload] = editor.confirms()
+  assert.deepEqual(Object.fromEntries(payload.pages[0].questions.map(q => [q.question_no, q.max_flags_kept])), {
+    1: [], 2.3: ['2.3[9]'],
+  })
 })
 
 test('非作图 on a pure drawing question keeps its positions as text answer boxes', () => {

@@ -54,12 +54,10 @@ const KNOWN_SOURCE_TEXT_READS = {
   'system-notice.test.js': ['components/UsageGuideDialog.vue', 'views/Home.vue'],
   'template-column-layout.test.js': ['views/AnonymousGrade.vue', 'views/Upload.vue'],
   'template-correction-confirmation.test.js': ['views/Upload.vue'],
-  'template-drawing-preview.test.mjs': ['components/DrawingReferenceEditor.vue', 'views/Upload.vue'],
   'template-recognition-button.test.js': ['views/Upload.vue'],
   'template-recognition-network-state.test.js': ['views/Upload.vue'],
   'template-review.test.js': ['views/Upload.vue'],
   'template-skip-answer-confirm.test.js': ['views/Upload.vue'],
-  'template-slot-binding.test.mjs': ['views/Upload.vue'],
   'theme-mode.test.js': ['views/Login.vue', 'views/Profile.vue'],
   'usage-guide-contract.test.js': ['App.vue', 'components/GuidedTour.vue', 'components/UsageGuideDialog.vue', 'views/ClassTable.vue', 'views/Exercise.vue', 'views/Home.vue', 'views/Layout.vue', 'views/Upload.vue'],
 }
