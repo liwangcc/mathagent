@@ -1,23 +1,18 @@
 import assert from 'node:assert/strict'
-import { readFileSync } from 'node:fs'
-import { createRequire } from 'node:module'
-import { pathToFileURL } from 'node:url'
 import test from 'node:test'
-import { parse, compileScript } from '@vue/compiler-sfc'
+import './helpers/srcModules.js'
 import { createSSRApp } from 'vue'
 import { renderToString } from '@vue/server-renderer'
 
-const source = readFileSync(new URL('../src/components/DrawingAssessment.vue', import.meta.url), 'utf8')
-const { descriptor, errors } = parse(source)
-assert.deepEqual(errors, [])
-const require = createRequire(import.meta.url)
-const script = compileScript(descriptor, { id: 'drawing-assessment-test', inlineTemplate: true }).content
-  .replace(/from ['"]vue['"]/g, `from '${pathToFileURL(require.resolve('vue')).href}'`)
-const { default: component } = await import(`data:text/javascript;base64,${Buffer.from(script).toString('base64')}`)
+// The real component, compiled as the development build compiles it; a
+// compile error fails this import. Rendering it to HTML also checks that
+// text is escaped (a v-html would not be).
+const { default: component } = await import('../src/components/DrawingAssessment.vue?sfc')
 const image = 'data:image/png;base64,aGVsbG8='
 const render = (assessment, textAssessment = null) => renderToString(createSSRApp(component, { assessment, textAssessment }))
 const gate = (variants, threshold = 80) => ({ version: 'drawing-pixel-coarse-v1', threshold, variants })
-const variantHtml = (html, index) => html.match(new RegExp(`<figure data-variant-index="${index}">([\\s\\S]*?)</figure>`))?.[1] || ''
+// The scoped style adds its data-v-* attribute after the bound ones.
+const variantHtml = (html, index) => html.match(new RegExp(`<figure data-variant-index="${index}"[^>]*>([\\s\\S]*?)</figure>`))?.[1] || ''
 
 test('all pixel-rejected candidates render wrong without invented model confidence', async () => {
   const html = await render({ decision: 'wrong', reason: '全部完整答案均低于像素门槛',

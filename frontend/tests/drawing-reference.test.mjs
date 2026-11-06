@@ -1,45 +1,161 @@
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
-import { createRequire } from 'node:module'
-import { pathToFileURL } from 'node:url'
 import test from 'node:test'
-import { parse, compileTemplate } from '@vue/compiler-sfc'
-import { createSSRApp, h, nextTick, reactive } from 'vue'
+import './helpers/srcModules.js'
+import { createSSRApp, defineComponent, h, nextTick, reactive, shallowRef, toRaw } from 'vue'
 import { renderToString } from '@vue/server-renderer'
+import { MElement, memoryDocument } from './helpers/memoryDom.js'
+import { mountComponent } from './helpers/mountComponent.js'
 
-const source = readFileSync(new URL('../src/components/DrawingReferenceEditor.vue', import.meta.url), 'utf8')
-const { descriptor, errors } = parse(source)
-const require = createRequire(import.meta.url)
-const script = descriptor.script.content.replace("from 'vue'", `from '${pathToFileURL(require.resolve('vue')).href}'`)
-const { default: component, emptyDrawingReference, changedDrawingReference, editableDrawingReference, drawingReferenceError, normalizedDrawingPoint, arcThroughPoints, splineThroughPoints, drawingReferenceRegionWarning } = await import(`data:text/javascript;base64,${Buffer.from(script).toString('base64')}`)
+// The real editor, compiled as the development build compiles it (a template
+// or script error fails this import), with the geometry helpers it exports.
+const {
+  default: Editor,
+  emptyDrawingReference,
+  changedDrawingReference,
+  editableDrawingReference,
+  drawingReferenceError,
+  normalizedDrawingPoint,
+  arcThroughPoints,
+  splineThroughPoints,
+  drawingReferenceRegionWarning,
+} = await import('../src/components/DrawingReferenceEditor.vue?sfc')
 
 const fixture = () => ({ ...emptyDrawingReference(), comparison_mode: 'fixed', variants: [{ strokes: [{ kind: 'polyline', points: [[100, 200], [300, 200]] }] }], teacher_confirmed: true, reference_hash: 'server-only' })
-function editor(value = fixture(), onEditRequest) {
+const SELECT = '选择／拖动端点'
+const pointer = (x, y, pointerId = 7) => ({ button: 0, clientX: x, clientY: y, pointerId })
+
+function instanceOf(vnode, type) {
+  if (!vnode) return null
+  if (vnode.component) return vnode.component.type === type ? vnode.component : instanceOf(vnode.component.subTree, type)
+  for (const child of Array.isArray(vnode.children) ? vnode.children : []) {
+    const found = instanceOf(child, type)
+    if (found) return found
+  }
+  return null
+}
+
+// A disabled control, or one inside a disabled <fieldset>, ignores clicks.
+function disabledControl(el) {
+  for (let node = el; node; node = node.parentNode) {
+    if (['button', 'fieldset'].includes(node.tagName) && node.disabled) return true
+  }
+  return false
+}
+
+// The editor as a template page uses it: a parent passes its props, listens to
+// its events and reaches the methods it exposes through a template ref. The
+// template image then loads at 1000×800 pixels and the canvas is laid out at
+// 1000×800 CSS pixels from the viewport origin (memoryDom has no layout), so a
+// pointer at (x, y) lands on normalized (x, y × 1.25).
+async function editor(t, value = fixture(), { onEditRequest, slots = {}, wrap = false, load = true, ...extra } = {}) {
   const events = []
   const imageEvents = []
   const selectionEvents = []
   const editRequests = []
-  let exposed
-  const props = reactive({ modelValue: value, reference: null, imageUrl: 'synthetic.png', drawingRegions: [[50, 50, 900, 900]] })
-  const state = component.setup(props, {
-    emit(name, payload) {
-      if (name === 'edit-request') { editRequests.push(name); onEditRequest?.(props); return }
-      (name === 'image-ready' ? imageEvents : name === 'selection-change' ? selectionEvents : events).push({ name, payload })
+  const props = reactive({ modelValue: value, reference: null, imageUrl: 'synthetic.png', drawingRegions: [[50, 50, 900, 900]], ...extra })
+  const editorRef = shallowRef(null)
+  const Parent = defineComponent({
+    setup() {
+      return () => {
+        const node = h(Editor, {
+          ...props,
+          ref: editorRef,
+          'onUpdate:modelValue': payload => events.push({ name: 'update:modelValue', payload }),
+          onImageReady: payload => imageEvents.push({ name: 'image-ready', payload }),
+          onSelectionChange: payload => selectionEvents.push({ name: 'selection-change', payload }),
+          onEditRequest: () => { editRequests.push('edit-request'); onEditRequest?.(props) },
+        }, slots)
+        return wrap ? h('div', { class: 'page-scroller' }, [node]) : node
+      }
     },
-    expose(value) { exposed = value },
   })
-  state.canvas.value = { getBoundingClientRect: () => ({ left: 0, top: 0, width: 1000, height: 800 }), setPointerCapture() {}, hasPointerCapture: () => true, releasePointerCapture() {} }
-  state.imageSize.value = [1000, 800]
-  state.imageLoaded.value = true
-  return { state, props, events, imageEvents, selectionEvents, editRequests, exposed }
+  const page = await mountComponent(t, Parent)
+  const root = page.root
+  const svg = root.find(el => el.tagName === 'svg' && el.getAttribute('role') === 'img')
+  const captured = new Set()
+  Object.assign(svg, {
+    getBoundingClientRect: () => ({ left: 0, top: 0, width: 1000, height: 800 }),
+    setPointerCapture: id => captured.add(id),
+    hasPointerCapture: id => captured.has(id),
+    releasePointerCapture: id => captured.delete(id),
+  })
+  const img = root.find(el => el.tagName === 'img')
+  // The editor waits on nothing but Vue's own ticks (re-renders, watchers and
+  // the nextTick a tool request or the toolbar pin waits for).
+  const flush = async () => { for (let round = 0; round < 4; round++) await nextTick() }
+  const button = label => root.find(el => el.tagName === 'button' && el.text === label)
+  const toolButtons = () => root.findAll(el => el.tagName === 'button' && el.props['aria-pressed'] !== undefined)
+  const strokeGroups = () => svg.children.filter(el => el.tagName === 'g')
+  const handles = index => strokeGroups()[index].findAll(el => el.tagName === 'circle' && el.classList.contains('reference-point'))
+  const at = async (type, x, y, pointerId) => { await svg.dispatch(type, pointer(x, y, pointerId)); await flush() }
+  const e = {
+    page, root, props, svg, img, events, imageEvents, selectionEvents, editRequests, flush, button, toolButtons,
+    get exposed() { return editorRef.value },
+    get state() { return instanceOf(page.vm.subTree, Editor).setupState },
+    unmount: () => page.unmount(),
+    value: () => events.at(-1)?.payload,
+    async loadImage() {
+      Object.assign(img, { naturalWidth: 1000, naturalHeight: 800 })
+      await img.dispatch('load')
+      await flush()
+    },
+    // A click as the browser delivers it; the handler's result (if any).
+    async press(target) {
+      const el = typeof target === 'string' ? button(target) : target
+      assert.ok(el, `no button ${target}`)
+      if (disabledControl(el)) return null
+      const [result] = await el.dispatch('click')
+      await flush()
+      return result
+    },
+    tool: label => e.press(toolButtons().find(el => el.text === label) ?? label),
+    pressedTool: () => toolButtons().find(el => el.props['aria-pressed'] === true)?.text ?? null,
+    toolsFieldset: () => root.find(el => el.tagName === 'fieldset'),
+    down: (x, y, pointerId) => at('pointerdown', x, y, pointerId),
+    move: (x, y, pointerId) => svg.dispatch('pointermove', pointer(x, y, pointerId)),
+    up: (x, y, pointerId) => at('pointerup', x, y, pointerId),
+    cancel: async (pointerId = 7) => { await svg.dispatch('pointercancel', { pointerId }); await flush() },
+    async drawDrag(label, start, end) {
+      await e.tool(label)
+      await e.down(...start)
+      e.move(...end)
+      await e.up(...end)
+    },
+    strokeGroups,
+    strokePoints: index => strokeGroups()[index]?.find(el => el.tagName === 'polyline')?.getAttribute('points'),
+    selected: index => strokeGroups()[index]?.children[0]?.classList.contains('selected') ?? false,
+    // Select-mode click on a drawn stroke.
+    async selectStroke(index) {
+      await strokeGroups()[index].children[0].dispatch('pointerdown', pointer(0, 0))
+      await flush()
+    },
+    async grabHandle(index, pointerId = 1) {
+      await handles(0)[index].dispatch('pointerdown', pointer(0, 0, pointerId))
+      await flush()
+    },
+    async dragHandle(index, [x, y], pointerId = 1) {
+      await e.grabHandle(index, pointerId)
+      e.move(x, y, pointerId)
+      await e.up(x, y, pointerId)
+    },
+    pendingPoints: () => svg.findAll(el => el.tagName === 'circle' && el.classList.contains('pending-point')).length,
+    alerts: () => root.findAll(el => el.getAttribute('role') === 'alert').map(el => el.text),
+    // The editor's own error line (not the drawing-region or image warnings).
+    errors: () => e.alerts().filter(text => !text.startsWith('范围待核对') && !text.startsWith('模板原图加载失败')),
+    status: () => root.find(el => el.getAttribute('role') === 'status')?.text ?? null,
+  }
+  if (load) await e.loadImage()
+  return e
 }
 
-test('Vue template compiles and fixed-coordinate warning is visible', () => {
-  assert.deepEqual(errors, [])
-  assert.deepEqual(compileTemplate({ source: descriptor.template.content, filename: 'DrawingReferenceEditor.vue', id: 'test' }).errors, [])
-  assert.match(source, /不随学生图形移动、缩放或贴合/)
-  assert.match(source, /多个方案不会叠加评分/)
-  assert.equal(component.emits[0], 'update:modelValue')
+test('Vue template compiles and fixed-coordinate warning is visible', async (t) => {
+  assert.equal(typeof Editor.render, 'function', 'the template compiled')
+  const e = await editor(t)
+  const note = e.root.byClass('drawing-reference-note').text
+  assert.match(note, /不随学生图形移动、缩放或贴合/)
+  assert.match(note, /多个方案不会叠加评分/)
+  assert.equal(Editor.emits[0], 'update:modelValue')
 })
 
 test('candidate starts unconfirmed and edit clears confirmation and server hash without mutation', () => {
@@ -73,17 +189,17 @@ test('reference validator matches supported complete point and polyline geometry
   for (const value of bad) assert.ok(drawingReferenceError(value))
 })
 
-test('point and polyline markings are one-shot: the pointer returns to select after each completed mark', () => {
-  const { state } = editor()
-  state.setTool('point')
-  state.canvasDown({ clientX: 500, clientY: 400, button: 0 })
-  assert.equal(state.tool.value, 'select')
-  state.setTool('polyline')
-  state.canvasDown({ clientX: 500, clientY: 400, button: 0 })
-  state.canvasDown({ clientX: 600, clientY: 500, button: 0 })
-  assert.equal(state.tool.value, 'polyline')
-  state.finishPolyline()
-  assert.equal(state.tool.value, 'select')
+test('point and polyline markings are one-shot: the pointer returns to select after each completed mark', async (t) => {
+  const e = await editor(t)
+  await e.tool('点')
+  await e.down(500, 400)
+  assert.equal(e.pressedTool(), SELECT)
+  await e.tool('折线')
+  await e.down(500, 400)
+  await e.down(600, 500)
+  assert.equal(e.pressedTool(), '折线')
+  await e.press('完成图形')
+  assert.equal(e.pressedTool(), SELECT)
 })
 
 test('pointer mapping uses full image aspect ratio and clamps to template not student', () => {
@@ -92,207 +208,259 @@ test('pointer mapping uses full image aspect ratio and clamps to template not st
   assert.equal(normalizedDrawingPoint({ clientX: 0, clientY: 0 }, { width: 0, height: 1 }), null)
 })
 
-test('complete variants remain separate, capped at four; mutation and undo require fresh confirmation', () => {
-  const { state, events } = editor()
-  for (let index = 0; index < 6; index++) state.addVariant()
-  assert.equal(state.draft.value.variants.length, 4)
-  assert.equal(state.draft.value.teacher_confirmed, false)
-  state.draft.value.variants[3].strokes[0].points[0][0] = 333
-  assert.equal(state.draft.value.variants[0].strokes[0].points[0][0], 100)
-  state.undo()
-  assert.equal(state.draft.value.variants.length, 3)
-  assert.equal(state.draft.value.teacher_confirmed, false)
-  assert.ok(events.every((event) => event.name === 'update:modelValue' && !drawingReferenceError(event.payload) && event.payload.reference_hash === undefined))
+test('complete variants remain separate, capped at four; mutation and undo require fresh confirmation', async (t) => {
+  const e = await editor(t)
+  const copy = '新增完整方案（复制当前）'
+  for (let index = 0; index < 6; index++) await e.press(copy)
+  assert.equal(e.value().variants.length, 4)
+  assert.deepEqual(e.root.find(el => el.tagName === 'select').byTag('option').map(option => option.text), ['方案 1', '方案 2', '方案 3', '方案 4'])
+  assert.equal(e.button(copy).disabled, true)
+  assert.equal(e.value().teacher_confirmed, false)
+  // The newest copy is selected; moving its endpoint leaves every other
+  // variant alone, the one it was copied from included.
+  await e.selectStroke(0)
+  await e.dragHandle(0, [333, 160])
+  assert.deepEqual(e.value().variants.map(variant => variant.strokes[0].points[0]), [[100, 200], [100, 200], [100, 200], [333, 200]])
+  assert.deepEqual(e.value().variants[0].strokes[0].points[0], [100, 200])
+  await e.press('撤销')
+  assert.equal(e.value().variants.length, 4)
+  await e.press('撤销')
+  assert.equal(e.value().variants.length, 3)
+  assert.equal(e.value().teacher_confirmed, false)
+  assert.ok(e.events.every((event) => event.name === 'update:modelValue' && !drawingReferenceError(event.payload) && event.payload.reference_hash === undefined))
 })
 
-test('deleting final stroke selects manual mode; no invalid empty fixed answer emitted', () => {
-  const { state, events } = editor()
-  state.selectStroke(0)
-  state.deleteStroke()
-  assert.deepEqual(state.draft.value.variants, [])
-  assert.equal(state.draft.value.comparison_mode, 'manual')
-  assert.equal(state.draft.value.teacher_confirmed, false)
-  assert.equal(drawingReferenceError(events.at(-1).payload), '')
+test('deleting final stroke selects manual mode; no invalid empty fixed answer emitted', async (t) => {
+  const e = await editor(t)
+  await e.selectStroke(0)
+  await e.press('删除所选笔画')
+  assert.deepEqual(e.value().variants, [])
+  assert.equal(e.value().comparison_mode, 'manual')
+  assert.equal(e.value().teacher_confirmed, false)
+  assert.equal(drawingReferenceError(e.value()), '')
+  assert.equal(e.strokeGroups().length, 0)
+  assert.match(e.root.byClass('drawing-reference-generation').text, /标准图留空也可保存/)
 })
 
-test('point and staged polyline drawing emits complete references only, with confirmation owned by save', () => {
-  const { state, events } = editor(emptyDrawingReference())
-  state.setTool('polyline')
-  state.canvasDown({ button: 0, clientX: 100, clientY: 160 })
-  assert.equal(events.length, 0)
-  assert.equal(state.draft.value.teacher_confirmed, false)
-  state.canvasDown({ button: 0, clientX: 300, clientY: 160 })
-  state.finishPolyline()
-  assert.deepEqual(state.draft.value.variants[0].strokes[0].points, [[100, 200], [300, 200]])
-  assert.equal(events.at(-1).payload.teacher_confirmed, false)
-  state.setTool('point')
-  state.canvasDown({ button: 0, clientX: 500, clientY: 400 })
-  assert.deepEqual(events.at(-1).payload.variants[0].strokes[1], { kind: 'point', point: [500, 500] })
-  assert.equal(events.at(-1).payload.teacher_confirmed, false)
+test('point and staged polyline drawing emits complete references only, with confirmation owned by save', async (t) => {
+  const e = await editor(t, emptyDrawingReference())
+  await e.tool('折线')
+  await e.down(100, 160)
+  assert.equal(e.events.length, 0)
+  assert.equal(e.pendingPoints(), 1)
+  assert.equal(e.exposed.valueForSave().teacher_confirmed, false)
+  await e.down(300, 160)
+  await e.press('完成图形')
+  assert.deepEqual(e.value().variants[0].strokes[0].points, [[100, 200], [300, 200]])
+  assert.equal(e.value().teacher_confirmed, false)
+  await e.tool('点')
+  await e.down(500, 400)
+  assert.deepEqual(e.value().variants[0].strokes[1], { kind: 'point', point: [500, 500] })
+  assert.equal(e.value().teacher_confirmed, false)
 })
 
-test('dragging endpoints edits only fixed geometry and rejects zero-length segments', () => {
-  const { state, events } = editor()
-  const down = { button: 0, pointerId: 1, preventDefault() {} }
-  state.dragStart(down, 0, 0)
-  state.dragMove({ pointerId: 1, clientX: 200, clientY: 160 })
-  state.dragEnd({ pointerId: 1 })
-  assert.deepEqual(events.at(-1).payload.variants[0].strokes[0].points[0], [200, 200])
-  assert.equal(events.at(-1).payload.teacher_confirmed, false)
-  state.dragStart(down, 0, 0)
-  state.dragMove({ pointerId: 1, clientX: 300, clientY: 160 })
-  state.dragEnd({ pointerId: 1 })
-  assert.match(state.error.value, /重合/)
-  assert.deepEqual(state.draft.value.variants[0].strokes[0].points[0], [200, 200])
-  assert.equal(events.length, 1)
+test('dragging endpoints edits only fixed geometry and rejects zero-length segments', async (t) => {
+  const e = await editor(t)
+  await e.selectStroke(0)
+  await e.dragHandle(0, [200, 160])
+  assert.deepEqual(e.value().variants[0].strokes[0].points[0], [200, 200])
+  assert.equal(e.value().teacher_confirmed, false)
+  await e.dragHandle(0, [300, 160])
+  assert.match(e.errors().join('\n'), /重合/)
+  assert.equal(e.strokePoints(0), '200,200 300,200')
+  assert.equal(e.events.length, 1)
 })
 
-test('parent v-model echo does not discard edit history, and external new candidate is not auto-confirmed', async () => {
-  const { state, props, events } = editor()
-  state.addVariant()
-  props.modelValue = events.at(-1).payload
-  await nextTick()
-  assert.equal(state.history.value.length, 1)
-  props.modelValue = { ...fixture(), teacher_confirmed: false, comparison_mode: 'manual' }
-  await nextTick()
-  assert.equal(state.history.value.length, 0)
-  assert.equal(state.draft.value.teacher_confirmed, false)
+test('parent v-model echo does not discard edit history, and external new candidate is not auto-confirmed', async (t) => {
+  const e = await editor(t)
+  await e.press('新增完整方案（复制当前）')
+  e.props.modelValue = e.value()
+  await e.flush()
+  assert.equal(e.button('撤销').disabled, false, 'the echoed value keeps the edit to undo')
+  e.props.modelValue = { ...fixture(), teacher_confirmed: false, comparison_mode: 'manual' }
+  await e.flush()
+  assert.equal(e.button('撤销').disabled, true, 'a new external value starts a fresh history')
+  assert.equal(e.exposed.valueForSave().teacher_confirmed, false)
 })
 
-test('shared geometry mode does not consume endpoint mutations or confirm a reference', async () => {
-  const { state, props, events } = editor()
-  props.interactive = false
-  await nextTick()
-  state.setTool('point')
-  state.canvasDown({ button: 0, clientX: 400, clientY: 320 })
-  state.dragStart({ button: 0, pointerId: 1, preventDefault() {} }, 0, 0)
-  state.dragMove({ pointerId: 1, clientX: 400, clientY: 320 })
-  state.dragEnd({ pointerId: 1 })
-  assert.equal(events.length, 0)
-  assert.equal(state.draft.value.variants[0].strokes[0].points[0][0], 100)
-  assert.match(source, /slot name="canvas-overlays"/)
+test('shared geometry mode does not consume endpoint mutations or confirm a reference', async (t) => {
+  const e = await editor(t, fixture(), { slots: { 'canvas-overlays': () => h('div', { class: 'geometry-overlay' }, '几何层') } })
+  e.props.interactive = false
+  await e.flush()
+  assert.equal(e.toolsFieldset().disabled, true)
+  // Even a click that slips through the disabled toolbar draws nothing.
+  await e.button('点').dispatch('click')
+  await e.down(400, 320)
+  await e.selectStroke(0)
+  e.state.dragStart({ button: 0, pointerId: 1, preventDefault() {} }, 0, 0)
+  e.move(400, 320, 1)
+  await e.up(400, 320, 1)
+  assert.equal(e.events.length, 0)
+  assert.equal(e.strokePoints(0), '100,200 300,200')
+  assert.equal(e.selected(0), false)
+  assert.ok(e.root.byClass('drawing-reference-canvas').byClass('geometry-overlay'), 'geometry overlays render on the drawing canvas')
+  assert.equal(e.root.byTag('img').length, 1)
+  assert.ok(e.svg.classList.contains('is-readonly'))
+  assert.equal(e.svg.classList.contains('is-reference-priority'), false)
+  e.props.priorityEditing = true
+  await e.flush()
+  assert.ok(e.svg.classList.contains('is-reference-priority'))
+  e.props.priorityEditing = false
+  e.props.interactive = true
+  await e.flush()
+  assert.equal(e.svg.classList.contains('is-readonly'), false)
+  assert.equal(e.svg.classList.contains('is-reference-priority'), false, 'select mode leaves the overlays on top')
+  await e.tool('点')
+  assert.ok(e.svg.classList.contains('is-reference-priority'), 'a drawing tool takes the pointer')
+})
+
+// CSS only: which layer gets the pointer is decided by these rules, and
+// memoryDom has no layout or hit testing to observe it.
+test('read-only canvas passes the pointer to geometry overlays; an editing canvas sits above them', () => {
+  const source = readFileSync(new URL('../src/components/DrawingReferenceEditor.vue', import.meta.url), 'utf8')
   assert.match(source, /svg\.is-readonly \{ pointer-events: none;/)
-  assert.match(source, /is-reference-priority/)
   assert.match(source, /z-index: 30; pointer-events: auto;/)
-  assert.equal((descriptor.template.content.match(/<img\s/g) || []).length, 1)
 })
 
-test('failed image and active save never allow confirming or editing against a blank preview', async () => {
+test('failed image and active save never allow confirming or editing against a blank preview', async (t) => {
   for (const reason of ['image', 'save']) {
-    const { state, props, events } = editor()
-    if (reason === 'image') state.imageFailed.value = true
-    else props.disabled = true
-    await nextTick()
-    assert.equal(events.length, 0)
-    assert.equal(state.canEdit.value, false)
+    const e = await editor(t)
+    await e.tool('点')
+    if (reason === 'image') await e.img.dispatch('error')
+    else e.props.disabled = true
+    await e.flush()
+    assert.equal(e.events.length, 0, reason)
+    assert.equal(e.toolsFieldset().disabled, true, reason)
+    assert.equal(e.pressedTool(), SELECT, `${reason}: the armed tool is dropped`)
+    await e.down(500, 400)
+    assert.equal(e.events.length, 0, reason)
+    if (reason === 'image') assert.ok(e.alerts().some(text => text.startsWith('模板原图加载失败，不能在空白底图上确认标准图')))
+    e.unmount()
   }
 })
 
-test('switching to geometry cancels an unfinished endpoint drag without publishing partial positions', async () => {
-  const { state, props, events } = editor()
-  state.dragStart({ button: 0, pointerId: 1, preventDefault() {} }, 0, 0)
-  state.dragMove({ pointerId: 1, clientX: 400, clientY: 320 })
-  props.interactive = false
-  await nextTick()
-  assert.deepEqual(state.draft.value.variants[0].strokes[0].points[0], [100, 200])
-  assert.equal(events.length, 0)
+test('switching to geometry cancels an unfinished endpoint drag without publishing partial positions', async (t) => {
+  const e = await editor(t)
+  await e.selectStroke(0)
+  await e.grabHandle(0)
+  e.move(400, 320, 1)
+  await e.flush()
+  assert.equal(e.strokePoints(0), '400,400 300,200', 'the drag previews on the canvas')
+  e.props.interactive = false
+  await e.flush()
+  assert.equal(e.strokePoints(0), '100,200 300,200')
+  assert.equal(e.events.length, 0)
 })
 
-test('new image URL resets readiness until that exact original image loads successfully', async () => {
-  const { state, props, events, imageEvents } = editor()
-  props.imageUrl = 'new-original.png'
-  await nextTick()
-  assert.equal(state.imageLoaded.value, false)
-  assert.equal(state.canEdit.value, false)
-  assert.equal(events.length, 0)
-  state.onImageLoad({ currentTarget: { getAttribute: () => 'old-original.png' } })
-  assert.equal(state.imageLoaded.value, false)
-  state.onImageLoad({ currentTarget: { getAttribute: () => 'new-original.png' } })
-  await nextTick()
-  assert.equal(state.canEdit.value, true)
-  assert.equal(imageEvents.at(-1).payload, true)
-  state.onImageError()
-  await nextTick()
-  assert.equal(state.imageLoaded.value, false)
-  assert.equal(imageEvents.at(-1).payload, false)
+test('new image URL resets readiness until that exact original image loads successfully', async (t) => {
+  const e = await editor(t)
+  const loading = '模板原图加载中，加载完成后才能核对标准图。'
+  assert.deepEqual(e.imageEvents.map(event => event.payload), [false, true])
+  e.props.imageUrl = 'new-original.png'
+  await e.flush()
+  assert.equal(e.status(), loading)
+  assert.equal(e.toolsFieldset().disabled, true)
+  assert.equal(e.events.length, 0)
+  // A late load event of the previous image does not count.
+  await e.img.handlers.load({ currentTarget: { getAttribute: () => 'old-original.png' } })
+  await e.flush()
+  assert.equal(e.status(), loading)
+  assert.equal(e.toolsFieldset().disabled, true)
+  await e.loadImage()
+  assert.equal(e.img.getAttribute('src'), 'new-original.png')
+  assert.equal(e.status(), null)
+  assert.equal(e.toolsFieldset().disabled, false)
+  assert.equal(e.imageEvents.at(-1).payload, true)
+  await e.img.dispatch('error')
+  await e.flush()
+  assert.equal(e.toolsFieldset().disabled, true)
+  assert.equal(e.imageEvents.at(-1).payload, false)
 })
 
-test('shared delete exposes selection and deletion without changing coordinate or confirmation rules', () => {
-  const { state, selectionEvents, exposed, events } = editor()
+test('shared delete exposes selection and deletion without changing coordinate or confirmation rules', async (t) => {
+  const e = await editor(t)
+  const exposed = e.exposed
   assert.deepEqual(Object.keys(exposed).sort(), ['clearSelection', 'deleteSelectedStroke', 'prepareForSave', 'valueForSave'])
-  assert.deepEqual(selectionEvents.map((event) => event.payload), [false])
-  state.selectStroke(0)
-  assert.equal(selectionEvents.at(-1).payload, true)
+  assert.deepEqual(e.selectionEvents.map((event) => event.payload), [false])
+  await e.selectStroke(0)
+  assert.equal(e.selectionEvents.at(-1).payload, true)
   exposed.clearSelection()
-  assert.equal(selectionEvents.at(-1).payload, false)
+  await e.flush()
+  assert.equal(e.selectionEvents.at(-1).payload, false)
+  assert.equal(e.selected(0), false)
   assert.equal(exposed.deleteSelectedStroke(), false)
-  assert.equal(events.length, 0)
-  state.dragStart({ button: 0, pointerId: 2, preventDefault() {} }, 0, 0)
-  assert.equal(selectionEvents.at(-1).payload, true)
-  state.dragMove({ pointerId: 2, clientX: 250, clientY: 160 })
+  assert.equal(e.events.length, 0)
+  await e.selectStroke(0)
+  await e.grabHandle(0, 2)
+  assert.equal(e.selectionEvents.at(-1).payload, true)
+  e.move(250, 160, 2)
   exposed.clearSelection()
-  assert.deepEqual(state.draft.value.variants[0].strokes[0].points[0], [100, 200])
-  assert.equal(selectionEvents.at(-1).payload, false)
-  state.selectStroke(0)
+  await e.flush()
+  assert.equal(e.strokePoints(0), '100,200 300,200')
+  assert.equal(e.selectionEvents.at(-1).payload, false)
+  await e.up(250, 160, 2)
+  assert.equal(e.events.length, 0, 'a cleared drag publishes nothing when the pointer is released')
+  await e.selectStroke(0)
   assert.equal(exposed.deleteSelectedStroke(), true)
-  assert.equal(selectionEvents.at(-1).payload, false)
-  assert.equal(state.draft.value.comparison_mode, 'manual')
-  assert.equal(state.draft.value.teacher_confirmed, false)
-  assert.equal(drawingReferenceError(events.at(-1).payload), '')
+  await e.flush()
+  assert.equal(e.selectionEvents.at(-1).payload, false)
+  assert.equal(e.value().comparison_mode, 'manual')
+  assert.equal(e.value().teacher_confirmed, false)
+  assert.equal(drawingReferenceError(e.value()), '')
 })
 
-test('saving flushes a pending complete polyline without an extra finish or confirmation click', () => {
-  const { state, exposed, events } = editor()
-  state.setTool('polyline')
-  state.pendingPoints.value = [[400, 400], [600, 600]]
-  assert.equal(exposed.prepareForSave(), '')
-  assert.equal(state.pendingPoints.value.length, 0)
-  assert.deepEqual(events.at(-1).payload.variants[0].strokes.at(-1), { kind: 'polyline', points: [[400, 400], [600, 600]] })
-  assert.equal(events.at(-1).payload.teacher_confirmed, false)
-  assert.equal(exposed.prepareForSave(), '')
-  state.pendingPoints.value = [[700, 700]]
-  assert.match(exposed.prepareForSave(), /至少需要/)
-  assert.deepEqual(state.pendingPoints.value, [[700, 700]])
+test('saving flushes a pending complete polyline without an extra finish or confirmation click', async (t) => {
+  const e = await editor(t)
+  await e.tool('折线')
+  await e.down(400, 320)
+  await e.down(600, 480)
+  assert.equal(e.exposed.prepareForSave(), '')
+  await e.flush()
+  assert.equal(e.pendingPoints(), 0)
+  assert.deepEqual(e.value().variants[0].strokes.at(-1), { kind: 'polyline', points: [[400, 400], [600, 600]] })
+  assert.equal(e.value().teacher_confirmed, false)
+  assert.equal(e.exposed.prepareForSave(), '')
+  await e.tool('折线')
+  await e.down(700, 560)
+  assert.match(e.exposed.prepareForSave(), /至少需要/)
+  await e.flush()
+  assert.equal(e.pendingPoints(), 1)
 })
 
-test('shared selection is cleared on tool, variant, background, image, and editing-mode changes', async () => {
-  for (const clear of [
-    ({ state }) => state.setTool('point'),
-    ({ state }) => state.selectVariant(0),
-    ({ state }) => state.canvasDown({ button: 0, clientX: 10, clientY: 10 }),
-    ({ props }) => { props.interactive = false },
-    ({ props }) => { props.showControls = false },
-    ({ props }) => { props.imageUrl = 'different-image.png' },
-    ({ props }) => { props.modelValue = { ...fixture(), teacher_confirmed: false } },
+test('shared selection is cleared on tool, variant, background, image, and editing-mode changes', async (t) => {
+  for (const [name, clear] of [
+    ['tool', e => e.tool('点')],
+    ['variant', e => e.root.find(el => el.tagName === 'select').dispatch('change')],
+    ['background', e => e.down(10, 10)],
+    ['geometry mode', e => { e.props.interactive = false }],
+    ['controls hidden', e => { e.props.showControls = false }],
+    ['image', e => { e.props.imageUrl = 'different-image.png' }],
+    ['new value', e => { e.props.modelValue = { ...fixture(), teacher_confirmed: false } }],
   ]) {
-    const harness = editor()
-    harness.state.selectStroke(0)
-    clear(harness)
-    await nextTick()
-    assert.equal(harness.state.selectedStroke.value, -1)
-    assert.equal(harness.selectionEvents.at(-1).payload, false)
+    const e = await editor(t)
+    await e.selectStroke(0)
+    assert.equal(e.selected(0), true, name)
+    await clear(e)
+    await e.flush()
+    assert.equal(e.selected(0), false, name)
+    assert.equal(e.selectionEvents.at(-1).payload, false, name)
+    e.unmount()
   }
 })
 
-test('both toolbar layouts keep editing tools without separate confirmation controls', async () => {
-  const compiled = compileTemplate({ source: descriptor.template.content, filename: 'DrawingReferenceEditor.vue', id: 'compact-test' })
-  const renderCode = compiled.code.replaceAll('from "vue"', `from '${pathToFileURL(require.resolve('vue')).href}'`)
-  const { render } = await import(`data:text/javascript;base64,${Buffer.from(renderCode).toString('base64')}`)
-  const renderComponent = { ...component, render }
+test('both toolbar layouts keep editing tools without separate confirmation controls', async (t) => {
   async function markup(props) {
-    return renderToString(createSSRApp({ render: () => h(renderComponent, { modelValue: fixture(), imageUrl: 'synthetic.png', ...props }, {
+    return renderToString(createSSRApp({ render: () => h(Editor, { modelValue: fixture(), imageUrl: 'synthetic.png', ...props }, {
       'geometry-tools': () => h('button', { 'data-geometry-tool': '' }, '新增豁免框'),
     }) }))
   }
-  assert.equal(component.props.compactControls.default, false)
-  assert.equal(component.props.sharedDelete.default, false)
+  assert.equal(Editor.props.compactControls.default, false)
+  assert.equal(Editor.props.sharedDelete.default, false)
   // The fixture line runs from x=100 to x=300; this region stops at x=200.
   const compact = await markup({ compactControls: true, sharedDelete: true, drawingRegions: [[50, 150, 200, 260]] })
   assert.match(compact, /drawing-reference-workbar/)
   assert.match(compact, /data-geometry-tool/)
   assert.match(compact, /drawing-reference-drawing-tools/)
-  assert.match(source, /hasCandidate && !canEdit && canRequestEdit/)
-  assert.match(source, /编辑标准图/)
   assert.doesNotMatch(compact, /drawing-reference-settings/)
   assert.doesNotMatch(compact, /比较方式/)
   assert.doesNotMatch(compact, /drawing-reference-confirm/)
@@ -309,151 +477,222 @@ test('both toolbar layouts keep editing tools without separate confirmation cont
   assert.match(legacy, /选择／拖动端点/)
   assert.doesNotMatch(legacy, /<details/)
   assert.match(legacy, /标准图随“保存模板”统一确认/)
-})
 
-test('switching away from a drawing releases its pinned toolbar', async () => {
-  const { state, props } = editor()
-  props.canvasVisible = true
-  state.workbarPinned.value = true
-  state.workbarFixedStyle.value = { position: 'fixed' }
-  props.canvasVisible = false
-  await nextTick()
-  await nextTick()
-  assert.equal(state.workbarPinned.value, false)
-  assert.equal(state.workbarFixedStyle.value, null)
-})
-
-test('compact point and polyline tools request reference mode directly and wait for the parent', async () => {
-  for (const tool of ['select', 'point', 'polyline']) {
-    const { state, props, editRequests, events } = editor(fixture(), (value) => { value.interactive = true })
-    props.interactive = false
-    assert.equal(state.canEdit.value, false)
-    assert.equal(state.canRequestEdit.value, true)
-    assert.equal(await state.requestTool(tool), true)
-    assert.deepEqual(editRequests, ['edit-request'])
-    assert.equal(state.tool.value, tool)
-    assert.equal(state.canEdit.value, true)
-    assert.equal(events.length, 0, 'requesting a tool must not mutate the reference')
-    assert.equal(await state.requestTool(tool), true)
-    assert.equal(editRequests.length, 1, 'already editing needs no parent mode request')
-  }
-  const refused = editor()
-  refused.props.interactive = false
-  assert.equal(await refused.state.requestTool('point'), false)
-  assert.equal(refused.state.tool.value, 'select')
-  assert.equal(refused.state.canEdit.value, false)
-})
-
-test('one-click tool activation cannot bypass save, image, or controls locks', async () => {
-  for (const lock of [
-    ({ props }) => { props.disabled = true },
-    ({ props }) => { props.showControls = false },
-    ({ state }) => { state.imageLoaded.value = false },
-    ({ state }) => { state.imageFailed.value = true },
+  // The compact toolbar offers 编辑标准图 for an existing reference only while
+  // the page is in geometry mode and the reference could be edited.
+  const editButton = '编辑标准图'
+  const geometry = await editor(t, fixture(), { compactControls: true, interactive: false })
+  await geometry.press(editButton)
+  assert.deepEqual(geometry.editRequests, ['edit-request'])
+  assert.deepEqual(geometry.events, [])
+  geometry.unmount()
+  for (const [name, value, options] of [
+    ['editing already', fixture(), { interactive: true }],
+    ['no reference yet', null, { interactive: false }],
+    ['saving', fixture(), { interactive: false, disabled: true }],
+    ['image still loading', fixture(), { interactive: false, load: false }],
   ]) {
-    const harness = editor(fixture(), (value) => { value.interactive = true })
-    harness.props.interactive = false
-    lock(harness)
-    assert.equal(harness.state.canRequestEdit.value, false)
-    assert.equal(await harness.state.requestTool('point'), false)
-    assert.deepEqual(harness.editRequests, [])
-    assert.equal(harness.state.tool.value, 'select')
+    const e = await editor(t, value, { compactControls: true, ...options })
+    assert.equal(e.button(editButton), null, name)
+    e.unmount()
   }
-  const delayed = editor(fixture(), (props) => { props.interactive = true; props.disabled = true })
-  delayed.props.interactive = false
-  assert.equal(await delayed.state.requestTool('polyline'), false)
-  assert.equal(delayed.state.tool.value, 'select')
-  assert.deepEqual(delayed.events, [])
 })
 
-
-const pointer = (x, y, pointerId = 7) => ({ button: 0, clientX: x, clientY: y, pointerId, preventDefault() {} })
-function drawDrag(state, tool, start, end) {
-  state.setTool(tool)
-  state.canvasDown(pointer(...start))
-  state.dragMove(pointer(...end))
-  state.dragEnd(pointer(...end))
+// memoryDom elements know their parentNode only; a browser also gives every
+// element parentElement and isConnected, and getComputedStyle, which the
+// sticky toolbar reads to find the scroll container it pins itself to. (An
+// element held in a ref is a reactive proxy here, unlike a browser node.)
+function scrollContainerLayout(t, scrollerClass) {
+  const descriptors = {
+    parentElement: { get() { return this.parentNode instanceof MElement ? this.parentNode : null }, configurable: true },
+    isConnected: { get() { return memoryDocument.roots.some(root => root.contains(toRaw(this))) }, configurable: true },
+  }
+  Object.defineProperties(MElement.prototype, descriptors)
+  const previous = Object.getOwnPropertyDescriptor(globalThis, 'getComputedStyle')
+  globalThis.getComputedStyle = el => ({ overflowY: el.classList?.contains(scrollerClass) ? 'auto' : 'visible' })
+  t.after(() => {
+    for (const name of Object.keys(descriptors)) delete MElement.prototype[name]
+    if (previous) Object.defineProperty(globalThis, 'getComputedStyle', previous)
+    else delete globalThis.getComputedStyle
+  })
 }
 
-test('teacher circle uses real page aspect ratio, saves fixed and supports undo/redo', () => {
-  const { state, exposed, events } = editor(null)
-  assert.equal(exposed.valueForSave(), null)
-  drawDrag(state, 'circle', [500, 400], [600, 400])
-  const stroke = state.activeStrokes.value[0]
-  assert.deepEqual(stroke, { kind: 'ellipse', center: [500, 500], radii: [100, 125], fill: false })
-  assert.equal(exposed.valueForSave().comparison_mode, 'fixed')
-  assert.equal(events.at(-1).payload.teacher_confirmed, false)
-  state.undo()
-  assert.equal(state.draft.value.variants.length, 0)
-  state.redo()
-  assert.deepEqual(state.activeStrokes.value[0], stroke)
-  assert.equal(state.draft.value.teacher_confirmed, false)
+test('switching away from a drawing releases its pinned toolbar', async (t) => {
+  scrollContainerLayout(t, 'page-scroller')
+  const e = await editor(t, fixture(), { compactControls: true, canvasVisible: true, wrap: true })
+  const scroller = e.root.byClass('page-scroller')
+  const workbar = e.root.byClass('drawing-reference-workbar')
+  const gap = () => e.root.byClass('drawing-reference-workbar-gap')
+  assert.equal(gap(), null)
+  // The teacher scrolls until the toolbar passes the container's top edge.
+  scroller.getBoundingClientRect = () => ({ top: 64, left: 0, width: 800, height: 600 })
+  workbar.getBoundingClientRect = () => ({ top: 20, left: 32, width: 640, height: 48 })
+  Object.defineProperty(workbar, 'offsetHeight', { value: 48, configurable: true })
+  await scroller.dispatch('scroll')
+  await e.flush()
+  assert.deepEqual([workbar.style.position, workbar.style.top, workbar.style.left, workbar.style.width], ['fixed', '64px', '32px', '640px'])
+  assert.equal(gap().style.height, '48px', 'a gap keeps the toolbar\'s place')
+  e.props.canvasVisible = false
+  await e.flush()
+  assert.equal(gap(), null)
+  assert.equal(workbar.style.position, undefined)
 })
 
-test('drag tools and filled polygons produce valid bounded teacher geometry', () => {
-  for (const tool of ['line', 'arrow', 'rectangle', 'ellipse', 'filledEllipse', 'curve', 'brush']) {
-    const { state, exposed } = editor(null)
-    drawDrag(state, tool, [300, 240], [600, 480])
-    const value = exposed.valueForSave()
+test('compact point and polyline tools request reference mode directly and wait for the parent', async (t) => {
+  for (const tool of [SELECT, '点', '折线']) {
+    const e = await editor(t, fixture(), { compactControls: true, interactive: false, onEditRequest: (props) => { props.interactive = true } })
+    assert.equal(e.toolsFieldset().disabled, false, 'geometry mode still offers the tools')
+    assert.ok(e.button('编辑标准图'), 'the reference is not being edited yet')
+    assert.equal(e.pressedTool(), null)
+    assert.equal(await e.tool(tool), true)
+    assert.deepEqual(e.editRequests, ['edit-request'])
+    assert.equal(e.pressedTool(), tool)
+    assert.equal(e.button('编辑标准图'), null)
+    assert.equal(e.events.length, 0, 'requesting a tool must not mutate the reference')
+    assert.equal(await e.tool(tool), true)
+    assert.equal(e.editRequests.length, 1, 'already editing needs no parent mode request')
+    e.unmount()
+  }
+  const refused = await editor(t, fixture(), { compactControls: true, interactive: false })
+  assert.equal(await refused.tool('点'), false)
+  assert.deepEqual(refused.editRequests, ['edit-request'])
+  assert.equal(refused.pressedTool(), null)
+  assert.ok(refused.button('编辑标准图'), 'still not editing')
+  refused.props.interactive = true
+  await refused.flush()
+  assert.equal(refused.pressedTool(), SELECT, 'the refused tool was never armed')
+})
+
+test('one-click tool activation cannot bypass save, image, or controls locks', async (t) => {
+  const enable = e => { e.props.interactive = true }
+  for (const [name, lock, unlock] of [
+    ['saving', (e) => { e.props.disabled = true }, (e) => { e.props.disabled = false }],
+    ['controls hidden', (e) => { e.props.showControls = false }, (e) => { e.props.showControls = true }],
+    ['image loading', (e) => { e.props.imageUrl = 'next-original.png' }, e => e.loadImage()],
+    ['image failed', e => e.img.dispatch('error'), e => e.loadImage()],
+  ]) {
+    const e = await editor(t, fixture(), { compactControls: true, interactive: false, onEditRequest: enable })
+    const point = e.toolButtons().find(el => el.text === '点')
+    await lock(e)
+    await e.flush()
+    assert.ok(!e.toolsFieldset() || e.toolsFieldset().disabled, `${name}: the toolbar is locked`)
+    // A click that lands as the lock arrives.
+    const [granted] = await point.dispatch('click')
+    await e.flush()
+    assert.equal(granted, false, name)
+    assert.deepEqual(e.editRequests, [], name)
+    assert.deepEqual(e.events, [], name)
+    await unlock(e)
+    enable(e)
+    await e.flush()
+    assert.equal(e.pressedTool(), SELECT, `${name}: the point tool was never armed`)
+    e.unmount()
+  }
+  const delayed = await editor(t, fixture(), { compactControls: true, interactive: false, onEditRequest: (props) => { props.interactive = true; props.disabled = true } })
+  assert.equal(await delayed.tool('折线'), false)
+  assert.deepEqual(delayed.events, [])
+  delayed.props.disabled = false
+  await delayed.flush()
+  assert.equal(delayed.pressedTool(), SELECT)
+})
+
+test('teacher circle uses real page aspect ratio, saves fixed and supports undo/redo', async (t) => {
+  const e = await editor(t, null)
+  assert.equal(e.exposed.valueForSave(), null)
+  await e.drawDrag('圆', [500, 400], [600, 400])
+  const stroke = e.value().variants[0].strokes[0]
+  assert.deepEqual(stroke, { kind: 'ellipse', center: [500, 500], radii: [100, 125], fill: false })
+  const ellipse = e.strokeGroups()[0].children[0]
+  assert.deepEqual(['cx', 'cy', 'rx', 'ry'].map(name => ellipse.getAttribute(name)), ['500', '500', '100', '125'])
+  assert.equal(e.exposed.valueForSave().comparison_mode, 'fixed')
+  assert.equal(e.value().teacher_confirmed, false)
+  await e.press('撤销')
+  assert.equal(e.value().variants.length, 0)
+  assert.equal(e.strokeGroups().length, 0)
+  await e.press('重做')
+  assert.deepEqual(e.value().variants[0].strokes[0], stroke)
+  assert.equal(e.value().teacher_confirmed, false)
+})
+
+test('drag tools and filled polygons produce valid bounded teacher geometry', async (t) => {
+  for (const tool of ['直线', '箭头', '矩形', '椭圆', '椭圆填色', '自由曲线', '涂抹']) {
+    const e = await editor(t, null)
+    await e.drawDrag(tool, [300, 240], [600, 480])
+    const value = e.exposed.valueForSave()
     assert.equal(drawingReferenceError(value), '', tool)
     assert.equal(value.comparison_mode, 'fixed', tool)
-    assert.equal(state.tool.value, 'select', tool)
+    assert.equal(e.pressedTool(), SELECT, tool)
+    e.unmount()
   }
-  for (const tool of ['polygon', 'fill']) {
-    const { state, exposed } = editor(null)
-    state.setTool(tool)
-    for (const point of [[300, 240], [600, 240]]) state.canvasDown(pointer(...point))
-    assert.match(exposed.prepareForSave(), /至少需要 3/)
-    state.canvasDown(pointer(600, 480))
-    assert.equal(exposed.prepareForSave(), '')
-    const stroke = state.activeStrokes.value[0]
-    assert.equal(stroke.kind, tool === 'fill' ? 'polygon' : 'polyline')
-    assert.equal(stroke.points.length, tool === 'fill' ? 3 : 4)
-    assert.equal(drawingReferenceError(exposed.valueForSave()), '')
+  for (const tool of ['多边形', '区域填色']) {
+    const e = await editor(t, null)
+    await e.tool(tool)
+    for (const point of [[300, 240], [600, 240]]) await e.down(...point)
+    assert.match(e.exposed.prepareForSave(), /至少需要 3/)
+    await e.down(600, 480)
+    assert.equal(e.exposed.prepareForSave(), '')
+    const stroke = e.exposed.valueForSave().variants[0].strokes[0]
+    assert.equal(stroke.kind, tool === '区域填色' ? 'polygon' : 'polyline')
+    assert.equal(stroke.points.length, tool === '区域填色' ? 3 : 4)
+    assert.equal(drawingReferenceError(e.exposed.valueForSave()), '')
+    e.unmount()
   }
 })
 
-test('cancelling drawing gestures and invalid ellipse edits never publishes partial geometry', () => {
-  const { state, exposed, events } = editor(null)
-  state.setTool('ellipse')
-  state.canvasDown(pointer(300, 240))
-  state.dragMove(pointer(600, 480))
-  assert.match(exposed.prepareForSave(), /尚在拖动/)
-  state.cancelDrag({ pointerId: 7 })
-  assert.equal(exposed.valueForSave(), null)
-  assert.deepEqual(events, [])
-  drawDrag(state, 'ellipse', [300, 240], [600, 480])
-  const before = structuredClone(exposed.valueForSave())
-  state.dragStart(pointer(450, 360), 0, 0)
-  state.dragMove(pointer(0, 0))
-  state.dragEnd(pointer(0, 0))
-  assert.deepEqual(exposed.valueForSave(), before)
-  assert.match(state.error.value, /坐标无效|超出/)
+test('cancelling drawing gestures and invalid ellipse edits never publishes partial geometry', async (t) => {
+  const e = await editor(t, null)
+  await e.tool('椭圆')
+  await e.down(300, 240)
+  e.move(600, 480)
+  await e.flush()
+  assert.equal(e.strokeGroups().length, 1, 'the gesture previews')
+  assert.match(e.exposed.prepareForSave(), /尚在拖动/)
+  await e.cancel(7)
+  assert.equal(e.strokeGroups().length, 0)
+  assert.equal(e.exposed.valueForSave(), null)
+  assert.deepEqual(e.events, [])
+  await e.drawDrag('椭圆', [300, 240], [600, 480])
+  const before = structuredClone(e.exposed.valueForSave())
+  await e.selectStroke(0)
+  await e.dragHandle(0, [0, 0], 7)
+  assert.deepEqual(e.exposed.valueForSave(), before)
+  assert.match(e.errors().join('\n'), /坐标无效|超出/)
 })
 
-test('brush click renders a dot and long strokes keep both endpoints within the contract', () => {
-  const { state, exposed } = editor(null)
-  drawDrag(state, 'brush', [300, 240], [300, 240])
-  assert.deepEqual(state.activeStrokes.value[0], { kind: 'brush', points: [[300, 300]], width: 12 })
-  state.setTool('curve')
-  state.canvasDown(pointer(100, 160))
-  for (let x = 101; x <= 800; x++) state.dragMove(pointer(x, 160 + x % 50))
-  state.dragEnd(pointer(800, 160))
-  const stroke = state.activeStrokes.value.at(-1)
+test('brush click renders a dot and long strokes keep both endpoints within the contract', async (t) => {
+  const e = await editor(t, null)
+  await e.drawDrag('涂抹', [300, 240], [300, 240])
+  assert.deepEqual(e.value().variants[0].strokes[0], { kind: 'brush', points: [[300, 300]], width: 12 })
+  assert.ok(e.strokeGroups()[0].find(el => el.tagName === 'circle' && el.classList.contains('reference-area')), 'the dot is drawn')
+  await e.tool('自由曲线')
+  await e.down(100, 160)
+  for (let x = 101; x <= 800; x++) e.move(x, 160 + x % 50)
+  await e.up(800, 160)
+  const stroke = e.value().variants[0].strokes.at(-1)
   assert.ok(stroke.points.length <= 128)
   assert.deepEqual(stroke.points[0], [100, 200])
   assert.deepEqual(stroke.points.at(-1), [800, 200])
-  assert.equal(drawingReferenceError(exposed.valueForSave()), '')
+  assert.equal(drawingReferenceError(e.exposed.valueForSave()), '')
 })
 
-test('teacher controls offer the full tool set and no model generation or manual confirmation', () => {
-  const { state } = editor(null)
-  for (const name of ['circle', 'ellipse', 'rectangle', 'arrow', 'polygon', 'fill', 'brush', 'curve']) {
-    assert.ok(state.drawingTools.some(({ key }) => key === name))
+test('teacher controls offer the full tool set and no model generation or manual confirmation', async (t) => {
+  const e = await editor(t, null)
+  const labels = e.toolButtons().map(el => el.text)
+  for (const label of ['圆', '椭圆', '矩形', '箭头', '多边形', '区域填色', '涂抹', '自由曲线']) {
+    assert.ok(labels.includes(label), label)
+    await e.tool(label)
+    assert.equal(e.pressedTool(), label)
   }
-  assert.doesNotMatch(descriptor.template.content, /生成标准图|@generate|requestConfirm|requestManual/)
+  e.unmount()
+  assert.deepEqual(Editor.emits, ['update:modelValue', 'image-ready', 'selection-change', 'edit-request'])
+  for (const compactControls of [false, true]) {
+    const layout = await editor(t, fixture(), { compactControls, interactive: !compactControls })
+    assert.doesNotMatch(layout.root.text, /生成标准图/)
+    const buttons = layout.root.findAll(el => el.tagName === 'button').map(el => el.text)
+    assert.deepEqual(buttons.filter(text => /生成|确认|人工|手动/.test(text)), [], `compact=${compactControls}`)
+    layout.unmount()
+  }
 })
-
 
 test('three-point arc keeps a round circle in pixels and rejects collinear or off-page arcs', () => {
   // On a 1000x800 image, x and y normalized units differ; the arc is fitted in pixels.
@@ -488,46 +727,38 @@ test('range warning mirrors the rendered stroke, including brush width', () => {
   assert.match(drawingReferenceRegionWarning(reference({ kind: 'point', point: [300, 300] }), []), /尚未框选作图区域/)
 })
 
-test('new shape tools produce existing contract strokes and return to selection', () => {
-  const { state } = editor(null)
-  const down = (x, y) => state.canvasDown({ button: 0, clientX: x, clientY: y, pointerId: 7, preventDefault() {} })
-  const drag = (from, to) => {
-    down(...from)
-    state.dragMove({ pointerId: 7, clientX: to[0], clientY: to[1] })
-    state.dragEnd({ pointerId: 7, clientX: to[0], clientY: to[1] })
-  }
-  const last = () => state.draft.value.variants[0].strokes.at(-1)
-  state.setTool('filledCircle')
-  drag([500, 400], [580, 400])
+test('new shape tools produce existing contract strokes and return to selection', async (t) => {
+  const e = await editor(t, null)
+  const last = () => e.value().variants[0].strokes.at(-1)
+  await e.drawDrag('圆填色', [500, 400], [580, 400])
   assert.deepEqual(last(), { kind: 'ellipse', center: [500, 500], radii: [80, 100], fill: true })
-  assert.equal(state.tool.value, 'select')
-  state.setTool('filledRectangle')
-  drag([200, 160], [300, 240])
+  assert.equal(e.pressedTool(), SELECT)
+  await e.drawDrag('矩形填色', [200, 160], [300, 240])
   assert.deepEqual(last(), { kind: 'polygon', points: [[200, 200], [300, 200], [300, 300], [200, 300]] })
-  state.setTool('arc')
-  down(400, 400); down(500, 300); down(600, 400)
+  await e.tool('圆弧')
+  await e.down(400, 400); await e.down(500, 300); await e.down(600, 400)
   assert.equal(last().kind, 'polyline')
-  assert.equal(state.tool.value, 'select')
-  state.setTool('sector')
-  down(400, 400); down(500, 300); down(600, 400)
+  assert.equal(e.pressedTool(), SELECT)
+  await e.tool('扇形填色')
+  await e.down(400, 400); await e.down(500, 300); await e.down(600, 400)
   assert.equal(last().kind, 'polygon')
   assert.deepEqual(last().points[0], [500, 500])
-  state.setTool('spline')
-  down(100, 600); down(300, 200); down(500, 600)
-  state.finishPolyline()
+  await e.tool('平滑曲线')
+  await e.down(100, 600); await e.down(300, 200); await e.down(500, 600)
+  await e.press('完成图形')
   assert.equal(last().kind, 'polyline')
   assert.ok(last().points.length > 3)
-  assert.equal(drawingReferenceError(state.draft.value), '')
-  assert.equal(state.draft.value.comparison_mode, 'fixed')
+  assert.equal(drawingReferenceError(e.value()), '')
+  assert.equal(e.value().comparison_mode, 'fixed')
 })
 
-test('a circle clamped to the page edge still satisfies the containment contract', () => {
-  const { state } = editor(null)
-  state.setTool('circle')
-  state.canvasDown({ button: 0, clientX: 103, clientY: 400, pointerId: 8, preventDefault() {} })
-  state.dragEnd({ pointerId: 8, clientX: 900, clientY: 400 })
-  const stroke = state.draft.value.variants[0].strokes[0]
+test('a circle clamped to the page edge still satisfies the containment contract', async (t) => {
+  const e = await editor(t, null)
+  await e.tool('圆')
+  await e.down(103, 400, 8)
+  await e.up(900, 400, 8)
+  const stroke = e.value().variants[0].strokes[0]
   assert.equal(stroke.kind, 'ellipse')
   assert.ok(stroke.center[0] - stroke.radii[0] >= 0)
-  assert.equal(state.error.value, '')
+  assert.deepEqual(e.errors(), [])
 })
