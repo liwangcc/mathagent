@@ -1,11 +1,37 @@
-"""批改接口 — 支持日常作业/考试两类导入 + 批量批改"""
+"""Batch grading routes (/api/batch-grade/...), assembled from routers/grade_*.py.
+
+Each module owns one part of the flow and imports only the ones above it:
+
+    grade_common        SSE events, task settling, batch checkpoints, owner checks
+    grade_uploads       saving uploads, the .ocr-ready-v1.jpg contract, daily allowance
+    grade_availability  GET  /batch-grade/availability, gates before grading work
+    grade_report        GET  /batch-grade/report/{batch_id}, background report
+    grade_contract      the confirmed template as the batch's answer authority
+    grade_papers        one OCR result into a paper, identity plan, paper images
+    grade_pipeline      per-paper grading while recognition runs, POST /batch-grade/confirm
+    grade_paper_checks  identity options, orientation, exclusion, paper image routes
+    grade_recognition   POST /batch-grade/recognize and .../{batch_id}/recognize/resume
+
+Templates (routers/grade_template.py) and review after grading
+(routers/grade_review.py) have their own routers, included by app.py.
+
+This module only puts the routers above together in their original route
+order.  The names imported below stay importable from routers.grade for older
+callers and tests; new code imports them from the module that defines them.
+"""
 
 import logging
 
 from fastapi import APIRouter
 
-# Plumbing shared with the other routers/grade_*.py modules.
-from routers.grade_common import (
+from routers.grade_availability import router as _availability_router
+from routers.grade_recognition import router as _recognition_router
+from routers.grade_paper_checks import router as _paper_checks_router
+from routers.grade_pipeline import router as _pipeline_router
+from routers.grade_report import router as _report_router
+
+# Kept importable: shared plumbing (grade_common.py).
+from routers.grade_common import (  # noqa: F401
     _GRADE_HEARTBEAT_SECONDS,
     _SSE_PAUSE_CODES,
     _sse,
@@ -26,7 +52,8 @@ from routers.grade_common import (
     _review_timestamp,
     _find_review_result,
 )
-from routers.grade_uploads import (
+# Kept importable: uploads (grade_uploads.py).
+from routers.grade_uploads import (  # noqa: F401
     _jpeg_dimensions,
     _validate_client_ocr_ready_upload,
     _client_ocr_ready_orientation,
@@ -39,8 +66,8 @@ from routers.grade_uploads import (
     _ORIENTATION_DIAGNOSTIC_FIELDS,
     _orientation_diagnostics,
 )
-from routers.grade_availability import router as _availability_router
-from routers.grade_availability import (
+# Kept importable: chain availability (grade_availability.py).
+from routers.grade_availability import (  # noqa: F401
     _with_grading_hardware,
     _batch_grade_service_availability,
     batch_grade_availability,
@@ -48,8 +75,8 @@ from routers.grade_availability import (
     _batch_grade_scoring_availability,
     _require_batch_scoring_chain,
 )
-from routers.grade_report import router as _report_router
-from routers.grade_report import (
+# Kept importable: batch report (grade_report.py).
+from routers.grade_report import (  # noqa: F401
     _batch_report_tasks,
     _batch_report_response,
     _batch_knowledge_template,
@@ -64,7 +91,8 @@ from routers.grade_report import (
     _ensure_batch_report_generation,
     batch_grade_get_report,
 )
-from routers.grade_contract import (
+# Kept importable: template answer authority and grading contract (grade_contract.py).
+from routers.grade_contract import (  # noqa: F401
     _validate_template_for_recognition,
     _template_handwriting_regions_for_mode,
     _build_template_paper_cache,
@@ -80,7 +108,8 @@ from routers.grade_contract import (
     _build_grading_contract,
     _grading_contract_hash,
 )
-from routers.grade_papers import (
+# Kept importable: papers of a batch (grade_papers.py).
+from routers.grade_papers import (  # noqa: F401
     _paper_source_metadata,
     _stored_paper_orientation,
     _anonymous_page_identity,
@@ -95,9 +124,51 @@ from routers.grade_papers import (
     _RAW_PAPER_EXPIRED_MESSAGE,
     _batch_paper_display_path,
     _batch_review_image_path,
+    _IdentityResolution,
+    _prepare_anonymous_identity_plan,
+    _prepare_identity_plan,
 )
-from routers.grade_paper_checks import router as _paper_checks_router
-from routers.grade_paper_checks import (
+# Kept importable: grading and POST /batch-grade/confirm (grade_pipeline.py).
+from routers.grade_pipeline import (  # noqa: F401
+    ConfirmReq,
+    _REVIEW_FINISHED_STATUSES,
+    batch_grade_confirm,
+    _GENERIC_GRADE_ERROR,
+    _GRADE_BATCH_DEADLINE_S,
+    _GradingProgress,
+    _GradingRefused,
+    _PerPaperGradingPipeline,
+    _RUBRIC_METADATA_KEYS,
+    _batch_rubric_hash,
+    _build_template_confirmed_map,
+    _completed_papers_replay,
+    _confirmation_questions_from_contract,
+    _contract_answer_specs,
+    _finish_grading_run,
+    _finished_grading_replay,
+    _freeze_grading_contract,
+    _grade_paper_core,
+    _graded_papers,
+    _grading_contract_for_run,
+    _grading_elapsed_seconds,
+    _grading_events,
+    _mark_grading_interrupted,
+    _mark_grading_started,
+    _pin_batch_rubric,
+    _pipeline_grading_answer_map,
+    _pipeline_identity_assignment,
+    _pipeline_result_sse,
+    _record_graded_paper,
+    _row_matches_rubric_pin,
+    _scoring_chain_unavailable,
+    _start_grading_run,
+    _start_per_paper_grading,
+    _stop_for_deferred_papers,
+    _stop_for_grading_deadline,
+    _upsert_batch_paper_result,
+)
+# Kept importable: checks before confirming (grade_paper_checks.py).
+from routers.grade_paper_checks import (  # noqa: F401
     batch_grade_identity_options,
     _orientation_state_payload,
     batch_grade_orientation_state,
@@ -119,13 +190,8 @@ from routers.grade_paper_checks import (
     _finish_orientation_retry,
     batch_grade_paper_image,
 )
-from routers.grade_papers import (
-    _IdentityResolution,
-    _prepare_anonymous_identity_plan,
-    _prepare_identity_plan,
-)
-from routers.grade_recognition import router as _recognition_router
-from routers.grade_recognition import (
+# Kept importable: student recognition (grade_recognition.py).
+from routers.grade_recognition import (  # noqa: F401
     _checkpoint_recognition_cleanup,
     _ensure_batch_upload_inspected,
     _bounded_batch_upload_inspections,
@@ -171,60 +237,13 @@ from routers.grade_recognition import (
     _ocr_job_worker,
     _ocr_phase_events,
 )
-from routers.grade_pipeline import router as _pipeline_router
-from routers.grade_pipeline import (
-    ConfirmReq,
-    _REVIEW_FINISHED_STATUSES,
-    batch_grade_confirm,
-    _GENERIC_GRADE_ERROR,
-    _GRADE_BATCH_DEADLINE_S,
-    _GradingProgress,
-    _GradingRefused,
-    _PerPaperGradingPipeline,
-    _RUBRIC_METADATA_KEYS,
-    _batch_rubric_hash,
-    _build_template_confirmed_map,
-    _completed_papers_replay,
-    _confirmation_questions_from_contract,
-    _contract_answer_specs,
-    _finish_grading_run,
-    _finished_grading_replay,
-    _freeze_grading_contract,
-    _grade_paper_core,
-    _graded_papers,
-    _grading_contract_for_run,
-    _grading_elapsed_seconds,
-    _grading_events,
-    _mark_grading_interrupted,
-    _mark_grading_started,
-    _pin_batch_rubric,
-    _pipeline_grading_answer_map,
-    _pipeline_identity_assignment,
-    _pipeline_result_sse,
-    _record_graded_paper,
-    _row_matches_rubric_pin,
-    _scoring_chain_unavailable,
-    _start_grading_run,
-    _start_per_paper_grading,
-    _stop_for_deferred_papers,
-    _stop_for_grading_deadline,
-    _upsert_batch_paper_result,
-)
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
-# GET /batch-grade/availability stays this router's first route.
+# Route order as before the split: availability, recognition, the checks
+# before confirming, confirm, and the report last.
 router.include_router(_availability_router)
-# POST /batch-grade/recognize and .../recognize/resume come next.
 router.include_router(_recognition_router)
-
-
-# Identity options, orientation, exclusion and paper images keep their place
-# after the recognition routes.
 router.include_router(_paper_checks_router)
-# POST /batch-grade/confirm follows them.
 router.include_router(_pipeline_router)
-
-
-# GET /batch-grade/report/{batch_id} stays this router's last route.
 router.include_router(_report_router)
