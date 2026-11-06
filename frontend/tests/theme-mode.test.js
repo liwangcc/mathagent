@@ -9,7 +9,6 @@ import { mountComponent } from './helpers/mountComponent.js'
 
 const { default: Profile } = await import('../src/views/Profile.vue?sfc')
 const globalCss = fs.readFileSync(new URL('../src/styles/global.css', import.meta.url), 'utf8')
-const login = fs.readFileSync(new URL('../src/views/Login.vue', import.meta.url), 'utf8')
 const index = fs.readFileSync(new URL('../index.html', import.meta.url), 'utf8')
 
 // useTheme touches only localStorage and document.documentElement's
@@ -122,10 +121,6 @@ test('深色与跟随系统共用暖炭色表面、植物绿和可读文字', ()
   assert.doesNotMatch(explicit, /#000000|#42c98a/)
   assert.match(globalCss, /--el-color-primary: var\(--primary\)/)
   assert.match(globalCss, /@media \(prefers-color-scheme: dark\)/)
-  assert.match(login, /登录页始终保持浅色/)
-  assert.match(login, /background: #eef1f0; color: #1c1c1e/)
-  assert.match(login, /--page: #eef1f0; --card: #ffffff/)
-  assert.doesNotMatch(login, /html\[data-color-mode='dark'\]/)
 })
 
 test('启动页在主应用脚本加载前也能读取明暗模式', () => {

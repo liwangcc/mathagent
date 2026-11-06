@@ -1,5 +1,4 @@
 import assert from 'node:assert/strict'
-import { readFile } from 'node:fs/promises'
 import test from 'node:test'
 import './helpers/srcModules.js'
 import { loadApiClient } from './helpers/apiClient.js'
@@ -9,9 +8,6 @@ import { mountComponent } from './helpers/mountComponent.js'
 import { DONUT_CIRCUMFERENCE, donutArcs } from '../src/utils/outcomeDonut.js'
 import { gradingPhases } from '../src/utils/gradingPhases.js'
 
-// Only for the CSS rules below, which have no effect to observe without a
-// browser's layout and animation engine.
-const source = (relativePath) => readFile(new URL(`../${relativePath}`, import.meta.url), 'utf8')
 const outcomes = (correct, partial, wrong) => [
   { key: 'correct', label: '正确', value: correct },
   { key: 'partial', label: '部分正确', value: partial },
@@ -118,18 +114,6 @@ test('grading loaders are decorative and labelled by their text', async (t) => {
   assert.equal(elapsed.text, '已用时 0:42')
 })
 
-// CSS only: a reduced-motion preference has no effect to observe without a
-// browser's animation engine.
-test('grading loaders stand still under reduced motion', async () => {
-  const loaders = await Promise.all([
-    source('src/components/InkSpinner.vue'),
-    source('src/components/SheetLoader.vue'),
-  ])
-  for (const loader of loaders) {
-    assert.match(loader, /@media \(prefers-reduced-motion: reduce\)[\s\S]*animation: none;/)
-  }
-})
-
 test('grading pages use the shared loaders: Upload reports recognition and grading through GradingProgress', async (t) => {
   // A teacher comes back to a recognized batch; grading starts and its stream
   // has not answered yet.
@@ -206,9 +190,4 @@ test('grading pages use the shared loaders: Stats loads behind the sheet loader 
     ['错误', '10', '10%'],
   ], 'shares are of all 100 counted questions, not of the 90 judged')
   assert.deepEqual(masks.values, [], 'Stats never asks for an Element Plus loading mask')
-})
-
-// CSS only: an unused keyframes rule renders nothing to observe.
-test('grading pages use the shared loaders: Upload keeps no ring-spinner animation', async () => {
-  assert.doesNotMatch(await source('src/views/Upload.vue'), /@keyframes spin\b/)
 })

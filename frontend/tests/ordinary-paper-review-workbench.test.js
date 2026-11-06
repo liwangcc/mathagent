@@ -1,5 +1,4 @@
 import assert from 'node:assert/strict'
-import { readFile } from 'node:fs/promises'
 import test from 'node:test'
 import { memoryDocument } from './helpers/memoryDom.js'
 import { mountUpload, paperFile, TEACHER } from './helpers/uploadPage.js'
@@ -9,14 +8,7 @@ import { renderAnswerLatex } from '../src/utils/latex.js'
 // the page restores (or has just graded): the authenticated review image per
 // paper, paging, the answer-sheet style verdict grid and the decisions it
 // saves. Layout rules (overflow, object-fit, grid tracks, widths) need a
-// browser's layout engine: "desktop workbench enlarges the paper ..." and the
-// two tests marked "(CSS)" still read them from the stylesheet.
-
-const viewUrl = new URL('../src/views/Upload.vue', import.meta.url)
-
-async function source() {
-  return readFile(viewUrl, 'utf8')
-}
+// browser's layout engine and are not checked here.
 
 const BATCH = 'b-review'
 const REVIEW_POINTER = `mathagent_review_batch_id:${TEACHER.id}`
@@ -242,18 +234,6 @@ test('ordinary paper review uses authenticated full-page workbench', async (t) =
   assert.deepEqual(upload.client.messages.filter(message => message.type === 'error'), [])
 })
 
-// The `is-paper-hidden` class these rules style is checked by "review cards
-// use compact choice/fill rows and can hide the paper for a full-width review".
-test('desktop workbench enlarges the paper and keeps preview scrolling separate from review cards', async () => {
-  const text = await source()
-  assert.match(text, /:global\(\.manual-review-dialog \.el-dialog__body\).*overflow: hidden/)
-  assert.match(text, /:global\(\.manual-review-dialog \.el-dialog__body\).*max-height: none/)
-  assert.match(text, /\.manual-review-paper \{[^}]*overflow: hidden/)
-  assert.match(text, /\.manual-review-image-stage \{[^}]*align-items: center[^}]*justify-content: center[^}]*overflow: hidden/)
-  assert.match(text, /\.manual-review-paper img \{[^}]*width: auto[^}]*height: auto[^}]*max-width: 100%[^}]*max-height: 100%[^}]*object-fit: contain/)
-  assert.match(text, /\.manual-review-list \{[^}]*overflow-y: auto/)
-})
-
 test('batch review image export remains available after archive and outside precise mode', async (t) => {
   for (const scenario of ['archived, simple mode', 'anonymous page']) {
     const anonymous = scenario === 'anonymous page'
@@ -320,12 +300,6 @@ test('review cards omit confirmed question text and enlarge the paper workspace'
   assert.equal(fillAnswer.byTag('span')[0].innerHTML, renderAnswerLatex('$x^2$'))
 })
 
-test('review cards omit confirmed question text and enlarge the paper workspace: wide workspace (CSS)', async () => {
-  const text = await source()
-  assert.match(text, /width: min\(1920px, calc\(100vw - 16px\)\) !important/)
-  assert.match(text, /grid-template-columns: minmax\(0, 2\.25fr\) minmax\(360px, 0\.85fr\)/)
-})
-
 test('review cards use compact choice/fill rows and can hide the paper for a full-width review', async (t) => {
   const upload = await restoredReview(t)
   let dialog = await openWorkbench(upload)
@@ -383,17 +357,6 @@ test('review cards use compact choice/fill rows and can hide the paper for a ful
   dialog = await openWorkbench(upload)
   assert.equal(dialog.classList.contains('is-paper-hidden'), false)
   assert.equal(dialog.byClass('manual-review-paper-toggle').text, '关闭原卷')
-})
-
-test('review cards use compact choice/fill rows and can hide the paper for a full-width review: sheet layout (CSS)', async () => {
-  const text = await source()
-  assert.match(text, /grid-template-columns: 62px minmax\(0, 1fr\) minmax\(0, 1fr\) 116px/)
-  assert.match(text, /\.manual-review-workspace\.is-paper-hidden \.manual-review-list \{[^}]*display: block/)
-  assert.match(text, /\.manual-review-sheet-grid \{[^}]*width: max-content;[^}]*repeat\(var\(--sheet-columns\), minmax\(52px, max-content\)/)
-  assert.match(text, /\.manual-review-sheet-answer \{ max-width: 112px; overflow-wrap: anywhere; white-space: normal; \}/)
-  assert.match(text, /:global\(\.manual-review-dialog\.is-paper-hidden\) \{ height: auto !important; \}/)
-  assert.match(text, /\.manual-review-sheet-cell\.is-current-page \{ background: var\(--primary-soft\); \}/)
-  assert.match(text, /\.manual-review-list-toolbar \.manual-review-legend > span \{ display: inline-flex; margin-top: 0; \}/)
 })
 
 test('question cards jump only by explicit backend page reference', async (t) => {

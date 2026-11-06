@@ -242,10 +242,3 @@ test('换了课件的封面不会被上一份课件迟到的预览覆盖', async
   assert.equal(frame.getAttribute('title'), '自编课件 22图形封面')
   assert.equal(figure().byClass('live-cover').props['aria-busy'], false)
 })
-
-// Style only: reduced motion turning off the cover image's hover zoom has no
-// outcome without a browser's style engine, so the rule is checked as written.
-test('封面的悬停缩放在减少动态效果时关闭', () => {
-  const component = read('frontend/src/components/CoursewareCover.vue')
-  assert.match(component, /prefers-reduced-motion:reduce/)
-})

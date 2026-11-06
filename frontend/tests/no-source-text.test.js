@@ -13,19 +13,10 @@ import { sourceTextReads, sourceTextReadsOf } from './helpers/sourceTextReads.js
 // `read()` helper, a URL, a path), or builds a path from a bare src directory
 // segment (listed as `*`), or imports a test helper that does either: a helper
 // reading source on a test's behalf is the same reading, and both are listed.
-// KNOWN_SOURCE_TEXT_READS lists what each existing file still reads. It may
-// only shrink: a new read fails, and so does a listed read that a file no
-// longer has.
-const KNOWN_SOURCE_TEXT_READS = {
-  'answer-sheet-workflow.test.js': ['views/AnswerSheet.vue'],
-  'batch-report.test.js': ['views/Upload.vue'],
-  'class-table-render-contract.test.js': ['views/ClassTable.vue'],
-  'courseware-covers.test.js': ['components/CoursewareCover.vue'],
-  'drawing-reference.test.mjs': ['components/DrawingReferenceEditor.vue'],
-  'grading-display.test.js': ['components/InkSpinner.vue', 'components/SheetLoader.vue', 'views/Upload.vue'],
-  'ordinary-paper-review-workbench.test.js': ['views/Upload.vue'],
-  'theme-mode.test.js': ['views/Login.vue'],
-}
+// KNOWN_SOURCE_TEXT_READS is empty and stays empty: any read fails. A style
+// rule that needs a browser's layout or animation engine is checked by a
+// tests/*.browser.mjs script in a real browser, not by matching its text.
+const KNOWN_SOURCE_TEXT_READS = {}
 
 // Points at src/ only to resolve and load src modules the way the build does
 // (the `@/` alias, import.meta.env, .vue files): Node's loader hands it a

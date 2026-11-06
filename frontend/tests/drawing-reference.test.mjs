@@ -1,5 +1,4 @@
 import assert from 'node:assert/strict'
-import { readFileSync } from 'node:fs'
 import test from 'node:test'
 import './helpers/srcModules.js'
 import { createSSRApp, defineComponent, h, nextTick, reactive, shallowRef, toRaw } from 'vue'
@@ -312,14 +311,6 @@ test('shared geometry mode does not consume endpoint mutations or confirm a refe
   assert.equal(e.svg.classList.contains('is-reference-priority'), false, 'select mode leaves the overlays on top')
   await e.tool('点')
   assert.ok(e.svg.classList.contains('is-reference-priority'), 'a drawing tool takes the pointer')
-})
-
-// CSS only: which layer gets the pointer is decided by these rules, and
-// memoryDom has no layout or hit testing to observe it.
-test('read-only canvas passes the pointer to geometry overlays; an editing canvas sits above them', () => {
-  const source = readFileSync(new URL('../src/components/DrawingReferenceEditor.vue', import.meta.url), 'utf8')
-  assert.match(source, /svg\.is-readonly \{ pointer-events: none;/)
-  assert.match(source, /z-index: 30; pointer-events: auto;/)
 })
 
 test('failed image and active save never allow confirming or editing against a blank preview', async (t) => {

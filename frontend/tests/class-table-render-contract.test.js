@@ -1,7 +1,6 @@
 import './helpers/srcModules.js'
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { readFileSync } from 'node:fs'
 import { loadApiClient } from './helpers/apiClient.js'
 import { mountComponent } from './helpers/mountComponent.js'
 
@@ -80,12 +79,4 @@ test('操作列给四个按钮预留完整宽度并固定在表格右侧', async
     ['详情', '编辑', '设为观察', '移出'],
     ['详情', '编辑', '恢复统计', '移出'],
   ])
-})
-
-// Layout only: whether the four buttons stay on one line needs a browser's
-// layout engine, so these style rules are still checked as written.
-test('操作列按钮不换行并消除 Element Plus 的重复左边距', () => {
-  const source = readFileSync(new URL('../src/views/ClassTable.vue', import.meta.url), 'utf8')
-  assert.match(source, /\.action-btns\s*\{[^}]*white-space:\s*nowrap;/s)
-  assert.match(source, /\.action-btns :deep\(\.el-button\)\s*\{[^}]*flex:\s*0 0 auto;[^}]*margin-left:\s*0;/s)
 })

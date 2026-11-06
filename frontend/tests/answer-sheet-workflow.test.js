@@ -1,7 +1,5 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { readFileSync } from 'node:fs'
-import { fileURLToPath } from 'node:url'
 import { AxiosError } from 'axios'
 import { createRenderer, h } from 'vue'
 import {
@@ -25,11 +23,6 @@ import { renderedFiles, signedInTeacherRouter } from './helpers/appRouter.js'
 import { jsonResponse, sseResponse } from './helpers/memoryFetch.js'
 import { MElement, nodeOps, patchProp } from './helpers/memoryDom.js'
 import { mountComponent } from './helpers/mountComponent.js'
-
-// Only the CSS-only check at the end of the fail-closed tests reads the page's
-// source: a style rule has no effect without a browser layout engine.
-const read = (relative) => readFileSync(fileURLToPath(new URL(relative, import.meta.url)), 'utf8')
-const view = read('../src/views/AnswerSheet.vue')
 
 // Ids that need encodeURIComponent, so every path segment proves it is encoded.
 const SESSION = 's 1/x'
@@ -453,11 +446,6 @@ test('答题卡可用性每 15 秒重新探测，页面只显示状态与文案�
   t.mock.timers.tick(30_000)
   await flush()
   assert.equal(probes(), 3, '离开页面后停止探测')
-})
-
-test('答题卡页面故障只读时学生答题卡与切换学生仍可操作（纯 CSS 规则）', () => {
-  assert.match(view, /\.workflow-readonly \.review-student-tabs/)
-  assert.match(view, /\.workflow-readonly \.student-paper-pane/)
 })
 
 test('答题卡页面故障只读时仍渲染学生页签与完整答题卡，切换学生与翻页照常生效', async (t) => {

@@ -1,5 +1,4 @@
 import assert from 'node:assert/strict'
-import { readFile } from 'node:fs/promises'
 import test from 'node:test'
 import { textOf } from './helpers/availabilityQuota.js'
 import { mountUpload, TEACHER } from './helpers/uploadPage.js'
@@ -7,8 +6,6 @@ import { mountUpload, TEACHER } from './helpers/uploadPage.js'
 // The 本批批阅报告 panel of the real Upload page, for a graded batch restored
 // from the teacher's saved review pointer: GET /batch-grade/review/<id> gives
 // the per-paper results, GET /batch-grade/report/<id> the batch report.
-
-const uploadUrl = new URL('../src/views/Upload.vue', import.meta.url)
 
 const BATCH = 'b-report'
 const REVIEW = `GET /api/batch-grade/review/${BATCH}`
@@ -124,13 +121,4 @@ test('without server statistics the report counts the graded rows and says knowl
   assert.equal(panel.byClass('batch-report-top-errors-card').byClass('batch-report-empty').text, '暂未形成可用的错题分布')
   assert.equal(textOf(panel.byClass('batch-report-details')), null)
   assert.equal(textOf(panel.byClass('batch-report-empty-state')), null)
-})
-
-test('knowledge distribution fills the card after error-type distribution removal', async () => {
-  const source = await readFile(uploadUrl, 'utf8')
-  assert.match(source, /\.batch-report-distributions\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\)/)
-  assert.doesNotMatch(source, /\.batch-report-distributions\s*\{[^}]*repeat\(2,/)
-  assert.match(source, /\.batch-report-bar-label span\s*\{[^}]*overflow-wrap:\s*anywhere/)
-  assert.doesNotMatch(source, /\.batch-report-bar-label span\s*\{[^}]*(?:text-overflow:\s*ellipsis|white-space:\s*nowrap)/)
-  assert.match(source, /\.batch-report-bar-label strong\s*\{[^}]*flex:\s*0 0 auto[^}]*white-space:\s*nowrap/)
 })
