@@ -52,24 +52,10 @@
 // The canvas is STAGE (1000 x 800 px at 20, 10), so client point [x, y] is
 // page point [x - 20, (y - 10) * 1.25] of the 0..1000 template space.
 //
-// memoryDom has no layout and no Element.closest(), which the editor's pointer
-// handlers use to find their canvas: stage() gives the canvas its box, and this
-// helper adds closest() for `.class` / `tag` selectors to its elements.
-import { MElement } from './memoryDom.js'
+// memoryDom has no layout, and the editor's pointer handlers measure their
+// canvas: stage() gives the canvas its box.
 import { jsonResponse } from './memoryFetch.js'
 import { mountUpload, TEACHER } from './uploadPage.js'
-
-if (typeof MElement.prototype.closest !== 'function') {
-  const matches = (el, selector) => (selector.startsWith('.')
-    ? selector.slice(1).split('.').every(name => el.classList.contains(name))
-    : el.tagName === selector)
-  MElement.prototype.closest = function closest(selector) {
-    for (let node = this; node instanceof MElement; node = node.parentNode) {
-      if (matches(node, selector)) return node
-    }
-    return null
-  }
-}
 
 export const STAGE = Object.freeze({ left: 20, top: 10, width: 1000, height: 800 })
 

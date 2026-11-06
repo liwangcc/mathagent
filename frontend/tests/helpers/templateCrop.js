@@ -28,8 +28,7 @@
 //
 // The editor's page stage is laid out as a browser would at 1000 x 1000 px
 // from the viewport origin, so pointer coordinates equal the page's own
-// 0..1000 coordinates; Element.closest, which the gestures call, is provided
-// for the in-memory tree.
+// 0..1000 coordinates.
 //
 // Returns the mountUpload result plus:
 //   dialog()            the 编辑本次模板 <el-dialog>
@@ -44,7 +43,6 @@
 //   draw(tool, number, box)  pick a 新增标记 tool, give its question number,
 //                       then draw box [x1, y1, x2, y2] on the page
 //   save()              click 保存模板（全部页） and settle
-import { MElement } from './memoryDom.js'
 import { jsonResponse } from './memoryFetch.js'
 import { mountUpload } from './uploadPage.js'
 
@@ -111,19 +109,6 @@ export function acceptedLayout(config) {
   }
 }
 
-function installClosest(t) {
-  if (MElement.prototype.closest) return
-  // Element.closest for the class selectors the page's gestures use.
-  MElement.prototype.closest = function closest(selector) {
-    const name = String(selector).replace(/^\./, '')
-    for (let node = this; node; node = node.parentNode) {
-      if (node instanceof MElement && node.classList.contains(name)) return node
-    }
-    return null
-  }
-  t.after(() => { delete MElement.prototype.closest })
-}
-
 function layOut(root) {
   for (const stage of root.allByClass('tpl-cut-preview-stage')) {
     for (const [name, value] of Object.entries({ clientWidth: 1000, clientHeight: 1000, offsetWidth: 1000, offsetHeight: 1000 })) {
@@ -145,7 +130,6 @@ export async function openTemplateEditor(t, {
   messageBox,
   ...options
 } = {}) {
-  installClosest(t)
   const pages = questions.map((items, pageIndex) => ({ page_index: pageIndex, page_label: `page-${pageIndex}`, questions: items }))
   const cutState = typeof cut === 'function' ? cut : () => jsonResponse({ status: 'complete', template_id: TEMPLATE_ID, ...cut })
   const imageRoutes = Object.fromEntries(Array.from({ length: 8 }, (_, pageIndex) => [
