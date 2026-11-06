@@ -39,6 +39,7 @@ from services import analyzer, ocr_service
 from services.quick_grader import BatchOperationBusy, QuickBatch, batch_operation_lock
 from tests.test_batch_calibration_flow import _events, _setup
 from tests.grade_family import set_grade_global
+from routers import grade_report
 
 
 GOLDEN_DIR = Path(__file__).parent / "golden" / "recognition_stream"
@@ -67,7 +68,7 @@ def deterministic_runtime(monkeypatch):
     monkeypatch.setattr(asyncio, "to_thread", inline_to_thread)
     monkeypatch.setattr(task_queue, "_grading_queue", None)
     monkeypatch.setattr(grade_pipeline, "_start_batch_report_generation", no_report)
-    monkeypatch.setattr(grade, "_start_batch_report_generation", no_report)
+    monkeypatch.setattr(grade_report, "_start_batch_report_generation", no_report)
     # These come from the environment; the interleaving depends on them.
     monkeypatch.setattr(grade_recognition, "OCR_BATCH_DISPATCH_CONCURRENT", 3)
     monkeypatch.setattr(grade_recognition, "OCR_TEACHER_WAVE_SIZE", 3)

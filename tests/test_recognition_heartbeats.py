@@ -27,6 +27,7 @@ from tests.test_recognition_stream_characterization import (
     _direct_recognize,
     _template,
 )
+from routers import grade_report
 
 OCR_WAIT = "正在进行本地配准与答案区域预处理，请稍候"
 RESUME_OCR_WAIT = "正在恢复未完成的试卷识别，请保持页面打开"
@@ -50,7 +51,7 @@ def fast_heartbeats(monkeypatch):
     monkeypatch.setattr(grade, "_GRADE_HEARTBEAT_SECONDS", 0.01)
     monkeypatch.setattr(task_queue, "_grading_queue", None)
     monkeypatch.setattr(grade_pipeline, "_start_batch_report_generation", no_report)
-    monkeypatch.setattr(grade, "_start_batch_report_generation", no_report)
+    monkeypatch.setattr(grade_report, "_start_batch_report_generation", no_report)
 
 
 class _Pipeline:

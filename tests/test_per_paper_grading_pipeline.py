@@ -33,6 +33,7 @@ from services.quick_grader import QuickBatch
 from services.template_session import TemplateSession
 from tests.grade_family import set_grade_global
 from routers import grade_availability
+from routers import grade_report
 
 
 @pytest.fixture(autouse=True)
@@ -52,7 +53,7 @@ def _isolated_grading_dependencies(monkeypatch):
     monkeypatch.setattr(task_queue, "_grading_queue", None)
     monkeypatch.setattr(grade_availability, "_batch_grade_scoring_availability", available)
     monkeypatch.setattr(grade_pipeline, "_start_batch_report_generation", no_report)
-    monkeypatch.setattr(grade_router, "_start_batch_report_generation", no_report)
+    monkeypatch.setattr(grade_report, "_start_batch_report_generation", no_report)
 
 
 def _events(response):

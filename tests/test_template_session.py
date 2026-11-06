@@ -48,6 +48,7 @@ from services.template_session import (
 from services.template_evidence import CanonicalTemplate, canonicalize_template_image
 from tests.grade_family import set_grade_global
 from routers import grade_availability
+from routers import grade_report
 
 
 @pytest.fixture(autouse=True)
@@ -458,7 +459,7 @@ def test_confirmed_template_background_classifies_only_missing_knowledge(monkeyp
         ]
 
     set_grade_global(monkeypatch, "UPLOAD_DIR", str(tmp_path))
-    monkeypatch.setattr(gr_router, "_template_knowledge_classifier", classify)
+    monkeypatch.setattr(grade_report, "_template_knowledge_classifier", classify)
     monkeypatch.setattr(grade_template, "_template_knowledge_classifier", classify)
 
     asyncio.run(grade_template._classify_confirmed_template_knowledge(

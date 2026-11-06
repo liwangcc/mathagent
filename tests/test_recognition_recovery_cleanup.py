@@ -270,8 +270,7 @@ def test_repeated_disconnect_cancellation_settles_pipeline_before_releasing_lock
 
         monkeypatch.setattr(grade_recognition, "_recognize_batch_upload", recognized)
         monkeypatch.setattr(grade_pipeline, "_grade_paper_core", blocked_grade)
-        monkeypatch.setattr(grade_pipeline, "_save_quick_batch_meta", observed_save)
-        monkeypatch.setattr(grade_router, "_save_quick_batch_meta", observed_save)
+        set_grade_global(monkeypatch, "_save_quick_batch_meta", observed_save)
         if initial:
             with Session() as db:
                 response = await grade_router.batch_grade_recognize(
@@ -366,8 +365,7 @@ def test_repeated_disconnect_cancellation_settles_pipeline_before_releasing_lock
         assert [job["attempts"] for job in after["ocr_jobs"]] == [1, 1, 0]
         assert [item["image_path"] for item in after["pending_uploads"]] == [calls[-1]]
         monkeypatch.setattr(grade_pipeline, "_grade_paper_core", real_grade)
-        monkeypatch.setattr(grade_pipeline, "_save_quick_batch_meta", real_save)
-        monkeypatch.setattr(grade_router, "_save_quick_batch_meta", real_save)
+        set_grade_global(monkeypatch, "_save_quick_batch_meta", real_save)
         return active_batch_id, calls[-1], before["results"][0]
 
     active_batch_id, pending_path, saved_result = asyncio.run(run())
@@ -397,7 +395,6 @@ def test_repeated_disconnect_cancellation_settles_pipeline_before_releasing_lock
 def test_recognition_cleanup_does_not_hide_checkpoint_error(monkeypatch, tmp_path):
     from anyio import CancelScope
     import routers.grade as grade_router
-    from routers import grade_pipeline
 
     batch = _pending_batch(tmp_path, count=1)
     order = []
@@ -412,8 +409,7 @@ def test_recognition_cleanup_does_not_hide_checkpoint_error(monkeypatch, tmp_pat
         order.append("save")
         raise OSError("synthetic checkpoint failure")
 
-    monkeypatch.setattr(grade_pipeline, "_save_quick_batch_meta", failing_save)
-    monkeypatch.setattr(grade_router, "_save_quick_batch_meta", failing_save)
+    set_grade_global(monkeypatch, "_save_quick_batch_meta", failing_save)
 
     async def run():
         with CancelScope() as scope:

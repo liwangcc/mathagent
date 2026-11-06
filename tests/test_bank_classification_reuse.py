@@ -24,6 +24,7 @@ from services import question_classification as classification
 from services.math_curriculum import catalog_version, get_knowledge_point, get_math_catalog
 from services.teaching_context import make_teaching_context
 from tests.grade_family import set_grade_global
+from routers import grade_report
 
 SENIOR = make_teaching_context("senior")
 _MODULE = get_math_catalog("senior")[0]
@@ -332,7 +333,7 @@ def test_template_bank_import_waits_for_in_flight_template_labels(sessions, tmp_
 
     set_grade_global(monkeypatch, "UPLOAD_DIR", str(tmp_path))
     calls = []
-    monkeypatch.setattr(grade, "_template_knowledge_classifier", _template_classifier(0.2, calls))
+    monkeypatch.setattr(grade_report, "_template_knowledge_classifier", _template_classifier(0.2, calls))
     monkeypatch.setattr(grade_template, "_template_knowledge_classifier", _template_classifier(0.2, calls))
     _confirmed_template(tmp_path, "tplwait")
 
@@ -353,7 +354,7 @@ def test_template_bank_import_does_not_block_past_its_bound(sessions, tmp_path, 
 
     set_grade_global(monkeypatch, "UPLOAD_DIR", str(tmp_path))
     monkeypatch.setattr(grade_template, "TEMPLATE_BANK_IMPORT_KNOWLEDGE_WAIT_S", 0.1)
-    monkeypatch.setattr(grade, "_template_knowledge_classifier", _template_classifier(5, []))
+    monkeypatch.setattr(grade_report, "_template_knowledge_classifier", _template_classifier(5, []))
     monkeypatch.setattr(grade_template, "_template_knowledge_classifier", _template_classifier(5, []))
     _confirmed_template(tmp_path, "tplslow")
 

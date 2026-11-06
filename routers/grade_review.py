@@ -28,7 +28,6 @@ from models_user import User
 from routers.auth import _require_user
 from routers.grade import (
     _RAW_PAPER_EXPIRED_MESSAGE,
-    _batch_report_response,
     _batch_review_image_path,
 )
 from routers.grade_common import (
@@ -38,6 +37,9 @@ from routers.grade_common import (
     _locked_owned_review_batch,
     _review_timestamp,
     _find_review_result,
+)
+from routers.grade_report import (
+    _batch_report_response,
 )
 
 logger = logging.getLogger(__name__)
