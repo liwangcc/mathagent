@@ -1,26 +1,67 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { readFileSync } from 'node:fs'
-import { fileURLToPath } from 'node:url'
-import { computed, defineComponent, effectScope, h, ref, watch } from 'vue'
+import { batchFixture, body, flush, openAnswerSheet, PAPER, SESSION_KEY, SHEET } from './helpers/answerSheetPage.js'
 import { loadApiClient } from './helpers/apiClient.js'
 
-const read = (relative) => readFileSync(fileURLToPath(new URL(relative, import.meta.url)), 'utf8')
-const view = read('../src/views/AnswerSheet.vue')
+// The create-batch card: its form items by label, and the controls in them.
+const createCard = sheet => sheet.root.byClass('create-card')
+const formItem = (sheet, label) => createCard(sheet).byTag('el-form-item').find(el => el.getAttribute('label') === label)
+const paperSelect = sheet => formItem(sheet, '试卷模板（必选）').byTag('el-select')[0]
+const sheetSelect = sheet => formItem(sheet, '答题卡模板（可选，也可稍后选择或新建）').byTag('el-select')[0]
+const registration = sheet => createCard(sheet).byClass('template-code-actions')
+const choose = async (control, value) => {
+  control.handlers['update:modelValue'](value)
+  await flush()
+}
+const option = el => ({ label: el.getAttribute('label'), value: el._value })
+const disabled = el => el.hasAttribute('disabled')
+const label = `${SHEET}-20260927-143000`
+const created = '/answer-sheet/sessions'
 
-test('批次不再选择批阅类型或班级，班级来自全局当前班级', () => {
-  assert.doesNotMatch(view, /批阅类型/)
-  assert.doesNotMatch(view, /setup\.category|setup\.value\.category/)
-  assert.doesNotMatch(view, /label="考试名称"/)
-  assert.doesNotMatch(view, /createSession\(\{[^}]*class_id/)
-  assert.doesNotMatch(view, /createSession\(\{[^}]*category/)
-  assert.match(view, /auth\.currentClassName/)
-  assert.match(view, /批次自动继承/)
+test('批次不再选择批阅类型或班级，班级来自全局当前班级', async (t) => {
+  const sheet = await openAnswerSheet(t, {
+    classes: { classes: [{ id: 10, class_name: '一班' }, { id: 11, class_name: '二班' }], current_class_id: 11 },
+    paperTemplates: [{ template_code: PAPER, question_count: 4 }],
+    respond: config => (config.method === 'post' && config.url === created ? { data: batchFixture() } : undefined),
+  })
+  assert.deepEqual(createCard(sheet).byTag('el-form-item').map(el => el.getAttribute('label')), [
+    '当前班级（顶部导航切换，批次自动继承）',
+    '试卷模板（必选）',
+    '答题卡模板（可选，也可稍后选择或新建）',
+  ])
+  const classInput = formItem(sheet, '当前班级（顶部导航切换，批次自动继承）').byTag('el-input')[0]
+  assert.equal(classInput.getAttribute('model-value'), '二班')
+  assert.ok(disabled(classInput), '班级只读，跟随顶部导航')
+  assert.doesNotMatch(sheet.page.html(), /批阅类型|考试名称/)
+
+  await choose(paperSelect(sheet), PAPER)
+  await sheet.click('创建批次并继续')
+  // The class comes from the server-side current class: the request names none, nor a grading type.
+  assert.deepEqual(body(sheet.request('post', created)), { paper_template_code: PAPER })
 })
 
-test('批次列表接口按答题卡模板号加时间戳展示', () => {
-  assert.match(view, /item\.batch_label \|\| '待绑定答题卡模板'/)
-  assert.match(view, /批次 \{\{ session\.batch_label \}\}/)
+test('批次列表接口按答题卡模板号加时间戳展示', async (t) => {
+  const sheet = await openAnswerSheet(t, {
+    saved: null,
+    batches: [
+      { session_id: 'b1', batch_label: label, paper_template_code: PAPER, status: 'frozen', created_at: '2026-09-27T06:30:00+00:00' },
+      { session_id: 'b2', batch_label: '', paper_template_code: PAPER, status: 'answers_confirmed', created_at: '2026-09-27T07:00:00+00:00' },
+    ],
+    sessions: [batchFixture({ session_id: 'b1', status: 'frozen', batch_label: label })],
+  })
+  const rows = sheet.root.allByClass('batch-row')
+  assert.deepEqual(rows.map(row => row.byTag('strong')[0].text), [label, '待绑定答题卡模板'])
+  assert.deepEqual(rows.map(row => row.byTag('span').map(span => span.text)), [
+    [`试卷模板 ${PAPER}`, '版面已冻结'],
+    [`试卷模板 ${PAPER}`, '答案已确认'],
+  ])
+
+  await rows[0].dispatch('click')
+  await flush()
+  const meta = sheet.root.byClass('session-meta')
+  const batch = meta.byTag('span').find(span => span.text.startsWith('批次'))
+  assert.equal(batch.text, `批次 ${label}`)
+  assert.equal(batch.getAttribute('title'), label)
 })
 
 test('批次列表接口不带参数 GET /answer-sheet/sessions 并返回后端批次', async () => {
@@ -37,172 +78,140 @@ test('批次列表接口不带参数 GET /answer-sheet/sessions 并返回后端�
   assert.equal(request.data, undefined)
 })
 
-test('建批次向导使用试卷模板选择与登记，不再提交空请求', () => {
-  assert.doesNotMatch(view, /createSession\(\{\}\)/)
-  assert.match(view, /v-for="item in paperTemplates"/)
-  assert.match(view, /v-for="item in paperTemplateSources"/)
-  assert.match(view, /登记试卷模板/)
-  assert.match(view, /api\.answerSheet\.registerPaperTemplate\(templateId/)
+test('建批次向导使用试卷模板选择与登记，不再提交空请求', async (t) => {
+  const sheet = await openAnswerSheet(t, {
+    paperTemplates: [
+      { template_code: PAPER, alias: '期中A卷', exam_name: '期中考试', question_count: 4 },
+      { template_code: 'PT-EEEE-FFFF-GGGG-HHHH', alias: '', exam_name: '', question_count: 2 },
+    ],
+    paperSources: [
+      { template_id: 'tpl-1', exam_name: '期中考试', question_count: 4, confirmed_at: '2026-09-27T06:00:00+00:00' },
+      { template_id: 'tpl-2', exam_name: '', question_count: 3 },
+    ],
+    respond: config => (config.method === 'post' && config.url === '/answer-sheet/paper-templates'
+      ? { data: { template: { template_code: PAPER } } }
+      : undefined),
+  })
+  assert.deepEqual(paperSelect(sheet).byTag('el-option').map(option), [
+    { label: `期中A卷　${PAPER}　4题`, value: PAPER },
+    { label: 'PT-EEEE-FFFF-GGGG-HHHH　2题', value: 'PT-EEEE-FFFF-GGGG-HHHH' },
+  ])
+  const sources = registration(sheet).byTag('el-select')[0].byTag('el-option').map(option)
+  assert.deepEqual(sources.map(item => item.value), ['tpl-1', 'tpl-2'])
+  assert.match(sources[0].label, /^期中考试　4题　确认于 \S/)
+  assert.equal(sources[1].label, '详细批改模板 tpl-2　3题')
+
+  // Nothing chosen: neither registering nor creating can send a request.
+  assert.ok(disabled(sheet.button('登记试卷模板')))
+  assert.ok(disabled(sheet.button('创建批次并继续')))
+  await sheet.click('创建批次并继续')
+  await sheet.click('登记试卷模板')
+  assert.deepEqual(sheet.writes(), [])
+
+  await choose(registration(sheet).byTag('el-select')[0], 'tpl-1')
+  await sheet.click('登记试卷模板')
+  assert.deepEqual(sheet.writes(), [['post', '/answer-sheet/paper-templates']])
+  assert.deepEqual(body(sheet.request('post', '/answer-sheet/paper-templates')), { template_id: 'tpl-1', alias: '' })
 })
 
-// Execute the real <script setup> with mocked dependencies so the creation
-// flow is checked against the backend request contract, not just its text.
-const script = view
-  .split('<script setup>')[1]
-  .split('</script>')[0]
-  .replace(/^import[\s\S]*?from\s+'[^']+'\s*$/gm, '')
-const exported = [
-  'batchSetup', 'paperTemplates', 'paperTemplateSources', 'paperRegistration', 'batches',
-  'canCreate', 'createSession', 'registerPaperTemplate', 'loadBatchChoices', 'openBatch',
-  'closeSession', 'session', 'activeStage', 'isBatch', 'visibleStages', 'serviceState', 'statusLabels',
-]
-const parameters = [
-  'computed', 'defineComponent', 'h', 'onBeforeUnmount', 'onMounted', 'ref', 'watch',
-  'ElMessage', 'ElMessageBox', 'notifyProcessingError', 'UploadFilled', 'useRoute', 'api',
-  'mergeHardwareAvailabilityStatus', 'normalizeHardwareAvailability',
-  'appendDesktopCanonicalCandidates', 'compressImageFiles', 'validateUploadList', 'useAuthStore',
-  'renderLatex', 'HelpButton', 'consumeSse', 'createSseEventError', 'createSseResponseError',
-  'isSseRequestCancelled', 'isSseServiceFault', 'SseTransportError', 'localStorage',
-]
-const factory = new Function(...parameters, `${script}\nreturn { ${exported.join(', ')} }`)
-
-const PAPER = 'PT-AAAA-BBBB-CCCC-DDDD'
-const SHEET = 'AS-1111-2222-3333-4444'
-
-function harness(t, { createResponse } = {}) {
-  const calls = { create: [], register: [], getSession: [], listSessions: 0, deleteSession: 0 }
-  const stored = new Map()
-  let registered = []
-  const answerSheet = {
-    paperTemplates: async () => ({ templates: registered }),
-    paperTemplateSources: async () => ({
-      sources: [{ template_id: 'tpl-1', exam_name: '期中考试', question_count: 4, confirmed_at: '2026-09-27T06:00:00+00:00' }],
-    }),
-    listSessions: async () => {
-      calls.listSessions += 1
-      return { batches: [{ session_id: 'b1', batch_label: `${SHEET}-20260927-143000`, paper_template_code: PAPER, status: 'frozen', created_at: '2026-09-27T06:30:00+00:00' }] }
-    },
-    registerPaperTemplate: async (templateId, alias) => {
-      calls.register.push([templateId, alias])
-      registered = [{ template_code: PAPER, alias, exam_name: '期中考试', question_count: 4 }]
-      return { template: registered[0] }
-    },
-    createSession: async (payload) => {
-      calls.create.push(payload)
-      return createResponse(payload)
-    },
-    getSession: async (sessionId) => {
-      calls.getSession.push(sessionId)
-      return batchSession({ session_id: sessionId, status: 'frozen', batch_label: `${SHEET}-20260927-143000` })
-    },
-    deleteSession: async () => { calls.deleteSession += 1 },
-    templateHistory: async () => ({ templates: [] }),
-  }
-  const auth = { currentClassId: 10, currentClassName: '一班', classes: [] }
-  const message = { success() {}, warning() {}, error() {}, info() {} }
-  const storage = {
-    getItem: key => stored.get(key) ?? null,
-    setItem: (key, value) => stored.set(key, String(value)),
-    removeItem: key => stored.delete(key),
-  }
-  const scope = effectScope()
-  t.after(() => scope.stop())
-  const state = scope.run(() => factory(
-    computed, defineComponent, h, () => {}, () => {}, ref, watch,
-    message, { confirm: async () => {} }, () => {}, {}, () => ({ query: {} }), { answerSheet },
-    () => ({}), () => ({ status: 'ready' }),
-    async () => {}, async files => files, () => ({ ok: true }), () => auth,
-    text => String(text || ''), {}, async () => {}, () => new Error('sse'), async () => new Error('sse'),
-    () => false, () => false, Error, storage,
-  ))
-  state.serviceState.value = { status: 'available', label: '可用', message: '' }
-  return { state, calls, stored }
-}
-
-function batchSession(overrides = {}) {
-  return {
-    session_id: 's-new',
-    teacher_id: 1,
-    class_id: 10,
-    status: 'answers_confirmed',
-    batch_contract_version: 'answer-sheet-batch-v2',
-    batch_label: '',
-    answer_sheet_template_code: '',
-    paper_template_code: PAPER,
-    answer_spec_snapshot: [{ question_no: '1', question_type: 'choice', choice_mode: 'single', standard_answer: 'A' }],
-    answer_sheet_pages: [],
-    answer_regions: [],
-    identity_regions: [],
-    grouping_decisions: [],
-    ...overrides,
-  }
-}
-
 test('创建批次必须先选试卷模板，请求只携带模板号（无班级/类型字段）', async (t) => {
-  const { state, calls, stored } = harness(t, { createResponse: () => batchSession() })
-  await state.loadBatchChoices()
-  assert.equal(state.canCreate.value, false)
+  const sheet = await openAnswerSheet(t, {
+    paperTemplates: [{ template_code: PAPER, question_count: 1 }],
+    respond: config => (config.method === 'post' && config.url === created ? { data: batchFixture() } : undefined),
+  })
+  assert.ok(disabled(sheet.button('创建批次并继续')))
+  await choose(paperSelect(sheet), PAPER)
+  assert.equal(disabled(sheet.button('创建批次并继续')), false)
+  await sheet.click('创建批次并继续')
 
-  state.batchSetup.value.paper_template_code = PAPER
-  assert.equal(state.canCreate.value, true)
-  await state.createSession()
-
-  assert.deepEqual(calls.create, [{ paper_template_code: PAPER }])
-  assert.equal(state.isBatch.value, true)
-  assert.deepEqual(state.visibleStages.value.slice(0, 2).map(item => item.title), ['试卷模板', '题目答案'])
+  assert.deepEqual(sheet.writes(), [['post', created]])
+  assert.deepEqual(body(sheet.request('post', created)), { paper_template_code: PAPER })
+  assert.ok(sheet.messages().some(([type, message]) => type === 'success' && message === '答题卡批次已创建'))
+  // A batch shows its paper template where an ordinary session uploads the source paper.
+  assert.deepEqual(sheet.stageButtons().slice(0, 2).map(el => el.byTag('strong')[0].text), ['试卷模板', '题目答案'])
+  assert.ok(!sheet.section('原始试卷与答案来源'))
+  assert.match(sheet.section('试卷模板').text, new RegExp(`已绑定试卷模板 ${PAPER}，共 1 题，答案已冻结。`))
   // Answers come from the frozen paper template: continue at the answer-sheet stage.
-  assert.equal(state.activeStage.value, 2)
-  assert.equal(stored.get('mathagent_answer_sheet_session_id'), 's-new')
-  assert.deepEqual(state.batchSetup.value, { paper_template_code: '', answer_sheet_template_code: '' })
+  assert.equal(sheet.activeStage(), 2)
+  assert.equal(sheet.client.localStorage.getItem(SESSION_KEY), 's-new')
+
+  // Back on the list, the form starts empty for the next batch.
+  await sheet.click('批次列表')
+  assert.equal(paperSelect(sheet).getAttribute('modelValue'), '')
+  assert.equal(sheetSelect(sheet).getAttribute('modelValue'), '')
+  assert.ok(disabled(sheet.button('创建批次并继续')))
 })
 
 test('建批次时选择答题卡模板号：规范为大写提交，批次获得模板号加时间戳标签', async (t) => {
-  const label = `${SHEET}-20260927-143000`
-  const { state, calls } = harness(t, {
-    createResponse: payload => batchSession({
-      status: 'frozen',
-      answer_sheet_template_code: payload.answer_sheet_template_code,
-      batch_label: label,
-    }),
+  const sheet = await openAnswerSheet(t, {
+    paperTemplates: [{ template_code: PAPER, question_count: 1 }],
+    history: [{ template_code: SHEET, page_count: 1, question_count: 1 }],
+    respond: config => (config.method === 'post' && config.url === created
+      ? { data: batchFixture({ status: 'frozen', answer_sheet_template_code: body(config).answer_sheet_template_code, batch_label: label }) }
+      : undefined),
   })
-  state.batchSetup.value = { paper_template_code: PAPER, answer_sheet_template_code: ` ${SHEET.toLowerCase()} ` }
-  await state.createSession()
+  assert.deepEqual(sheetSelect(sheet).byTag('el-option').map(item => item._value), [SHEET])
+  await choose(paperSelect(sheet), PAPER)
+  await choose(sheetSelect(sheet), ` ${SHEET.toLowerCase()} `)
+  await sheet.click('创建批次并继续')
 
-  assert.deepEqual(calls.create, [{ paper_template_code: PAPER, answer_sheet_template_code: SHEET }])
-  assert.equal(state.session.value.batch_label, label)
-  assert.equal(state.activeStage.value, 4)
+  assert.deepEqual(body(sheet.request('post', created)), { paper_template_code: PAPER, answer_sheet_template_code: SHEET })
+  const batch = sheet.root.byClass('session-meta').byTag('span').find(span => span.text.startsWith('批次'))
+  assert.equal(batch.text, `批次 ${label}`)
+  // A batch with a frozen answer-sheet template continues at the student stage.
+  assert.equal(sheet.activeStage(), 4)
+  assert.equal(sheet.count('get', '/answer-sheet/templates/history'), 2, '使用的模板码进入历史')
 })
 
 test('登记试卷模板后刷新列表并自动选中新模板号', async (t) => {
-  const { state, calls } = harness(t, { createResponse: () => batchSession() })
-  await state.loadBatchChoices()
-  assert.equal(state.paperTemplates.value.length, 0)
-  assert.equal(state.paperTemplateSources.value[0].template_id, 'tpl-1')
+  let registered = []
+  const sheet = await openAnswerSheet(t, {
+    paperTemplates: () => registered,
+    paperSources: [{ template_id: 'tpl-1', exam_name: '期中考试', question_count: 4, confirmed_at: '2026-09-27T06:00:00+00:00' }],
+    respond: (config) => {
+      if (config.method !== 'post' || config.url !== '/answer-sheet/paper-templates') return undefined
+      registered = [{ template_code: PAPER, alias: body(config).alias, exam_name: '期中考试', question_count: 4 }]
+      return { data: { template: registered[0] } }
+    },
+  })
+  assert.equal(paperSelect(sheet).byTag('el-option').length, 0)
+  const [sourceSelect] = registration(sheet).byTag('el-select')
+  assert.deepEqual(sourceSelect.byTag('el-option').map(item => item._value), ['tpl-1'])
 
-  state.paperRegistration.value = { template_id: 'tpl-1', alias: ' 期中A卷 ' }
-  await state.registerPaperTemplate()
+  await choose(sourceSelect, 'tpl-1')
+  await choose(registration(sheet).byTag('el-input')[0], ' 期中A卷 ')
+  await sheet.click('登记试卷模板')
 
-  assert.deepEqual(calls.register, [['tpl-1', '期中A卷']])
-  assert.deepEqual(state.paperTemplates.value.map(item => item.template_code), [PAPER])
-  assert.equal(state.batchSetup.value.paper_template_code, PAPER)
-  assert.deepEqual(state.paperRegistration.value, { template_id: '', alias: '' })
+  assert.deepEqual(body(sheet.request('post', '/answer-sheet/paper-templates')), { template_id: 'tpl-1', alias: '期中A卷' })
+  assert.ok(sheet.messages().some(([type, message]) => type === 'success' && message === '试卷模板已登记，可在多个批次复用'))
+  assert.equal(sheet.count('get', '/answer-sheet/paper-templates'), 2)
+  assert.deepEqual(paperSelect(sheet).byTag('el-option').map(option), [{ label: `期中A卷　${PAPER}　4题`, value: PAPER }])
+  assert.equal(paperSelect(sheet).getAttribute('modelValue'), PAPER)
+  assert.equal(registration(sheet).byTag('el-select')[0].getAttribute('modelValue'), '')
+  assert.equal(registration(sheet).byTag('el-input')[0].getAttribute('modelValue'), '')
+  assert.equal(disabled(sheet.button('创建批次并继续')), false)
 })
 
 test('批次列表按标签重新打开批次；返回列表不删除批次', async (t) => {
-  const { state, calls, stored } = harness(t, { createResponse: () => batchSession() })
-  await state.loadBatchChoices()
-  assert.equal(state.batches.value[0].batch_label, `${SHEET}-20260927-143000`)
+  const sheet = await openAnswerSheet(t, {
+    saved: null,
+    batches: [{ session_id: 'b1', batch_label: label, paper_template_code: PAPER, status: 'frozen', created_at: '2026-09-27T06:30:00+00:00' }],
+    sessions: [batchFixture({ session_id: 'b1', status: 'frozen', batch_label: label })],
+  })
+  assert.equal(sheet.root.byClass('batch-row').byTag('strong')[0].text, label)
+  await sheet.root.byClass('batch-row').dispatch('click')
+  await flush()
 
-  await state.openBatch('b1')
-  assert.deepEqual(calls.getSession, ['b1'])
-  assert.equal(state.session.value.session_id, 'b1')
-  assert.equal(stored.get('mathagent_answer_sheet_session_id'), 'b1')
+  assert.equal(sheet.count('get', '/answer-sheet/sessions/b1'), 1)
+  assert.ok(!createCard(sheet))
+  assert.ok(sheet.root.byClass('session-meta').byTag('span').some(span => span.text === '会话 b1'))
+  assert.equal(sheet.client.localStorage.getItem(SESSION_KEY), 'b1')
 
-  const listedBefore = calls.listSessions
-  state.closeSession()
-  assert.equal(state.session.value, null)
-  assert.equal(stored.has('mathagent_answer_sheet_session_id'), false)
-  assert.equal(calls.deleteSession, 0)
-  await new Promise(resolve => setTimeout(resolve, 0))
-  assert.equal(calls.listSessions, listedBefore + 1)
+  const listed = sheet.count('get', '/answer-sheet/sessions')
+  await sheet.click('批次列表')
+  assert.ok(createCard(sheet))
+  assert.equal(sheet.client.localStorage.getItem(SESSION_KEY), null)
+  assert.deepEqual(sheet.writes(), [], '返回列表不删除批次')
+  assert.equal(sheet.count('get', '/answer-sheet/sessions'), listed + 1)
+  assert.equal(sheet.root.byClass('batch-row').byTag('strong')[0].text, label)
 })

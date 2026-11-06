@@ -18,10 +18,7 @@ import { sourceTextReads, sourceTextReadsOf } from './helpers/sourceTextReads.js
 // longer has.
 const KNOWN_SOURCE_TEXT_READS = {
   'anonymous-grade.test.js': ['views/AnonymousGrade.vue', 'views/Layout.vue', 'views/Upload.vue'],
-  'answer-sheet-pairing.test.js': ['views/AnswerSheet.vue'],
-  'answer-sheet-redesign.test.js': ['views/AnswerSheet.vue'],
-  'answer-sheet-review-workbench.test.js': ['views/AnswerSheet.vue', 'views/GradeRecords.vue'],
-  'answer-sheet-workflow.test.js': ['api/index.js', 'views/AnswerSheet.vue', 'views/Layout.vue'],
+  'answer-sheet-workflow.test.js': ['views/AnswerSheet.vue'],
   'bank-photo-stage-runtime.test.js': ['views/BankPhotoImport.vue'],
   'bank-profile-scope-runtime.test.js': ['views/Bank.vue'],
   'bank-stage-contract.test.js': ['views/Bank.vue', 'views/BankPhotoImport.vue', 'views/PendingAnswers.vue'],
