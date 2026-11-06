@@ -29,6 +29,7 @@ from routers.auth import _require_user
 from services.quick_grader import BatchOperationBusy, QuickBatch, batch_operation_lock
 from tests.grade_family import set_grade_global
 from routers import grade_papers
+from routers import grade_recognition
 
 
 def _hold_batch_lock_in_child(upload_dir: str, batch_id: str, ready, release) -> None:
@@ -60,7 +61,7 @@ def _setup_review_batch(monkeypatch, tmp_path):
     upload_dir = tmp_path / "uploads"
     set_grade_global(monkeypatch, "UPLOAD_DIR", str(upload_dir))
     monkeypatch.setattr(grade_pipeline, "SessionLocal", Session)
-    monkeypatch.setattr(grade_router, "SessionLocal", Session)
+    monkeypatch.setattr(grade_recognition, "SessionLocal", Session)
 
     batch = QuickBatch("review-batch", str(upload_dir))
     batch.teacher_id = 1

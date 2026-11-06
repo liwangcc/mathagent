@@ -15,6 +15,7 @@ from services.batch_report import build_batch_report_payload
 from tests.grade_family import set_grade_global
 from routers import grade_availability
 from routers import grade_report
+from routers import grade_recognition
 
 
 def question(number="1", text="求函数定义域", **extra):
@@ -492,7 +493,7 @@ async def test_real_template_route_wires_text_ready_and_global_binding(tmp_path,
 
     _, factory = _make_app_and_session()
     set_grade_global(monkeypatch, "UPLOAD_DIR", str(tmp_path))
-    monkeypatch.setattr(grade, "_check_limits_or_raise", lambda *_args: None)
+    monkeypatch.setattr(grade_recognition, "_check_limits_or_raise", lambda *_args: None)
     _patch_template_layout(monkeypatch, grade)
 
     async def available(*args, **kwargs):

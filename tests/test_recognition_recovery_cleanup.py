@@ -18,6 +18,7 @@ from services.quick_grader import (
 )
 from tests.test_batch_calibration_flow import _confirmed_template, _events, _setup
 from tests.grade_family import set_grade_global
+from routers import grade_recognition
 
 
 def _pending_batch(tmp_path, *, count=2):
@@ -209,11 +210,11 @@ def test_repeated_disconnect_cancellation_settles_pipeline_before_releasing_lock
 
     set_grade_global(monkeypatch, "batch_operation_lock", tracked_lock)
     monkeypatch.setattr(grade_pipeline, "SessionLocal", tracked_session)
-    monkeypatch.setattr(grade_router, "SessionLocal", tracked_session)
+    monkeypatch.setattr(grade_recognition, "SessionLocal", tracked_session)
     for name in (
         "reset_grading_teacher_id", "reset_vision_phase_key", "reset_vision_batch_paper_count",
     ):
-        original = getattr(grade_router, name)
+        original = getattr(grade_recognition, name)
 
         def tracked_reset(token, original=original, name=name):
             effects["resets"].add(name)

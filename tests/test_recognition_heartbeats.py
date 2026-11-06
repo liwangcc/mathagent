@@ -45,11 +45,10 @@ def fast_heartbeats(monkeypatch):
     async def no_report(*_args):
         return None
 
-    # The OCR multiplexer waits in grade_recognition, the grading drain and the
-    # upload inspection in routers.grade, the per-paper pipeline in grade_pipeline.
+    # The OCR multiplexer, the grading drain and the upload inspection wait in
+    # grade_recognition, the per-paper pipeline in grade_pipeline.
     monkeypatch.setattr(grade_recognition, "_GRADE_HEARTBEAT_SECONDS", 0.01)
     monkeypatch.setattr(grade_pipeline, "_GRADE_HEARTBEAT_SECONDS", 0.01)
-    monkeypatch.setattr(grade, "_GRADE_HEARTBEAT_SECONDS", 0.01)
     monkeypatch.setattr(task_queue, "_grading_queue", None)
     monkeypatch.setattr(grade_pipeline, "_start_batch_report_generation", no_report)
     monkeypatch.setattr(grade_report, "_start_batch_report_generation", no_report)

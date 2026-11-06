@@ -24,6 +24,7 @@ from services.student_service import resolve_student_identity
 from tests.grade_family import set_grade_global
 from routers import grade_availability
 from routers import grade_papers
+from routers import grade_recognition
 
 
 def _parse_sse(text: str) -> list[tuple[str, dict]]:
@@ -71,7 +72,7 @@ def identity_app(monkeypatch, tmp_path):
     upload_dir = tmp_path / "uploads"
     set_grade_global(monkeypatch, "UPLOAD_DIR", str(upload_dir))
     monkeypatch.setattr(grade_pipeline, "SessionLocal", Session)
-    monkeypatch.setattr(grade_router, "SessionLocal", Session)
+    monkeypatch.setattr(grade_recognition, "SessionLocal", Session)
     monkeypatch.setattr(persistence, "ARCHIVE_DIR", str(tmp_path / "archive"))
 
     async def _offline_grade(*, paper, student_name, **_kwargs):
@@ -496,7 +497,7 @@ def test_unresolved_identity_does_not_run_server_roster_crop(
         unreadable_identity,
     )
     monkeypatch.setattr(grade_papers, "recognize_paper_with_cache", recognized_answers)
-    batch = QuickBatch("unresolved-identity", grade_router.UPLOAD_DIR)
+    batch = QuickBatch("unresolved-identity", grade_recognition.UPLOAD_DIR)
     result = asyncio.run(grade_router._recognize_batch_upload(
         batch,
         "unused.png",

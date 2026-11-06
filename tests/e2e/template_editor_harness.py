@@ -46,8 +46,8 @@ from fastapi.responses import Response
 from PIL import Image, ImageDraw
 
 import app as app_module
-import routers.grade as grade
-from routers import grade_availability, grade_report, grade_template
+import config
+from routers import grade_availability, grade_recognition, grade_report, grade_template
 from services import template_directory_pipeline as pipeline
 from services import template_one_three as one_three
 
@@ -360,7 +360,7 @@ def install_patches() -> None:
     pipeline._request = scripted_request
     grade_template.recognize_column_layout = scripted_column_layout
     grade_template.accept_canonical_template_candidate = recorded_accept_candidate
-    grade._check_limits_or_raise = lambda *_args, **_kwargs: None
+    grade_recognition._check_limits_or_raise = lambda *_args, **_kwargs: None
     grade_availability.batch_grade_availability = _available
     grade_availability._batch_grade_service_availability = _available
     grade_template.get_column_layout_readiness = _available
@@ -425,7 +425,7 @@ def install_control_routes(work_dir: Path) -> None:
     @app.get("/__harness/session/{template_id}")
     async def session_dump(template_id: str):
         from services.template_session import TemplateSession
-        sess = TemplateSession.load_meta(template_id, grade.UPLOAD_DIR)
+        sess = TemplateSession.load_meta(template_id, config.UPLOAD_DIR)
         template_dir = str(Path(sess.template_dir).resolve())
         with _lock:
             client_pages = sorted(index for directory, index in _client_canonical_pages if directory == template_dir)

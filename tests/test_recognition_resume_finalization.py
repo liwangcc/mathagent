@@ -83,9 +83,8 @@ def forbid_ocr(monkeypatch):
         pytest.fail("Already checkpointed OCR must not be requested again")
 
     monkeypatch.setattr(grade_papers, "recognize_paper_with_cache", forbidden)
-    # Per-upload OCR inspects in grade_recognition, batch inspections in routers.grade.
+    # Per-upload OCR and the batch inspections both read grade_recognition's binding.
     monkeypatch.setattr(grade_recognition, "_ensure_batch_upload_inspected", forbidden)
-    monkeypatch.setattr(grade, "_ensure_batch_upload_inspected", forbidden)
 
 
 @pytest.mark.parametrize("status", ["recognition_interrupted", "ocr_partial_failed", "recognizing_remaining"])

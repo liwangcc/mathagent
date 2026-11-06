@@ -71,7 +71,7 @@ def test_confirm_rejects_incomplete_frozen_answer_contract_before_side_effects(
         "student_answer": "4",
         "answer_state": "visible",
     })
-    monkeypatch.setattr(grade.QuickBatch, "load_meta", lambda *_args, **_kwargs: batch)
+    monkeypatch.setattr(QuickBatch, "load_meta", lambda *_args, **_kwargs: batch)
     monkeypatch.setattr(batch, "save_meta", lambda: None)
 
     class _DB:

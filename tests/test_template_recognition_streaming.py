@@ -51,6 +51,7 @@ from tests.test_template_session import (  # noqa: F401 - autouse readiness stub
     _template_png_bytes,
 )
 from tests.grade_family import set_grade_global
+from routers import grade_recognition
 
 
 def _on_event_loop() -> bool:
@@ -150,7 +151,7 @@ class _TemplateImport:
         self.grade_template = grade_template
         self.tmp_path = tmp_path
         set_grade_global(monkeypatch, "UPLOAD_DIR", str(tmp_path))
-        monkeypatch.setattr(grade, "_check_limits_or_raise", lambda db, uid: None)
+        monkeypatch.setattr(grade_recognition, "_check_limits_or_raise", lambda db, uid: None)
         # Heartbeat cadence only; nothing below waits for an interval to pass.
         monkeypatch.setattr(grade_template, "_TEMPLATE_COMPONENT_HEARTBEAT_S", 0.01)
         _patch_template_layout(monkeypatch, grade)
@@ -723,7 +724,7 @@ def test_page_model_budget_shares_remaining_time_and_reserves_save(monkeypatch, 
         def time():
             return 100.0
 
-    monkeypatch.setattr(grade_router.asyncio, "get_running_loop", lambda: Clock())
+    monkeypatch.setattr(asyncio, "get_running_loop", lambda: Clock())
     assert grade_template._template_page_model_deadline(100.0 + remaining, pages) == 100.0 + expected
 
 
@@ -736,7 +737,7 @@ def test_page_model_budget_is_measured_on_the_import_clock_and_given_as_loop_tim
         def time():
             return 100.0
 
-    monkeypatch.setattr(grade_router.asyncio, "get_running_loop", lambda: Loop())
+    monkeypatch.setattr(asyncio, "get_running_loop", lambda: Loop())
     monkeypatch.setattr(grade_template, "_template_import_clock", lambda: 7.0)
     # 480 s of the import remain on its own clock; the model stages time out
     # on the event loop's, so the page deadline is a loop time.

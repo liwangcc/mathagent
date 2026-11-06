@@ -22,6 +22,7 @@ from services.template_session import TemplateSession
 from tests.grade_family import set_grade_global
 from routers import grade_availability
 from routers import grade_papers
+from routers import grade_recognition
 
 
 def _events(response):
@@ -69,7 +70,7 @@ def _setup(monkeypatch, tmp_path, *, education_stage=""):
     test_app.dependency_overrides[_require_user] = lambda: auth_user
     set_grade_global(monkeypatch, "UPLOAD_DIR", str(tmp_path))
     monkeypatch.setattr(grade_pipeline, "SessionLocal", Session)
-    monkeypatch.setattr(grade_router, "SessionLocal", Session)
+    monkeypatch.setattr(grade_recognition, "SessionLocal", Session)
     set_grade_global(monkeypatch, "_validate_client_ocr_ready_upload", lambda filename, path: {"safe": True, "reason": ""})
     set_grade_global(monkeypatch, "validate_upload_path", lambda filename, content: {"safe": True, "reason": ""})
     # These tests exercise batching and recovery state, not browser image
@@ -86,7 +87,7 @@ def _setup(monkeypatch, tmp_path, *, education_stage=""):
             "orientation_coordinate_space": "client_normalized_pixels",
         },
     )
-    monkeypatch.setattr(grade_router, "_check_limits_or_raise", lambda db, user_id: None)
+    monkeypatch.setattr(grade_recognition, "_check_limits_or_raise", lambda db, user_id: None)
     # Recognition now grades finalized papers too. Keep that new model boundary
     # synthetic while exercising the real pipeline and durable result handling.
     async def fake_judge_paper(questions, detail_level="detailed", *, teacher_material=None):
@@ -188,7 +189,7 @@ def test_bad_collection_metadata_is_rejected_before_upload_or_model_work(monkeyp
     async def must_not_save(*_args, **_kwargs):
         raise AssertionError("invalid source metadata must be rejected before saving uploads")
 
-    monkeypatch.setattr(grade_router, "_save_batch_uploads", must_not_save)
+    monkeypatch.setattr(grade_recognition, "_save_batch_uploads", must_not_save)
     monkeypatch.setattr(grade_template, "_save_batch_uploads", must_not_save)
     for paths in [["../张三/abc.jpg"], ["a.jpg", "b.jpg"], ["C:/users/a.jpg"]]:
         response = client.post("/api/batch-grade/recognize", files=[

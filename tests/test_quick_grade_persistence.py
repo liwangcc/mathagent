@@ -17,6 +17,7 @@ from models_user import User
 from routers.auth import _require_user
 from services.quick_grader import QuickBatch, batch_operation_lock
 from tests.grade_family import set_grade_global
+from routers import grade_recognition
 
 
 @pytest.fixture(autouse=True)
@@ -176,7 +177,7 @@ def test_batch_grade_confirm_stages_results_before_archive(monkeypatch, tmp_path
     set_grade_global(monkeypatch, "UPLOAD_DIR", str(upload_dir))
     # SSE 生成器自建会话（脱离请求作用域），需指向测试内存库
     monkeypatch.setattr(grade_pipeline, "SessionLocal", Session)
-    monkeypatch.setattr(gr_router, "SessionLocal", Session)
+    monkeypatch.setattr(grade_recognition, "SessionLocal", Session)
     monkeypatch.setattr(gp, "ARCHIVE_DIR", str(tmp_path / "archive"))
     paper_path = upload_dir / "quick_batch_batch1" / "p1.png"
     paper_path.parent.mkdir(parents=True)
@@ -378,7 +379,7 @@ def test_confirm_checkpoints_each_paper_and_resumes_only_unfinished(monkeypatch,
     upload_dir = tmp_path / "uploads"
     set_grade_global(monkeypatch, "UPLOAD_DIR", str(upload_dir))
     monkeypatch.setattr(grade_pipeline, "SessionLocal", Session)
-    monkeypatch.setattr(gr_router, "SessionLocal", Session)
+    monkeypatch.setattr(grade_recognition, "SessionLocal", Session)
     monkeypatch.setattr(grade_pipeline, "FLASH_LOCAL_MAX_CONCURRENT", 2)
 
     batch = QuickBatch("resume-batch", str(upload_dir))
@@ -558,7 +559,7 @@ def _one_paper_grading_client(monkeypatch, tmp_path, batch_id: str):
     paper_path.write_bytes(b"paper")
     set_grade_global(monkeypatch, "UPLOAD_DIR", str(upload_dir))
     monkeypatch.setattr(grade_pipeline, "SessionLocal", Session)
-    monkeypatch.setattr(gr_router, "SessionLocal", Session)
+    monkeypatch.setattr(grade_recognition, "SessionLocal", Session)
 
     batch = QuickBatch(batch_id, str(upload_dir))
     batch.teacher_id = 1
@@ -728,7 +729,7 @@ def test_same_name_conflict_requires_explicit_existing_resolution(monkeypatch, t
     upload_dir = tmp_path / "uploads"
     set_grade_global(monkeypatch, "UPLOAD_DIR", str(upload_dir))
     monkeypatch.setattr(grade_pipeline, "SessionLocal", Session)
-    monkeypatch.setattr(gr_router, "SessionLocal", Session)
+    monkeypatch.setattr(grade_recognition, "SessionLocal", Session)
     monkeypatch.setattr(gp, "ARCHIVE_DIR", str(tmp_path / "archive"))
     paper_path = upload_dir / "quick_batch_batch3" / "p1.png"
     paper_path.parent.mkdir(parents=True)
@@ -915,7 +916,7 @@ def test_confirm_rejected_when_no_class_selected(monkeypatch, tmp_path):
     upload_dir = tmp_path / "uploads"
     set_grade_global(monkeypatch, "UPLOAD_DIR", str(upload_dir))
     monkeypatch.setattr(grade_pipeline, "SessionLocal", Session)
-    monkeypatch.setattr(gr_router, "SessionLocal", Session)
+    monkeypatch.setattr(grade_recognition, "SessionLocal", Session)
 
     batch = QuickBatch("batch_noclass", str(upload_dir))
     batch.teacher_id = 1

@@ -41,6 +41,7 @@ from tests.test_batch_calibration_flow import _events, _setup
 from tests.grade_family import set_grade_global
 from routers import grade_report
 from routers import grade_papers
+from routers import grade_recognition
 
 
 GOLDEN_DIR = Path(__file__).parent / "golden" / "recognition_stream"
@@ -73,7 +74,7 @@ def deterministic_runtime(monkeypatch):
     # These come from the environment; the interleaving depends on them.
     monkeypatch.setattr(grade_recognition, "OCR_BATCH_DISPATCH_CONCURRENT", 3)
     monkeypatch.setattr(grade_recognition, "OCR_TEACHER_WAVE_SIZE", 3)
-    monkeypatch.setattr(grade, "OCR_PREPROCESS_LOCAL_MAX_CONCURRENT", 2)
+    monkeypatch.setattr(grade_recognition, "OCR_PREPROCESS_LOCAL_MAX_CONCURRENT", 2)
 
 
 @pytest.fixture(autouse=True)
@@ -83,7 +84,7 @@ def record_ledger(monkeypatch):
 
     _LEDGER.clear()
     save_meta = QuickBatch.save_meta
-    real_lock = grade.batch_operation_lock
+    real_lock = grade_recognition.batch_operation_lock
 
     def recording_save_meta(self, *, snapshot=None):
         data = json.loads(snapshot if snapshot is not None else self.serialize_meta())
@@ -357,13 +358,13 @@ def _break_stream_database(monkeypatch, Session):
     from routers import grade_pipeline
 
     monkeypatch.setattr(grade_pipeline, "SessionLocal", lambda: _FailingQuerySession(Session()))
-    monkeypatch.setattr(grade, "SessionLocal", lambda: _FailingQuerySession(Session()))
+    monkeypatch.setattr(grade_recognition, "SessionLocal", lambda: _FailingQuerySession(Session()))
 
 
 def _busy_lock(monkeypatch):
     import routers.grade as grade
 
-    real_lock = grade.batch_operation_lock
+    real_lock = grade_recognition.batch_operation_lock
 
     def busy(batch_id, upload_dir):
         if os.path.basename(upload_dir) == ".template-locks":
@@ -465,7 +466,7 @@ def test_recognize_inspects_uploads_without_orientation(monkeypatch, tmp_path):
         saving["active"] = False
         return [(name, path, "") for name, path, _sha in saved]
 
-    monkeypatch.setattr(grade, "_save_batch_uploads", save_without_diagnostics)
+    monkeypatch.setattr(grade_recognition, "_save_batch_uploads", save_without_diagnostics)
     set_grade_global(monkeypatch, "_client_ocr_ready_orientation", lambda filename: {} if saving["active"] else inspected(filename))
 
     response = _recognize(client, 3, anonymous="true")
@@ -609,7 +610,7 @@ def test_recognize_preflight(monkeypatch, tmp_path, case):
         daily_allowed=case != "daily_limit",
         reserve_allowed=case != "reservation_refused",
     )
-    monkeypatch.setattr(grade, "_check_limits_or_raise", lambda _db, _user_id: limiter)
+    monkeypatch.setattr(grade_recognition, "_check_limits_or_raise", lambda _db, _user_id: limiter)
     form = {"anonymous": "true"}
     files = _upload_files(2)
     if case == "bad_category":
@@ -847,7 +848,7 @@ def test_resume_checkpoint_changed_before_lock(monkeypatch, tmp_path, change):
 
     _checkpoint(tmp_path)
     boundary = _Boundary(monkeypatch)
-    real_lock = grade.batch_operation_lock
+    real_lock = grade_recognition.batch_operation_lock
 
     def lock_after_concurrent_change(batch_id, upload_dir):
         meta = tmp_path / f"quick_batch_{batch_id}" / "meta.json"
@@ -1019,7 +1020,7 @@ def test_recognize_client_closes_during_inspection(monkeypatch, tmp_path):
         saving["active"] = False
         return [(name, path, "") for name, path, _sha in saved]
 
-    monkeypatch.setattr(grade, "_save_batch_uploads", save_without_diagnostics)
+    monkeypatch.setattr(grade_recognition, "_save_batch_uploads", save_without_diagnostics)
     set_grade_global(monkeypatch, "_client_ocr_ready_orientation", lambda filename: {} if saving["active"] else inspected(filename))
 
     async def scenario():

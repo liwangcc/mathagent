@@ -50,6 +50,7 @@ from tests.grade_family import set_grade_global
 from routers import grade_availability
 from routers import grade_report
 from routers import grade_papers
+from routers import grade_recognition
 
 
 @pytest.fixture(autouse=True)
@@ -518,7 +519,7 @@ def test_recognize_rejects_legacy_contract_until_teacher_reconfirms(monkeypatch,
     import routers.grade as gr_router
 
     set_grade_global(monkeypatch, "UPLOAD_DIR", str(tmp_path))
-    monkeypatch.setattr(gr_router, "_check_limits_or_raise", lambda db, uid: None)
+    monkeypatch.setattr(grade_recognition, "_check_limits_or_raise", lambda db, uid: None)
     sess = TemplateSession("legacy-route", str(tmp_path), teacher_id=1)
     sess.status = "confirmed"
     sess.category = "daily"
@@ -594,7 +595,7 @@ def test_recognize_rejects_confirmed_contract_whose_content_changed(monkeypatch,
     import routers.grade as gr_router
 
     set_grade_global(monkeypatch, "UPLOAD_DIR", str(tmp_path))
-    monkeypatch.setattr(gr_router, "_check_limits_or_raise", lambda db, uid: None)
+    monkeypatch.setattr(grade_recognition, "_check_limits_or_raise", lambda db, uid: None)
     sess = TemplateSession("changed-route", str(tmp_path), teacher_id=1)
     sess.status = "confirmed"
     sess.category = "daily"
@@ -1110,10 +1111,10 @@ def _client(Session, monkeypatch, *, raise_server_exceptions=False):
     from routers import grade_pipeline
     from routers import grade_review
     from routers import grade_template
-    # Through monkeypatch, so the test database is gone again after the test,
-    # and grade_pipeline's own binding (patched first) uses it too.
+    # Through monkeypatch, so the test database is gone again after the test;
+    # both modules that open sessions (recognition, grading) use it.
     monkeypatch.setattr(grade_pipeline, "SessionLocal", Session)
-    monkeypatch.setattr(gr_router, "SessionLocal", Session)
+    monkeypatch.setattr(grade_recognition, "SessionLocal", Session)
     app = FastAPI()
     app.include_router(gr_router.router, prefix="/api")
     app.include_router(grade_template.router, prefix="/api")
@@ -1136,15 +1137,14 @@ def test_client_leaves_the_real_session_factory_in_place_after_the_test(monkeypa
     # test in the process then talked to this test's in-memory database, and
     # grade_pipeline's own binding (split out of grade.py) never saw it at all.
     import database
-    import routers.grade as gr_router
-    from routers import grade_pipeline
+    from routers import grade_pipeline, grade_recognition
 
     _engine, Session = _make_app_and_session()
     with monkeypatch.context() as patch:
         _client(Session, patch)
-        assert gr_router.SessionLocal is Session
+        assert grade_recognition.SessionLocal is Session
         assert grade_pipeline.SessionLocal is Session
-    assert gr_router.SessionLocal is database.SessionLocal
+    assert grade_recognition.SessionLocal is database.SessionLocal
     assert grade_pipeline.SessionLocal is database.SessionLocal
 
 
@@ -1259,7 +1259,7 @@ def test_template_recognize_ocrs_each_page(
     from routers import grade_template
     set_grade_global(monkeypatch, "UPLOAD_DIR", str(tmp_path))
     # 关掉限流依赖（内存库无限流表数据也可，这里直接放行）
-    monkeypatch.setattr(gr_router, "_check_limits_or_raise", lambda db, uid: None)
+    monkeypatch.setattr(grade_recognition, "_check_limits_or_raise", lambda db, uid: None)
     layout_events = _patch_template_layout(monkeypatch, gr_router)
 
     ocr_paths: list[str] = []
@@ -1334,7 +1334,7 @@ def test_template_recognize_builds_one_box_collection_for_both_roles(
     import routers.grade as gr_router
     from routers import grade_template
     set_grade_global(monkeypatch, "UPLOAD_DIR", str(tmp_path))
-    monkeypatch.setattr(gr_router, "_check_limits_or_raise", lambda db, uid: None)
+    monkeypatch.setattr(grade_recognition, "_check_limits_or_raise", lambda db, uid: None)
     _patch_template_layout(monkeypatch, gr_router)
 
     async def _mock_with_unified_boxes(path, **_kwargs):
@@ -1376,7 +1376,7 @@ def test_template_anchor_review_keeps_questions_and_persists_candidates(
     from routers import grade_template
 
     set_grade_global(monkeypatch, "UPLOAD_DIR", str(tmp_path))
-    monkeypatch.setattr(gr_router, "_check_limits_or_raise", lambda db, uid: None)
+    monkeypatch.setattr(grade_recognition, "_check_limits_or_raise", lambda db, uid: None)
     _patch_template_layout(monkeypatch, gr_router)
     anchor_candidates = [{
         "question_number": "1",
@@ -1490,7 +1490,7 @@ def test_template_multi_image_association_review_keeps_answers_and_blocks_confir
     from routers import grade_template
 
     set_grade_global(monkeypatch, "UPLOAD_DIR", str(tmp_path))
-    monkeypatch.setattr(gr_router, "_check_limits_or_raise", lambda db, uid: None)
+    monkeypatch.setattr(grade_recognition, "_check_limits_or_raise", lambda db, uid: None)
     _patch_template_layout(monkeypatch, gr_router)
 
     questions = [
@@ -1677,7 +1677,7 @@ def test_template_nonsemantic_error_with_questions_still_fails(
     from routers import grade_template
 
     set_grade_global(monkeypatch, "UPLOAD_DIR", str(tmp_path))
-    monkeypatch.setattr(gr_router, "_check_limits_or_raise", lambda db, uid: None)
+    monkeypatch.setattr(grade_recognition, "_check_limits_or_raise", lambda db, uid: None)
     _patch_template_layout(monkeypatch, gr_router)
 
     async def failed_pipeline(_path, **kwargs):
@@ -1724,7 +1724,7 @@ def test_template_recognize_sends_canonical_page_without_legacy_ocr_crops(
 
     upload_dir = tmp_path / "uploads"
     set_grade_global(monkeypatch, "UPLOAD_DIR", str(upload_dir))
-    monkeypatch.setattr(gr_router, "_check_limits_or_raise", lambda db, uid: None)
+    monkeypatch.setattr(grade_recognition, "_check_limits_or_raise", lambda db, uid: None)
 
     def local_canonical(source_path, _template_dir, _page_index):
         source = Path(source_path)
@@ -1868,7 +1868,7 @@ def test_template_recognize_accepts_desktop_canonical_bytes_without_server_fallb
     from routers import grade_template
 
     set_grade_global(monkeypatch, "UPLOAD_DIR", str(tmp_path / "uploads"))
-    monkeypatch.setattr(gr_router, "_check_limits_or_raise", lambda db, uid: None)
+    monkeypatch.setattr(grade_recognition, "_check_limits_or_raise", lambda db, uid: None)
     _patch_template_layout(monkeypatch, gr_router)
     raw = _template_png_bytes("DESKTOP")
     canonical_bytes, metadata = _canonical_submission(tmp_path, raw, "normal")
@@ -1936,7 +1936,7 @@ def test_template_recognize_uses_local_canonicalization_without_accelerator(
 
     upload_dir = tmp_path / "uploads"
     set_grade_global(monkeypatch, "UPLOAD_DIR", str(upload_dir))
-    monkeypatch.setattr(gr_router, "_check_limits_or_raise", lambda db, uid: None)
+    monkeypatch.setattr(grade_recognition, "_check_limits_or_raise", lambda db, uid: None)
     _patch_template_layout(monkeypatch, gr_router)
 
     async def fake_ocr(_path, **_kwargs):
@@ -1978,7 +1978,7 @@ def test_template_local_canonicalization_failure_keeps_source(
     upload_dir = tmp_path / "uploads"
     raw = _template_png_bytes(state)
     set_grade_global(monkeypatch, "UPLOAD_DIR", str(upload_dir))
-    monkeypatch.setattr(gr_router, "_check_limits_or_raise", lambda db, uid: None)
+    monkeypatch.setattr(grade_recognition, "_check_limits_or_raise", lambda db, uid: None)
 
     def fail_local(*_args, **_kwargs):
         raise OSError(f"local canonicalization {state}")
@@ -2019,7 +2019,7 @@ def test_template_full_page_model_skips_legacy_ocr_evidence_accelerator(
 
     upload_dir = tmp_path / "uploads"
     set_grade_global(monkeypatch, "UPLOAD_DIR", str(upload_dir))
-    monkeypatch.setattr(gr_router, "_check_limits_or_raise", lambda db, uid: None)
+    monkeypatch.setattr(grade_recognition, "_check_limits_or_raise", lambda db, uid: None)
     _patch_template_layout(monkeypatch, gr_router)
     seen_paths = []
 
@@ -2062,7 +2062,7 @@ def test_template_recognize_rejects_desktop_hash_mismatch_without_fallback(
     import routers.grade as gr_router
 
     set_grade_global(monkeypatch, "UPLOAD_DIR", str(tmp_path / "uploads"))
-    monkeypatch.setattr(gr_router, "_check_limits_or_raise", lambda db, uid: None)
+    monkeypatch.setattr(grade_recognition, "_check_limits_or_raise", lambda db, uid: None)
     raw = _template_png_bytes("HASH")
     canonical_bytes, metadata = _canonical_submission(tmp_path, raw, "hash")
     metadata["canonical_sha256"] = "0" * 64
@@ -2093,7 +2093,7 @@ def test_template_recognize_rejects_malformed_desktop_candidate_pair(monkeypatch
     import routers.grade as gr_router
 
     set_grade_global(monkeypatch, "UPLOAD_DIR", str(tmp_path / "uploads"))
-    monkeypatch.setattr(gr_router, "_check_limits_or_raise", lambda db, uid: None)
+    monkeypatch.setattr(grade_recognition, "_check_limits_or_raise", lambda db, uid: None)
     raw = _template_png_bytes("PAIR")
     response = _client(Session, monkeypatch).post(
         "/api/batch-grade/template/recognize",
@@ -2184,7 +2184,7 @@ def test_blank_template_recognize_builds_server_owned_visual_artifact(monkeypatc
     from services.template_evidence import verify_template_artifacts
 
     set_grade_global(monkeypatch, "UPLOAD_DIR", str(tmp_path))
-    monkeypatch.setattr(gr_router, "_check_limits_or_raise", lambda db, uid: None)
+    monkeypatch.setattr(grade_recognition, "_check_limits_or_raise", lambda db, uid: None)
     _patch_template_layout(monkeypatch, gr_router)
 
     async def fake_blank(_path, **_kwargs):
@@ -2231,7 +2231,7 @@ def test_template_recognize_rejects_blank_before_ocr(monkeypatch, tmp_path):
     import routers.grade as gr_router
     from routers import grade_template
     set_grade_global(monkeypatch, "UPLOAD_DIR", str(tmp_path))
-    monkeypatch.setattr(gr_router, "_check_limits_or_raise", lambda db, uid: None)
+    monkeypatch.setattr(grade_recognition, "_check_limits_or_raise", lambda db, uid: None)
     ocr_called = False
 
     async def _unexpected_ocr(_path, **_kwargs):
@@ -2263,7 +2263,7 @@ def test_blank_template_vision_auth_failure_never_creates_confirmable_empty_temp
     import routers.grade as gr_router
     from routers import grade_template
     set_grade_global(monkeypatch, "UPLOAD_DIR", str(tmp_path))
-    monkeypatch.setattr(gr_router, "_check_limits_or_raise", lambda db, uid: None)
+    monkeypatch.setattr(grade_recognition, "_check_limits_or_raise", lambda db, uid: None)
     _patch_template_layout(monkeypatch, gr_router)
 
     async def _vision_auth_failed(_path, **_kwargs):
@@ -2302,7 +2302,7 @@ def test_blank_template_empty_model_result_never_creates_confirmable_empty_templ
     import routers.grade as gr_router
     from routers import grade_template
     set_grade_global(monkeypatch, "UPLOAD_DIR", str(tmp_path))
-    monkeypatch.setattr(gr_router, "_check_limits_or_raise", lambda db, uid: None)
+    monkeypatch.setattr(grade_recognition, "_check_limits_or_raise", lambda db, uid: None)
     _patch_template_layout(monkeypatch, gr_router)
 
     async def _empty_result(_path, **_kwargs):
@@ -2330,7 +2330,7 @@ def test_template_contract_error_is_not_reported_as_visual_service_failure(monke
     import routers.grade as gr_router
     from routers import grade_template
     set_grade_global(monkeypatch, "UPLOAD_DIR", str(tmp_path))
-    monkeypatch.setattr(gr_router, "_check_limits_or_raise", lambda db, uid: None)
+    monkeypatch.setattr(grade_recognition, "_check_limits_or_raise", lambda db, uid: None)
     _patch_template_layout(monkeypatch, gr_router)
 
     async def _invalid_contract(_path, **_kwargs):
@@ -2356,7 +2356,7 @@ def test_template_pool_timeout_has_a_truthful_retryable_error(monkeypatch, tmp_p
     import routers.grade as gr_router
     from routers import grade_template
     set_grade_global(monkeypatch, "UPLOAD_DIR", str(tmp_path))
-    monkeypatch.setattr(gr_router, "_check_limits_or_raise", lambda db, uid: None)
+    monkeypatch.setattr(grade_recognition, "_check_limits_or_raise", lambda db, uid: None)
     _patch_template_layout(monkeypatch, gr_router)
 
     async def _timed_out(_path, **_kwargs):
@@ -2386,7 +2386,7 @@ def test_template_total_deadline_reports_unusable_and_cleans_ocr_task(
     from routers import grade_template
 
     set_grade_global(monkeypatch, "UPLOAD_DIR", str(tmp_path))
-    monkeypatch.setattr(gr_router, "_check_limits_or_raise", lambda db, uid: None)
+    monkeypatch.setattr(grade_recognition, "_check_limits_or_raise", lambda db, uid: None)
     clock = _ImportDeadlineClock()
     monkeypatch.setattr(grade_template, "_template_import_clock", clock)
     monkeypatch.setattr(grade_template, "_template_import_deadline_seconds", lambda _count: 0.1)
@@ -2437,7 +2437,7 @@ def test_template_deadline_during_layout_is_reported_as_the_import_timeout(
     from routers import grade_template
 
     set_grade_global(monkeypatch, "UPLOAD_DIR", str(tmp_path))
-    monkeypatch.setattr(gr_router, "_check_limits_or_raise", lambda db, uid: None)
+    monkeypatch.setattr(grade_recognition, "_check_limits_or_raise", lambda db, uid: None)
     clock = _ImportDeadlineClock()
     monkeypatch.setattr(grade_template, "_template_import_clock", clock)
     monkeypatch.setattr(grade_template, "_template_import_deadline_seconds", lambda _count: 0.1)
@@ -2476,7 +2476,7 @@ def test_template_stream_disconnect_keeps_background_ocr_running(monkeypatch, tm
     from routers import grade_template
 
     set_grade_global(monkeypatch, "UPLOAD_DIR", str(tmp_path))
-    monkeypatch.setattr(gr_router, "_check_limits_or_raise", lambda db, uid: None)
+    monkeypatch.setattr(grade_recognition, "_check_limits_or_raise", lambda db, uid: None)
     monkeypatch.setattr(grade_template, "_template_import_deadline_seconds", lambda _count: 60.0)
     monkeypatch.setattr(grade_template, "_TEMPLATE_COMPONENT_HEARTBEAT_S", 0.01)
     _patch_template_layout(monkeypatch, gr_router)
@@ -2557,7 +2557,7 @@ def test_template_recognition_progress_discloses_page_scaled_stop(monkeypatch, t
     import routers.grade as gr_router
     from routers import grade_template
     set_grade_global(monkeypatch, "UPLOAD_DIR", str(tmp_path))
-    monkeypatch.setattr(gr_router, "_check_limits_or_raise", lambda db, uid: None)
+    monkeypatch.setattr(grade_recognition, "_check_limits_or_raise", lambda db, uid: None)
     _patch_template_layout(monkeypatch, gr_router)
 
     async def _success(_path, **_kwargs):
@@ -2592,7 +2592,7 @@ def test_partial_template_ocr_failure_can_never_be_confirmed(monkeypatch, tmp_pa
     import routers.grade as gr_router
     from routers import grade_template
     set_grade_global(monkeypatch, "UPLOAD_DIR", str(tmp_path))
-    monkeypatch.setattr(gr_router, "_check_limits_or_raise", lambda db, uid: None)
+    monkeypatch.setattr(grade_recognition, "_check_limits_or_raise", lambda db, uid: None)
     _patch_template_layout(monkeypatch, gr_router)
 
     attempts = 0
@@ -2835,7 +2835,7 @@ def test_recognize_with_template_uses_template_authority(monkeypatch, tmp_path):
     _engine, Session = _make_app_and_session()
     import routers.grade as gr_router
     set_grade_global(monkeypatch, "UPLOAD_DIR", str(tmp_path))
-    monkeypatch.setattr(gr_router, "_check_limits_or_raise", lambda db, uid: None)
+    monkeypatch.setattr(grade_recognition, "_check_limits_or_raise", lambda db, uid: None)
 
     # 已确认模板：题干+答案是权威
     sess = TemplateSession("tconf", str(tmp_path), teacher_id=1)
@@ -2960,7 +2960,7 @@ def test_recognize_upload_failures_do_not_freeze_template(monkeypatch, tmp_path)
     _engine, Session = _make_app_and_session()
     import routers.grade as gr_router
     set_grade_global(monkeypatch, "UPLOAD_DIR", str(tmp_path))
-    monkeypatch.setattr(gr_router, "_check_limits_or_raise", lambda db, uid: None)
+    monkeypatch.setattr(grade_recognition, "_check_limits_or_raise", lambda db, uid: None)
 
     sess = TemplateSession("upload-failure", str(tmp_path), teacher_id=1)
     sess.status = "confirmed"
@@ -3007,7 +3007,7 @@ def test_concurrent_template_recognize_cannot_overwrite_freeze(monkeypatch, tmp_
     _engine, Session = _make_app_and_session()
     import routers.grade as gr_router
     set_grade_global(monkeypatch, "UPLOAD_DIR", str(tmp_path))
-    monkeypatch.setattr(gr_router, "_check_limits_or_raise", lambda db, uid: None)
+    monkeypatch.setattr(grade_recognition, "_check_limits_or_raise", lambda db, uid: None)
 
     async def _mock_identity(*args, **kwargs):
         return {"name": "张三", "student_no": "", "confidence": 1}
@@ -3082,7 +3082,7 @@ def test_recognize_with_template_preserves_custom_fill_scoring_contract(monkeypa
     _engine, Session = _make_app_and_session()
     import routers.grade as gr_router
     set_grade_global(monkeypatch, "UPLOAD_DIR", str(tmp_path))
-    monkeypatch.setattr(gr_router, "_check_limits_or_raise", lambda db, uid: None)
+    monkeypatch.setattr(grade_recognition, "_check_limits_or_raise", lambda db, uid: None)
 
     sess = TemplateSession("tfillcontract", str(tmp_path), teacher_id=1)
     sess.status = "confirmed"
@@ -3132,7 +3132,7 @@ def test_recognize_rejects_unconfirmed_template(monkeypatch, tmp_path):
     _engine, Session = _make_app_and_session()
     import routers.grade as gr_router
     set_grade_global(monkeypatch, "UPLOAD_DIR", str(tmp_path))
-    monkeypatch.setattr(gr_router, "_check_limits_or_raise", lambda db, uid: None)
+    monkeypatch.setattr(grade_recognition, "_check_limits_or_raise", lambda db, uid: None)
 
     sess = TemplateSession("tocr", str(tmp_path), teacher_id=1)
     sess.status = "ocr_done"   # 未确认
@@ -3153,7 +3153,7 @@ def test_recognize_requires_a_confirmed_template(monkeypatch, tmp_path):
     _engine, Session = _make_app_and_session()
     import routers.grade as gr_router
     set_grade_global(monkeypatch, "UPLOAD_DIR", str(tmp_path))
-    monkeypatch.setattr(gr_router, "_check_limits_or_raise", lambda db, uid: None)
+    monkeypatch.setattr(grade_recognition, "_check_limits_or_raise", lambda db, uid: None)
 
     client = _client(Session, monkeypatch)
     r = client.post(
@@ -3324,7 +3324,7 @@ def test_current_one_three_import_confirm_and_reopen(monkeypatch, tmp_path):
 
     _engine, session_factory = _make_app_and_session()
     set_grade_global(monkeypatch, "UPLOAD_DIR", str(tmp_path))
-    monkeypatch.setattr(grade, "_check_limits_or_raise", lambda *_args: None)
+    monkeypatch.setattr(grade_recognition, "_check_limits_or_raise", lambda *_args: None)
     monkeypatch.setattr(grade_template, "_classify_confirmed_template_knowledge", AsyncMock())
     _patch_template_layout(monkeypatch, grade)
     phases = []
@@ -3437,7 +3437,7 @@ def _recognize_directory_timeout_draft(monkeypatch, tmp_path, phase, *,
 
     _engine, Session = _make_app_and_session()
     set_grade_global(monkeypatch, "UPLOAD_DIR", str(tmp_path))
-    monkeypatch.setattr(gr_router, "_check_limits_or_raise", lambda _db, _uid: None)
+    monkeypatch.setattr(grade_recognition, "_check_limits_or_raise", lambda _db, _uid: None)
     # ModelFixture represents failed stages with missing output fields. Allow
     # local image processing to finish so recovery tests reach those fields:
     # the import's clock stands still, so machine load cannot use up its time.

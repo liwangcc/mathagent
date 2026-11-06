@@ -14,6 +14,7 @@ from services.template_anchor_crops import build_anchor_crop_plan
 from services.template_evidence import build_template_artifact
 from services.template_session import TemplateSession
 from tests.grade_family import set_grade_global
+from routers import grade_recognition
 
 
 @pytest.fixture
@@ -227,7 +228,7 @@ async def test_template_cut_is_owned_persisted_and_idempotent(tmp_path, monkeypa
         return _cut_result(artifact)
 
     monkeypatch.setattr(grade_template, "recognize_column_layout", fake_question_cut)
-    monkeypatch.setattr(grade, "_check_limits_or_raise", lambda db, teacher_id: limiter)
+    monkeypatch.setattr(grade_recognition, "_check_limits_or_raise", lambda db, teacher_id: limiter)
     request = grade_template.TemplateCutCandidatesReq(
         action_id="template-cut-action-1",
         cut_types=["question"],
@@ -425,7 +426,7 @@ async def test_new_template_cut_action_reuses_frozen_question_plan(tmp_path, mon
         return _cut_result(artifact, request_id=f"request-{len(calls)}")
 
     monkeypatch.setattr(grade_template, "recognize_column_layout", fake_question_cut)
-    monkeypatch.setattr(grade, "_check_limits_or_raise", lambda db, teacher_id: limiter)
+    monkeypatch.setattr(grade_recognition, "_check_limits_or_raise", lambda db, teacher_id: limiter)
     user = SimpleNamespace(id=7)
 
     first = await grade_template.batch_grade_template_cut_candidates(
@@ -611,7 +612,7 @@ async def test_review_layout_blocks_confirmation_until_teacher_saves_boundaries(
         return _review_cut_result(artifact)
 
     monkeypatch.setattr(grade_template, "recognize_column_layout", fake_question_cut)
-    monkeypatch.setattr(grade, "_check_limits_or_raise", lambda db, teacher_id: limiter)
+    monkeypatch.setattr(grade_recognition, "_check_limits_or_raise", lambda db, teacher_id: limiter)
     user = SimpleNamespace(id=7)
 
     # A review draft is not a crop-plan failure: the run completes, the draft
@@ -782,7 +783,7 @@ async def test_anchor_review_blocks_with_crop_plan_then_override_clears_candidat
 
     monkeypatch.setattr(grade_template, "recognize_column_layout", fake_question_cut)
     monkeypatch.setattr(
-        grade,
+        grade_recognition,
         "_check_limits_or_raise",
         lambda db, teacher_id: _Limiter(),
     )

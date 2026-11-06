@@ -1,4 +1,5 @@
 import asyncio
+import os
 import copy
 import json
 from contextlib import nullcontext
@@ -21,6 +22,7 @@ from services import (
 from services.quick_grader import QuickBatch
 from tests.grade_family import set_grade_global
 from routers import grade_availability
+from routers import grade_recognition
 
 
 class _LocalLimiter:
@@ -224,7 +226,7 @@ def test_template_confirm_ignores_client_answers_before_scoring_readiness(
     assert "confirmed_answers" not in request.model_dump()
     scoring_calls = []
 
-    monkeypatch.setattr(grade.QuickBatch, "load_meta", lambda *_args: batch)
+    monkeypatch.setattr(QuickBatch, "load_meta", lambda *_args: batch)
 
     async def scoring_fault(candidate):
         scoring_calls.append(candidate.batch_id)
@@ -262,7 +264,7 @@ def test_confirm_uses_scoring_gate_for_template_batch_after_ocr(
     async def image_gate_forbidden(*_args, **_kwargs):
         raise AssertionError("completed OCR was gated by image-stage readiness")
 
-    monkeypatch.setattr(grade.QuickBatch, "load_meta", lambda *_args: batch)
+    monkeypatch.setattr(QuickBatch, "load_meta", lambda *_args: batch)
     monkeypatch.setattr(batch, "save_meta", lambda: pytest.fail("metadata was mutated"))
     monkeypatch.setattr(grade_availability, "_batch_grade_scoring_availability", scoring_fault)
     monkeypatch.setattr(grade_availability, "batch_grade_availability", image_gate_forbidden)
@@ -692,7 +694,7 @@ def test_new_recognition_rejects_unavailable_chain_before_upload_side_effects(
         _fault_availability,
     )
     monkeypatch.setattr(
-        grade.os,
+        os,
         "makedirs",
         lambda *args, **kwargs: directory_calls.append((args, kwargs)),
     )
@@ -789,7 +791,7 @@ def test_confirm_returns_503_before_freezing_or_writing_when_chain_is_faulted(
     batch = _grading_batch(tmp_path)
     before = copy.deepcopy(batch.to_dict())
     save_calls = []
-    monkeypatch.setattr(grade.QuickBatch, "load_meta", lambda *_args: batch)
+    monkeypatch.setattr(QuickBatch, "load_meta", lambda *_args: batch)
     monkeypatch.setattr(batch, "save_meta", lambda: save_calls.append(True))
     monkeypatch.setattr(
         grade_availability,
@@ -832,7 +834,7 @@ def test_confirm_rechecks_readiness_before_first_grading_side_effect(
             return {"status": "available", "message": "ready"}
         return {"status": "fault", "message": "协调服务故障"}
 
-    monkeypatch.setattr(grade.QuickBatch, "load_meta", lambda *_args: batch)
+    monkeypatch.setattr(QuickBatch, "load_meta", lambda *_args: batch)
     monkeypatch.setattr(batch, "save_meta", lambda: pytest.fail("metadata was mutated"))
     monkeypatch.setattr(grade_availability, "_batch_grade_scoring_availability", availability)
     monkeypatch.setattr(
@@ -850,7 +852,7 @@ def test_confirm_rechecks_readiness_before_first_grading_side_effect(
         lambda *_args, **_kwargs: pytest.fail("grading rechecked accelerator hardware"),
     )
     monkeypatch.setattr(grade_pipeline, "SessionLocal", _ReadOnlyDB)
-    monkeypatch.setattr(grade, "SessionLocal", _ReadOnlyDB)
+    monkeypatch.setattr(grade_recognition, "SessionLocal", _ReadOnlyDB)
     set_grade_global(monkeypatch, "batch_operation_lock", lambda *_args, **_kwargs: nullcontext())
 
     async def exercise():
@@ -912,12 +914,12 @@ def test_completed_confirm_replay_does_not_require_live_chain(tmp_path, monkeypa
     async def must_not_check(_batch):
         raise AssertionError("completed replay must not depend on the live chain")
 
-    monkeypatch.setattr(grade.QuickBatch, "load_meta", lambda *_args: batch)
+    monkeypatch.setattr(QuickBatch, "load_meta", lambda *_args: batch)
     monkeypatch.setattr(batch, "save_meta", lambda: pytest.fail("replay wrote metadata"))
     monkeypatch.setattr(grade_availability, "_batch_grade_scoring_availability", must_not_check)
     monkeypatch.setattr(grade_availability, "batch_grade_availability", must_not_check)
     monkeypatch.setattr(grade_pipeline, "SessionLocal", _ReadOnlyDB)
-    monkeypatch.setattr(grade, "SessionLocal", _ReadOnlyDB)
+    monkeypatch.setattr(grade_recognition, "SessionLocal", _ReadOnlyDB)
     set_grade_global(monkeypatch, "batch_operation_lock", lambda *_args, **_kwargs: nullcontext())
 
     async def exercise():

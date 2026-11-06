@@ -22,6 +22,7 @@ from services.template_session import (
 )
 from tests.test_template_session import _client, _make_app_and_session
 from tests.grade_family import set_grade_global
+from routers import grade_recognition
 
 
 @pytest.fixture
@@ -29,7 +30,7 @@ def directory_client(tmp_path, monkeypatch):
     engine, Session = _make_app_and_session()
     set_grade_global(monkeypatch, "UPLOAD_DIR", str(tmp_path))
     monkeypatch.setattr(grade_pipeline, "SessionLocal", Session)
-    monkeypatch.setattr(grade, "SessionLocal", Session)
+    monkeypatch.setattr(grade_recognition, "SessionLocal", Session)
 
     async def no_background_model(*_args, **_kwargs):
         return None

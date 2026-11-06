@@ -200,7 +200,7 @@ def test_batch_checkpoint_is_snapshotted_before_the_writer_thread_runs(monkeypat
         batch.papers.append({"paper_id": "paper-1"})
         return await real_to_thread(function, *args, **kwargs)
 
-    monkeypatch.setattr(grade.asyncio, "to_thread", to_thread_after_mutation)
+    monkeypatch.setattr(asyncio, "to_thread", to_thread_after_mutation)
     asyncio.run(grade._save_quick_batch_meta(batch))
 
     saved = json.loads(open(batch.meta_path, encoding="utf-8").read())

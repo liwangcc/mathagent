@@ -35,6 +35,7 @@ from tests.grade_family import set_grade_global
 from routers import grade_availability
 from routers import grade_report
 from routers import grade_papers
+from routers import grade_recognition
 
 
 @pytest.fixture(autouse=True)
@@ -103,7 +104,7 @@ def _setup(monkeypatch, tmp_path):
     test_app.dependency_overrides[_require_user] = lambda: auth_user
     set_grade_global(monkeypatch, "UPLOAD_DIR", str(tmp_path))
     monkeypatch.setattr(grade_pipeline, "SessionLocal", Session)
-    monkeypatch.setattr(grade_router, "SessionLocal", Session)
+    monkeypatch.setattr(grade_recognition, "SessionLocal", Session)
     set_grade_global(monkeypatch, "_validate_client_ocr_ready_upload", lambda filename, path: {"safe": True, "reason": ""})
     set_grade_global(monkeypatch, "validate_upload_path", lambda filename, content: {"safe": True, "reason": ""})
     set_grade_global(
@@ -118,7 +119,7 @@ def _setup(monkeypatch, tmp_path):
             "orientation_coordinate_space": "client_normalized_pixels",
         },
     )
-    monkeypatch.setattr(grade_router, "_check_limits_or_raise", lambda db, user_id: None)
+    monkeypatch.setattr(grade_recognition, "_check_limits_or_raise", lambda db, user_id: None)
 
     async def available(_user):
         return {"status": "available", "message": "批改服务可用"}
@@ -443,7 +444,7 @@ def test_stale_stamped_rows_are_not_replayed_over_new_results(monkeypatch, tmp_p
     upload_dir = tmp_path / "uploads"
     set_grade_global(monkeypatch, "UPLOAD_DIR", str(upload_dir))
     monkeypatch.setattr(grade_pipeline, "SessionLocal", Session)
-    monkeypatch.setattr(gr_router, "SessionLocal", Session)
+    monkeypatch.setattr(grade_recognition, "SessionLocal", Session)
     paper_path = upload_dir / "quick_batch_stamped" / "p1.png"
     paper_path.parent.mkdir(parents=True)
     paper_path.write_bytes(b"paper-bytes")
