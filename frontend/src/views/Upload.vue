@@ -1573,7 +1573,6 @@ import {
   templateDrawingReview,
   serializeTemplateDrawingReview,
   mergeTemplateDrawingCandidates,
-  defaultTemplateDrawingLabel,
   templateBoxSizeProblems,
   templateReferenceLeavesRegions,
   templateChoiceConflictReasons,
@@ -1632,6 +1631,17 @@ import {
   addSubquestionScore,
   removeSubquestionScore,
 } from '@/utils/answerSpecEditor'
+import {
+  updateDrawingReference,
+  templateDrawingReferenceRegionsFor,
+  markTemplateReferenceImageReady,
+  templateDrawingReferenceSummary,
+  templateDrawingReferenceSnapshot,
+  applyTemplateDrawingSchema,
+  templateHasDrawingQuestion,
+  ensureTemplateDrawingLabel,
+  templateFollowingDrawingLabel,
+} from '@/utils/templateDrawing'
 
 const props = defineProps({
   anonymous: { type: Boolean, default: false },
@@ -1821,11 +1831,6 @@ const TEMPLATE_GEOMETRY_TOOLS = [
   { key: 'answer', label: '蓝色作答框' },
   { key: 'drawing', label: '绿色画图区' },
   { key: 'drawing-label', label: '作图题题号' },
-]
-const TEMPLATE_DRAWING_KINDS = [
-  { key: 'non_graphic', label: '普通题' },
-  { key: 'drawing', label: '作图题' },
-  { key: 'mixed', label: '图文混合' },
 ]
 const templateEditorBusy = computed(() => confirmingTemplate.value || importingTemplateBank.value
   || templateQuestionEditing.value || templateCutBusy.value
@@ -2669,12 +2674,6 @@ function templateQuestionSignature(pages = templatePages.value) {
   })))
 }
 
-function updateDrawingReference(question, reference) {
-  if (!question) return
-  question.drawing_reference = reference
-  question._drawingReferenceDirty = true
-}
-
 function templateReferenceQuestionEditBlockReason() {
   if (templatePages.value.some((page) => (page.questions || []).some((question) => question._drawingReferenceDirty))) {
     return '有尚未最终保存的作图参考修改，请先核对并最终确认模板保存，再重新打开增删题号；如不保留，请先取消本次模板草稿。'
@@ -2709,10 +2708,6 @@ function templateReferenceEditors(page) {
   return questions.length ? questions : [null]
 }
 
-function templateDrawingReferenceRegionsFor(page, question) {
-  return page.drawingBoxes.filter((box) => String(box.question_number) === String(question?.question_no)).map((box) => box.bbox)
-}
-
 
 function templateReferenceCanvasVisible(page, question) {
   // 教师标注：整页只显示一张模板画布——几何模式跟随第一道作图题，
@@ -2726,31 +2721,8 @@ function templateReferenceCanvasVisible(page, question) {
   return String(question.question_no) === activeNumber
 }
 
-function markTemplateReferenceImageReady(page, question) {
-  page.referenceImageReadyNumbers ||= {}
-  page.referenceImageReadyNumbers[String(question?.question_no || '')] = true
-}
-
 function templateReferenceImagesReady(page) {
   return templateDrawingReferenceQuestions(page).every((question) => page.referenceImageReadyNumbers?.[String(question.question_no)])
-}
-
-function templateDrawingReferenceSummary(question) {
-  const reference = question.drawing_reference
-  if (!reference) return '未设置标准图；保存后将按题干和作图区直接交给 Flash 判定。'
-  if (reference.comparison_mode === 'manual') return reference.variants?.length
-    ? '自定义作图：不按固定坐标比较，批改时把题干和作图区交给 Flash。'
-    : '未保存标准笔画；保存后将按题干和作图区直接交给 Flash 判定。'
-  return `标准图 ${reference.variants?.length || 0} 个完整方案 · ${reference.teacher_confirmed ? '已随模板保存' : '随保存模板一起确认'}`
-}
-
-function templateDrawingReferenceSnapshot(question) {
-  return JSON.stringify({
-    question_no: question.question_no, question_text: question.question_text,
-    standard_answer: question.standard_answer, answer_kind: question.answer_kind,
-    drawing_regions: question.drawing_regions,
-    drawing_reference: question.drawing_reference,
-  })
 }
 
 function setTemplatePreviewEditMode(page, mode) {
@@ -3546,21 +3518,6 @@ function templatePreviewQuestionIdentity(page, anchor) {
   return templateQuestionIdentity({ ...anchor, ...schema })
 }
 
-function applyTemplateDrawingSchema(page, schema = []) {
-  page.questionSchema = (schema || []).map((item) => ({ ...item, ...templateQuestionMetadata(item) }))
-  Object.assign(page, templateDrawingReview(page.questionSchema))
-}
-
-function templateHasDrawingQuestion(page, number) {
-  return page.questionSchema.some((item) => String(item.question_number ?? item.question_no) === String(number)
-    && ['drawing', 'mixed'].includes(item.answer_kind))
-}
-
-function templateDrawingLabelsMissing(page) {
-  return page.questionSchema.filter((question) => ['drawing', 'mixed'].includes(question.answer_kind)
-    && !page.drawingLabels.some((label) => String(label.question_number) === String(question.question_number ?? question.question_no)))
-}
-
 function templateLayoutConflictNotice(page) {
   const candidateReviewPending = Boolean(page?.layoutReviewPending || page?.layout_review_pending
     || page?.anchorReviewPending || page?.anchor_review_pending
@@ -3598,10 +3555,6 @@ function templateLayoutConflictNotice(page) {
   }
   if (!conflicts.length) return ''
   return `${conflicts.join('；')}。请用“绿色画图区”框出作图位置，或把该题“作图属性”改为非作图；当前草稿中的修改已保留。`
-}
-
-function templateDrawingKind(page) {
-  return page.questionSchema.find((item) => String(item.question_number ?? item.question_no) === String(page.drawingQuestionNumber))?.answer_kind || 'non_graphic'
 }
 
 function setTemplateDrawingKind(page, kind) {
@@ -3988,13 +3941,6 @@ function commitTemplateGeometryCreation(gesture) {
   page.geometryTool = ''
 }
 
-function ensureTemplateDrawingLabel(page, number) {
-  if ((page.drawingLabels || []).some((label) => String(label.question_number) === String(number))) return
-  const anchor = defaultTemplateDrawingLabel((page.drawingBoxes || [])
-    .filter((box) => String(box.question_number) === String(number)).map((box) => box.bbox))
-  if (anchor) page.drawingLabels.push({ question_number: String(number), label_anchor: anchor })
-}
-
 function deleteTemplateSelection(page) {
   if (templatePageEditingLocked(page) || templateCropGesture.value) return
   if (page.referenceStrokeSelected) {
@@ -4080,15 +4026,6 @@ function startTemplateGeometryGesture(event, page, target, mode, dividerIndex = 
     width: stage.clientWidth, height: stage.clientHeight,
     followLabel, followPoint: followLabel ? [...followLabel.label_anchor] : null,
   }
-}
-
-// Labels follow boxes: a question's Q marker belongs to its first (main)
-// drawing area, so moving that area carries the marker along.
-function templateFollowingDrawingLabel(page, box) {
-  const number = String(box?.question_number ?? '')
-  const main = (page.drawingBoxes || []).find((item) => String(item.question_number) === number)
-  if (!number || main !== box) return null
-  return (page.drawingLabels || []).find((label) => String(label.question_number) === number) || null
 }
 
 function startTemplateDividerMove(event, page, dividerIndex) {
