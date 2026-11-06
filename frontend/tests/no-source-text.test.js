@@ -50,7 +50,6 @@ const KNOWN_SOURCE_TEXT_READS = {
   'ordinary-paper-review-workbench.test.js': ['views/Upload.vue'],
   'past-papers.test.js': ['*'],
   'primary-stage.test.js': ['views/${name}.vue'],
-  'recognition-recovery-runtime.test.js': ['views/Upload.vue'],
   'report-center.test.js': ['${path}'],
   'stats-contract.test.js': ['views/Stats.vue'],
   'student-detail-error-state.test.js': ['views/StudentDetail.vue'],
