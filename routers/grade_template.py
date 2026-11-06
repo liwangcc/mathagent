@@ -92,9 +92,6 @@ from services.grading_contract import (
 from models import QuestionBank
 from models_user import User
 from routers.auth import _require_user
-from routers.grade import (
-    _template_handwriting_regions_for_mode,
-)
 from config import MAX_TEMPLATE_PAGES, MAX_UPLOAD_TOTAL_SIZE
 from routers.grade_common import (
     _sse,
@@ -109,6 +106,9 @@ from routers.grade_uploads import (
 )
 from routers.grade_availability import (
     _batch_grade_service_availability,
+)
+from routers.grade_contract import (
+    _template_handwriting_regions_for_mode,
 )
 
 logger = logging.getLogger(__name__)

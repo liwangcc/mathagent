@@ -62,6 +62,15 @@ from routers.grade_report import (
     _refresh_batch_knowledge,
     _start_batch_report_generation,
 )
+from routers.grade_contract import (
+    _GRADING_CONTRACT_VERSION,
+    _authoritative_answers_for_confirmation,
+    _build_grading_contract,
+    _grading_contract_hash,
+    _initialize_batch_answer_map,
+    _mark_unverified_answer_alignment,
+    _reject_answer_key_matching_local_recoveries,
+)
 
 _GENERIC_GRADE_ERROR = "批改处理失败，请稍后重试"
 # Reserve nine minutes for the text-only Flash grading stage after the
@@ -1174,17 +1183,10 @@ def _grading_elapsed_seconds(batch: QuickBatch) -> float | None:
 # ``logger`` is routers.grade's, so these records keep their logger name.
 from routers.grade import (  # noqa: E402
     ConfirmReq,
-    _GRADING_CONTRACT_VERSION,
     _REVIEW_FINISHED_STATUSES,
     _anonymous_page_identity,
-    _authoritative_answers_for_confirmation,
-    _build_grading_contract,
-    _grading_contract_hash,
-    _initialize_batch_answer_map,
-    _mark_unverified_answer_alignment,
     _prepare_anonymous_identity_plan,
     _prepare_identity_plan,
-    _reject_answer_key_matching_local_recoveries,
     _require_complete_batch_ocr,
     _require_orientation_ready,
     logger,
