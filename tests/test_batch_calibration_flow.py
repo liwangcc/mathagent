@@ -319,7 +319,11 @@ def test_resume_disconnect_does_not_consume_second_ocr_attempt(monkeypatch, tmp_
                 pass
 
         consumer = asyncio.create_task(consume())
-        await asyncio.wait_for(started.wait(), timeout=1)
+        # Wait until recognition runs, or until the stream ends without it.
+        reached = asyncio.ensure_future(started.wait())
+        await asyncio.wait({reached, consumer}, return_when=asyncio.FIRST_COMPLETED)
+        reached.cancel()
+        assert started.is_set(), "the resumed stream never reached recognition"
         consumer.cancel()
         try:
             await consumer

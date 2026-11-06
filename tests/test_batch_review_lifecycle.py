@@ -1,5 +1,6 @@
 import json
 import multiprocessing
+import multiprocessing.connection
 import os
 from threading import Event, Thread
 
@@ -31,7 +32,7 @@ from services.quick_grader import BatchOperationBusy, QuickBatch, batch_operatio
 def _hold_batch_lock_in_child(upload_dir: str, batch_id: str, ready, release) -> None:
     """Top-level so Windows multiprocessing spawn can import it."""
     with batch_operation_lock(batch_id, upload_dir):
-        ready.set()
+        ready.send("locked")
         release.wait(timeout=10)
 
 
@@ -188,15 +189,18 @@ def test_windows_cross_process_lock_reports_busy_not_permission_error(tmp_path):
     context = multiprocessing.get_context("spawn")
     upload_dir = str(tmp_path / "uploads")
     batch_id = "windows-lock"
-    ready = context.Event()
+    ready, locked = context.Pipe(duplex=False)
     release = context.Event()
     holder = context.Process(
         target=_hold_batch_lock_in_child,
-        args=(upload_dir, batch_id, ready, release),
+        args=(upload_dir, batch_id, locked, release),
     )
     holder.start()
     try:
-        assert ready.wait(timeout=10), "child did not acquire the batch lock"
+        # Spawning a Python child takes as long as the machine needs: wait until
+        # it holds the lock, or until it has exited without taking it.
+        multiprocessing.connection.wait([ready, holder.sentinel])
+        assert ready.poll(), "child did not acquire the batch lock"
         with pytest.raises(BatchOperationBusy):
             with batch_operation_lock(batch_id, upload_dir):
                 pass
