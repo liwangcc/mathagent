@@ -219,7 +219,7 @@ def test_repeated_disconnect_cancellation_settles_pipeline_before_releasing_lock
             effects["resets"].add(name)
             return original(token)
 
-        monkeypatch.setattr(grade_router, name, tracked_reset)
+        set_grade_global(monkeypatch, name, tracked_reset)
 
     async def run():
         grade_started = asyncio.Event()

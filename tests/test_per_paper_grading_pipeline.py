@@ -106,8 +106,8 @@ def _setup(monkeypatch, tmp_path):
     monkeypatch.setattr(grade_router, "SessionLocal", Session)
     set_grade_global(monkeypatch, "_validate_client_ocr_ready_upload", lambda filename, path: {"safe": True, "reason": ""})
     set_grade_global(monkeypatch, "validate_upload_path", lambda filename, content: {"safe": True, "reason": ""})
-    monkeypatch.setattr(
-        grade_router,
+    set_grade_global(
+        monkeypatch,
         "_client_ocr_ready_orientation",
         lambda _filename: {
             "orientation_status": "auto_passed",
@@ -195,7 +195,7 @@ def test_prepared_student_pages_wait_for_final_template_confirmation(monkeypatch
     def no_comparison_before_confirmation(*_args, **_kwargs):
         pytest.fail("Student comparison/OCR started before the answer and geometry contracts were confirmed")
 
-    monkeypatch.setattr(grade_router, "_build_template_paper_cache", no_comparison_before_confirmation)
+    set_grade_global(monkeypatch, "_build_template_paper_cache", no_comparison_before_confirmation)
     monkeypatch.setattr(grade_papers, "recognize_paper_with_cache", no_comparison_before_confirmation)
     response = _recognize(
         client, "pending-template", ["prepared.ocr-ready-v1.jpg"], ["prepared.jpg"],

@@ -466,8 +466,7 @@ def test_recognize_inspects_uploads_without_orientation(monkeypatch, tmp_path):
         return [(name, path, "") for name, path, _sha in saved]
 
     monkeypatch.setattr(grade, "_save_batch_uploads", save_without_diagnostics)
-    monkeypatch.setattr(grade, "_client_ocr_ready_orientation",
-                        lambda filename: {} if saving["active"] else inspected(filename))
+    set_grade_global(monkeypatch, "_client_ocr_ready_orientation", lambda filename: {} if saving["active"] else inspected(filename))
 
     response = _recognize(client, 3, anonymous="true")
 
@@ -1021,8 +1020,7 @@ def test_recognize_client_closes_during_inspection(monkeypatch, tmp_path):
         return [(name, path, "") for name, path, _sha in saved]
 
     monkeypatch.setattr(grade, "_save_batch_uploads", save_without_diagnostics)
-    monkeypatch.setattr(grade, "_client_ocr_ready_orientation",
-                        lambda filename: {} if saving["active"] else inspected(filename))
+    set_grade_global(monkeypatch, "_client_ocr_ready_orientation", lambda filename: {} if saving["active"] else inspected(filename))
 
     async def scenario():
         return await _read_until_then_close(await _direct_recognize(Session, 3), _STOPS["first_inspection"])

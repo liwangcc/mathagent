@@ -9,6 +9,7 @@ from pydantic import ValidationError
 
 from routers import grade
 from routers import grade_template
+from services.paper_orientation import sha256_file
 from services.template_anchor_crops import build_anchor_crop_plan
 from services.template_evidence import build_template_artifact
 from services.template_session import TemplateSession
@@ -332,7 +333,7 @@ async def test_template_cut_is_owned_persisted_and_idempotent(tmp_path, monkeypa
     ]
     assert difference_path.name == "difference-template.png"
     assert difference_path.is_file()
-    assert grade.sha256_file(difference_path) == persisted_artifact[
+    assert sha256_file(difference_path) == persisted_artifact[
         "difference_template_sha256"
     ]
     with Image.open(Path(persisted.template_dir) / persisted_artifact["template_image"]) as original:

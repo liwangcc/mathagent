@@ -8,7 +8,6 @@ from fastapi import HTTPException, UploadFile
 from PIL import Image, ImageDraw
 
 from routers import grade
-from routers import grade_pipeline
 from services.paper_orientation import sha256_file
 from services.quick_grader import QuickBatch
 from services.template_session import TemplateSession
@@ -147,8 +146,7 @@ async def test_orientation_confirm_retries_once_and_preserves_original(tmp_path,
         }
 
     monkeypatch.setattr(grade_papers, "recognize_paper_with_cache", fake_recognize)
-    monkeypatch.setattr(grade_pipeline, "_initialize_batch_answer_map", fake_initialize)
-    monkeypatch.setattr(grade, "_initialize_batch_answer_map", fake_initialize)
+    set_grade_global(monkeypatch, "_initialize_batch_answer_map", fake_initialize)
     set_grade_global(monkeypatch, "RateLimiter", _Limiter)
     user = SimpleNamespace(id=7, current_class_id=9)
     client_upload = _client_rotated_upload(original, 1)

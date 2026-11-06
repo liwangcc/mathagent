@@ -74,8 +74,8 @@ def _setup(monkeypatch, tmp_path, *, education_stage=""):
     set_grade_global(monkeypatch, "validate_upload_path", lambda filename, content: {"safe": True, "reason": ""})
     # These tests exercise batching and recovery state, not browser image
     # canonicalization. Model the accepted client artifact boundary explicitly.
-    monkeypatch.setattr(
-        grade_router,
+    set_grade_global(
+        monkeypatch,
         "_client_ocr_ready_orientation",
         lambda _filename: {
             "orientation_status": "auto_passed",
