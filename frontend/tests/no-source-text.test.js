@@ -20,16 +20,11 @@ const KNOWN_SOURCE_TEXT_READS = {
   'answer-sheet-workflow.test.js': ['views/AnswerSheet.vue'],
   'batch-report.test.js': ['views/Upload.vue'],
   'class-table-render-contract.test.js': ['views/ClassTable.vue'],
-  'courseware-covers.test.js': ['components/CoursewareCover.vue', 'views/Courseware.vue'],
-  'courseware.test.js': ['*'],
-  'desktop-auth-contract.test.js': ['views/Settings.vue'],
-  'desktop-startup-splash.test.js': ['main.js'],
+  'courseware-covers.test.js': ['components/CoursewareCover.vue'],
   'drawing-reference.test.mjs': ['components/DrawingReferenceEditor.vue'],
   'grading-display.test.js': ['components/InkSpinner.vue', 'components/SheetLoader.vue', 'views/Upload.vue'],
   'ordinary-paper-review-workbench.test.js': ['views/Upload.vue'],
-  'stats-contract.test.js': ['views/Stats.vue'],
-  'student-detail-error-state.test.js': ['views/StudentDetail.vue'],
-  'theme-mode.test.js': ['views/Login.vue', 'views/Profile.vue'],
+  'theme-mode.test.js': ['views/Login.vue'],
 }
 
 // Points at src/ only to resolve and load src modules the way the build does

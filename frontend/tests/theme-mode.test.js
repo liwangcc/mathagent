@@ -1,10 +1,13 @@
+import './helpers/srcModules.js'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import { COLOR_MODES, getColorMode, initTheme, setColorMode } from '../src/composables/useTheme.js'
+import { loadApiClient } from './helpers/apiClient.js'
 import { memoryStorage } from './helpers/browser.js'
+import { mountComponent } from './helpers/mountComponent.js'
 
-const profile = fs.readFileSync(new URL('../src/views/Profile.vue', import.meta.url), 'utf8')
+const { default: Profile } = await import('../src/views/Profile.vue?sfc')
 const globalCss = fs.readFileSync(new URL('../src/styles/global.css', import.meta.url), 'utf8')
 const login = fs.readFileSync(new URL('../src/views/Login.vue', import.meta.url), 'utf8')
 const index = fs.readFileSync(new URL('../index.html', import.meta.url), 'utf8')
@@ -57,14 +60,54 @@ test('明暗模式支持浅色、深色和跟随系统并持久化', () => {
   }
 })
 
-test('个人资料页提供三种明暗模式选择，并支持键盘切换', () => {
-  assert.match(profile, /明暗模式/)
-  assert.match(profile, /跟随系统会随操作系统的深浅色设置自动变化/)
-  assert.match(profile, /value: 'light', label: '浅色'/)
-  assert.match(profile, /value: 'dark', label: '深色'/)
-  assert.match(profile, /value: 'system', label: '跟随系统'/)
-  assert.match(profile, /chooseColorMode\(item\.value\)/)
-  assert.match(profile, /onColorModeKeydown\(\$event, item\.value\)/)
+test('个人资料页提供三种明暗模式选择，并支持键盘切换', async (t) => {
+  const teacher = { id: 1, role: 'teacher', name: '王老师', education_stage: 'junior', profile_complete: true }
+  const client = await loadApiClient({
+    localStorage: { mathagent_token: 'teacher-token', mathagent_user: JSON.stringify(teacher) },
+  })
+  const page = await mountComponent(t, Profile, { path: '/profile' })
+  const heading = page.root.byClass('color-mode-heading')
+  assert.equal(heading.byTag('strong')[0].text, '明暗模式')
+  assert.equal(heading.byTag('small')[0].text, '跟随系统会随操作系统的深浅色设置自动变化')
+
+  const group = page.root.find(el => el.getAttribute('role') === 'radiogroup' && el.getAttribute('aria-label') === '明暗模式')
+  const radios = () => group.findAll(el => el.getAttribute('role') === 'radio')
+  const choices = () => radios().map(radio => [radio.byTag('strong')[0].text, radio.props['aria-checked'], radio.getAttribute('tabindex')])
+  // The page shows the saved mode (none yet: light), focusable as one radio group.
+  assert.deepEqual(choices(), [['浅色', true, '0'], ['深色', false, '-1'], ['跟随系统', false, '-1']])
+
+  const shownMode = () => ({
+    saved: client.localStorage.getItem('mathagent_color_mode'),
+    applied: document.documentElement.getAttribute('data-color-mode'),
+    checked: radios().filter(radio => radio.props['aria-checked'] === true).map(radio => radio.byTag('strong')[0].text),
+  })
+  await radios()[1].dispatch('click')
+  await page.flush()
+  assert.deepEqual(shownMode(), { saved: 'dark', applied: 'dark', checked: ['深色'] })
+  assert.deepEqual(choices().map(([, , tabindex]) => tabindex), ['-1', '0', '-1'])
+
+  // Arrow keys move to the next / previous mode and wrap around; Home and End
+  // jump to the first and last. The page keeps those keys from scrolling.
+  const press = async (index, key) => {
+    let prevented = false
+    await radios()[index].dispatch('keydown', { key, preventDefault() { prevented = true } })
+    await page.flush()
+    return prevented
+  }
+  for (const [index, key, mode, label] of [
+    [1, 'ArrowRight', 'system', '跟随系统'],
+    [2, 'ArrowDown', 'light', '浅色'],
+    [0, 'ArrowLeft', 'system', '跟随系统'],
+    [2, 'ArrowUp', 'dark', '深色'],
+    [1, 'Home', 'light', '浅色'],
+    [0, 'End', 'system', '跟随系统'],
+  ]) {
+    assert.equal(await press(index, key), true, key)
+    assert.deepEqual(shownMode(), { saved: mode, applied: mode, checked: [label] }, key)
+  }
+  // Other keys leave the choice alone.
+  assert.equal(await press(2, 'Enter'), false)
+  assert.deepEqual(shownMode(), { saved: 'system', applied: 'system', checked: ['跟随系统'] })
 })
 
 test('深色与跟随系统共用暖炭色表面、植物绿和可读文字', () => {

@@ -1,3 +1,4 @@
+import './helpers/srcModules.js'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
@@ -5,6 +6,7 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import vm from 'node:vm'
 import { COURSEWARE_MODELS } from '../src/courseware/models.js'
+import { openCourseware, previewHtml, sampleHtml } from './helpers/v3bCourseware.js'
 
 const here = path.dirname(fileURLToPath(import.meta.url))
 const root = path.resolve(here, '..', '..')
@@ -79,13 +81,83 @@ test('章节离线文件是无外部依赖的可交互 HTML', () => {
   assert.equal(keepHtml, fs.readFileSync(path.join(root, 'frontend/public/courseware/samples', '高中', '空间几何关系.html'), 'utf8'))
 })
 
-test('预览和下载走同一份离线样例，并保留 API 预览路径', () => {
-  const view = fs.readFileSync(path.join(root, 'frontend', 'src', 'views', 'Courseware.vue'), 'utf8')
-  assert.match(view, /async function openPreview\(card\)/)
-  assert.match(view, /api\.courseware\.preview\(card\.backendId\)/)
-  assert.match(view, /courseware\/samples\//)
-  assert.match(view, /stageDirectoryByValue/)
-  assert.match(view, /sampleUrl\(card, fileName\)/)
-  assert.match(view, /chapterShortcuts = computed/)
-  assert.doesNotMatch(view, /filteredCards = computed[^\n]*\.slice\(0, 3\)/)
+// The bundled chapter cards of a primary-school teacher's stage.
+const PRIMARY_CARDS = [
+  '分数的认识与运算：同分母分数大小比较',
+  '长度、周长与面积：长方形与正方形的面积',
+  '位置、方向与图形运动：平移',
+  '立体图形：正方体、圆柱体的面棱顶点',
+  '简单几何图形与测量：从不同方向观察物体',
+  '统计与数据分析：条形图与平均数',
+]
+const titles = library => library.cards().map(card => card.byTag('h3')[0].text)
+
+test('预览和下载走同一份离线样例，并保留 API 预览路径', async (t) => {
+  const bundled = await openCourseware(t)
+  const card = bundled.card('分数的认识与运算：同分母分数大小比较')
+  await card.byText('el-button', '预览演示').dispatch('click')
+  await bundled.page.flush()
+  // The preview loads the chapter's bundled sample, by its stage folder and file name.
+  const [previewed] = bundled.backend.requests
+  assert.equal(decodeURIComponent(previewed.url), '/courseware/samples/小学/P05_分数的认识与运算.html')
+  assert.match(previewed.url, /^[\x21-\x7e]+$/, 'the folder and file name are URL-encoded')
+  assert.equal(previewed.init.cache, 'no-store')
+  const frame = bundled.dialog().byTag('iframe')[0]
+  assert.equal(frame.props.srcdoc, sampleHtml(previewed.url))
+  assert.equal(frame.getAttribute('sandbox'), 'allow-scripts')
+
+  // Downloading the card saves that very sample.
+  await card.byText('el-button', '下载离线课件').dispatch('click')
+  await bundled.page.flush()
+  assert.deepEqual(bundled.backend.requests.map(request => request.url), [previewed.url, previewed.url])
+  assert.deepEqual(bundled.downloads().map(file => file.name), ['P05_分数的认识与运算.html'])
+  assert.match(bundled.downloads()[0].href, /^blob:/)
+  assert.deepEqual(bundled.client.messages.filter(message => message.type === 'success'), [{ type: 'success', message: '已下载离线课件' }])
+  bundled.close()
+
+  // A card the backend lists previews through the backend, not a bundled sample.
+  const listed = await openCourseware(t, {
+    items: [{ id: 5, title: '分数的意义', chapter: '分数的认识与运算', knowledge_point: '分数的意义', stage: 'primary', file_name: 'P05_分数的认识与运算.html' }],
+  })
+  await listed.card('分数的意义').byText('el-button', '预览演示').dispatch('click')
+  await listed.page.flush()
+  assert.deepEqual(listed.client.requests.map(request => [request.method, request.url]), [
+    ['get', '/courseware'],
+    ['get', '/courseware/5/preview'],
+  ])
+  assert.deepEqual(listed.backend.requests, [])
+  assert.equal(listed.dialog().byTag('iframe')[0].props.srcdoc, previewHtml(5))
+})
+
+test('课件库列出本学段全部章节课件和常用章节捷径，不截成 3 个', async (t) => {
+  const library = await openCourseware(t)
+  assert.deepEqual(titles(library), PRIMARY_CARDS)
+  assert.equal(library.page.root.byClass('recommend-heading').byTag('span').at(-1).text, '6 个')
+  const shortcuts = () => library.page.root.byClass('topic-strip').byTag('el-button')
+  assert.deepEqual(shortcuts().map(button => button.text), [
+    '分数的认识与运算', '长度、周长与面积', '位置、方向与图形运动', '立体图形', '简单几何图形与测量', '统计与数据分析',
+  ])
+  // A chapter shortcut narrows the list to that chapter.
+  await shortcuts().find(button => button.text === '统计与数据分析').dispatch('click')
+  await library.page.flush()
+  assert.deepEqual(titles(library), ['统计与数据分析：条形图与平均数'])
+  assert.equal(shortcuts().find(button => button.text === '统计与数据分析').getAttribute('type'), 'primary')
+  library.close()
+
+  // From the backend's list: a chapter with several lessons gets one
+  // shortcut, and another stage's chapters get none.
+  const listed = await openCourseware(t, {
+    items: [
+      { id: 31, title: '分数的意义', chapter: '分数的认识与运算', knowledge_point: '分数的意义', stage: 'primary', file_name: 'P05_分数的认识与运算.html' },
+      { id: 32, title: '同分母分数加减', chapter: '分数的认识与运算', knowledge_point: '分数加减', stage: 'primary', file_name: '分数加减.html' },
+      { id: 33, title: '长方形的面积', chapter: '长度、周长与面积', knowledge_point: '面积', stage: 'primary', file_name: 'P09_长度、周长与面积.html' },
+      { id: 34, title: '一次函数的图像', chapter: '函数基础与一次函数', knowledge_point: '一次函数', stage: 'junior', file_name: 'J08_函数基础与一次函数.html' },
+    ],
+  })
+  const listedShortcuts = () => listed.page.root.byClass('topic-strip').byTag('el-button')
+  assert.deepEqual(listedShortcuts().map(button => button.text), ['分数的认识与运算', '长度、周长与面积'])
+  assert.deepEqual(titles(listed), ['分数的意义', '同分母分数加减', '长方形的面积'])
+  await listedShortcuts().find(button => button.text === '分数的认识与运算').dispatch('click')
+  await listed.page.flush()
+  assert.deepEqual(titles(listed), ['分数的意义', '同分母分数加减'])
 })

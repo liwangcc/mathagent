@@ -1,12 +1,13 @@
 import './helpers/srcModules.js'
 import assert from 'node:assert/strict'
-import { readFileSync } from 'node:fs'
 import test from 'node:test'
 import { createPinia, setActivePinia } from 'pinia'
 import { loadApiClient } from './helpers/apiClient.js'
+import { mountComponent } from './helpers/mountComponent.js'
 
-const settingsSource = readFileSync(new URL('../src/views/Settings.vue', import.meta.url), 'utf8')
 const { useAuthStore } = await import('../src/stores/auth.js')
+const { default: Settings } = await import('../src/views/Settings.vue?sfc')
+const { useDesktopBindingDialog } = await import('../src/composables/useDesktopBindingDialog.js')
 
 async function authStoreWith(localStorage) {
   const client = await loadApiClient({ localStorage })
@@ -70,12 +71,90 @@ test('invalid serialized tokens never create a logged-in session', async () => {
   assert.deepEqual(snapshot(), before)
 })
 
-test('expired desktop authorization exposes an in-place credential repair', () => {
-  assert.match(settingsSource, /lastErrorCode === 'node_auth_failed'/)
-  assert.match(settingsSource, /重新绑定/)
-  assert.match(settingsSource, /@click="repairDesktopBinding"/)
-  assert.match(settingsSource, /bindingManager\.open\('settings'\)/)
-  assert.doesNotMatch(settingsSource, /desktopInvoke\('(bind|rotate|unbind)_teacher_desktop'/)
-  assert.match(settingsSource, /desktopWorkerStatus\.value = await desktopInvoke\('get_worker_status'\)/)
-  assert.match(settingsSource, /登录已过期，请重新登录/)
+const ADMIN = { id: 1, role: 'admin', education_stage: 'senior', profile_complete: true }
+const EXPIRED = {
+  localProcessingAvailable: true,
+  computeBackend: 'windows_cpu_opencv',
+  handoff: { configured: true, running: true, connected: false, lastErrorCode: 'node_auth_failed', completed: 0, failed: 0, remaining: 2 },
+}
+const REBOUND = {
+  localProcessingAvailable: true,
+  computeBackend: 'windows_cpu_opencv',
+  handoff: { configured: true, running: true, connected: true, lastErrorCode: null, completed: 0, failed: 0, remaining: 2 },
+}
+
+// The settings page inside the Windows client: the desktop runtime answers
+// the page's commands (recorded in `commands`), reporting `workerStatus()`.
+async function openDesktopSettings(t, { localStorage, workerStatus }) {
+  const client = await loadApiClient({ localStorage })
+  const commands = []
+  const desktopRuntime = {
+    install() {
+      window.__TAURI_INTERNALS__ = {
+        invoke: async (command) => {
+          commands.push(command)
+          if (command === 'runtime_info') return { runtime: 'desktop' }
+          if (command === 'get_worker_status') return workerStatus()
+          return {}
+        },
+      }
+    },
+  }
+  const page = await mountComponent(t, Settings, { path: '/settings', plugins: [desktopRuntime] })
+  // The binding dialog is one for the whole app: whatever a test leaves open
+  // (and any open() still waiting on it) is closed before the next test.
+  const bindingDialog = useDesktopBindingDialog()
+  t.after(() => bindingDialog.close(true))
+  const card = () => page.root.byClass('desktop-acceleration-card')
+  return { client, page, commands, card, repairButton: () => card().find(el => el.tagName === 'el-button' && el.attributes.type === 'primary') }
+}
+
+const BINDING_WRITES = ['bind_teacher_desktop', 'rotate_teacher_desktop', 'unbind_teacher_desktop']
+
+// A repair that waits on the dialog forever would otherwise hang the run.
+const SETTINGS_TIMEOUT = { timeout: 10_000 }
+
+test('expired desktop authorization exposes an in-place credential repair', SETTINGS_TIMEOUT, async (t) => {
+  let status = EXPIRED
+  const { page, commands, card, repairButton } = await openDesktopSettings(t, {
+    localStorage: { mathagent_token: 'admin-token', mathagent_user: JSON.stringify(ADMIN) },
+    workerStatus: () => status,
+  })
+  assert.deepEqual(commands, ['runtime_info', 'get_worker_status'])
+  assert.equal(card().find(el => el.tagName === 'el-tag').text, '需重新绑定')
+  assert.equal(card().byClass('desktop-status__primary').text, '本地处理器可用，但设备授权已失效；重新绑定前将由云端接管')
+  assert.equal(repairButton().text, '重新绑定')
+
+  // Repair opens the shared binding dialog for this page; the page itself
+  // never binds, rotates or unbinds the device.
+  const bindingDialog = useDesktopBindingDialog()
+  const repaired = repairButton().dispatch('click')
+  await page.flush()
+  assert.equal(bindingDialog.state.visible, true)
+  assert.equal(bindingDialog.state.source, 'settings')
+  assert.equal(repairButton().getAttribute('loading'), '')
+
+  // Once the teacher is done with the dialog, the page reads the worker again.
+  status = REBOUND
+  bindingDialog.close()
+  await repaired
+  await page.flush()
+  assert.deepEqual(commands, ['runtime_info', 'get_worker_status', 'get_worker_status'])
+  assert.equal(commands.some(command => BINDING_WRITES.includes(command)), false)
+  assert.equal(card().find(el => el.tagName === 'el-tag').text, 'CPU')
+  assert.equal(repairButton().text, '本机绑定管理')
+})
+
+test('a signed-out teacher is told to log in again instead of repairing the desktop binding', SETTINGS_TIMEOUT, async (t) => {
+  const { client, page, commands, repairButton } = await openDesktopSettings(t, {
+    localStorage: {},
+    workerStatus: () => EXPIRED,
+  })
+  assert.equal(repairButton().text, '重新绑定')
+  // Not awaited: a repair that went ahead would wait on the dialog.
+  repairButton().dispatch('click')
+  await page.flush()
+  assert.deepEqual(client.messages, [{ type: 'error', message: '登录已过期，请重新登录' }])
+  assert.equal(useDesktopBindingDialog().state.visible, false)
+  assert.deepEqual(commands, ['runtime_info', 'get_worker_status'])
 })
