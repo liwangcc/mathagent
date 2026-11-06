@@ -5,13 +5,14 @@ import { drawOverlay, type OverlayPalette } from "@/lib/atlas/overlay"
 import { createPointRenderer, type Palette, type PointRenderer, type RGB } from "@/lib/atlas/points"
 import { buildScene, POINT_COUNT, type Fonts, type Layout, type Scene } from "@/lib/atlas/targets"
 import { ACT_REST, frameAt, restingFrame } from "@/lib/atlas/timeline"
-import { clamp, usePrefersReducedMotion } from "@/lib/hooks"
+import { clamp, usePrefersReducedMotion, useScrollAutoplay } from "@/lib/hooks"
 import { cn } from "@/lib/utils"
 
 /* 墨迹星图: one answer sheet's journey told with 30,000 ink points. Scrolling moves the same
  * points from a student's handwriting to its transcription and verdicts, out into a star chart of
  * a class's mistakes, into a 50 x 600 ledger of open wrong records, and into the 2,000 questions
- * they merge into when a new paper arrives. */
+ * they merge into when a new paper arrives. Once pinned it also plays by itself; the reader's
+ * wheel scrubs it either way. */
 
 const ACTS = [
   {
@@ -121,12 +122,13 @@ export function InkAtlas() {
   const overRef = useRef<HTMLCanvasElement>(null)
   const pointsRef = useRef<HTMLCanvasElement>(null)
   const fpsRef = useRef<HTMLSpanElement>(null)
-  const tourRef = useRef<{ start: () => void; stop: () => void } | null>(null)
   const actRef = useRef(0)
   const [act, setAct] = useState(0)
-  const [touring, setTouring] = useState(false)
+  const [autoplay, setAutoplay] = useState(true)
   const [supported, setSupported] = useState(true)
   const [showFps, setShowFps] = useState(false)
+
+  useScrollAutoplay(sectionRef, TOUR_SECONDS, autoplay && !reduced && supported)
 
   useLayoutEffect(() => {
     const section = sectionRef.current
@@ -159,8 +161,6 @@ export function InkAtlas() {
     let frameRequest = 0
     let inView = false
     let pageVisible = !document.hidden
-    let touringNow = false
-    let tourClock = 0
     let fpsFrames = 0
     let fpsSince = performance.now()
     const pointer = { x: -1e4, y: -1e4, strength: 0, target: 0 }
@@ -203,22 +203,9 @@ export function InkAtlas() {
       }
     }
 
-    const sectionTop = () => section.getBoundingClientRect().top + window.scrollY
-    const travel = () => section.offsetHeight - window.innerHeight
-
-    const advanceTour = (now: number) => {
-      const elapsed = tourClock ? Math.min(0.05, (now - tourClock) / 1000) : 0
-      tourClock = now
-      const end = sectionTop() + travel()
-      const next = Math.min(end, window.scrollY + (travel() / TOUR_SECONDS) * elapsed)
-      window.scrollTo({ top: next, behavior: "instant" })
-      if (next >= end - 0.5) stopTour()
-    }
-
     const running = () => inView && pageVisible && !reduced
     const loop = (now: number) => {
       frameRequest = 0
-      if (touringNow) advanceTour(now)
       render(now)
       if (running()) frameRequest = requestAnimationFrame(loop)
     }
@@ -248,22 +235,6 @@ export function InkAtlas() {
       render(performance.now())
     }
 
-    function stopTour() {
-      if (!touringNow) return
-      touringNow = false
-      setTouring(false)
-    }
-    tourRef.current = {
-      start() {
-        if (progress() > 0.97) window.scrollTo({ top: sectionTop(), behavior: "instant" })
-        touringNow = true
-        tourClock = 0
-        setTouring(true)
-        wake()
-      },
-      stop: stopTour,
-    }
-
     // The 30,000-point layout is built only when the section comes near, after fonts are ready,
     // so visitors who never scroll this far pay nothing for it.
     let disposed = false
@@ -291,7 +262,6 @@ export function InkAtlas() {
     const visibility = new IntersectionObserver(([entry]) => {
       inView = entry.isIntersecting
       if (inView) wake()
-      else stopTour()
     })
     visibility.observe(section)
 
@@ -303,17 +273,12 @@ export function InkAtlas() {
     const onScroll = () => wake()
     window.addEventListener("scroll", onScroll, { passive: true })
 
-    // Any reading gesture hands the page back to the reader.
-    const interrupt = () => stopTour()
     const onKey = (event: KeyboardEvent) => {
-      if (["ArrowDown", "ArrowUp", "PageDown", "PageUp", "Home", "End", " "].includes(event.key)) stopTour()
       const typing = event.target instanceof HTMLElement && /^(INPUT|TEXTAREA|SELECT)$/.test(event.target.tagName)
       if (inView && !typing && !event.metaKey && !event.ctrlKey && !event.altKey && event.key.toLowerCase() === "f") {
         setShowFps((value) => !value)
       }
     }
-    window.addEventListener("wheel", interrupt, { passive: true })
-    window.addEventListener("touchstart", interrupt, { passive: true })
     window.addEventListener("keydown", onKey)
 
     const onPointerMove = (event: PointerEvent) => {
@@ -345,7 +310,6 @@ export function InkAtlas() {
     return () => {
       disposed = true
       approach.disconnect()
-      tourRef.current = null
       cancelAnimationFrame(frameRequest)
       window.clearTimeout(resizeTimer)
       resizeObserver.disconnect()
@@ -353,8 +317,6 @@ export function InkAtlas() {
       themeObserver.disconnect()
       document.removeEventListener("visibilitychange", onVisibility)
       window.removeEventListener("scroll", onScroll)
-      window.removeEventListener("wheel", interrupt)
-      window.removeEventListener("touchstart", interrupt)
       window.removeEventListener("keydown", onKey)
       stage.removeEventListener("pointermove", onPointerMove)
       stage.removeEventListener("pointerleave", onPointerLeave)
@@ -363,17 +325,28 @@ export function InkAtlas() {
     }
   }, [reduced])
 
+  // The smooth scroll is the reader's: auto-play waits until it has settled.
   const jumpTo = useCallback(
     (index: number) => {
       const section = sectionRef.current
       if (!section) return
-      tourRef.current?.stop()
       const travel = section.offsetHeight - window.innerHeight
       const top = section.getBoundingClientRect().top + window.scrollY + ACT_REST[index] * travel
       window.scrollTo({ top, behavior: reduced ? "auto" : "smooth" })
     },
     [reduced],
   )
+
+  // Turning auto-play back on at the end of the section replays it from the start.
+  const toggleAutoplay = useCallback(() => {
+    const section = sectionRef.current
+    if (!autoplay && section) {
+      const travel = section.offsetHeight - window.innerHeight
+      const top = section.getBoundingClientRect().top + window.scrollY
+      if (travel > 0 && window.scrollY >= top + travel * 0.97) window.scrollTo({ top, behavior: "instant" })
+    }
+    setAutoplay((value) => !value)
+  }, [autoplay])
 
   useEffect(() => {
     if (!supported) setAct(0)
@@ -444,14 +417,9 @@ export function InkAtlas() {
 
             <div className="atlas-controls">
               {!reduced && (
-                <button
-                  type="button"
-                  className="atlas-tour"
-                  onClick={() => (touring ? tourRef.current?.stop() : tourRef.current?.start())}
-                  aria-pressed={touring}
-                >
-                  {touring ? <Pause aria-hidden="true" /> : <Play aria-hidden="true" />}
-                  {touring ? "停止自动演示" : "自动演示"}
+                <button type="button" className="atlas-tour" onClick={toggleAutoplay} aria-pressed={autoplay}>
+                  {autoplay ? <Pause aria-hidden="true" /> : <Play aria-hidden="true" />}
+                  {autoplay ? "暂停自动演示" : "自动演示"}
                 </button>
               )}
               <a className="atlas-skip" href="#flow">

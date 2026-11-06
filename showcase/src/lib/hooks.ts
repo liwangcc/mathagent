@@ -1,4 +1,6 @@
-import { useCallback, useEffect, useRef, useState } from "react"
+import { type RefObject, useCallback, useEffect, useRef, useState } from "react"
+
+import { ScrollPlayer } from "@/lib/scrollPlayer"
 
 const REDUCED_MOTION_QUERY = "(prefers-reduced-motion: reduce)"
 const DARK_QUERY = "(prefers-color-scheme: dark)"
@@ -111,6 +113,61 @@ export function useScrollSpy(ids: string[]) {
   }, [ids])
 
   return active
+}
+
+const READING_KEYS = new Set(["ArrowDown", "ArrowUp", "PageDown", "PageUp", "Home", "End", " ", "Enter"])
+
+/** Plays a pinned, scroll-driven section by itself (see lib/scrollPlayer.ts): while it is near the
+ * viewport and `enabled`, the page moves through it at one travel per `seconds`, and the reader's
+ * wheel, touch, keys, pointer presses or scrollbar take over until they are still again. A press
+ * yields before its click runs, so a jump the click starts (the atlas rail's smooth scroll) is
+ * never cut short by the next auto-play step. */
+export function useScrollAutoplay(sectionRef: RefObject<HTMLElement>, seconds: number, enabled: boolean) {
+  useEffect(() => {
+    const section = sectionRef.current
+    if (!section || !enabled || typeof IntersectionObserver === "undefined") return
+    const player = new ScrollPlayer(seconds)
+    let frame = 0
+    let near = false
+    const geometry = () => ({
+      start: section.getBoundingClientRect().top + window.scrollY,
+      travel: section.offsetHeight - window.innerHeight,
+      scrollY: window.scrollY,
+      viewport: window.innerHeight,
+    })
+    const tick = (now: number) => {
+      frame = 0
+      const next = player.step(now, geometry())
+      if (next !== null && Math.abs(next - window.scrollY) >= 0.5) window.scrollTo({ top: next, behavior: "instant" })
+      if (near) frame = requestAnimationFrame(tick)
+    }
+    // A reader scrolling in is already holding the page (wheel, keys, scroll events); the play
+    // begins once they are still. Turned on by its button, it begins at once.
+    const observer = new IntersectionObserver(([entry]) => {
+      near = entry.isIntersecting
+      if (near && !frame) frame = requestAnimationFrame(tick)
+    })
+    observer.observe(section)
+    const onScroll = () => player.scrolled(performance.now(), window.scrollY)
+    const onGesture = () => player.yieldTo(performance.now())
+    const onKey = (event: KeyboardEvent) => {
+      if (READING_KEYS.has(event.key)) onGesture()
+    }
+    window.addEventListener("scroll", onScroll, { passive: true })
+    window.addEventListener("wheel", onGesture, { passive: true })
+    window.addEventListener("touchstart", onGesture, { passive: true })
+    window.addEventListener("pointerdown", onGesture, { passive: true })
+    window.addEventListener("keydown", onKey)
+    return () => {
+      observer.disconnect()
+      cancelAnimationFrame(frame)
+      window.removeEventListener("scroll", onScroll)
+      window.removeEventListener("wheel", onGesture)
+      window.removeEventListener("touchstart", onGesture)
+      window.removeEventListener("pointerdown", onGesture)
+      window.removeEventListener("keydown", onKey)
+    }
+  }, [sectionRef, seconds, enabled])
 }
 
 export type ColorMode = "system" | "light" | "dark"

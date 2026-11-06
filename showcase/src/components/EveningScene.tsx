@@ -1,11 +1,16 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react"
+import { Pause, Play } from "lucide-react"
 
-import { clamp, usePrefersReducedMotion } from "@/lib/hooks"
+import { clamp, usePrefersReducedMotion, useScrollAutoplay } from "@/lib/hooks"
 import { cn } from "@/lib/utils"
 
 /* The old hero video — teachers working through the night under the stars, glowing laptops among
  * books and flowers — redrawn as an ink plate. Scrolling turns the clock back from 23:40 to 18:10:
- * the pile flies page by page into the "done" tray, the stars fade and the night sky becomes dusk. */
+ * the pile flies page by page into the "done" tray, the stars fade and the night sky becomes dusk.
+ * Once the plate is pinned it also plays by itself; the reader's wheel scrubs it either way. */
+
+/* Auto-play crosses the whole plate in this many seconds: long enough to read the three steps. */
+const PLAY_SECONDS = 18
 
 const SHEETS = 12
 const PAGES = 48
@@ -95,7 +100,10 @@ export function EveningScene() {
   const sheetRefs = useRef<Array<SVGGElement | null>>([])
   const [step, setStep] = useState(0)
   const [active, setActive] = useState(false)
+  const [autoplay, setAutoplay] = useState(true)
   const stepRef = useRef(0)
+
+  useScrollAutoplay(sectionRef, PLAY_SECONDS, autoplay && !reduced)
 
   useLayoutEffect(() => {
     const section = sectionRef.current
@@ -249,6 +257,18 @@ export function EveningScene() {
               </i>
               <span>18:10</span>
             </div>
+
+            {!reduced && (
+              <button
+                type="button"
+                className="evening-play"
+                onClick={() => setAutoplay((value) => !value)}
+                aria-pressed={autoplay}
+              >
+                {autoplay ? <Pause aria-hidden="true" /> : <Play aria-hidden="true" />}
+                {autoplay ? "暂停自动播放" : "自动播放"}
+              </button>
+            )}
           </div>
 
           <div className="evening-plate">
