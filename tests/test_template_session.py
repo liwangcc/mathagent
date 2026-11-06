@@ -1206,6 +1206,28 @@ def _patch_fast_template_pre_ocr(monkeypatch, grade_router):
     monkeypatch.setattr(grade_template, "canonicalize_template_image", local_canonical)
 
 
+class _ImportDeadlineClock:
+    """The template import deadline's clock; it moves only when the test advances it.
+
+    Machine load cannot use up a short deadline before the step a test stalls
+    has even started: the deadline passes exactly where the test says.
+    """
+
+    def __init__(self):
+        self.now = 0.0
+
+    def __call__(self):
+        return self.now
+
+    def advance(self, seconds):
+        self.now += seconds
+
+
+def _template_status_on_disk(upload_dir) -> str:
+    template_id = next(Path(upload_dir).glob("template_*")).name.removeprefix("template_")
+    return TemplateSession.load_meta(template_id, str(upload_dir)).status
+
+
 def test_template_recognize_ocrs_each_page(
     monkeypatch,
     tmp_path,
@@ -2344,15 +2366,21 @@ def test_template_total_deadline_reports_unusable_and_cleans_ocr_task(
 
     monkeypatch.setattr(gr_router, "UPLOAD_DIR", str(tmp_path))
     monkeypatch.setattr(gr_router, "_check_limits_or_raise", lambda db, uid: None)
+    clock = _ImportDeadlineClock()
+    monkeypatch.setattr(grade_template, "_template_import_clock", clock)
     monkeypatch.setattr(grade_template, "_template_import_deadline_seconds", lambda _count: 0.1)
     monkeypatch.setattr(grade_template, "_TEMPLATE_COMPONENT_HEARTBEAT_S", 0.01)
     _patch_fast_template_pre_ocr(monkeypatch, gr_router)
     cancelled = threading.Event()
+    status_when_cancelled = []
 
     async def hanging_ocr(_path, **_kwargs):
+        # The import's time runs out while OCR is running.
+        clock.advance(0.1)
         try:
             await asyncio.Event().wait()
         finally:
+            status_when_cancelled.append(_template_status_on_disk(tmp_path))
             cancelled.set()
 
     monkeypatch.setattr(grade_template, "recognize_template_pipeline", hanging_ocr)
@@ -2369,6 +2397,8 @@ def test_template_total_deadline_reports_unusable_and_cleans_ocr_task(
     assert errors[0]["code"] == "TEMPLATE_IMPORT_TIMEOUT"
     assert "本次模板不可用" in errors[0]["message"]
     assert cancelled.is_set()
+    # The step was stopped before the template was reported unusable.
+    assert status_when_cancelled == ["recognizing"]
     template_id = next(tmp_path.glob("template_*")).name.removeprefix("template_")
     failed = TemplateSession.load_meta(template_id, str(tmp_path))
     assert failed.status == "failed"
@@ -2387,15 +2417,21 @@ def test_template_deadline_during_layout_is_reported_as_the_import_timeout(
 
     monkeypatch.setattr(gr_router, "UPLOAD_DIR", str(tmp_path))
     monkeypatch.setattr(gr_router, "_check_limits_or_raise", lambda db, uid: None)
+    clock = _ImportDeadlineClock()
+    monkeypatch.setattr(grade_template, "_template_import_clock", clock)
     monkeypatch.setattr(grade_template, "_template_import_deadline_seconds", lambda _count: 0.1)
     monkeypatch.setattr(grade_template, "_TEMPLATE_COMPONENT_HEARTBEAT_S", 0.01)
     _patch_fast_template_pre_ocr(monkeypatch, gr_router)
     cancelled = threading.Event()
+    status_when_cancelled = []
 
     async def hanging_layout(_path, **_kwargs):
+        # The import's time runs out while the layout step is running.
+        clock.advance(0.1)
         try:
             await asyncio.Event().wait()
         finally:
+            status_when_cancelled.append(_template_status_on_disk(tmp_path))
             cancelled.set()
 
     monkeypatch.setattr(grade_template, "recognize_column_layout", hanging_layout)
@@ -2410,6 +2446,8 @@ def test_template_deadline_during_layout_is_reported_as_the_import_timeout(
     ]
     assert [error["code"] for error in errors] == ["TEMPLATE_IMPORT_TIMEOUT"]
     assert cancelled.is_set()
+    # The step was stopped before the template was reported unusable.
+    assert status_when_cancelled == ["recognizing"]
 
 
 def test_template_stream_disconnect_keeps_background_ocr_running(monkeypatch, tmp_path):
@@ -3392,7 +3430,9 @@ def _recognize_directory_timeout_draft(monkeypatch, tmp_path, phase, *,
     monkeypatch.setattr(gr_router, "UPLOAD_DIR", str(tmp_path))
     monkeypatch.setattr(gr_router, "_check_limits_or_raise", lambda _db, _uid: None)
     # ModelFixture represents failed stages with missing output fields. Allow
-    # local image processing to finish so recovery tests reach those fields.
+    # local image processing to finish so recovery tests reach those fields:
+    # the import's clock stands still, so machine load cannot use up its time.
+    monkeypatch.setattr(grade_template, "_template_import_clock", _ImportDeadlineClock())
     monkeypatch.setattr(grade_template, "_template_import_deadline_seconds", lambda _count: 5.0)
     monkeypatch.setattr(grade_template, "_TEMPLATE_MODEL_SAVE_RESERVE_S", 0.3)
     monkeypatch.setattr(grade_template, "_TEMPLATE_COMPONENT_HEARTBEAT_S", 0.01)

@@ -208,6 +208,11 @@ class _TemplateImportDeadlineExceeded(TimeoutError):
     """The whole template import exhausted its page-scaled time budget."""
 
 
+def _template_import_clock() -> float:
+    """Read the clock the import deadline is measured on: the event loop's."""
+    return asyncio.get_running_loop().time()
+
+
 def _template_import_deadline_seconds(page_count: int) -> float:
     pages = max(1, int(page_count))
     return min(
@@ -218,9 +223,13 @@ def _template_import_deadline_seconds(page_count: int) -> float:
 
 
 def _template_page_model_deadline(deadline_at: float, remaining_pages: int) -> float:
-    """Share remaining time fairly across pages and reserve artifact/save time."""
+    """Share remaining time fairly across pages and reserve artifact/save time.
+
+    ``deadline_at`` is on the import clock; the model stages time out on the
+    event loop's clock, so the page's deadline is returned as a loop time.
+    """
     now = asyncio.get_running_loop().time()
-    per_page = max(0.0, deadline_at - now) / max(1, remaining_pages)
+    per_page = max(0.0, deadline_at - _template_import_clock()) / max(1, remaining_pages)
     return now + max(0.0, per_page - _TEMPLATE_MODEL_SAVE_RESERVE_S)
 
 
@@ -256,8 +265,7 @@ async def _poll_template_component(
     cancel_running: bool = True,
 ) -> tuple[bool, object | None]:
     """Wait for one heartbeat interval while enforcing the absolute deadline."""
-    loop = asyncio.get_running_loop()
-    remaining_s = deadline_at - loop.time()
+    remaining_s = deadline_at - _template_import_clock()
     if remaining_s <= 0:
         await _settle_template_component(task, cancel_running=cancel_running)
         raise _TemplateImportDeadlineExceeded
@@ -268,7 +276,7 @@ async def _poll_template_component(
         )
         if task in done:
             return True, task.result()
-        if loop.time() >= deadline_at:
+        if _template_import_clock() >= deadline_at:
             await _settle_template_component(task, cancel_running=cancel_running)
             raise _TemplateImportDeadlineExceeded
         return False, None
@@ -1560,7 +1568,7 @@ async def _save_template_import(
     canonical_inputs = None
     try:
         saved_uploads = await _save_batch_uploads(files, sess.template_dir)
-        deadline_at = asyncio.get_running_loop().time() + deadline_s
+        deadline_at = _template_import_clock() + deadline_s
         if form.canonical_metadata is not None:
             os.makedirs(candidate_dir, exist_ok=True)
             saved_candidates = await _save_batch_uploads(
@@ -2358,7 +2366,7 @@ async def _freeze_template_page_events(
 async def _finish_template_import(job: _TemplateImport) -> None:
     """Check whole-paper numbering, then mark the template recognized."""
     sess = job.sess
-    if asyncio.get_running_loop().time() >= job.deadline_at:
+    if _template_import_clock() >= job.deadline_at:
         raise _TemplateImportDeadlineExceeded
     try:
         validate_global_numbering(sess.pages)

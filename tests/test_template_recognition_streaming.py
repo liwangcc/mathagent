@@ -726,6 +726,22 @@ def test_page_model_budget_shares_remaining_time_and_reserves_save(monkeypatch, 
     assert grade_template._template_page_model_deadline(100.0 + remaining, pages) == 100.0 + expected
 
 
+def test_page_model_budget_is_measured_on_the_import_clock_and_given_as_loop_time(monkeypatch):
+    import routers.grade as grade_router
+    from routers import grade_template
+
+    class Loop:
+        @staticmethod
+        def time():
+            return 100.0
+
+    monkeypatch.setattr(grade_router.asyncio, "get_running_loop", lambda: Loop())
+    monkeypatch.setattr(grade_template, "_template_import_clock", lambda: 7.0)
+    # 480 s of the import remain on its own clock; the model stages time out
+    # on the event loop's, so the page deadline is a loop time.
+    assert grade_template._template_page_model_deadline(7.0 + 480, 1) == 100.0 + 450
+
+
 def test_model_progress_displays_only_known_running_phases():
     import routers.grade as grade_router
     from routers import grade_template
