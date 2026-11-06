@@ -1,189 +1,218 @@
 import assert from 'node:assert/strict'
-import { readFileSync } from 'node:fs'
 import test from 'node:test'
-import { computed, effectScope, reactive, ref, watch } from 'vue'
+import './helpers/srcModules.js'
+import { mountComponent } from './helpers/mountComponent.js'
+import {
+  authOf, changeProfile, choose, click, deferred, exerciseServer, failure, options, pick, select, signedInTeacher,
+} from './helpers/v1ExerciseBank.js'
 
-const source = readFileSync(new URL('../src/views/Exercise.vue', import.meta.url), 'utf8')
-  .split('<script setup>')[1].split('</script>')[0].replace(/^import .*$/gm, '')
-const deferred = () => {
-  let resolve, reject
-  const promise = new Promise((done, fail) => { resolve = done; reject = fail })
-  return { promise, resolve, reject }
+// The exercise page follows the teacher's profile for new papers, while a
+// paper it already holds keeps the stage it was made for.
+const { default: Exercise } = await import('../src/views/Exercise.vue?sfc')
+
+const SAVED_PAPER = 'mathagent_generated_correction_paper'
+
+async function openExercise(t, { user = { id: 7, education_stage: 'senior' }, saved, chapters, students } = {}) {
+  const token = `teacher-${user.id}-token`
+  const profiles = { [token]: { ...user } }
+  const client = await signedInTeacher({
+    user,
+    token,
+    sessionStorage: saved ? { [SAVED_PAPER]: JSON.stringify(saved) } : {},
+  })
+  const server = exerciseServer(t, client, { profiles, chapters, students })
+  // A link carrying a stage of its own: the page must not take it over the profile.
+  const page = await mountComponent(t, Exercise, {
+    path: `/exercise?mode=${saved ? 'correction' : 'bank'}&education_stage=junior`,
+  })
+  return { page, root: page.root, profiles, server, auth: authOf(page) }
 }
-const settle = () => new Promise(resolve => setImmediate(resolve))
 
-function mount(t, { user = { id: 7, education_stage: 'senior' }, saved, chapters, students } = {}) {
-  const auth = reactive({ user, currentClassId: 4, currentClassName: '示例班', token: 'mock-only' })
-  const catalogCalls = [], studentCalls = [], exports = []
-  let mounted
-  const api = {
-    bank: { chapters: (...args) => {
-      const scope = { ...auth.user }
-      catalogCalls.push({ scope, args })
-      return chapters ? chapters(scope) : Promise.resolve([{ chapter: `${scope.education_stage}-chapter` }])
-    } },
-    student: { listAll: () => {
-      const scope = { ...auth.user }
-      studentCalls.push(scope)
-      return students ? students(scope) : Promise.resolve([{ id: scope.id, name: '虚拟学生' }])
-    } },
-    exercise: {
-      exportDocx: async payload => {
-        exports.push(payload)
-        return { paper_url: '/api/mock-paper', answer_url: '/api/mock-answer' }
-      },
-      exportAnswerSheetDocx: async payload => {
-        exports.push(payload)
-        return { download_url: '/api/mock-card' }
-      },
-    },
-  }
-  const run = new Function('ref', 'reactive', 'computed', 'watch', 'onMounted', 'onUnmounted', 'onBeforeRouteLeave',
-    'useRoute', 'useAuthStore', 'api', 'sessionStorage', 'ElMessage', 'cleanExerciseText', 'setRouteBusy', 'fetch', 'document', source + `
-    return { bankForm, weaknessForm, mistakeForm, includeExtension, chapters, students,
-      profileStageLabel, stageLabel, paperTeachingContext, resultQuestions, paperTitle,
-      loadChapters, loadStudents, onExport, onExportAnswerSheet, buildPayload };
-  `)
-  const effect = effectScope()
-  t.after(() => effect.stop())
-  const state = effect.run(() => run(ref, reactive, computed, watch, fn => { mounted = fn }, () => {}, () => {},
-    () => ({ query: { mode: saved ? 'correction' : 'bank', education_stage: 'junior' } }), () => auth, api,
-    { getItem: () => saved ? JSON.stringify(saved) : null, removeItem() {} },
-    { success() {}, warning() {}, error(message) { throw new Error(message) } }, text => String(text || ''),
-    () => {},
-    async url => {
-      assert.ok(url.startsWith('/api/mock-'))
-      return { ok: true, blob: async () => new Blob(['synthetic document']) }
-    }, { createElement: () => ({ click() {} }) }))
-  mounted()
-  return { auth, state, catalogCalls, studentCalls, exports }
+const bankChapters = root => select(root, '不选则从综合题库抽取')
+const weakChapters = root => select(root, '不选则使用全部薄弱范围')
+const weakTopics = root => select(root, '不选则使用全部错题知识点')
+const student = root => select(root, '选择学生')
+const extension = root => root.byText('el-checkbox', '包含选修')
+const newPaperLabel = root => root.find(el => el.classList.contains('card-subtitle') && el.text.startsWith('新建出题'))?.text
+const paperHead = root => root.byClass('result-head')
+const paperStage = root => paperHead(root)?.byClass('card-subtitle')?.text
+const optionValues = el => el.byTag('el-option').map(option => [option.attributes.label, option._value])
+
+async function exportBoth(root) {
+  await click(root, 'el-button', '生成 A3 双栏 Word')
+  await click(root, 'el-button', '生成答题卡 Word')
 }
 
 test('profile stage changes reset new exercise filters and preserve restored paper exports', async t => {
   const context = { education_stage: 'senior', curriculum_version: 'frozen-catalog', rules_version: 'frozen-rules' }
   const questions = [{ type: 'fill', question: '合成题____', answer: '1', subquestions: ['原元数据'] }]
-  const { auth, state, catalogCalls, exports } = mount(t, {
+  const juniorCatalog = deferred()
+  const { page, root, profiles, server } = await openExercise(t, {
     saved: { title: '旧高中订正卷', exercises: questions, teaching_context: context },
+    chapters: profile => (profile.education_stage === 'junior' ? juniorCatalog.promise : [{ chapter: 'senior-chapter', topics: ['旧知识点'] }]),
   })
-  await settle()
-  state.bankForm.chapters = ['旧章节']
-  state.weaknessForm.chapters = ['旧薄弱章']
-  state.weaknessForm.topics = ['旧知识点']
-  state.mistakeForm.studentId = 91
-  state.includeExtension.value = true
-  auth.user.education_stage = 'junior'
-  assert.deepEqual(state.bankForm.chapters, [])
-  assert.deepEqual(state.weaknessForm.chapters, [])
-  assert.deepEqual(state.weaknessForm.topics, [])
-  assert.equal(state.mistakeForm.studentId, '')
-  assert.equal(state.includeExtension.value, false)
-  assert.deepEqual(state.chapters.value, [])
-  assert.equal(state.profileStageLabel.value, '初中数学')
-  assert.equal(state.stageLabel.value, '高中')
-  await settle()
-  assert.deepEqual(state.chapters.value, [{ chapter: 'junior-chapter' }])
-  assert.deepEqual(catalogCalls.map(call => call.scope.education_stage), ['senior', 'junior'])
-  assert.ok(catalogCalls.every(call => call.args.length === 0), 'Catalog requests use server profile, not route query override')
-  assert.deepEqual(state.paperTeachingContext.value, context)
-  assert.deepEqual(state.resultQuestions.value, questions)
-  assert.equal(state.paperTitle.value, '旧高中订正卷')
-  await state.onExport()
-  await state.onExportAnswerSheet()
-  assert.equal(exports.length, 2)
-  for (const payload of exports) {
-    assert.deepEqual(payload.teaching_context, context)
-    assert.deepEqual(payload.questions, questions)
+  // The teacher narrows a new paper in each mode first.
+  await pick(student(root), 91)
+  await choose(root, '题库抽题')
+  await pick(bankChapters(root), ['旧章节'])
+  await pick(extension(root), true)
+  await choose(root, '个人薄弱巩固')
+  await pick(weakChapters(root), ['旧薄弱章'])
+  await pick(weakTopics(root), ['旧知识点'])
+  assert.deepEqual(weakTopics(root).props.modelValue, ['旧知识点'])
+  assert.equal(student(root).props.modelValue, 91)
+
+  changeProfile(page, profiles, { education_stage: 'junior' })
+  await page.flush()
+  // Nothing chosen for the senior profile is left while the junior catalog loads.
+  assert.deepEqual(weakChapters(root).props.modelValue, [])
+  assert.deepEqual(weakTopics(root).props.modelValue, [])
+  assert.equal(student(root).props.modelValue, '')
+  assert.deepEqual(options(weakChapters(root)), [])
+  await choose(root, '题库抽题')
+  assert.deepEqual(bankChapters(root).props.modelValue, [])
+  assert.equal(extension(root).props.modelValue, false)
+  assert.deepEqual(options(bankChapters(root)), [])
+  assert.equal(newPaperLabel(root), '新建出题：初中数学 · 自动跟随个人资料')
+  assert.equal(paperStage(root), '高中 · 本试卷学段已固定')
+
+  juniorCatalog.resolve([{ chapter: 'junior-chapter' }])
+  await page.flush()
+  assert.deepEqual(options(bankChapters(root)), ['junior-chapter'])
+  assert.deepEqual(server.seen.chapters.map(call => call.profile.education_stage), ['senior', 'junior'])
+  assert.ok(server.seen.chapters.every(call => call.params === undefined), 'Catalog requests use server profile, not route query override')
+  // The restored paper is untouched.
+  assert.equal(paperHead(root).byClass('card-title').text, '旧高中订正卷')
+  assert.equal(paperHead(root).byTag('el-tag')[0].text, '1 道题')
+  await exportBoth(root)
+  assert.deepEqual(server.seen.exports.map(call => call.kind), ['student-and-teacher', 'answer-sheet'])
+  for (const { data } of server.seen.exports) {
+    assert.deepEqual(data.teaching_context, context)
+    assert.deepEqual(data.questions, questions)
+    assert.equal(data.title, '旧高中订正卷')
   }
 })
 
 test('account changes reload directory and student choices without accepting stale responses', async t => {
   const oldCatalog = deferred(), newCatalog = deferred(), oldStudents = deferred(), newStudents = deferred()
-  const { auth, state, catalogCalls } = mount(t, {
-    chapters: user => user.id === 7 ? oldCatalog.promise : newCatalog.promise,
-    students: user => user.id === 7 ? oldStudents.promise : newStudents.promise,
+  const { page, root, profiles, server, auth } = await openExercise(t, {
+    chapters: user => (user.id === 7 ? oldCatalog.promise : newCatalog.promise),
+    students: user => (user.id === 7 ? oldStudents.promise : newStudents.promise),
   })
-  state.bankForm.chapters = ['旧账户章节']
-  state.mistakeForm.studentId = 7
-  auth.user = { id: 8, education_stage: 'senior' }
-  assert.deepEqual(state.bankForm.chapters, [])
-  assert.equal(state.mistakeForm.studentId, '')
+  await pick(bankChapters(root), ['旧账户章节'])
+  await choose(root, '个人薄弱巩固')
+  await pick(student(root), 7)
+  // Another teacher signs in on the same computer.
+  profiles['teacher-8-token'] = { id: 8, education_stage: 'senior' }
+  auth.login('teacher-8-token', { id: 8, education_stage: 'senior' })
+  await page.flush()
+  assert.equal(student(root).props.modelValue, '')
   newCatalog.resolve([{ chapter: '新账户章节' }])
   newStudents.resolve([{ id: 8, name: '新账户学生' }])
-  await settle()
+  await page.flush()
   oldCatalog.resolve([{ chapter: '旧账户章节' }])
   oldStudents.resolve([{ id: 7, name: '旧账户学生' }])
-  await settle()
-  assert.deepEqual(catalogCalls.map(call => call.scope.id), [7, 8])
-  assert.deepEqual(state.chapters.value, [{ chapter: '新账户章节' }])
-  assert.deepEqual(state.students.value, [{ id: 8, name: '新账户学生' }])
+  await page.flush()
+  assert.deepEqual(server.seen.chapters.map(call => call.profile.id), [7, 8])
+  assert.deepEqual(server.seen.students.map(call => call.id), [7, 8])
+  assert.deepEqual(optionValues(student(root)), [['新账户学生', 8]])
+  assert.deepEqual(options(weakChapters(root)), ['新账户章节'])
+  await choose(root, '题库抽题')
+  assert.deepEqual(bankChapters(root).props.modelValue, [])
+  assert.deepEqual(options(bankChapters(root)), ['新账户章节'])
 })
 
 test('switching to primary loads its choices and preserves the frozen secondary paper', async t => {
   const context = { education_stage: 'senior', curriculum_version: 'frozen-catalog', rules_version: 'frozen-rules' }
   const questions = [{ type: 'fill', question: '合成历史题____', answer: '1' }]
-  const { auth, state, catalogCalls, studentCalls, exports } = mount(t, {
+  const { page, root, profiles, server } = await openExercise(t, {
     saved: { title: '历史高中卷', exercises: questions, teaching_context: context },
   })
-  await settle()
-  auth.user.education_stage = 'primary'
-  await settle()
-  assert.equal(state.profileStageLabel.value, '小学数学')
-  assert.equal(state.stageLabel.value, '高中')
-  assert.deepEqual(state.chapters.value, [{ chapter: 'primary-chapter' }])
-  assert.equal(catalogCalls.at(-1).scope.education_stage, 'primary')
-  assert.equal(studentCalls.at(-1).education_stage, 'primary')
-  assert.equal(state.students.value.length, 1)
-  await state.onExport()
-  for (const payload of exports) assert.deepEqual(payload.teaching_context, context)
+  changeProfile(page, profiles, { education_stage: 'primary' })
+  await page.flush()
+  assert.equal(newPaperLabel(root), '新建出题：小学数学 · 自动跟随个人资料')
+  assert.equal(paperStage(root), '高中 · 本试卷学段已固定')
+  assert.equal(server.seen.chapters.at(-1).profile.education_stage, 'primary')
+  assert.equal(server.seen.students.at(-1).education_stage, 'primary')
+  assert.deepEqual(optionValues(student(root)), [['虚拟学生', 7]])
+  await choose(root, '题库抽题')
+  assert.deepEqual(options(bankChapters(root)), ['primary-chapter'])
+  await click(root, 'el-button', '生成 A3 双栏 Word')
+  assert.equal(server.seen.exports.length, 1)
+  for (const { data } of server.seen.exports) assert.deepEqual(data.teaching_context, context)
 })
 
 test('a restored primary paper retains primary labels and export context after profile changes', async t => {
   const context = { education_stage: 'primary', curriculum_version: 'primary-test-catalog', rules_version: 'primary-test-rules' }
-  const { auth, state, exports } = mount(t, {
+  const { page, root, profiles, server } = await openExercise(t, {
     user: { id: 7, education_stage: 'primary' },
     saved: { title: '小学合成卷', exercises: [{ type: 'fill', question: '2+3=____', answer: '5' }], teaching_context: context },
   })
-  await settle()
-  assert.equal(state.profileStageLabel.value, '小学数学')
-  assert.equal(state.stageLabel.value, '小学')
-  auth.user.education_stage = 'junior'
-  await settle()
-  assert.equal(state.profileStageLabel.value, '初中数学')
-  assert.equal(state.stageLabel.value, '小学')
-  await state.onExport()
-  await state.onExportAnswerSheet()
-  assert.equal(exports.length, 2)
-  for (const payload of exports) assert.deepEqual(payload.teaching_context, context)
+  assert.equal(newPaperLabel(root), '新建出题：小学数学 · 自动跟随个人资料')
+  assert.equal(paperStage(root), '小学 · 本试卷学段已固定')
+  changeProfile(page, profiles, { education_stage: 'junior' })
+  await page.flush()
+  assert.equal(newPaperLabel(root), '新建出题：初中数学 · 自动跟随个人资料')
+  assert.equal(paperStage(root), '小学 · 本试卷学段已固定')
+  await exportBoth(root)
+  assert.equal(server.seen.exports.length, 2)
+  for (const { data } of server.seen.exports) assert.deepEqual(data.teaching_context, context)
 })
 
 test('an older failed catalog request cannot clear the newer profile catalog', async t => {
   const previous = deferred()
-  const { auth, state } = mount(t, {
-    chapters: user => user.education_stage === 'senior' ? previous.promise : Promise.resolve([{ chapter: '初中章' }]),
+  const { page, root, profiles, server } = await openExercise(t, {
+    chapters: user => (user.education_stage === 'senior' ? previous.promise : [{ chapter: '初中章' }]),
     saved: { exercises: [{ type: 'fill', question: '历史题', answer: '2' }] },
   })
-  auth.user.education_stage = 'junior'
-  await settle()
-  previous.reject(new Error('old request failed'))
-  await settle()
-  assert.deepEqual(state.chapters.value, [{ chapter: '初中章' }])
-  assert.deepEqual(state.paperTeachingContext.value, {})
-  assert.equal(state.stageLabel.value, '历史未标学段')
+  changeProfile(page, profiles, { education_stage: 'junior' })
+  await page.flush()
+  previous.resolve(failure(500, { detail: '旧目录请求失败' }))
+  await page.flush()
+  await choose(root, '题库抽题')
+  assert.deepEqual(options(bankChapters(root)), ['初中章'])
+  // The legacy paper restored without a stage stays labelled so and exports no context.
+  assert.equal(paperStage(root), '历史未标学段 · 本试卷学段已固定')
+  await click(root, 'el-button', '生成 A3 双栏 Word')
+  assert.deepEqual(server.seen.exports[0].data.teaching_context, {})
 })
 
 test('clearing the account invalidates pending choices without making unauthenticated requests', async t => {
   const catalog = deferred(), studentList = deferred()
-  const { auth, state, catalogCalls, studentCalls } = mount(t, {
+  const { page, root, server, auth } = await openExercise(t, {
     chapters: () => catalog.promise,
     students: () => studentList.promise,
   })
-  auth.user = null
+  auth.clearSession()
   catalog.resolve([{ chapter: '前账户章节' }])
   studentList.resolve([{ id: 7, name: '前账户学生' }])
-  await settle()
-  assert.deepEqual(state.chapters.value, [])
-  assert.deepEqual(state.students.value, [])
-  assert.equal(catalogCalls.length, 1)
-  assert.equal(studentCalls.length, 1)
-  assert.equal(state.profileStageLabel.value, '请先完善学段')
+  await page.flush()
+  assert.deepEqual(options(bankChapters(root)), [])
+  await choose(root, '个人薄弱巩固')
+  assert.deepEqual(options(student(root)), [])
+  assert.deepEqual(options(weakChapters(root)), [])
+  assert.equal(server.calls('get /teacher/chapters').length, 1)
+  assert.equal(server.calls('get /student/list').length, 1)
+  assert.deepEqual(server.keys(), ['get /teacher/chapters', 'get /student/list'])
+  assert.equal(newPaperLabel(root), '新建出题：请先完善学段 · 自动跟随个人资料')
+})
+
+test('clearing the account removes already loaded students and chapters without new requests', async t => {
+  const { page, root, server, auth } = await openExercise(t)
+  await choose(root, '个人薄弱巩固')
+  // The signed-in teacher's students and directory have arrived.
+  assert.deepEqual(optionValues(student(root)), [['虚拟学生', 7]])
+  assert.deepEqual(options(weakChapters(root)), ['senior-chapter'])
+  const sent = server.keys()
+  assert.deepEqual(sent, ['get /teacher/chapters', 'get /student/list'])
+
+  auth.clearSession()
+  await page.flush()
+  // Nothing from the signed-out account is left to pick.
+  assert.deepEqual(options(student(root)), [])
+  assert.deepEqual(options(weakChapters(root)), [])
+  await choose(root, '题库抽题')
+  assert.deepEqual(options(bankChapters(root)), [])
+  assert.deepEqual(server.keys(), sent)
+  assert.equal(newPaperLabel(root), '新建出题：请先完善学段 · 自动跟随个人资料')
 })

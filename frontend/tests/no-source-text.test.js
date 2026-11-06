@@ -18,9 +18,6 @@ import { sourceTextReads, sourceTextReadsOf } from './helpers/sourceTextReads.js
 // longer has.
 const KNOWN_SOURCE_TEXT_READS = {
   'answer-sheet-workflow.test.js': ['views/AnswerSheet.vue'],
-  'bank-photo-stage-runtime.test.js': ['views/BankPhotoImport.vue'],
-  'bank-profile-scope-runtime.test.js': ['views/Bank.vue'],
-  'bank-stage-contract.test.js': ['views/Bank.vue', 'views/BankPhotoImport.vue', 'views/PendingAnswers.vue'],
   'batch-report.test.js': ['views/Upload.vue'],
   'class-table-render-contract.test.js': ['views/ClassTable.vue'],
   'courseware-covers.test.js': ['components/CoursewareCover.vue', 'views/Courseware.vue'],
@@ -29,12 +26,8 @@ const KNOWN_SOURCE_TEXT_READS = {
   'desktop-startup-splash.test.js': ['main.js'],
   'drawing-assessment.test.mjs': ['components/DrawingAssessment.vue'],
   'drawing-reference.test.mjs': ['components/DrawingReferenceEditor.vue'],
-  'exercise-mode-contract.test.js': ['views/Exercise.vue'],
-  'exercise-profile-stage.test.js': ['views/Exercise.vue'],
-  'exercise-restore-runtime.test.js': ['views/Exercise.vue'],
   'grading-display.test.js': ['components/GradingProgress.vue', 'components/InkSpinner.vue', 'components/SheetLoader.vue', 'views/AnswerSheet.vue', 'views/Stats.vue', 'views/Upload.vue'],
   'grading-quick-dock.test.mjs': ['components/GradingQuickDock.vue'],
-  'knowledge-classification.test.js': ['views/Bank.vue', 'views/PendingAnswers.vue'],
   'math-stage-profile-views.test.js': ['views/${page}.vue'],
   'model-button-single-flight.test.js': ['views/${name}'],
   'ordinary-paper-review-workbench.test.js': ['views/Upload.vue'],
