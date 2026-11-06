@@ -7,6 +7,7 @@ import pytest
 from services.teaching_context import (
     current_teaching_context, make_teaching_context, use_teaching_context,
 )
+from routers import grade_papers
 
 
 def test_office_profile_gate_precedes_file_read_and_model(monkeypatch):
@@ -70,8 +71,8 @@ def test_student_ocr_uses_batch_snapshot_not_profile_context(monkeypatch, tmp_pa
     async def recognize(*args, **kwargs):
         calls.append(current_teaching_context())
         return {"questions": []}
-    monkeypatch.setattr(grade, "recognize_student_info_with_roster", identity)
-    monkeypatch.setattr(grade, "recognize_paper_with_cache", recognize)
+    monkeypatch.setattr(grade_papers, "recognize_student_info_with_roster", identity)
+    monkeypatch.setattr(grade_papers, "recognize_paper_with_cache", recognize)
     with use_teaching_context(make_teaching_context("senior")):
         result = asyncio.run(grade._recognize_batch_upload(
             batch, "synthetic.png", object(), teacher_id="1", paper_id="p1",

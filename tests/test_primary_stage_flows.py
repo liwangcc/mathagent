@@ -35,6 +35,7 @@ from services.teaching_context import (
     current_teaching_context, make_teaching_context, stage_prompt,
     use_teaching_context, validate_teaching_context,
 )
+from routers import grade_papers
 
 
 STAGES = ("primary", "junior", "senior")
@@ -178,8 +179,8 @@ def test_student_ocr_reuses_primary_batch_even_after_profile_change(monkeypatch,
         seen.append(current_teaching_context())
         return {"questions": []}
 
-    monkeypatch.setattr(grade, "recognize_student_info_with_roster", identity)
-    monkeypatch.setattr(grade, "recognize_paper_with_cache", recognize)
+    monkeypatch.setattr(grade_papers, "recognize_student_info_with_roster", identity)
+    monkeypatch.setattr(grade_papers, "recognize_paper_with_cache", recognize)
     with use_teaching_context(make_teaching_context("junior")):
         result = asyncio.run(grade._recognize_batch_upload(
             batch, "never-read-synthetic.png", object(), teacher_id="1", paper_id="p1",

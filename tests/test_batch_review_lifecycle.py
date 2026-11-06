@@ -28,6 +28,7 @@ from models_user import User
 from routers.auth import _require_user
 from services.quick_grader import BatchOperationBusy, QuickBatch, batch_operation_lock
 from tests.grade_family import set_grade_global
+from routers import grade_papers
 
 
 def _hold_batch_lock_in_child(upload_dir: str, batch_id: str, ready, release) -> None:
@@ -987,7 +988,7 @@ def test_review_image_recovers_old_boxes_from_the_matched_template_page(monkeypa
         details[0]["answer_bboxes"] = [[200, 200, 300, 240]]
         mapped.append(True)
         return details
-    monkeypatch.setattr(grade_router, "align_template_review_details", align)
+    monkeypatch.setattr(grade_papers, "align_template_review_details", align)
     response = client.get("/api/batch-grade/review-batch/paper/p1/image?variant=review")
     assert response.status_code == 200, response.text
     assert mapped

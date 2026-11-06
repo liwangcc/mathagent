@@ -21,6 +21,7 @@ from services.quick_grader import QuickBatch, batch_ocr_summary, mark_ocr_outcom
 from services.template_session import TemplateSession
 from tests.grade_family import set_grade_global
 from routers import grade_availability
+from routers import grade_papers
 
 
 def _events(response):
@@ -150,8 +151,8 @@ def test_collection_source_paths_survive_upload_ocr_checkpoint_and_identity_plan
             "question_number": "1", "question_text": "1+1=?", "question_type": "fill", "student_answer": "2",
         }]}
 
-    monkeypatch.setattr(grade_router, "recognize_student_info_with_roster", blank_identity)
-    monkeypatch.setattr(grade_router, "recognize_paper_with_cache", recognized_answers)
+    monkeypatch.setattr(grade_papers, "recognize_student_info_with_roster", blank_identity)
+    monkeypatch.setattr(grade_papers, "recognize_paper_with_cache", recognized_answers)
     paths = [
         "收集.zip/张三/abc.jpg", "收集.zip/李四/abc.jpg",
         "收集.zip/随机目录1/张三_1.jpg", "收集.zip/随机目录2/李四_1.jpg",
@@ -291,7 +292,7 @@ def test_resume_disconnect_does_not_consume_second_ocr_attempt(monkeypatch, tmp_
         started.set()
         await asyncio.Event().wait()
 
-    monkeypatch.setattr(grade_router, "recognize_paper_with_cache", blocked_recognition)
+    monkeypatch.setattr(grade_papers, "recognize_paper_with_cache", blocked_recognition)
     async def forbidden_hardware(*_args, **_kwargs):
         raise AssertionError("recognition recovery must not probe accelerator hardware")
     monkeypatch.setattr(
@@ -395,7 +396,7 @@ def test_accelerator_wait_keeps_batch_resumable_without_failure_placeholder(
         }
 
     monkeypatch.setattr(
-        grade_router,
+        grade_papers,
         "recognize_paper_with_cache",
         wait_for_accelerator,
     )
@@ -486,7 +487,7 @@ def test_accelerator_wait_during_resume_preserves_success_and_queued_work(
             }],
         }
 
-    monkeypatch.setattr(grade_router, "recognize_paper_with_cache", mixed_result)
+    monkeypatch.setattr(grade_papers, "recognize_paper_with_cache", mixed_result)
 
     response = client.post(
         f"/api/batch-grade/{batch.batch_id}/recognize/resume"
@@ -551,7 +552,7 @@ def test_resume_done_survives_immediate_stream_close(monkeypatch, tmp_path):
             }],
         }
 
-    monkeypatch.setattr(grade_router, "recognize_paper_with_cache", recognize)
+    monkeypatch.setattr(grade_papers, "recognize_paper_with_cache", recognize)
 
     async def scenario():
         response = await grade_router.batch_grade_resume_recognition(
@@ -645,7 +646,7 @@ def test_recognition_resume_only_runs_unfinished_jobs(monkeypatch, tmp_path):
             }],
         }
 
-    monkeypatch.setattr(grade_router, "recognize_paper_with_cache", fake_full)
+    monkeypatch.setattr(grade_papers, "recognize_paper_with_cache", fake_full)
 
     response = client.post(f"/api/batch-grade/{batch.batch_id}/recognize/resume")
     assert response.status_code == 200
@@ -756,7 +757,7 @@ def test_recognition_resume_requeues_one_transient_failure(monkeypatch, tmp_path
             }],
         }
 
-    monkeypatch.setattr(grade_router, "recognize_paper_with_cache", recognize)
+    monkeypatch.setattr(grade_papers, "recognize_paper_with_cache", recognize)
 
     response = client.post(f"/api/batch-grade/{batch.batch_id}/recognize/resume")
     assert response.status_code == 200
@@ -824,7 +825,7 @@ def test_second_transient_failure_is_not_run_a_third_time(monkeypatch, tmp_path)
             "_ocr_error_code": "provider_timeout",
         }
 
-    monkeypatch.setattr(grade_router, "recognize_paper_with_cache", transient_failure)
+    monkeypatch.setattr(grade_papers, "recognize_paper_with_cache", transient_failure)
 
     second_attempt = client.post(
         f"/api/batch-grade/{batch.batch_id}/recognize/resume"
@@ -892,7 +893,7 @@ def test_recognition_resume_does_not_requeue_exhausted_failure(monkeypatch, tmp_
     async def forbidden(*_args, **_kwargs):
         raise AssertionError("an exhausted OCR job must not run again")
 
-    monkeypatch.setattr(grade_router, "recognize_paper_with_cache", forbidden)
+    monkeypatch.setattr(grade_papers, "recognize_paper_with_cache", forbidden)
 
     response = client.post(f"/api/batch-grade/{batch.batch_id}/recognize/resume")
     assert response.status_code == 200
@@ -989,7 +990,7 @@ def test_template_batch_respects_ocr_dispatch_concurrency(monkeypatch, tmp_path)
 
     import routers.grade as grade_router
     from routers import grade_recognition
-    monkeypatch.setattr(grade_router, "recognize_paper_with_cache", fake_cached)
+    monkeypatch.setattr(grade_papers, "recognize_paper_with_cache", fake_cached)
     monkeypatch.setattr(grade_recognition, "OCR_BATCH_DISPATCH_CONCURRENT", 3)
     monkeypatch.setattr(grade_recognition, "OCR_TEACHER_WAVE_SIZE", 7)
     async def fake_identity(*_args, **_kwargs):
@@ -1001,7 +1002,7 @@ def test_template_batch_respects_ocr_dispatch_concurrency(monkeypatch, tmp_path)
             "match_status": "matched",
         }
     monkeypatch.setattr(
-        grade_router,
+        grade_papers,
         "recognize_student_info_with_roster",
         fake_identity,
     )
@@ -1100,7 +1101,7 @@ def test_template_resume_after_accelerator_wait_dispatches_at_batch_window(
         finally:
             active -= 1
 
-    monkeypatch.setattr(grade_router, "recognize_paper_with_cache", fake_cached)
+    monkeypatch.setattr(grade_papers, "recognize_paper_with_cache", fake_cached)
     files = [
         (
             "files",
@@ -1189,7 +1190,7 @@ def test_anonymous_template_batch_disables_identity_during_ocr(monkeypatch, tmp_
 
     import routers.grade as grade_router
     monkeypatch.setattr(
-        grade_router,
+        grade_papers,
         "recognize_paper_with_cache",
         fake_cached,
     )
@@ -1245,7 +1246,7 @@ def test_single_page_template_ocr_failures_become_review_placeholders(monkeypatc
         assert paper_cache._baselines
         return {"error": "OCR超时", "questions": []}
 
-    monkeypatch.setattr(grade_router, "recognize_paper_with_cache", failing_ocr)
+    monkeypatch.setattr(grade_papers, "recognize_paper_with_cache", failing_ocr)
 
     async def hardware_ready(_teacher_id, **_contract):
         return {"status": "ready", "message": "加速节点已就绪"}

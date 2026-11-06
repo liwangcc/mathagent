@@ -33,6 +33,9 @@ from routers.grade_common import (
     _settle_template_component,
     _sse,
 )
+from routers.grade_papers import (
+    _recognize_batch_upload,
+)
 
 
 async def _recognize_upload(
@@ -190,7 +193,6 @@ async def _ocr_phase_events(
 from routers.grade import (  # noqa: E402
     _RecognitionRun,
     _ensure_batch_upload_inspected,
-    _recognize_batch_upload,
     logger,
 )
 # The per-paper grading pipeline lives in routers/grade_pipeline.py.

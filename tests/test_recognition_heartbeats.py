@@ -27,6 +27,7 @@ from tests.test_recognition_stream_characterization import (
     _direct_recognize,
     _template,
 )
+from routers import grade_papers
 from routers import grade_report
 
 OCR_WAIT = "正在进行本地配准与答案区域预处理，请稍候"
@@ -169,7 +170,7 @@ def test_initial_recognition_heartbeats_while_ocr_is_pending(monkeypatch, tmp_pa
     _template(tmp_path)
     _Boundary(monkeypatch)
     heard = asyncio.Event()
-    _hold_until(monkeypatch, grade, "recognize_paper_with_cache", heard, wrap=_block_ocr)
+    _hold_until(monkeypatch, grade_papers, "recognize_paper_with_cache", heard, wrap=_block_ocr)
 
     async def scenario():
         return await _consume(await _direct_recognize(Session, 1), heard, message=OCR_WAIT)
@@ -194,7 +195,7 @@ def test_resume_heartbeats_while_ocr_is_pending(monkeypatch, tmp_path):
     _checkpoint(tmp_path, jobs=("succeeded", "queued"))
     _Boundary(monkeypatch)
     heard = asyncio.Event()
-    _hold_until(monkeypatch, grade, "recognize_paper_with_cache", heard, wrap=_block_ocr)
+    _hold_until(monkeypatch, grade_papers, "recognize_paper_with_cache", heard, wrap=_block_ocr)
 
     async def scenario():
         response = await grade.batch_grade_resume_recognition(

@@ -71,6 +71,11 @@ from routers.grade_contract import (
     _mark_unverified_answer_alignment,
     _reject_answer_key_matching_local_recoveries,
 )
+from routers.grade_papers import (
+    _anonymous_page_identity,
+    _require_complete_batch_ocr,
+    _require_orientation_ready,
+)
 
 _GENERIC_GRADE_ERROR = "批改处理失败，请稍后重试"
 # Reserve nine minutes for the text-only Flash grading stage after the
@@ -1184,10 +1189,7 @@ def _grading_elapsed_seconds(batch: QuickBatch) -> float | None:
 from routers.grade import (  # noqa: E402
     ConfirmReq,
     _REVIEW_FINISHED_STATUSES,
-    _anonymous_page_identity,
     _prepare_anonymous_identity_plan,
     _prepare_identity_plan,
-    _require_complete_batch_ocr,
-    _require_orientation_ready,
     logger,
 )

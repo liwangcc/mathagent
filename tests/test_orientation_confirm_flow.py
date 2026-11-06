@@ -13,6 +13,7 @@ from services.paper_orientation import sha256_file
 from services.quick_grader import QuickBatch
 from services.template_session import TemplateSession
 from tests.grade_family import set_grade_global
+from routers import grade_papers
 
 
 class _Query:
@@ -145,7 +146,7 @@ async def test_orientation_confirm_retries_once_and_preserves_original(tmp_path,
             }
         }
 
-    monkeypatch.setattr(grade, "recognize_paper_with_cache", fake_recognize)
+    monkeypatch.setattr(grade_papers, "recognize_paper_with_cache", fake_recognize)
     monkeypatch.setattr(grade_pipeline, "_initialize_batch_answer_map", fake_initialize)
     monkeypatch.setattr(grade, "_initialize_batch_answer_map", fake_initialize)
     set_grade_global(monkeypatch, "RateLimiter", _Limiter)
@@ -250,7 +251,7 @@ async def test_orientation_confirm_does_not_override_continuous_tilt(tmp_path, m
     async def forbidden_ocr(*args, **kwargs):
         raise AssertionError("tilted paper must not enter OCR")
 
-    monkeypatch.setattr(grade, "recognize_paper_with_cache", forbidden_ocr)
+    monkeypatch.setattr(grade_papers, "recognize_paper_with_cache", forbidden_ocr)
     with pytest.raises(HTTPException) as rejected:
         await grade.batch_grade_confirm_orientation(
             "batch-tilted",

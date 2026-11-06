@@ -34,6 +34,7 @@ from services.template_session import TemplateSession
 from tests.grade_family import set_grade_global
 from routers import grade_availability
 from routers import grade_report
+from routers import grade_papers
 
 
 @pytest.fixture(autouse=True)
@@ -195,7 +196,7 @@ def test_prepared_student_pages_wait_for_final_template_confirmation(monkeypatch
         pytest.fail("Student comparison/OCR started before the answer and geometry contracts were confirmed")
 
     monkeypatch.setattr(grade_router, "_build_template_paper_cache", no_comparison_before_confirmation)
-    monkeypatch.setattr(grade_router, "recognize_paper_with_cache", no_comparison_before_confirmation)
+    monkeypatch.setattr(grade_papers, "recognize_paper_with_cache", no_comparison_before_confirmation)
     response = _recognize(
         client, "pending-template", ["prepared.ocr-ready-v1.jpg"], ["prepared.jpg"],
     )
@@ -246,8 +247,8 @@ def test_recognition_stream_pipelines_grading_per_paper(monkeypatch, tmp_path):
             "question_number": "1", "question_text": "1+1=?", "question_type": "fill", "student_answer": "2",
         }]}
 
-    monkeypatch.setattr(grade_router, "recognize_student_info_with_roster", blank_identity)
-    monkeypatch.setattr(grade_router, "recognize_paper_with_cache", recognized_answers)
+    monkeypatch.setattr(grade_papers, "recognize_student_info_with_roster", blank_identity)
+    monkeypatch.setattr(grade_papers, "recognize_paper_with_cache", recognized_answers)
     # The held OCR waits for a result streamed during the OCR phase itself.
     monkeypatch.setattr(grade_recognition, "_pipeline_result_sse", observe_result_sse)
 
@@ -304,7 +305,7 @@ def test_grading_stopwatch_spans_pipeline_and_confirm(monkeypatch, tmp_path):
             "question_number": "1", "question_text": "1+1=?", "question_type": "fill", "student_answer": "2",
         }]}
 
-    monkeypatch.setattr(grade_router, "recognize_paper_with_cache", recognized_answers)
+    monkeypatch.setattr(grade_papers, "recognize_paper_with_cache", recognized_answers)
     response = client.post("/api/batch-grade/recognize", files=[
         ("files", (f"page-{index}.ocr-ready-v1.jpg", f"synthetic-{index}".encode(), "image/jpeg"))
         for index in range(2)
@@ -374,8 +375,8 @@ def test_pipeline_never_grades_papers_with_unresolved_identity(monkeypatch, tmp_
             "question_number": "1", "question_text": "1+1=?", "question_type": "fill", "student_answer": "2",
         }]}
 
-    monkeypatch.setattr(grade_router, "recognize_student_info_with_roster", blank_identity)
-    monkeypatch.setattr(grade_router, "recognize_paper_with_cache", recognized_answers)
+    monkeypatch.setattr(grade_papers, "recognize_student_info_with_roster", blank_identity)
+    monkeypatch.setattr(grade_papers, "recognize_paper_with_cache", recognized_answers)
 
     response = _recognize(
         client, "identity-template",
@@ -679,9 +680,9 @@ def test_blank_pages_inherit_the_previous_page_identity_only_when_enabled(monkey
             "student_answer": "2" if page == 1 else "4",
         }]}
 
-    monkeypatch.setattr(grade_router, "recognize_student_info_with_roster", identity)
-    monkeypatch.setattr(grade_router, "recognize_paper_with_cache", answers)
-    monkeypatch.setattr(grade_router, "_ingest_recognized_paper", observe_ingest)
+    monkeypatch.setattr(grade_papers, "recognize_student_info_with_roster", identity)
+    monkeypatch.setattr(grade_papers, "recognize_paper_with_cache", answers)
+    set_grade_global(monkeypatch, "_ingest_recognized_paper", observe_ingest)
     monkeypatch.setattr(grade_recognition, "OCR_BATCH_DISPATCH_CONCURRENT", 5)
 
     # The browser order is shuffled; inheritance must follow the file names.

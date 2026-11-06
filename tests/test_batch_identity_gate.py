@@ -23,6 +23,7 @@ from services.quick_grader import QuickBatch
 from services.student_service import resolve_student_identity
 from tests.grade_family import set_grade_global
 from routers import grade_availability
+from routers import grade_papers
 
 
 def _parse_sse(text: str) -> list[tuple[str, dict]]:
@@ -490,11 +491,11 @@ def test_unresolved_identity_does_not_run_server_roster_crop(
         return {"questions": [{"question_number": "1"}]}
 
     monkeypatch.setattr(
-        grade_router,
+        grade_papers,
         "recognize_student_info_with_roster",
         unreadable_identity,
     )
-    monkeypatch.setattr(grade_router, "recognize_paper_with_cache", recognized_answers)
+    monkeypatch.setattr(grade_papers, "recognize_paper_with_cache", recognized_answers)
     batch = QuickBatch("unresolved-identity", grade_router.UPLOAD_DIR)
     result = asyncio.run(grade_router._recognize_batch_upload(
         batch,
@@ -573,9 +574,9 @@ def test_batch_ocr_reads_identity_before_template_answer_ocr(identity_app, monke
         return {"questions": []}
 
     monkeypatch.setattr(
-        grade_router, "recognize_student_info_with_roster", fake_identity,
+        grade_papers, "recognize_student_info_with_roster", fake_identity,
     )
-    monkeypatch.setattr(grade_router, "recognize_paper_with_cache", fake_answer_ocr)
+    monkeypatch.setattr(grade_papers, "recognize_paper_with_cache", fake_answer_ocr)
 
     from services.quick_grader import QuickBatch
     batch = QuickBatch("identity-order", _client.app.state.upload_dir)

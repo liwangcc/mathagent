@@ -15,6 +15,7 @@ from services.quick_grader import QuickBatch
 from tests.test_batch_calibration_flow import _confirmed_template, _events, _setup
 from routers import grade_availability
 from routers import grade_report
+from routers import grade_papers
 
 
 @pytest.fixture(autouse=True)
@@ -81,7 +82,7 @@ def forbid_ocr(monkeypatch):
     async def forbidden(*_args, **_kwargs):
         pytest.fail("Already checkpointed OCR must not be requested again")
 
-    monkeypatch.setattr(grade, "recognize_paper_with_cache", forbidden)
+    monkeypatch.setattr(grade_papers, "recognize_paper_with_cache", forbidden)
     # Per-upload OCR inspects in grade_recognition, batch inspections in routers.grade.
     monkeypatch.setattr(grade_recognition, "_ensure_batch_upload_inspected", forbidden)
     monkeypatch.setattr(grade, "_ensure_batch_upload_inspected", forbidden)
@@ -157,7 +158,7 @@ def test_resume_grades_saved_ungraded_papers_and_preserves_valid_result(monkeypa
                 "question_number": "1", "question_text": "1+1=?", "question_type": "fill", "student_answer": "2",
             }]}
 
-        monkeypatch.setattr(grade, "recognize_paper_with_cache", recognize)
+        monkeypatch.setattr(grade_papers, "recognize_paper_with_cache", recognize)
     else:
         forbid_ocr(monkeypatch)
     batch.save_meta()

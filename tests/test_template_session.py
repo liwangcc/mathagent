@@ -49,6 +49,7 @@ from services.template_evidence import CanonicalTemplate, canonicalize_template_
 from tests.grade_family import set_grade_global
 from routers import grade_availability
 from routers import grade_report
+from routers import grade_papers
 
 
 @pytest.fixture(autouse=True)
@@ -570,7 +571,7 @@ def test_recognize_rejects_legacy_contract_until_teacher_reconfirms(monkeypatch,
             "question_type": "choice",
         }]}
 
-    monkeypatch.setattr(gr_router, "recognize_paper_with_cache", recognized_student)
+    monkeypatch.setattr(grade_papers, "recognize_paper_with_cache", recognized_student)
     set_grade_global(monkeypatch, "_validate_client_ocr_ready_upload", lambda _filename, _content: {"safe": True})
     accepted = client.post(
         "/api/batch-grade/recognize",
@@ -2857,7 +2858,7 @@ def test_recognize_with_template_uses_template_authority(monkeypatch, tmp_path):
             {"question_number": "1", "question_text": "学生卷噪声题干",
              "student_answer": "学生写的", "question_type": "solve"},
         ]}
-    monkeypatch.setattr(gr_router, "recognize_paper_with_cache", _mock_recognize_paper)
+    monkeypatch.setattr(grade_papers, "recognize_paper_with_cache", _mock_recognize_paper)
 
     client = _client(Session, monkeypatch)
     r = client.post(
@@ -3011,7 +3012,7 @@ def test_concurrent_template_recognize_cannot_overwrite_freeze(monkeypatch, tmp_
     async def _mock_identity(*args, **kwargs):
         return {"name": "张三", "student_no": "", "confidence": 1}
 
-    monkeypatch.setattr(gr_router, "recognize_student_info_with_roster", _mock_identity)
+    monkeypatch.setattr(grade_papers, "recognize_student_info_with_roster", _mock_identity)
 
     sess = TemplateSession("concurrent-freeze", str(tmp_path), teacher_id=1)
     sess.status = "confirmed"
@@ -3033,7 +3034,7 @@ def test_concurrent_template_recognize_cannot_overwrite_freeze(monkeypatch, tmp_
         }]}
 
     monkeypatch.setattr(
-        gr_router,
+        grade_papers,
         "recognize_paper_with_cache",
         _mock_recognize_paper,
     )
@@ -3104,7 +3105,7 @@ def test_recognize_with_template_preserves_custom_fill_scoring_contract(monkeypa
             "question_number": "8", "question_text": "学生卷题干",
             "student_answer": "2；4", "question_type": "fill",
         }]}
-    monkeypatch.setattr(gr_router, "recognize_paper_with_cache", _mock_recognize_paper)
+    monkeypatch.setattr(grade_papers, "recognize_paper_with_cache", _mock_recognize_paper)
 
     response = _client(Session, monkeypatch).post(
         "/api/batch-grade/recognize",
@@ -3848,7 +3849,7 @@ def test_graphic_import_hand_draw_confirm_and_freeze_keep_original_type(
             {"question_number": "1", "student_answer": "1", "question_type": "fill"},
             {"question_number": "2", "student_answer": "A" if question_type == "choice" else "绘图",
              "question_type": question_type}]}
-    monkeypatch.setattr(gr_router, "recognize_paper_with_cache", recognize_student)
+    monkeypatch.setattr(grade_papers, "recognize_paper_with_cache", recognize_student)
     frozen = client.post("/api/batch-grade/recognize",
         data={"category": "daily", "mode": "precise", "template_id": sess.template_id},
         files=[("files", ("synthetic.ocr-ready-v1.jpg", _ocr_ready_jpeg_bytes("SYNTHETIC"), "image/jpeg"))])

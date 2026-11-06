@@ -40,6 +40,7 @@ from services.quick_grader import BatchOperationBusy, QuickBatch, batch_operatio
 from tests.test_batch_calibration_flow import _events, _setup
 from tests.grade_family import set_grade_global
 from routers import grade_report
+from routers import grade_papers
 
 
 GOLDEN_DIR = Path(__file__).parent / "golden" / "recognition_stream"
@@ -222,8 +223,8 @@ class _Boundary:
             }))
 
         self.recognize = recognize
-        monkeypatch.setattr(grade, "recognize_paper_with_cache", recognize)
-        monkeypatch.setattr(grade, "recognize_student_info_with_roster", identity)
+        monkeypatch.setattr(grade_papers, "recognize_paper_with_cache", recognize)
+        monkeypatch.setattr(grade_papers, "recognize_student_info_with_roster", identity)
 
     def record(self) -> dict:
         return {"ocr_calls": self.ocr_calls, "identity_calls": self.identity_calls}
@@ -441,7 +442,7 @@ def test_recognize_follower_finishes_before_its_anchor(monkeypatch, tmp_path):
         return result
 
     import routers.grade as grade
-    monkeypatch.setattr(grade, "recognize_paper_with_cache", anchor_last)
+    monkeypatch.setattr(grade_papers, "recognize_paper_with_cache", anchor_last)
 
     response = _recognize(client, 2, inherit_identity="true")
 
@@ -883,14 +884,14 @@ def test_resume_disconnect_while_page_is_recognized(monkeypatch, tmp_path):
     _checkpoint(tmp_path, jobs=("succeeded", "queued"))
     boundary = _Boundary(monkeypatch)
     started = asyncio.Event()
-    recognize = grade.recognize_paper_with_cache
+    recognize = grade_papers.recognize_paper_with_cache
 
     async def blocked(image_path, batch_id, paper_cache, **kwargs):
         await recognize(image_path, batch_id, paper_cache, **kwargs)
         started.set()
         await asyncio.Event().wait()
 
-    monkeypatch.setattr(grade, "recognize_paper_with_cache", blocked)
+    monkeypatch.setattr(grade_papers, "recognize_paper_with_cache", blocked)
 
     async def scenario():
         response = await grade.batch_grade_resume_recognition(
@@ -1049,7 +1050,7 @@ def test_recognize_cancelled_while_page_is_recognized(monkeypatch, tmp_path):
             await asyncio.Event().wait()
         return result
 
-    monkeypatch.setattr(grade, "recognize_paper_with_cache", second_page_blocks)
+    monkeypatch.setattr(grade_papers, "recognize_paper_with_cache", second_page_blocks)
 
     async def scenario():
         response = await _direct_recognize(Session, 2)

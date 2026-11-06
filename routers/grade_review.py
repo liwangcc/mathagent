@@ -26,10 +26,6 @@ from models import GradingCorrection, Student
 from models_rate_limit import TeacherClass
 from models_user import User
 from routers.auth import _require_user
-from routers.grade import (
-    _RAW_PAPER_EXPIRED_MESSAGE,
-    _batch_review_image_path,
-)
 from routers.grade_common import (
     _review_avg_score,
     _stable_review_image_hash,
@@ -40,6 +36,10 @@ from routers.grade_common import (
 )
 from routers.grade_report import (
     _batch_report_response,
+)
+from routers.grade_papers import (
+    _RAW_PAPER_EXPIRED_MESSAGE,
+    _batch_review_image_path,
 )
 
 logger = logging.getLogger(__name__)
