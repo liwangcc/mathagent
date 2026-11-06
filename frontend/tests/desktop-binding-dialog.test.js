@@ -1,8 +1,10 @@
 import assert from 'node:assert/strict'
-import { readFileSync } from 'node:fs'
 import test from 'node:test'
-import { parse, compileScript, compileTemplate } from '@vue/compiler-sfc'
+import './helpers/srcModules.js'
+import { createPinia } from 'pinia'
 import { createDesktopBindingManager, desktopProcessorReady, formatDesktopBindingError } from '../src/composables/useDesktopBindingDialog.js'
+import { TEACHER, assertAbsent, cpuWorker, desktopBridge, dialogTitled, isOpen, signIn, teleportToBody } from './helpers/homeGuideLayout.js'
+import { mountComponent } from './helpers/mountComponent.js'
 
 const readyWorker = () => ({
   localProcessingAvailable: true, paused: false, computeBackend: 'windows_cpu_opencv',
@@ -172,23 +174,166 @@ test('explicit unbind clears verification without issuing another registration',
   manager.close()
 })
 
-test('real Vue scripts and templates compile and all entries defer writes to one global dialog', () => {
-  for (const path of ['views/Settings.vue', 'views/Profile.vue', 'components/UsageGuideDialog.vue', 'components/DesktopBindingDialog.vue']) {
-    const source = readFileSync(new URL(`../src/${path}`, import.meta.url), 'utf8')
-    const parsed = parse(source, { filename: path })
-    assert.deepEqual(parsed.errors, [])
-    const script = compileScript(parsed.descriptor, { id: path })
-    const template = compileTemplate({ source: parsed.descriptor.template.content, filename: path, id: path, compilerOptions: { bindingMetadata: script.bindings } })
-    assert.deepEqual(template.errors, [])
-    if (!path.endsWith('DesktopBindingDialog.vue')) {
-      assert.doesNotMatch(source, /desktopInvoke\('(bind|unbind|rotate)_teacher_desktop'/)
-    }
-  }
-  const guide = readFileSync(new URL('../src/components/UsageGuideDialog.vue', import.meta.url), 'utf8')
-  assert.equal((guide.match(/<DesktopBindingDialog\s*\/>/g) || []).length, 1)
-  assert.match(guide, /<\/el-dialog>\s*<DesktopBindingDialog \/>/)
-  assert.match(guide, /desktopSetupResolved\.value = outcome\.verified && !outcome\.error && processorReady\.value/)
-  const dialog = readFileSync(new URL('../src/components/DesktopBindingDialog.vue', import.meta.url), 'utf8')
-  assert.match(dialog, /@confirm="manager\.unbind\(\)"/)
-  assert.match(dialog, /返回使用引导/)
+// Mounted pages share one Pinia (see helpers/homeGuideLayout.js): the binding
+// manager is one instance for the whole app.
+const pinia = createPinia()
+const { default: Layout } = await import('../src/views/Layout.vue?sfc')
+const { default: Settings } = await import('../src/views/Settings.vue?sfc')
+const { default: Profile } = await import('../src/views/Profile.vue?sfc')
+const { default: UsageGuideDialog } = await import('../src/components/UsageGuideDialog.vue?sfc')
+const { default: DesktopBindingDialog } = await import('../src/components/DesktopBindingDialog.vue?sfc')
+
+const NODE = 'synthetic-node'
+const ADMIN = { ...TEACHER, role: 'admin' }
+
+// The desktop client, bound and ready, whose first-run check and tour are done.
+function desktopClient() {
+  return desktopBridge({
+    runtime_info: { runtime: 'desktop', webFallbackConfigured: false },
+    desktop_binding_status: { configured: true, nodeId: NODE },
+    get_worker_status: cpuWorker(),
+    bind_teacher_desktop: { configured: true, nodeId: NODE },
+    unbind_teacher_desktop: { configured: false },
+  })
+}
+
+async function signedInDesktop(t) {
+  teleportToBody(t)
+  const { client } = await signIn(pinia, {
+    user: ADMIN,
+    storage: { disclaimer_agreed: 'true', [`mathagent_usage_guide_v3:${ADMIN.id}`]: 'true', [`mathagent_desktop_setup_v1:${ADMIN.id}`]: NODE },
+  })
+  client.respond(() => ({ data: {} }))
+  return client
+}
+
+const bindingDialogs = root => root.findAll(el => el.tagName === 'el-dialog' && el.getAttribute('title') === '本机绑定管理')
+const footerOf = dialog => dialog.find(el => el.tagName === 'el-slot' && el.getAttribute('name') === 'footer')
+const writes = bridge => bridge.commands().filter(command => /_teacher_desktop$/.test(command))
+
+// A page's 本机绑定管理 entry; its handler waits until the dialog closes.
+async function openFrom(page, root = page.root) {
+  root.byText('el-button', '本机绑定管理').dispatch('click')
+  await page.flush()
+  const dialogs = bindingDialogs(page.root)
+  assert.equal(dialogs.length, 1, 'one binding dialog for the whole app')
+  assert.equal(isOpen(dialogs[0]), true)
+  return dialogs[0]
+}
+
+for (const [entry, View, path] of [['settings', Settings, '/settings'], ['profile', Profile, '/profile']]) {
+  test(`the ${entry} page opens the global binding dialog and never writes itself`, async (t) => {
+    const bridge = desktopClient()
+    await signedInDesktop(t)
+    const page = await mountComponent(t, View, { path, layout: Layout, pinia, plugins: [bridge.plugin] })
+    assert.deepEqual(page.errors, [])
+    assert.equal(bindingDialogs(page.root).length, 1, 'the layout renders the dialog, closed')
+    assert.equal(isOpen(bindingDialogs(page.root)[0]), false)
+    const before = bridge.calls.length
+    const dialog = await openFrom(page, page.root.byClass(entry === 'settings' ? 'desktop-acceleration-card' : 'desktop-binding'))
+    assert.equal(footerOf(dialog).text, '完成')
+    assert.deepEqual(bridge.commands().slice(before), ['desktop_binding_status', 'get_worker_status'], 'opening only reads status')
+    assert.deepEqual(writes(bridge), [])
+    await dialog.byText('el-button', '完成').dispatch('click')
+    await page.flush()
+    assert.equal(isOpen(bindingDialogs(page.root)[0]), false)
+    assert.deepEqual(writes(bridge), [])
+  })
+}
+
+test('real Vue scripts and templates compile and all entries defer writes to one global dialog', async (t) => {
+  // The guide's entry: the binding dialog is the shared one, beside (not
+  // inside) the guide's own dialog, and returns to the guide.
+  const bridge = desktopClient()
+  await signedInDesktop(t)
+  const page = await mountComponent(t, UsageGuideDialog, { path: '/upload', pinia, plugins: [bridge.plugin] })
+  await page.vm.exposed.open()
+  await page.flush()
+  const guide = dialogTitled(page.root, '使用引导 · 本机处理检查')
+  assert.equal(isOpen(guide), true)
+  const dialog = await openFrom(page, guide)
+  assert.equal(guide.contains(dialog), false, 'the binding dialog is not nested in the guide dialog')
+  assert.equal(footerOf(dialog).text, '返回使用引导')
+  assert.deepEqual(writes(bridge), [], 'the guide never binds, unbinds or rotates by itself')
+
+  // Writes happen only from the dialog's own buttons.
+  await dialog.byText('el-button', '重新绑定并检测').dispatch('click')
+  await page.flush()
+  assert.deepEqual(bridge.calls.filter(call => call.command === 'bind_teacher_desktop').map(call => call.args), [{ bearerToken: 'teacher-token' }])
+  assert.match(dialog.find(el => el.tagName === 'el-alert').getAttribute('title'), /本机绑定已完成/)
+  assert.match(dialog.text, /已校验当前账号/)
+  const unbind = dialog.find(el => el.tagName === 'el-popconfirm')
+  // Clicking 解除绑定 only asks for confirmation; nothing is unbound yet.
+  await unbind.byText('el-button', '解除绑定').dispatch('click')
+  await page.flush()
+  assert.deepEqual(writes(bridge), ['bind_teacher_desktop'], 'unbinding asks for confirmation first')
+  await unbind.handlers.confirm()
+  await page.flush()
+  assert.deepEqual(writes(bridge), ['bind_teacher_desktop', 'unbind_teacher_desktop'])
+  assert.match(dialog.text, /未登记/)
+  assertAbsent(dialog.find(el => el.tagName === 'el-popconfirm'), 'nothing left to unbind')
+
+  await dialog.byText('el-button', '返回使用引导').dispatch('click')
+  await page.flush()
+  assert.equal(isOpen(dialog), false)
+  assert.equal(isOpen(guide), true, 'back in the guide')
+  assert.match(guide.text, /待绑定/)
+  page.unmount()
+
+  // The dialog compiles and mounts on its own too; it stays closed until a
+  // page opens the manager.
+  const alone = await mountComponent(t, DesktopBindingDialog, { pinia })
+  assert.deepEqual(alone.errors, [])
+  assert.equal(isOpen(bindingDialogs(alone.root)[0]), false)
+})
+
+test('the guide counts the check as resolved only after a verified, error-free, ready binding', async (t) => {
+  const bridge = desktopClient()
+  await signedInDesktop(t)
+  const page = await mountComponent(t, UsageGuideDialog, { path: '/upload', pinia, plugins: [bridge.plugin] })
+  bridge.replies.desktop_binding_status = { configured: true, nodeId: 'another-node' }
+  await page.vm.exposed.open()
+  await page.flush()
+  const guide = dialogTitled(page.root, '使用引导 · 本机处理检查')
+  const complete = () => guide.byClass('guide-footer').byTag('el-button')[0]
+  assert.equal(complete().hasAttribute('disabled'), true, 'a new binding must be checked')
+
+  // Verified, but the processor status could not be read.
+  let dialog = await openFrom(page, guide)
+  bridge.replies.bind_teacher_desktop = { configured: true, nodeId: 'another-node' }
+  bridge.replies.get_worker_status = () => { throw new Error('worker status unavailable') }
+  await dialog.byText('el-button', '重新绑定并检测').dispatch('click')
+  await page.flush()
+  await dialog.byText('el-button', '返回使用引导').dispatch('click')
+  await page.flush()
+  assert.equal(complete().hasAttribute('disabled'), true)
+
+  // Verified, no error, processor ready.
+  bridge.replies.get_worker_status = cpuWorker()
+  dialog = await openFrom(page, guide)
+  await dialog.byText('el-button', '重新绑定并检测').dispatch('click')
+  await page.flush()
+  await dialog.byText('el-button', '返回使用引导').dispatch('click')
+  await page.flush()
+  assert.equal(complete().hasAttribute('disabled'), false)
+
+  // Closing without binding again does not keep an old verification.
+  dialog = await openFrom(page, guide)
+  await dialog.byText('el-button', '返回使用引导').dispatch('click')
+  await page.flush()
+  assert.equal(complete().hasAttribute('disabled'), true)
+
+  // Verified and ready, but the teacher's next action in the dialog failed:
+  // the check is not resolved while that error stands.
+  bridge.replies.unbind_teacher_desktop = () => { throw new Error('Windows credential storage failed') }
+  dialog = await openFrom(page, guide)
+  await dialog.byText('el-button', '重新绑定并检测').dispatch('click')
+  await page.flush()
+  await dialog.find(el => el.tagName === 'el-popconfirm').handlers.confirm()
+  await page.flush()
+  assert.match(dialog.find(el => el.tagName === 'el-alert').getAttribute('title'), /Windows/)
+  assert.match(dialog.text, /已校验当前账号/, 'the failed unbind leaves the verified binding')
+  await dialog.byText('el-button', '返回使用引导').dispatch('click')
+  await page.flush()
+  assert.equal(complete().hasAttribute('disabled'), true)
 })

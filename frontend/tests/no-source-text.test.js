@@ -17,7 +17,6 @@ import { sourceTextReads, sourceTextReadsOf } from './helpers/sourceTextReads.js
 // only shrink: a new read fails, and so does a listed read that a file no
 // longer has.
 const KNOWN_SOURCE_TEXT_READS = {
-  'anonymous-grade.test.js': ['views/AnonymousGrade.vue', 'views/Layout.vue', 'views/Upload.vue'],
   'answer-sheet-workflow.test.js': ['views/AnswerSheet.vue'],
   'bank-photo-stage-runtime.test.js': ['views/BankPhotoImport.vue'],
   'bank-profile-scope-runtime.test.js': ['views/Bank.vue'],
@@ -26,9 +25,7 @@ const KNOWN_SOURCE_TEXT_READS = {
   'class-table-render-contract.test.js': ['views/ClassTable.vue'],
   'courseware-covers.test.js': ['components/CoursewareCover.vue', 'views/Courseware.vue'],
   'courseware.test.js': ['*'],
-  'derived-features.test.js': ['components/ChatBar.vue', 'views/${view}.vue', 'views/Layout.vue'],
   'desktop-auth-contract.test.js': ['views/Settings.vue'],
-  'desktop-binding-dialog.test.js': ['${path}', 'components/DesktopBindingDialog.vue', 'components/UsageGuideDialog.vue'],
   'desktop-startup-splash.test.js': ['main.js'],
   'drawing-assessment.test.mjs': ['components/DrawingAssessment.vue'],
   'drawing-reference.test.mjs': ['components/DrawingReferenceEditor.vue'],
@@ -37,9 +34,7 @@ const KNOWN_SOURCE_TEXT_READS = {
   'exercise-restore-runtime.test.js': ['views/Exercise.vue'],
   'grading-display.test.js': ['components/GradingProgress.vue', 'components/InkSpinner.vue', 'components/SheetLoader.vue', 'views/AnswerSheet.vue', 'views/Stats.vue', 'views/Upload.vue'],
   'grading-quick-dock.test.mjs': ['components/GradingQuickDock.vue'],
-  'home-guidance.test.js': ['components/UsageGuideDialog.vue', 'views/Home.vue'],
   'knowledge-classification.test.js': ['views/Bank.vue', 'views/PendingAnswers.vue'],
-  'local-help.test.js': ['components/HelpButton.vue', 'views/${view}'],
   'math-stage-profile-views.test.js': ['views/${page}.vue'],
   'model-button-single-flight.test.js': ['views/${name}'],
   'ordinary-paper-review-workbench.test.js': ['views/Upload.vue'],
@@ -48,9 +43,7 @@ const KNOWN_SOURCE_TEXT_READS = {
   'report-center.test.js': ['${path}'],
   'stats-contract.test.js': ['views/Stats.vue'],
   'student-detail-error-state.test.js': ['views/StudentDetail.vue'],
-  'system-notice.test.js': ['components/UsageGuideDialog.vue', 'views/Home.vue'],
   'theme-mode.test.js': ['views/Login.vue', 'views/Profile.vue'],
-  'usage-guide-contract.test.js': ['App.vue', 'components/GuidedTour.vue', 'components/UsageGuideDialog.vue', 'views/ClassTable.vue', 'views/Exercise.vue', 'views/Home.vue', 'views/Layout.vue', 'views/Upload.vue'],
 }
 
 // Points at src/ only to resolve and load src modules the way the build does
