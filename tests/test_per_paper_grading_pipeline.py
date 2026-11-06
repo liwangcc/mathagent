@@ -101,15 +101,8 @@ def _setup(monkeypatch, tmp_path):
     set_grade_global(monkeypatch, "UPLOAD_DIR", str(tmp_path))
     monkeypatch.setattr(grade_pipeline, "SessionLocal", Session)
     monkeypatch.setattr(grade_router, "SessionLocal", Session)
-    monkeypatch.setattr(
-        grade_router,
-        "_validate_client_ocr_ready_upload",
-        lambda filename, path: {"safe": True, "reason": ""},
-    )
-    monkeypatch.setattr(
-        grade_router, "validate_upload_path",
-        lambda filename, content: {"safe": True, "reason": ""},
-    )
+    set_grade_global(monkeypatch, "_validate_client_ocr_ready_upload", lambda filename, path: {"safe": True, "reason": ""})
+    set_grade_global(monkeypatch, "validate_upload_path", lambda filename, content: {"safe": True, "reason": ""})
     monkeypatch.setattr(
         grade_router,
         "_client_ocr_ready_orientation",

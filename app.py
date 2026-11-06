@@ -739,7 +739,7 @@ def _teacher_owns_upload(db, teacher_id: int, full_path: str) -> bool:
 def serve_upload(file_path: str, user=Depends(_require_user), db=Depends(get_db)):
     from fastapi.responses import FileResponse
     from fastapi import HTTPException
-    from routers.grade import _resolve_safe_image_path  # 复用 H6 路径校验（限定 UPLOAD_DIR 内）
+    from routers.grade_uploads import _resolve_safe_image_path  # 复用 H6 路径校验（限定 UPLOAD_DIR 内）
     full = _resolve_safe_image_path(file_path)
     # 归属校验：非本老师引用的文件统一 404（不泄露文件是否存在的差异）
     if not _teacher_owns_upload(db, user.id, full):

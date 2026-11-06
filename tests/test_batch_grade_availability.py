@@ -55,11 +55,7 @@ def _install_ready_chain(
     async def storage_ready(*_args, **_kwargs):
         return {"ready": True, "status": "available", "code": "ready"}
 
-    monkeypatch.setattr(
-        grade,
-        "get_upload_storage_readiness_async",
-        storage_ready,
-    )
+    set_grade_global(monkeypatch, "get_upload_storage_readiness_async", storage_ready)
 
     async def hardware_ready(_teacher_id, **contract):
         hardware_calls.append(contract)
@@ -189,11 +185,7 @@ def test_completed_ocr_scoring_gate_skips_image_dependencies_but_checks_flash(
     monkeypatch.setattr(ocr_teacher_fairness, "public_teacher_availability", forbidden)
     monkeypatch.setattr(grade, "get_public_hardware_readiness", forbidden)
     monkeypatch.setattr(grade_template, "get_public_hardware_readiness", forbidden)
-    monkeypatch.setattr(
-        grade,
-        "get_upload_storage_readiness_async",
-        checkpoint_storage,
-    )
+    set_grade_global(monkeypatch, "get_upload_storage_readiness_async", checkpoint_storage)
     monkeypatch.setattr(
         model_concurrency,
         "get_model_limiter",
@@ -306,11 +298,7 @@ def test_completed_ocr_scoring_gate_still_fails_closed_for_flash(
     async def checkpoint_storage(*_args, **_kwargs):
         return {"ready": True, "status": "available", "code": "ready"}
 
-    monkeypatch.setattr(
-        grade,
-        "get_upload_storage_readiness_async",
-        checkpoint_storage,
-    )
+    set_grade_global(monkeypatch, "get_upload_storage_readiness_async", checkpoint_storage)
     monkeypatch.setattr(model_concurrency, "get_model_limiter", lambda: _LocalLimiter())
     monkeypatch.setattr(
         flash_grading,
@@ -428,7 +416,7 @@ def test_batch_grade_availability_runs_independent_probes_concurrently(monkeypat
                 {"status": "available", "label": "可用"},
             )
 
-        monkeypatch.setattr(grade, "get_upload_storage_readiness_async", storage)
+        set_grade_global(monkeypatch, "get_upload_storage_readiness_async", storage)
         monkeypatch.setattr(ocr_service, "get_ocr_readiness", ocr)
         monkeypatch.setattr(
             ocr_teacher_fairness,
@@ -454,11 +442,7 @@ def test_batch_grade_availability_blocks_new_work_when_storage_is_low(monkeypatc
             "code": "upload_storage_insufficient",
         }
 
-    monkeypatch.setattr(
-        grade,
-        "get_upload_storage_readiness_async",
-        storage_low,
-    )
+    set_grade_global(monkeypatch, "get_upload_storage_readiness_async", storage_low)
 
     state = asyncio.run(grade.batch_grade_availability(User(id=7, role="teacher")))
 

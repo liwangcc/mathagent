@@ -569,11 +569,7 @@ def test_recognize_rejects_legacy_contract_until_teacher_reconfirms(monkeypatch,
         }]}
 
     monkeypatch.setattr(gr_router, "recognize_paper_with_cache", recognized_student)
-    monkeypatch.setattr(
-        gr_router,
-        "_validate_client_ocr_ready_upload",
-        lambda _filename, _content: {"safe": True},
-    )
+    set_grade_global(monkeypatch, "_validate_client_ocr_ready_upload", lambda _filename, _content: {"safe": True})
     accepted = client.post(
         "/api/batch-grade/recognize",
         data={"category": "daily", "template_id": "legacy-route"},
@@ -2971,11 +2967,7 @@ def test_recognize_upload_failures_do_not_freeze_template(monkeypatch, tmp_path)
     sess.save_meta()
     client = _client(Session, monkeypatch)
 
-    monkeypatch.setattr(
-        gr_router,
-        "_validate_client_ocr_ready_upload",
-        lambda filename, content: {"safe": False, "reason": "测试拒绝"},
-    )
+    set_grade_global(monkeypatch, "_validate_client_ocr_ready_upload", lambda filename, content: {"safe": False, "reason": "测试拒绝"})
     unsafe = client.post(
         "/api/batch-grade/recognize",
         data={"category": "daily", "template_id": "upload-failure"},
@@ -2994,16 +2986,8 @@ def test_recognize_upload_failures_do_not_freeze_template(monkeypatch, tmp_path)
     async def _too_large(_upload, _path, _max_size):
         return -1, ""
 
-    monkeypatch.setattr(
-        gr_router,
-        "_stream_to_disk_capped_with_sha256",
-        _too_large,
-    )
-    monkeypatch.setattr(
-        gr_router,
-        "_validate_client_ocr_ready_upload",
-        lambda filename, path: {"safe": True, "reason": ""},
-    )
+    set_grade_global(monkeypatch, "_stream_to_disk_capped_with_sha256", _too_large)
+    set_grade_global(monkeypatch, "_validate_client_ocr_ready_upload", lambda filename, path: {"safe": True, "reason": ""})
     oversized = client.post(
         "/api/batch-grade/recognize",
         data={"category": "daily", "template_id": "upload-failure"},

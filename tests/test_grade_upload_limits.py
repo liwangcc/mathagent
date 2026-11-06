@@ -4,8 +4,8 @@ import time
 import pytest
 from fastapi import HTTPException
 
-from routers import grade
 from routers import grade_template
+from routers import grade_uploads
 
 
 class _Upload:
@@ -31,10 +31,10 @@ def _safe_validation(filename: str, content: bytes) -> dict:
 
 
 def test_batch_grade_upload_count_limit_rejects_before_writing(tmp_path, monkeypatch):
-    monkeypatch.setattr(grade, "MAX_UPLOAD_FILES", 2)
+    monkeypatch.setattr(grade_uploads, "MAX_UPLOAD_FILES", 2)
 
     with pytest.raises(HTTPException) as exc_info:
-        asyncio.run(grade._save_batch_uploads([
+        asyncio.run(grade_uploads._save_batch_uploads([
             _Upload("one.png", b"1"),
             _Upload("two.png", b"2"),
             _Upload("three.png", b"3"),
@@ -46,13 +46,12 @@ def test_batch_grade_upload_count_limit_rejects_before_writing(tmp_path, monkeyp
 
 
 def test_batch_grade_upload_total_limit_cleans_partial_files(tmp_path, monkeypatch):
-    monkeypatch.setattr(grade, "MAX_UPLOAD_FILE_SIZE", 10)
-    monkeypatch.setattr(grade, "MAX_UPLOAD_TOTAL_SIZE", 12)
-    monkeypatch.setattr(grade_template, "MAX_UPLOAD_TOTAL_SIZE", 12)
-    monkeypatch.setattr(grade, "validate_upload_path", _safe_validation)
+    monkeypatch.setattr(grade_uploads, "MAX_UPLOAD_FILE_SIZE", 10)
+    monkeypatch.setattr(grade_uploads, "MAX_UPLOAD_TOTAL_SIZE", 12)
+    monkeypatch.setattr(grade_uploads, "validate_upload_path", _safe_validation)
 
     with pytest.raises(HTTPException) as exc_info:
-        asyncio.run(grade._save_batch_uploads([
+        asyncio.run(grade_uploads._save_batch_uploads([
             _Upload("first.png", b"12345678"),
             _Upload("second.png", b"abcdefgh"),
         ], str(tmp_path)))
@@ -64,7 +63,7 @@ def test_batch_grade_upload_total_limit_cleans_partial_files(tmp_path, monkeypat
 
 def test_batch_grade_rejects_pdf_before_ocr_and_cleans_batch(tmp_path):
     with pytest.raises(HTTPException) as exc_info:
-        asyncio.run(grade._save_batch_uploads([
+        asyncio.run(grade_uploads._save_batch_uploads([
             _Upload("papers.pdf", b"%PDF-1.7"),
         ], str(tmp_path)))
 
@@ -84,13 +83,13 @@ def test_batch_grade_rejects_low_storage_before_reading_upload(tmp_path, monkeyp
         }
 
     monkeypatch.setattr(
-        grade,
+        grade_uploads,
         "get_upload_storage_readiness_async",
         storage_low,
     )
 
     with pytest.raises(HTTPException) as exc_info:
-        asyncio.run(grade._save_batch_uploads([upload], str(tmp_path)))
+        asyncio.run(grade_uploads._save_batch_uploads([upload], str(tmp_path)))
 
     assert exc_info.value.status_code == 503
     assert exc_info.value.detail["error"] == "SERVER_STORAGE_UNAVAILABLE"
@@ -106,9 +105,9 @@ def test_batch_upload_validation_runs_off_the_event_loop(tmp_path, monkeypatch):
         validation_threads.append(threading.get_ident())
         return _safe_validation(filename, content)
 
-    monkeypatch.setattr(grade, "validate_upload_path", validate)
+    monkeypatch.setattr(grade_uploads, "validate_upload_path", validate)
 
-    saved = asyncio.run(grade._save_batch_uploads([
+    saved = asyncio.run(grade_uploads._save_batch_uploads([
         _Upload("paper.png", b"synthetic-image"),
     ], str(tmp_path)))
 
@@ -118,9 +117,9 @@ def test_batch_upload_validation_runs_off_the_event_loop(tmp_path, monkeypatch):
 
 
 def test_batch_upload_preserves_browser_ocr_ready_contract(tmp_path, monkeypatch):
-    monkeypatch.setattr(grade, "validate_upload_path", _safe_validation)
+    monkeypatch.setattr(grade_uploads, "validate_upload_path", _safe_validation)
 
-    saved = asyncio.run(grade._save_batch_uploads([
+    saved = asyncio.run(grade_uploads._save_batch_uploads([
         _Upload("student.ocr-ready-v1.jpg", b"synthetic-image"),
     ], str(tmp_path)))
 

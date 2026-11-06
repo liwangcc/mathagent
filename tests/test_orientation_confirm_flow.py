@@ -148,7 +148,7 @@ async def test_orientation_confirm_retries_once_and_preserves_original(tmp_path,
     monkeypatch.setattr(grade, "recognize_paper_with_cache", fake_recognize)
     monkeypatch.setattr(grade_pipeline, "_initialize_batch_answer_map", fake_initialize)
     monkeypatch.setattr(grade, "_initialize_batch_answer_map", fake_initialize)
-    monkeypatch.setattr(grade, "RateLimiter", _Limiter)
+    set_grade_global(monkeypatch, "RateLimiter", _Limiter)
     user = SimpleNamespace(id=7, current_class_id=9)
     client_upload = _client_rotated_upload(original, 1)
 
