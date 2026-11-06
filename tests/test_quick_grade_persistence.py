@@ -16,6 +16,7 @@ from models import GradingResult, KnowledgeEvent, QuestionBank, Student, Student
 from models_user import User
 from routers.auth import _require_user
 from services.quick_grader import QuickBatch, batch_operation_lock
+from tests.grade_family import set_grade_global
 
 
 @pytest.fixture(autouse=True)
@@ -172,8 +173,7 @@ def test_batch_grade_confirm_stages_results_before_archive(monkeypatch, tmp_path
     from services import grader as gr_svc
 
     upload_dir = tmp_path / "uploads"
-    monkeypatch.setattr(grade_pipeline, "UPLOAD_DIR", str(upload_dir))
-    monkeypatch.setattr(gr_router, "UPLOAD_DIR", str(upload_dir))
+    set_grade_global(monkeypatch, "UPLOAD_DIR", str(upload_dir))
     # SSE 生成器自建会话（脱离请求作用域），需指向测试内存库
     monkeypatch.setattr(grade_pipeline, "SessionLocal", Session)
     monkeypatch.setattr(gr_router, "SessionLocal", Session)
@@ -376,8 +376,7 @@ def test_confirm_checkpoints_each_paper_and_resumes_only_unfinished(monkeypatch,
     from services.grader import GradingModelUnavailable
 
     upload_dir = tmp_path / "uploads"
-    monkeypatch.setattr(grade_pipeline, "UPLOAD_DIR", str(upload_dir))
-    monkeypatch.setattr(gr_router, "UPLOAD_DIR", str(upload_dir))
+    set_grade_global(monkeypatch, "UPLOAD_DIR", str(upload_dir))
     monkeypatch.setattr(grade_pipeline, "SessionLocal", Session)
     monkeypatch.setattr(gr_router, "SessionLocal", Session)
     monkeypatch.setattr(grade_pipeline, "FLASH_LOCAL_MAX_CONCURRENT", 2)
@@ -557,8 +556,7 @@ def _one_paper_grading_client(monkeypatch, tmp_path, batch_id: str):
     paper_path = upload_dir / f"quick_batch_{batch_id}" / "paper.png"
     paper_path.parent.mkdir(parents=True)
     paper_path.write_bytes(b"paper")
-    monkeypatch.setattr(grade_pipeline, "UPLOAD_DIR", str(upload_dir))
-    monkeypatch.setattr(gr_router, "UPLOAD_DIR", str(upload_dir))
+    set_grade_global(monkeypatch, "UPLOAD_DIR", str(upload_dir))
     monkeypatch.setattr(grade_pipeline, "SessionLocal", Session)
     monkeypatch.setattr(gr_router, "SessionLocal", Session)
 
@@ -728,8 +726,7 @@ def test_same_name_conflict_requires_explicit_existing_resolution(monkeypatch, t
     from services import grader as gr_svc
 
     upload_dir = tmp_path / "uploads"
-    monkeypatch.setattr(grade_pipeline, "UPLOAD_DIR", str(upload_dir))
-    monkeypatch.setattr(gr_router, "UPLOAD_DIR", str(upload_dir))
+    set_grade_global(monkeypatch, "UPLOAD_DIR", str(upload_dir))
     monkeypatch.setattr(grade_pipeline, "SessionLocal", Session)
     monkeypatch.setattr(gr_router, "SessionLocal", Session)
     monkeypatch.setattr(gp, "ARCHIVE_DIR", str(tmp_path / "archive"))
@@ -916,8 +913,7 @@ def test_confirm_rejected_when_no_class_selected(monkeypatch, tmp_path):
     from routers import grade_review
     from routers import grade_template
     upload_dir = tmp_path / "uploads"
-    monkeypatch.setattr(grade_pipeline, "UPLOAD_DIR", str(upload_dir))
-    monkeypatch.setattr(gr_router, "UPLOAD_DIR", str(upload_dir))
+    set_grade_global(monkeypatch, "UPLOAD_DIR", str(upload_dir))
     monkeypatch.setattr(grade_pipeline, "SessionLocal", Session)
     monkeypatch.setattr(gr_router, "SessionLocal", Session)
 

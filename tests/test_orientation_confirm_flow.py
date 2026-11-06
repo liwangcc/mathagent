@@ -12,6 +12,7 @@ from routers import grade_pipeline
 from services.paper_orientation import sha256_file
 from services.quick_grader import QuickBatch
 from services.template_session import TemplateSession
+from tests.grade_family import set_grade_global
 
 
 class _Query:
@@ -84,8 +85,7 @@ def anyio_backend():
 
 @pytest.mark.anyio
 async def test_orientation_confirm_retries_once_and_preserves_original(tmp_path, monkeypatch):
-    monkeypatch.setattr(grade_pipeline, "UPLOAD_DIR", str(tmp_path))
-    monkeypatch.setattr(grade, "UPLOAD_DIR", str(tmp_path))
+    set_grade_global(monkeypatch, "UPLOAD_DIR", str(tmp_path))
     batch = QuickBatch("batch-1", str(tmp_path))
     batch.teacher_id = 7
     batch.class_id = 9
@@ -216,8 +216,7 @@ async def test_orientation_confirm_retries_once_and_preserves_original(tmp_path,
 
 @pytest.mark.anyio
 async def test_orientation_confirm_does_not_override_continuous_tilt(tmp_path, monkeypatch):
-    monkeypatch.setattr(grade_pipeline, "UPLOAD_DIR", str(tmp_path))
-    monkeypatch.setattr(grade, "UPLOAD_DIR", str(tmp_path))
+    set_grade_global(monkeypatch, "UPLOAD_DIR", str(tmp_path))
     batch = QuickBatch("batch-tilted", str(tmp_path))
     batch.teacher_id = 7
     batch.class_id = 9

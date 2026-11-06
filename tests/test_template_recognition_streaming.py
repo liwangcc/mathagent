@@ -50,6 +50,7 @@ from tests.test_template_session import (  # noqa: F401 - autouse readiness stub
     _ready_batch_grade_chain,
     _template_png_bytes,
 )
+from tests.grade_family import set_grade_global
 
 
 def _on_event_loop() -> bool:
@@ -144,13 +145,11 @@ class _TemplateImport:
 
     def __init__(self, monkeypatch, tmp_path):
         import routers.grade as grade
-        from routers import grade_pipeline
         from routers import grade_template
 
         self.grade_template = grade_template
         self.tmp_path = tmp_path
-        monkeypatch.setattr(grade_pipeline, "UPLOAD_DIR", str(tmp_path))
-        monkeypatch.setattr(grade, "UPLOAD_DIR", str(tmp_path))
+        set_grade_global(monkeypatch, "UPLOAD_DIR", str(tmp_path))
         monkeypatch.setattr(grade, "_check_limits_or_raise", lambda db, uid: None)
         # Heartbeat cadence only; nothing below waits for an interval to pass.
         monkeypatch.setattr(grade_template, "_TEMPLATE_COMPONENT_HEARTBEAT_S", 0.01)

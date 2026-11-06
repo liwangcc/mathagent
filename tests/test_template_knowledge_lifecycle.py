@@ -12,6 +12,7 @@ from services.template_page_numbering import globalize_page_numbers
 from services.teaching_context import make_teaching_context, use_teaching_context
 from services.quick_grader import QuickBatch
 from services.batch_report import build_batch_report_payload
+from tests.grade_family import set_grade_global
 
 
 def question(number="1", text="求函数定义域", **extra):
@@ -305,8 +306,7 @@ async def test_pending_waiter_cancellation_and_foreign_lease_do_not_duplicate_ca
 async def make_graded_batch(tmp_path, monkeypatch, sess):
     import routers.grade as grade
     from routers import grade_pipeline
-    monkeypatch.setattr(grade_pipeline, "UPLOAD_DIR", str(tmp_path))
-    monkeypatch.setattr(grade, "UPLOAD_DIR", str(tmp_path))
+    set_grade_global(monkeypatch, "UPLOAD_DIR", str(tmp_path))
     sess.status = "confirmed"
     sess.confirm_current_contract(7)
     sess.save_meta()
@@ -483,15 +483,13 @@ async def test_report_rechecks_latest_labels_before_committing_cached_narrative(
 async def test_real_template_route_wires_text_ready_and_global_binding(tmp_path, monkeypatch):
     import httpx
     import routers.grade as grade
-    from routers import grade_pipeline
     from routers import grade_template
     from services import template_directory_pipeline as pipeline, template_one_three as contract
     from tests.test_template_one_three import v4_payloads
     from tests.test_template_session import _make_app_and_session, _client, _patch_template_layout, _template_png_bytes, _parse_sse
 
     _, factory = _make_app_and_session()
-    monkeypatch.setattr(grade_pipeline, "UPLOAD_DIR", str(tmp_path))
-    monkeypatch.setattr(grade, "UPLOAD_DIR", str(tmp_path))
+    set_grade_global(monkeypatch, "UPLOAD_DIR", str(tmp_path))
     monkeypatch.setattr(grade, "_check_limits_or_raise", lambda *_args: None)
     _patch_template_layout(monkeypatch, grade)
 

@@ -8,11 +8,11 @@ from PIL import Image, ImageDraw
 from pydantic import ValidationError
 
 from routers import grade
-from routers import grade_pipeline
 from routers import grade_template
 from services.template_anchor_crops import build_anchor_crop_plan
 from services.template_evidence import build_template_artifact
 from services.template_session import TemplateSession
+from tests.grade_family import set_grade_global
 
 
 @pytest.fixture
@@ -215,8 +215,7 @@ def test_legacy_geometry_review_signals_fail_closed(legacy_page_run, expected):
 
 @pytest.mark.anyio
 async def test_template_cut_is_owned_persisted_and_idempotent(tmp_path, monkeypatch):
-    monkeypatch.setattr(grade_pipeline, "UPLOAD_DIR", str(tmp_path))
-    monkeypatch.setattr(grade, "UPLOAD_DIR", str(tmp_path))
+    set_grade_global(monkeypatch, "UPLOAD_DIR", str(tmp_path))
     session, artifact = _template_session(tmp_path)
     calls = []
     limiter = _Limiter()
@@ -415,8 +414,7 @@ async def test_template_cut_is_owned_persisted_and_idempotent(tmp_path, monkeypa
 
 @pytest.mark.anyio
 async def test_new_template_cut_action_reuses_frozen_question_plan(tmp_path, monkeypatch):
-    monkeypatch.setattr(grade_pipeline, "UPLOAD_DIR", str(tmp_path))
-    monkeypatch.setattr(grade, "UPLOAD_DIR", str(tmp_path))
+    set_grade_global(monkeypatch, "UPLOAD_DIR", str(tmp_path))
     session, artifact = _template_session(tmp_path, "templatecut-frozen")
     calls = []
     limiter = _Limiter()
@@ -477,8 +475,7 @@ def test_layout_override_binds_column_identity_to_layout_revision(
     tmp_path, monkeypatch,
 ):
     """A boundary change is a new layout revision; an unchanged save is not."""
-    monkeypatch.setattr(grade_pipeline, "UPLOAD_DIR", str(tmp_path))
-    monkeypatch.setattr(grade, "UPLOAD_DIR", str(tmp_path))
+    set_grade_global(monkeypatch, "UPLOAD_DIR", str(tmp_path))
     session, artifact = _template_session(tmp_path, "templatecut-revision")
     user = SimpleNamespace(id=7)
     # This case changes an existing frozen plan. A first teacher-approved plan
@@ -553,8 +550,7 @@ def test_first_boundaries_over_a_columnless_plan_are_not_a_layout_change(
     tmp_path, monkeypatch,
 ):
     """A stored plan without trusted columns is not a layout the teacher changed."""
-    monkeypatch.setattr(grade_pipeline, "UPLOAD_DIR", str(tmp_path))
-    monkeypatch.setattr(grade, "UPLOAD_DIR", str(tmp_path))
+    set_grade_global(monkeypatch, "UPLOAD_DIR", str(tmp_path))
     session, artifact = _template_session(tmp_path, "templatecut-first-plan")
     user = SimpleNamespace(id=7)
     # The artifact may already carry an unfrozen plan shell (for example after a
@@ -606,8 +602,7 @@ def _review_cut_result(artifact):
 async def test_review_layout_blocks_confirmation_until_teacher_saves_boundaries(
     tmp_path, monkeypatch,
 ):
-    monkeypatch.setattr(grade_pipeline, "UPLOAD_DIR", str(tmp_path))
-    monkeypatch.setattr(grade, "UPLOAD_DIR", str(tmp_path))
+    set_grade_global(monkeypatch, "UPLOAD_DIR", str(tmp_path))
     session, artifact = _template_session(tmp_path, "templatecut-review")
     limiter = _Limiter()
 
@@ -684,8 +679,7 @@ async def test_anchor_review_blocks_with_crop_plan_then_override_clears_candidat
     tmp_path, monkeypatch,
 ):
     """Anchor review survives a crop plan and resolves only on teacher save."""
-    monkeypatch.setattr(grade_pipeline, "UPLOAD_DIR", str(tmp_path))
-    monkeypatch.setattr(grade, "UPLOAD_DIR", str(tmp_path))
+    set_grade_global(monkeypatch, "UPLOAD_DIR", str(tmp_path))
     session, _artifact = _template_session(tmp_path, "templatecut-anchor-review")
     user = SimpleNamespace(id=7)
     columns = [{"column_index": 1, "x1_1000": 0, "x2_1000": 1000}]
@@ -940,8 +934,7 @@ def test_question_insert_renumbers_later_pages_and_moves_every_artifact_box(
     cover its page exactly, so the boxes have to be relabelled alongside the
     questions or the next validation rejects the whole template.
     """
-    monkeypatch.setattr(grade_pipeline, "UPLOAD_DIR", str(tmp_path))
-    monkeypatch.setattr(grade, "UPLOAD_DIR", str(tmp_path))
+    set_grade_global(monkeypatch, "UPLOAD_DIR", str(tmp_path))
     session = _two_page_session(tmp_path)
     user = SimpleNamespace(id=7)
 
@@ -1006,8 +999,7 @@ def test_question_insert_renumbers_later_pages_and_moves_every_artifact_box(
 def test_question_delete_leaves_other_numbers_and_their_boxes_untouched(
     tmp_path, monkeypatch,
 ):
-    monkeypatch.setattr(grade_pipeline, "UPLOAD_DIR", str(tmp_path))
-    monkeypatch.setattr(grade, "UPLOAD_DIR", str(tmp_path))
+    set_grade_global(monkeypatch, "UPLOAD_DIR", str(tmp_path))
     session = _two_page_session(tmp_path)
     user = SimpleNamespace(id=7)
 
@@ -1034,8 +1026,7 @@ def test_question_delete_leaves_other_numbers_and_their_boxes_untouched(
 def test_question_edit_is_refused_once_student_recognition_froze_the_template(
     tmp_path, monkeypatch,
 ):
-    monkeypatch.setattr(grade_pipeline, "UPLOAD_DIR", str(tmp_path))
-    monkeypatch.setattr(grade, "UPLOAD_DIR", str(tmp_path))
+    set_grade_global(monkeypatch, "UPLOAD_DIR", str(tmp_path))
     session = _two_page_session(tmp_path)
     session.status = "frozen"
     session.save_meta()
@@ -1051,8 +1042,7 @@ def test_question_edit_is_refused_once_student_recognition_froze_the_template(
 
 
 def test_question_edit_rejects_a_foreign_teacher(tmp_path, monkeypatch):
-    monkeypatch.setattr(grade_pipeline, "UPLOAD_DIR", str(tmp_path))
-    monkeypatch.setattr(grade, "UPLOAD_DIR", str(tmp_path))
+    set_grade_global(monkeypatch, "UPLOAD_DIR", str(tmp_path))
     session = _two_page_session(tmp_path)
 
     with pytest.raises(HTTPException) as excinfo:
@@ -1068,8 +1058,7 @@ def test_question_edit_rejects_a_foreign_teacher(tmp_path, monkeypatch):
 def test_layout_override_stamps_server_owned_teacher_provenance(
     tmp_path, monkeypatch,
 ):
-    monkeypatch.setattr(grade_pipeline, "UPLOAD_DIR", str(tmp_path))
-    monkeypatch.setattr(grade, "UPLOAD_DIR", str(tmp_path))
+    set_grade_global(monkeypatch, "UPLOAD_DIR", str(tmp_path))
     session, _artifact = _template_session(tmp_path, "templatecut-provenance")
     user = SimpleNamespace(id=7)
 
@@ -1117,8 +1106,7 @@ def test_layout_override_stamps_server_owned_teacher_provenance(
 def test_question_insert_preserves_anchor_and_exemption_provenance(
     tmp_path, monkeypatch,
 ):
-    monkeypatch.setattr(grade_pipeline, "UPLOAD_DIR", str(tmp_path))
-    monkeypatch.setattr(grade, "UPLOAD_DIR", str(tmp_path))
+    set_grade_global(monkeypatch, "UPLOAD_DIR", str(tmp_path))
     session = _two_page_session(tmp_path, "templateedit-provenance")
     for artifact in session.page_artifacts.values():
         for anchor in artifact.get("question_anchors") or []:

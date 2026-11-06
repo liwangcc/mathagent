@@ -15,6 +15,7 @@ from tests.test_template_session import (  # noqa: F401 - autouse readiness fixt
     _ready_batch_grade_chain,
     _template_png_bytes,
 )
+from tests.grade_family import set_grade_global
 
 
 def _one_question_pipeline(box):
@@ -38,11 +39,9 @@ def _one_question_pipeline(box):
 def _import(monkeypatch, tmp_path, box):
     _engine, Session = _make_app_and_session()
     import routers.grade as gr_router
-    from routers import grade_pipeline
     from routers import grade_template
 
-    monkeypatch.setattr(grade_pipeline, "UPLOAD_DIR", str(tmp_path))
-    monkeypatch.setattr(gr_router, "UPLOAD_DIR", str(tmp_path))
+    set_grade_global(monkeypatch, "UPLOAD_DIR", str(tmp_path))
     monkeypatch.setattr(gr_router, "_check_limits_or_raise", lambda db, uid: None)
     _patch_template_layout(monkeypatch, gr_router)
     monkeypatch.setattr(grade_template, "recognize_template_pipeline", _one_question_pipeline(box))

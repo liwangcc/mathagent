@@ -19,6 +19,7 @@ from models_rate_limit import TeacherClass
 from routers.auth import _require_user
 from services.quick_grader import QuickBatch, batch_ocr_summary, mark_ocr_outcome
 from services.template_session import TemplateSession
+from tests.grade_family import set_grade_global
 
 
 def _events(response):
@@ -64,8 +65,7 @@ def _setup(monkeypatch, tmp_path, *, education_stage=""):
     auth_user = User(id=1, name="老师", role="teacher", current_class_id=1, education_stage=education_stage)
     test_app.dependency_overrides[get_db] = override_db
     test_app.dependency_overrides[_require_user] = lambda: auth_user
-    monkeypatch.setattr(grade_pipeline, "UPLOAD_DIR", str(tmp_path))
-    monkeypatch.setattr(grade_router, "UPLOAD_DIR", str(tmp_path))
+    set_grade_global(monkeypatch, "UPLOAD_DIR", str(tmp_path))
     monkeypatch.setattr(grade_pipeline, "SessionLocal", Session)
     monkeypatch.setattr(grade_router, "SessionLocal", Session)
     monkeypatch.setattr(

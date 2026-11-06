@@ -9,6 +9,7 @@ from services import analyzer, flash_grading as flash, grader
 from services.text_grading_rules import TEXT_GRADING_RULES
 from services.grading_contract import AnswerSpec
 from services.scoring_engine import build_grading_units, llm_payload_for_unit
+from tests.grade_family import set_grade_global
 
 
 def question():
@@ -212,15 +213,13 @@ def test_schema_and_mixed_question_scope_follow_the_same_contract():
 def test_method_survives_real_template_save_confirm_reopen_and_dispatch_payload(monkeypatch, tmp_path, method):
     from unittest.mock import AsyncMock
     import routers.grade as grade
-    from routers import grade_pipeline
     from routers import grade_template
     from services.template_session import TemplateSession
     from tests.test_slot_http_e2e import seed
     from tests.test_template_session import _make_app_and_session, _client
 
     _, factory = _make_app_and_session()
-    monkeypatch.setattr(grade_pipeline, "UPLOAD_DIR", str(tmp_path))
-    monkeypatch.setattr(grade, "UPLOAD_DIR", str(tmp_path))
+    set_grade_global(monkeypatch, "UPLOAD_DIR", str(tmp_path))
     monkeypatch.setattr(grade_template, "_classify_confirmed_template_knowledge", AsyncMock())
     session, boxes, anchors = seed(tmp_path)
     client = _client(factory, monkeypatch, raise_server_exceptions=True)

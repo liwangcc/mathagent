@@ -10,6 +10,7 @@ from models_user import User
 from scripts import cleanup_files as cleanup
 from services.answer_sheet_session import AnswerSheetSession
 from services.quick_grader import QuickBatch
+from tests.grade_family import set_grade_global
 
 
 NOW = datetime(2026, 8, 31, 12, 0, tzinfo=timezone.utc)
@@ -341,14 +342,12 @@ def test_expired_batch_image_endpoint_returns_privacy_message(monkeypatch, tmp_p
     from fastapi.testclient import TestClient
 
     import routers.grade as grade_router
-    from routers import grade_pipeline
     from routers import grade_review
     from routers import grade_template
     from routers.auth import _require_user
 
     uploads = tmp_path / "uploads"
-    monkeypatch.setattr(grade_pipeline, "UPLOAD_DIR", str(uploads))
-    monkeypatch.setattr(grade_router, "UPLOAD_DIR", str(uploads))
+    set_grade_global(monkeypatch, "UPLOAD_DIR", str(uploads))
     batch = QuickBatch("abc123def456", str(uploads))
     batch.teacher_id = 1
     batch.class_id = 1

@@ -21,6 +21,7 @@ from models_user import User
 from routers.auth import _require_user
 from services.quick_grader import QuickBatch
 from services.student_service import resolve_student_identity
+from tests.grade_family import set_grade_global
 
 
 def _parse_sse(text: str) -> list[tuple[str, dict]]:
@@ -66,8 +67,7 @@ def identity_app(monkeypatch, tmp_path):
         available,
     )
     upload_dir = tmp_path / "uploads"
-    monkeypatch.setattr(grade_pipeline, "UPLOAD_DIR", str(upload_dir))
-    monkeypatch.setattr(grade_router, "UPLOAD_DIR", str(upload_dir))
+    set_grade_global(monkeypatch, "UPLOAD_DIR", str(upload_dir))
     monkeypatch.setattr(grade_pipeline, "SessionLocal", Session)
     monkeypatch.setattr(grade_router, "SessionLocal", Session)
     monkeypatch.setattr(persistence, "ARCHIVE_DIR", str(tmp_path / "archive"))

@@ -22,13 +22,13 @@ from services.grading_contract import AnswerSpec
 from services.template_session import TemplateSession
 from tests.test_template_directory_routes import _layout_payload, _session
 from tests.test_template_session import _client, _make_app_and_session
+from tests.grade_family import set_grade_global
 
 
 @pytest.fixture
 def edit_client(tmp_path, monkeypatch):
     engine, Session = _make_app_and_session()
-    monkeypatch.setattr(grade_pipeline, "UPLOAD_DIR", str(tmp_path))
-    monkeypatch.setattr(grade, "UPLOAD_DIR", str(tmp_path))
+    set_grade_global(monkeypatch, "UPLOAD_DIR", str(tmp_path))
     monkeypatch.setattr(grade_pipeline, "SessionLocal", Session)
     monkeypatch.setattr(grade, "SessionLocal", Session)
 
@@ -212,8 +212,7 @@ def edit_boundary_client(tmp_path, monkeypatch):
     from services.processing_http import install_processing_errors
 
     engine, Session = _make_app_and_session()
-    monkeypatch.setattr(grade_pipeline, "UPLOAD_DIR", str(tmp_path))
-    monkeypatch.setattr(grade, "UPLOAD_DIR", str(tmp_path))
+    set_grade_global(monkeypatch, "UPLOAD_DIR", str(tmp_path))
     monkeypatch.setattr(grade_pipeline, "SessionLocal", Session)
     monkeypatch.setattr(grade, "SessionLocal", Session)
 

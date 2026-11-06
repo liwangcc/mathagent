@@ -31,6 +31,7 @@ from models_rate_limit import TeacherClass
 from routers.auth import _require_user
 from services.quick_grader import QuickBatch
 from services.template_session import TemplateSession
+from tests.grade_family import set_grade_global
 
 
 @pytest.fixture(autouse=True)
@@ -97,8 +98,7 @@ def _setup(monkeypatch, tmp_path):
     auth_user = User(id=1, name="老师", role="teacher", current_class_id=1, education_stage="senior")
     test_app.dependency_overrides[get_db] = override_db
     test_app.dependency_overrides[_require_user] = lambda: auth_user
-    monkeypatch.setattr(grade_pipeline, "UPLOAD_DIR", str(tmp_path))
-    monkeypatch.setattr(grade_router, "UPLOAD_DIR", str(tmp_path))
+    set_grade_global(monkeypatch, "UPLOAD_DIR", str(tmp_path))
     monkeypatch.setattr(grade_pipeline, "SessionLocal", Session)
     monkeypatch.setattr(grade_router, "SessionLocal", Session)
     monkeypatch.setattr(
@@ -445,8 +445,7 @@ def test_stale_stamped_rows_are_not_replayed_over_new_results(monkeypatch, tmp_p
     from services import grader as gr_svc
 
     upload_dir = tmp_path / "uploads"
-    monkeypatch.setattr(grade_pipeline, "UPLOAD_DIR", str(upload_dir))
-    monkeypatch.setattr(gr_router, "UPLOAD_DIR", str(upload_dir))
+    set_grade_global(monkeypatch, "UPLOAD_DIR", str(upload_dir))
     monkeypatch.setattr(grade_pipeline, "SessionLocal", Session)
     monkeypatch.setattr(gr_router, "SessionLocal", Session)
     paper_path = upload_dir / "quick_batch_stamped" / "p1.png"

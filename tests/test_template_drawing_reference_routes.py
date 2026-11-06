@@ -9,6 +9,7 @@ from routers import grade_pipeline
 from routers import grade_template
 from tests.test_template_directory_routes import _session
 from tests.test_template_session import _client, _make_app_and_session
+from tests.grade_family import set_grade_global
 
 
 def _reference(*, mode="fixed", point=(800, 450)):
@@ -23,8 +24,7 @@ def _reference(*, mode="fixed", point=(800, 450)):
 @pytest.fixture
 def reference_client(tmp_path, monkeypatch):
     engine, Session = _make_app_and_session()
-    monkeypatch.setattr(grade_pipeline, "UPLOAD_DIR", str(tmp_path))
-    monkeypatch.setattr(grade, "UPLOAD_DIR", str(tmp_path))
+    set_grade_global(monkeypatch, "UPLOAD_DIR", str(tmp_path))
     monkeypatch.setattr(grade_pipeline, "SessionLocal", Session)
     monkeypatch.setattr(grade, "SessionLocal", Session)
 
