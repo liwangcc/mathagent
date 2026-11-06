@@ -55,6 +55,15 @@ def _path(sess) -> Path:
     return Path(sess.template_dir) / "knowledge.json"
 
 
+def _ledger_key(sess) -> str:
+    """The ledger's resolved path, which keys this process's classification tasks."""
+    path = _path(sess)
+    # On Windows resolve() opens the file as well, and that handle fails a
+    # concurrent os.replace of it: resolve under the ledger's I/O lock too.
+    with _meta_io_lock(path):
+        return str(path.resolve())
+
+
 def _read(sess) -> dict:
     path = _path(sess)
     try:
@@ -284,7 +293,7 @@ def _schedule(sess, identities, classifier=None):
     data = _read(sess)
     missing = []
     now = time.time()
-    path = str(_path(sess).resolve())
+    path = _ledger_key(sess)
     for identity in identities:
         task = _tasks.get((path, identity))
         if task is not None and not task.done():
@@ -394,7 +403,7 @@ async def ensure_session_knowledge(sess, *, classifier=None, timeout=None) -> di
     identities = await asyncio.to_thread(_prepare_session, sess)
     deadline = _reconcile_clock() + (RECONCILE_TIMEOUT if timeout is None else timeout)
     attempted = {identity for identity in identities
-                 if (task := _tasks.get((str(_path(sess).resolve()), identity))) is not None and not task.done()}
+                 if (task := _tasks.get((_ledger_key(sess), identity))) is not None and not task.done()}
     while True:
         attempted.update(_schedule(sess, [identity for identity in identities if identity not in attempted], classifier))
         state = knowledge_state(sess)
@@ -402,7 +411,7 @@ async def ensure_session_knowledge(sess, *, classifier=None, timeout=None) -> di
             # A failed row can have just been scheduled for retry. Await that
             # local task rather than reporting the previous failure prematurely.
             active = {task for identity in identities
-                      if (task := _tasks.get((str(_path(sess).resolve()), identity))) is not None and not task.done()}
+                      if (task := _tasks.get((_ledger_key(sess), identity))) is not None and not task.done()}
             if not active or _reconcile_clock() >= deadline:
                 if active:
                     return {"status": "pending", "error": "知识点分类仍在处理中，报告将等待最新标签"}
