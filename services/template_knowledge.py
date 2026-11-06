@@ -18,6 +18,7 @@ import uuid
 from pathlib import Path
 
 from services.teaching_context import record_teaching_fields, use_teaching_context
+from services.template_session import _meta_io_lock
 
 logger = logging.getLogger(__name__)
 UNKNOWN = frozenset({"", "未知", "未指定", "未标注", "未分类", "综合"})
@@ -55,8 +56,12 @@ def _path(sess) -> Path:
 
 
 def _read(sess) -> dict:
+    path = _path(sess)
     try:
-        with _path(sess).open(encoding="utf-8") as handle:
+        # Windows denies opening a file another thread is replacing, and an
+        # open reader makes that os.replace fail: read and replace under the
+        # same per-path I/O lock as template meta.json.
+        with _meta_io_lock(path), path.open(encoding="utf-8") as handle:
             data = json.load(handle)
     except FileNotFoundError:
         return {"version": 1, "entries": {}, "bindings": {}, "sources": {}}
@@ -87,7 +92,8 @@ def _mutate(sess, change):
                         json.dump(data, handle, ensure_ascii=False)
                         handle.flush()
                         os.fsync(handle.fileno())
-                    os.replace(temporary, path)
+                    with _meta_io_lock(path):
+                        os.replace(temporary, path)
                 finally:
                     temporary.unlink(missing_ok=True)
                 return result
