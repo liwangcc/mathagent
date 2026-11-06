@@ -5,9 +5,12 @@
 //
 //   import './helpers/srcModules.js'
 //   const { default: api } = await import('../src/api/index.js')
+//   const { default: Upload } = await import('../src/views/Upload.vue?sfc')
 //
 // The hooks add only what vite.config.js and Vite itself provide: the `@/`
-// alias and `import.meta.env`. They never change what a module does.
+// alias, `import.meta.env`, compiled single-file components (`?sfc`, see
+// helpers/mountComponent.js to mount one) and Vite's JSON / `?url` / CSS
+// imports. They never change what a module does.
 import { register } from 'node:module'
 
 register('./srcModuleHooks.js', import.meta.url)
