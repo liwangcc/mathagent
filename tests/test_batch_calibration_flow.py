@@ -20,6 +20,7 @@ from routers.auth import _require_user
 from services.quick_grader import QuickBatch, batch_ocr_summary, mark_ocr_outcome
 from services.template_session import TemplateSession
 from tests.grade_family import set_grade_global
+from routers import grade_availability
 
 
 def _events(response):
@@ -97,11 +98,11 @@ def _setup(monkeypatch, tmp_path, *, education_stage=""):
     monkeypatch.setattr("services.grader.judge_paper", fake_judge_paper)
     async def available(_user):
         return {"status": "available", "message": "批改服务可用"}
-    monkeypatch.setattr(grade_router, "batch_grade_availability", available)
+    monkeypatch.setattr(grade_availability, "batch_grade_availability", available)
     async def hardware_ready(_teacher_id, **_contract):
         return {"status": "ready", "message": "加速节点已就绪"}
     monkeypatch.setattr(
-        grade_router,
+        grade_availability,
         "get_public_hardware_readiness",
         hardware_ready,
     )
@@ -294,7 +295,7 @@ def test_resume_disconnect_does_not_consume_second_ocr_attempt(monkeypatch, tmp_
     async def forbidden_hardware(*_args, **_kwargs):
         raise AssertionError("recognition recovery must not probe accelerator hardware")
     monkeypatch.setattr(
-        grade_router,
+        grade_availability,
         "get_public_hardware_readiness",
         forbidden_hardware,
     )
@@ -674,7 +675,7 @@ def test_busy_recognition_resume_does_not_advance_generation(monkeypatch, tmp_pa
         raise AssertionError("template recovery readiness must not require an accelerator")
 
     monkeypatch.setattr(
-        grade_router,
+        grade_availability,
         "get_public_hardware_readiness",
         hardware_must_not_be_required,
     )
@@ -939,7 +940,7 @@ def test_readiness_fault_does_not_mutate_resume_checkpoint(monkeypatch, tmp_path
             "message": "图片处理线程已阻塞",
         }
 
-    monkeypatch.setattr(grade_router, "batch_grade_availability", unavailable)
+    monkeypatch.setattr(grade_availability, "batch_grade_availability", unavailable)
     response = client.post(f"/api/batch-grade/{batch.batch_id}/recognize/resume")
 
     assert response.status_code == 503
@@ -1250,7 +1251,7 @@ def test_single_page_template_ocr_failures_become_review_placeholders(monkeypatc
         return {"status": "ready", "message": "加速节点已就绪"}
 
     monkeypatch.setattr(
-        grade_router,
+        grade_availability,
         "get_public_hardware_readiness",
         hardware_ready,
     )

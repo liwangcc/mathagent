@@ -25,11 +25,11 @@ def _ready_batch_grade_chain(monkeypatch):
         return {"status": "available", "message": "批改服务可用"}
 
     monkeypatch.setattr(
-        "routers.grade.batch_grade_availability",
+        "routers.grade_availability.batch_grade_availability",
         available,
     )
     monkeypatch.setattr(
-        "routers.grade._batch_grade_scoring_availability",
+        "routers.grade_availability._batch_grade_scoring_availability",
         available,
     )
 

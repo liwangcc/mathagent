@@ -18,6 +18,7 @@ from database import Base, get_db
 import models  # noqa: F401
 import models_user  # noqa: F401
 import models_rate_limit  # noqa: F401
+from routers import grade_availability
 
 
 # ─────────────────────────────────────────────────────────
@@ -72,7 +73,7 @@ def client(tmp_path, monkeypatch):
     async def available(_user):
         return {"status": "available", "message": "批改服务可用"}
 
-    monkeypatch.setattr(grade_router, "batch_grade_availability", available)
+    monkeypatch.setattr(grade_availability, "batch_grade_availability", available)
 
     async def infrastructure_ready(_upload_dir, _request_bytes):
         return {"ready": True, "status": "available", "code": "test-ready"}

@@ -32,6 +32,7 @@ from routers.auth import _require_user
 from services.quick_grader import QuickBatch
 from services.template_session import TemplateSession
 from tests.grade_family import set_grade_global
+from routers import grade_availability
 
 
 @pytest.fixture(autouse=True)
@@ -49,7 +50,7 @@ def _isolated_grading_dependencies(monkeypatch):
     # Keep the real local queue/idempotency behavior, but isolate each test's
     # cache and avoid live Redis/model readiness or narrative-report requests.
     monkeypatch.setattr(task_queue, "_grading_queue", None)
-    monkeypatch.setattr(grade_router, "_batch_grade_scoring_availability", available)
+    monkeypatch.setattr(grade_availability, "_batch_grade_scoring_availability", available)
     monkeypatch.setattr(grade_pipeline, "_start_batch_report_generation", no_report)
     monkeypatch.setattr(grade_router, "_start_batch_report_generation", no_report)
 
@@ -123,8 +124,8 @@ def _setup(monkeypatch, tmp_path):
     async def hardware_ready(_teacher_id, **_contract):
         return {"status": "ready", "message": "加速节点已就绪"}
 
-    monkeypatch.setattr(grade_router, "batch_grade_availability", available)
-    monkeypatch.setattr(grade_router, "get_public_hardware_readiness", hardware_ready)
+    monkeypatch.setattr(grade_availability, "batch_grade_availability", available)
+    monkeypatch.setattr(grade_availability, "get_public_hardware_readiness", hardware_ready)
     monkeypatch.setattr(grade_template, "get_public_hardware_readiness", hardware_ready)
 
     # 模型边界 mock：判分整卷调用不打真实模型。

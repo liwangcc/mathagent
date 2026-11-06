@@ -11,6 +11,7 @@ import time
 from types import SimpleNamespace
 
 import services.ocr_service as ocr_service
+from routers import grade_availability
 
 
 def _reset_probe_state(monkeypatch):
@@ -112,7 +113,7 @@ def test_availability_budget_expiry_reports_queued_not_fault(monkeypatch):
         return {"provider": "ocr", "configured": True, "ready": True, "reason": ""}
 
     monkeypatch.setattr("services.ocr_service.get_ocr_readiness", fake_hung_ocr)
-    monkeypatch.setattr(grade, "READINESS_IO_TIMEOUT_SECONDS", 0.5)
+    monkeypatch.setattr(grade_availability, "READINESS_IO_TIMEOUT_SECONDS", 0.5)
 
     result = asyncio.run(
         grade._batch_grade_service_availability(SimpleNamespace(id=1))

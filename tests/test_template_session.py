@@ -47,6 +47,7 @@ from services.template_session import (
 )
 from services.template_evidence import CanonicalTemplate, canonicalize_template_image
 from tests.grade_family import set_grade_global
+from routers import grade_availability
 
 
 @pytest.fixture(autouse=True)
@@ -60,11 +61,11 @@ def _ready_batch_grade_chain(monkeypatch):
         return {"status": "available", "message": "模板识别服务可用"}
 
     monkeypatch.setattr(
-        "routers.grade.batch_grade_availability",
+        "routers.grade_availability.batch_grade_availability",
         available,
     )
     monkeypatch.setattr(
-        "routers.grade._batch_grade_service_availability",
+        "routers.grade_availability._batch_grade_service_availability",
         available,
     )
     monkeypatch.setattr(
@@ -80,7 +81,7 @@ def _ready_batch_grade_chain(monkeypatch):
         return {"status": "ready", "message": "加速节点已就绪"}
 
     monkeypatch.setattr(
-        "routers.grade.get_public_hardware_readiness",
+        "routers.grade_availability.get_public_hardware_readiness",
         hardware_ready,
     )
     monkeypatch.setattr(
@@ -1888,7 +1889,7 @@ def test_template_recognize_accepts_desktop_canonical_bytes_without_server_fallb
         raise AssertionError("client candidate queried accelerator readiness")
 
     monkeypatch.setattr(
-        gr_router,
+        grade_availability,
         "batch_grade_availability",
         hardware_probe_forbidden,
     )

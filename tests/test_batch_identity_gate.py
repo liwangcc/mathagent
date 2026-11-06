@@ -22,6 +22,7 @@ from routers.auth import _require_user
 from services.quick_grader import QuickBatch
 from services.student_service import resolve_student_identity
 from tests.grade_family import set_grade_global
+from routers import grade_availability
 
 
 def _parse_sse(text: str) -> list[tuple[str, dict]]:
@@ -60,9 +61,9 @@ def identity_app(monkeypatch, tmp_path):
     async def available(_user):
         return {"status": "available", "message": "批改服务可用"}
 
-    monkeypatch.setattr(grade_router, "batch_grade_availability", available)
+    monkeypatch.setattr(grade_availability, "batch_grade_availability", available)
     monkeypatch.setattr(
-        grade_router,
+        grade_availability,
         "_batch_grade_scoring_availability",
         available,
     )

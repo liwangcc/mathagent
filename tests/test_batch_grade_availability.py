@@ -20,6 +20,7 @@ from services import (
 )
 from services.quick_grader import QuickBatch
 from tests.grade_family import set_grade_global
+from routers import grade_availability
 
 
 class _LocalLimiter:
@@ -64,7 +65,7 @@ def _install_ready_chain(
             "message": f"hardware:{hardware_status}",
         }
 
-    monkeypatch.setattr(grade, "get_public_hardware_readiness", hardware_ready)
+    monkeypatch.setattr(grade_availability, "get_public_hardware_readiness", hardware_ready)
     monkeypatch.setattr(grade_template, "get_public_hardware_readiness", hardware_ready)
     return hardware_calls
 
@@ -173,7 +174,7 @@ def test_completed_ocr_scoring_gate_skips_image_dependencies_but_checks_flash(
 
     async def checkpoint_storage(path, byte_budget, *, required_copies):
         storage_calls.append((path, byte_budget, required_copies))
-        if byte_budget >= grade.MAX_UPLOAD_TOTAL_SIZE or required_copies != 1:
+        if byte_budget >= grade_availability.MAX_UPLOAD_TOTAL_SIZE or required_copies != 1:
             return {
                 "ready": False,
                 "status": "unavailable",
@@ -183,7 +184,7 @@ def test_completed_ocr_scoring_gate_skips_image_dependencies_but_checks_flash(
 
     monkeypatch.setattr(ocr_service, "get_ocr_readiness", forbidden)
     monkeypatch.setattr(ocr_teacher_fairness, "public_teacher_availability", forbidden)
-    monkeypatch.setattr(grade, "get_public_hardware_readiness", forbidden)
+    monkeypatch.setattr(grade_availability, "get_public_hardware_readiness", forbidden)
     monkeypatch.setattr(grade_template, "get_public_hardware_readiness", forbidden)
     set_grade_global(monkeypatch, "get_upload_storage_readiness_async", checkpoint_storage)
     monkeypatch.setattr(
@@ -229,7 +230,7 @@ def test_template_confirm_ignores_client_answers_before_scoring_readiness(
         scoring_calls.append(candidate.batch_id)
         return {"status": "fault", "message": "数学批改协调服务故障"}
 
-    monkeypatch.setattr(grade, "_batch_grade_scoring_availability", scoring_fault)
+    monkeypatch.setattr(grade_availability, "_batch_grade_scoring_availability", scoring_fault)
 
     with pytest.raises(HTTPException) as exc:
         asyncio.run(grade.batch_grade_confirm(
@@ -263,9 +264,9 @@ def test_confirm_uses_scoring_gate_for_template_batch_after_ocr(
 
     monkeypatch.setattr(grade.QuickBatch, "load_meta", lambda *_args: batch)
     monkeypatch.setattr(batch, "save_meta", lambda: pytest.fail("metadata was mutated"))
-    monkeypatch.setattr(grade, "_batch_grade_scoring_availability", scoring_fault)
-    monkeypatch.setattr(grade, "batch_grade_availability", image_gate_forbidden)
-    monkeypatch.setattr(grade, "get_public_hardware_readiness", image_gate_forbidden)
+    monkeypatch.setattr(grade_availability, "_batch_grade_scoring_availability", scoring_fault)
+    monkeypatch.setattr(grade_availability, "batch_grade_availability", image_gate_forbidden)
+    monkeypatch.setattr(grade_availability, "get_public_hardware_readiness", image_gate_forbidden)
     monkeypatch.setattr(grade_template, "get_public_hardware_readiness", image_gate_forbidden)
     monkeypatch.setattr(ocr_service, "get_ocr_readiness", image_gate_forbidden)
     monkeypatch.setattr(
@@ -373,7 +374,7 @@ def test_batch_grade_availability_has_one_bounded_readiness_budget(monkeypatch):
         await asyncio.Event().wait()
 
     monkeypatch.setattr(ocr_service, "get_ocr_readiness", stalled_ocr)
-    monkeypatch.setattr(grade, "READINESS_IO_TIMEOUT_SECONDS", 0.01)
+    monkeypatch.setattr(grade_availability, "READINESS_IO_TIMEOUT_SECONDS", 0.01)
 
     state = asyncio.run(grade.batch_grade_availability(User(id=7, role="teacher")))
 
@@ -423,7 +424,7 @@ def test_batch_grade_availability_runs_independent_probes_concurrently(monkeypat
             "public_teacher_availability",
             capacity,
         )
-        monkeypatch.setattr(grade, "READINESS_IO_TIMEOUT_SECONDS", 0.5)
+        monkeypatch.setattr(grade_availability, "READINESS_IO_TIMEOUT_SECONDS", 0.5)
         return await grade.batch_grade_availability(User(id=7, role="teacher"))
 
     state = asyncio.run(exercise())
@@ -531,7 +532,7 @@ def test_template_availability_ignores_retired_template_hardware_stages(monkeypa
     async def layout_ready(_limiter=None):
         return {"configured": True, "ready": True, "status": "available"}
 
-    monkeypatch.setattr(grade, "get_public_hardware_readiness", hardware)
+    monkeypatch.setattr(grade_availability, "get_public_hardware_readiness", hardware)
     monkeypatch.setattr(grade_template, "get_public_hardware_readiness", hardware)
     monkeypatch.setattr(grade_template, "get_column_layout_readiness", layout_ready)
 
@@ -590,8 +591,8 @@ def test_template_gate_keeps_local_layout_fallback_when_layout_model_is_unready(
     async def layout_unready(_limiter=None):
         return {"status": "unavailable", "ready": False}
 
-    monkeypatch.setattr(grade, "batch_grade_availability", core_ready)
-    monkeypatch.setattr(grade, "_batch_grade_service_availability", core_ready)
+    monkeypatch.setattr(grade_availability, "batch_grade_availability", core_ready)
+    monkeypatch.setattr(grade_availability, "_batch_grade_service_availability", core_ready)
     monkeypatch.setattr(grade_template, "_batch_grade_service_availability", core_ready)
     monkeypatch.setattr(grade_template, "get_column_layout_readiness", layout_unready)
     user = SimpleNamespace(id=7)
@@ -616,9 +617,9 @@ def test_template_gate_ignores_only_hardware_overlay_for_client_candidate(
     async def layout_ready(_limiter=None):
         return {"status": "available", "ready": True}
 
-    monkeypatch.setattr(grade, "_batch_grade_service_availability", core_ready)
+    monkeypatch.setattr(grade_availability, "_batch_grade_service_availability", core_ready)
     monkeypatch.setattr(grade_template, "_batch_grade_service_availability", core_ready)
-    monkeypatch.setattr(grade, "batch_grade_availability", hardware_probe_forbidden)
+    monkeypatch.setattr(grade_availability, "batch_grade_availability", hardware_probe_forbidden)
     monkeypatch.setattr(grade_template, "get_column_layout_readiness", layout_ready)
 
     state = asyncio.run(
@@ -680,9 +681,9 @@ def test_new_recognition_rejects_unavailable_chain_before_upload_side_effects(
 ):
     upload = _NeverReadUpload()
     directory_calls = []
-    monkeypatch.setattr(grade, "batch_grade_availability", _fault_availability)
+    monkeypatch.setattr(grade_availability, "batch_grade_availability", _fault_availability)
     monkeypatch.setattr(
-        grade,
+        grade_availability,
         "_batch_grade_service_availability",
         _fault_availability,
     )
@@ -791,7 +792,7 @@ def test_confirm_returns_503_before_freezing_or_writing_when_chain_is_faulted(
     monkeypatch.setattr(grade.QuickBatch, "load_meta", lambda *_args: batch)
     monkeypatch.setattr(batch, "save_meta", lambda: save_calls.append(True))
     monkeypatch.setattr(
-        grade,
+        grade_availability,
         "_batch_grade_scoring_availability",
         lambda _batch: _fault_availability(None),
     )
@@ -833,14 +834,14 @@ def test_confirm_rechecks_readiness_before_first_grading_side_effect(
 
     monkeypatch.setattr(grade.QuickBatch, "load_meta", lambda *_args: batch)
     monkeypatch.setattr(batch, "save_meta", lambda: pytest.fail("metadata was mutated"))
-    monkeypatch.setattr(grade, "_batch_grade_scoring_availability", availability)
+    monkeypatch.setattr(grade_availability, "_batch_grade_scoring_availability", availability)
     monkeypatch.setattr(
-        grade,
+        grade_availability,
         "batch_grade_availability",
         lambda _user: pytest.fail("grading rechecked the OCR/upload chain"),
     )
     monkeypatch.setattr(
-        grade,
+        grade_availability,
         "get_public_hardware_readiness",
         lambda *_args, **_kwargs: pytest.fail("grading rechecked accelerator hardware"),
     )
@@ -913,8 +914,8 @@ def test_completed_confirm_replay_does_not_require_live_chain(tmp_path, monkeypa
 
     monkeypatch.setattr(grade.QuickBatch, "load_meta", lambda *_args: batch)
     monkeypatch.setattr(batch, "save_meta", lambda: pytest.fail("replay wrote metadata"))
-    monkeypatch.setattr(grade, "_batch_grade_scoring_availability", must_not_check)
-    monkeypatch.setattr(grade, "batch_grade_availability", must_not_check)
+    monkeypatch.setattr(grade_availability, "_batch_grade_scoring_availability", must_not_check)
+    monkeypatch.setattr(grade_availability, "batch_grade_availability", must_not_check)
     monkeypatch.setattr(grade_pipeline, "SessionLocal", _ReadOnlyDB)
     monkeypatch.setattr(grade, "SessionLocal", _ReadOnlyDB)
     set_grade_global(monkeypatch, "batch_operation_lock", lambda *_args, **_kwargs: nullcontext())

@@ -13,6 +13,7 @@ import pytest
 from models_user import User
 from services.quick_grader import QuickBatch
 from tests.test_batch_calibration_flow import _confirmed_template, _events, _setup
+from routers import grade_availability
 
 
 @pytest.fixture(autouse=True)
@@ -29,7 +30,7 @@ def isolated_queue(monkeypatch):
     async def no_report(*_args):
         return None
 
-    monkeypatch.setattr(grade, "_batch_grade_scoring_availability", available)
+    monkeypatch.setattr(grade_availability, "_batch_grade_scoring_availability", available)
     monkeypatch.setattr(grade_pipeline, "_start_batch_report_generation", no_report)
     monkeypatch.setattr(grade, "_start_batch_report_generation", no_report)
 

@@ -55,6 +55,9 @@ from routers.grade_common import (
     _sse,
     _stable_review_image_hash,
 )
+from routers.grade_availability import (
+    _require_batch_scoring_chain,
+)
 
 _GENERIC_GRADE_ERROR = "批改处理失败，请稍后重试"
 # Reserve nine minutes for the text-only Flash grading stage after the
@@ -1179,7 +1182,6 @@ from routers.grade import (  # noqa: E402
     _prepare_identity_plan,
     _refresh_batch_knowledge,
     _reject_answer_key_matching_local_recoveries,
-    _require_batch_scoring_chain,
     _require_complete_batch_ocr,
     _require_orientation_ready,
     _start_batch_report_generation,
