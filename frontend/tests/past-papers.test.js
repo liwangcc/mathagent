@@ -1,8 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import fs from 'node:fs'
-import path from 'node:path'
-import { fileURLToPath } from 'node:url'
+import './helpers/srcModules.js'
 import {
   BROWSE_MODES,
   answerState,
@@ -19,9 +17,21 @@ import {
   verificationState,
 } from '../src/utils/pastPapers.js'
 import { renderedFiles, signedInTeacherRouter } from './helpers/appRouter.js'
+import { messages } from './helpers/elementPlus.js'
+import { mountComponent } from './helpers/mountComponent.js'
+import {
+  button,
+  captureDownloads,
+  choose,
+  flush,
+  holdingBackend,
+  installTeleportToBody,
+  mountView,
+  route,
+  signIn,
+} from './helpers/viewsStageReports.js'
 
-const here = path.dirname(fileURLToPath(import.meta.url))
-const src = (rel) => fs.readFileSync(path.resolve(here, '..', 'src', rel), 'utf8')
+const { default: PastPapers } = await import('../src/views/PastPapers.vue?sfc')
 
 const paper = (over = {}) => ({
   paper_id: 'gk2024-xgk1', year: 2024, session: 'summer', series_name: '新课标Ⅰ卷', track: null, track_name: '',
@@ -121,13 +131,31 @@ test('page size is measured, never inferred from page count or a purchased A4 la
   assert.equal(filePageLabel({ pages: null }), '')
 })
 
-test('actual Vue list and detail templates render truthful purchased and legacy metadata', async () => {
-  const Vue = await import('vue')
-  const { parse } = await import('@vue/compiler-sfc')
-  const { compile } = await import('@vue/compiler-dom')
-  const { renderToString } = await import('@vue/server-renderer')
-  const template = parse(src('views/PastPapers.vue')).descriptor.template.content
-  const render = new Function('Vue', compile(template, { mode: 'function', prefixIdentifiers: true }).code)(Vue)
+// The library page as a teacher sees it: the list answered with `items` (or
+// with what `list` returns), a paper's detail with `detail`, preview pages as
+// images and downloads as PDFs.
+async function openLibrary(t, { items = [], years = [2024], detail = paperId => items.find(item => item.paper_id === paperId), list } = {}) {
+  const { client, pinia } = await signIn({ stage: 'senior' })
+  const backend = holdingBackend(client, (config) => {
+    if (route(config) === 'get /past-papers') {
+      return list?.(config) ?? { data: { stage_supported: true, items, facets: { years, series: [], regions: [] } } }
+    }
+    const match = /^get \/past-papers\/([^/]+)$/.exec(route(config))
+    if (match) return { data: detail(decodeURIComponent(match[1])) }
+    if (/\/preview\//.test(config.url)) return { data: new Blob(['page image'], { type: 'image/png' }) }
+    return { data: new Blob(['%PDF-1.7'], { type: 'application/pdf' }) }
+  })
+  const page = await mountView(t, PastPapers, { path: '/bank/past-papers', pinia })
+  return { client, backend, page }
+}
+
+// Series mode lists every paper (region mode asks for a region first).
+const showSeries = async (page) => {
+  await choose(page.root.find(el => el.tagName === 'el-radio-group' && el.getAttribute('aria-label') === '浏览方式'), 'series')
+  await flush()
+}
+
+test('actual Vue list and detail templates render truthful purchased and legacy metadata', async (t) => {
   const item = paper({ pages: 2, preview_pages: 2, answer_available: true,
     edition: { kind: 'purchased_pdf', label: '网络原版 PDF', description: '网络原版 PDF，保留原文件。' },
     verification: { status: 'resource_checked', summary: '身份、角色与全页机械渲染已检查。' },
@@ -135,51 +163,150 @@ test('actual Vue list and detail templates render truthful purchased and legacy 
       print_note: '原文件水印保留，打印时按纸张缩放。' },
     answer: { available: true, status: 'source_paired', kind: 'solutions', note: '来源配套完整解析。', pages: 1, preview_pages: 1,
       page_dimensions_mm: [{ width: 215.9, height: 279.4 }] }, rights: { notice: '运营决定不是出版社许可。' }, notes: [], attribution: [] })
-  async function renderPaper(value) {
-    const noop = () => {}
-    const app = Vue.createSSRApp({ render, setup: () => ({
-      BROWSE_MODES, TRACK_OPTIONS: [], mode: 'series', region: '', seriesKey: '', year: '', track: '',
-      router: { push: noop }, facets: { regions: [], series: [], years: [] }, viewState: 'results',
-      groups: groupByYear([value]), regionName: '', withheldText: '', downloading: '', previewVisible: true,
-      previewItem: value, previewKind: 'student', narrowScreen: false, detail: value, detailLoading: false,
-      page: 1, pageCount: 2, pageLoading: false, pageUrl: '', pageError: '', detailError: '',
-      onModeChange: noop, load: noop, pickRegion: noop, clearFilters: noop, openPreview: noop, download: noop,
-      loadPage: noop, closePreview: noop, paperHeadline, answerState, editionLabel, filePageLabel,
-      studentPageLabel, verificationState, printNote, regionSummary,
-    }) })
-    for (const name of ['el-card', 'el-tag', 'el-button', 'el-radio-group', 'el-radio-button', 'el-select',
-      'el-option', 'el-result', 'el-empty', 'el-tooltip', 'el-dialog', 'el-tabs', 'el-tab-pane', 'HelpButton']) {
-      app.component(name, { inheritAttrs: false, setup: (_, { slots, attrs }) => () => Vue.h('div',
-        { 'data-component': name, 'data-content': attrs.content, 'data-disabled': attrs.disabled },
-        [slots.header?.(), slots.default?.(), slots.extra?.(), slots.footer?.()]) })
-    }
-    app.directive('loading', { getSSRProps: () => ({}) })
-    return renderToString(app)
+  // The library page listing `value` (its detail answered with `detail`), its
+  // preview opened on the paper tab and then on the answer tab: the card's and
+  // the preview's text, the card's answer flag, the page counter of each tab,
+  // and the whole tree with its attributes (tooltips, help texts).
+  async function renderPaper(value, detail = value) {
+    const { page } = await openLibrary(t, { items: [value], detail: () => detail })
+    await showSeries(page)
+    const card = page.root.byClass('paper-card')
+    assert.ok(card, 'the paper is listed')
+    const cardText = card.text
+    const flag = card.byClass('answer-flag').text
+    await card.byText('el-button', '预览').dispatch('click')
+    await flush()
+    const dialog = page.root.find(el => el.tagName === 'el-dialog' && el.dataset.open === 'true')
+    const pageNav = () => dialog.byClass('page-nav').text
+    const rendered = { card: cardText, details: dialog.byClass('paper-details').text, html: page.html(), studentPages: pageNav() }
+    const tabs = dialog.find(el => el.tagName === 'el-tabs')
+    await choose(tabs, 'answer')
+    await tabs.handlers['tab-change']?.('answer')
+    await flush()
+    rendered.answerPages = pageNav()
+    rendered.html += page.html()
+    page.unmount()
+    return { ...rendered, flag, text: `${rendered.card} ${rendered.details}` }
   }
-  const purchasedHtml = await renderPaper(item)
-  assert.match(purchasedHtml, /网络原版 PDF/)
-  assert.doesNotMatch(purchasedHtml, /购买|付费/)
-  assert.match(purchasedHtml, /215.9 × 279.4 mm 共 2 页/)
-  assert.match(purchasedHtml, /资料检查.*身份、角色与全页机械渲染已检查/s)
-  assert.match(purchasedHtml, /未独立逐题核验数学内容/)
-  assert.match(purchasedHtml, /原文件水印保留，打印时按纸张缩放/)
-  assert.match(purchasedHtml, /含配套解析/)
-  assert.match(purchasedHtml, /来源配套完整解析/)
-  assert.doesNotMatch(purchasedHtml, /A4 共 2 页|仅列最终答案|经多个独立来源核对|试卷均为/)
-  const legacyHtml = await renderPaper({ ...item, edition: { kind: 'retypeset', label: '忠实重排版' },
+  // The list entry claims 3 answer pages; the paper's detail, which the
+  // answer tab pages through, says 1.
+  const purchased = await renderPaper({ ...item, answer: { ...item.answer, preview_pages: 3 } }, item)
+  assert.match(purchased.card, /网络原版 PDF/)
+  assert.match(purchased.text, /215.9 × 279.4 mm 共 2 页/)
+  assert.match(purchased.text, /资料检查.*身份、角色与全页机械渲染已检查/s)
+  assert.match(purchased.text, /未独立逐题核验数学内容/)
+  assert.match(purchased.text, /原文件水印保留，打印时按纸张缩放/)
+  assert.match(purchased.card, /含配套解析/)
+  assert.match(purchased.details, /来源配套完整解析/)
+  assert.match(purchased.details, /运营决定不是出版社许可/)
+  assert.doesNotMatch(purchased.html, /A4 共 2 页|仅列最终答案|经多个独立来源核对|试卷均为/)
+  // The answer tab pages through the answer file's own preview as the
+  // paper's detail describes it, not the paper's pages or the list entry.
+  assert.match(purchased.studentPages, /第 1 \/ 2 页/)
+  assert.match(purchased.answerPages, /第 1 \/ 1 页/)
+  const unpaged = await renderPaper(item, { ...item, answer: { ...item.answer, preview_pages: undefined } })
+  assert.match(unpaged.answerPages, /第 1 \/ — 页/)
+
+  const legacy = await renderPaper({ ...item, edition: { kind: 'retypeset', label: '忠实重排版' },
     student: { pages: 2, page_size: 'A4' }, verification: { status: 'verified', summary: '逐题来源核对；另经独立复核。' },
     answer: { available: true, status: 'verified', kind: 'final_answers', note: '非官方参考答案：仅列最终答案，经多个独立来源核对。' } })
-  assert.match(legacyHtml, /忠实重排版/)
-  assert.match(legacyHtml, /A4 共 2 页/)
-  assert.match(legacyHtml, /逐题来源核对；另经独立复核/)
-  assert.match(legacyHtml, /仅列最终答案，经多个独立来源核对/)
-  const generatedHtml = await renderPaper({ ...item, answer: { ...item.answer, status: 'generated',
+  assert.match(legacy.card, /忠实重排版/)
+  assert.match(legacy.text, /A4 共 2 页/)
+  assert.match(legacy.text, /逐题来源核对；另经独立复核/)
+  assert.match(legacy.html, /仅列最终答案，经多个独立来源核对/)
+  const generated = await renderPaper({ ...item, answer: { ...item.answer, status: 'generated',
     kind: 'answers_and_solutions', note: 'AI 解答生成的参考答案（含简要解析）。' } })
-  assert.match(generatedHtml, /含 AI 参考答案/)
-  assert.match(generatedHtml, /AI 解答生成的参考答案（含简要解析）。 非官方答案，未经人工逐题审核/)
-  const view = src('views/PastPapers.vue')
-  assert.match(view, /detail\.value\?\.answer\?\.preview_pages \|\| 0/)
-  assert.doesNotMatch(view + src('utils/pastPapers.js'), /购买|付费/)
+  assert.match(generated.card, /含 AI 参考答案/)
+  assert.match(generated.details, /AI 解答生成的参考答案（含简要解析）。 非官方答案，未经人工逐题审核/)
+  const unanswered = await renderPaper({ ...item, answer_available: false, answer: { available: false } })
+  assert.match(unanswered.card, /暂无答案/)
+
+  // Records that say less: what the page falls back to.
+  const bare = over => paper({ preview_pages: 1, answer_available: true, notes: [], attribution: [], ...over })
+  const unknown = await renderPaper(bare({ verification: { status: 'pending' }, answer: { available: true, status: 'unknown', preview_pages: 1 } }))
+  assert.equal(unknown.flag, '含答案/解析')
+  assert.match(unknown.card, /版本未说明/)
+  assert.match(unknown.text, /检查范围未说明：未提供检查范围说明。/)
+  assert.match(unknown.details, /非官方参考资料，具体性质与检查范围请查看详情。/)
+  assert.match(unknown.html, /content="非官方参考资料，具体性质与检查范围请查看详情。"/, 'the card\'s answer tooltip')
+  const bareResource = await renderPaper(bare({ verification: { status: 'resource_checked' }, answer: { available: true, status: 'source_paired', kind: 'final_answers', preview_pages: 1 } }))
+  assert.equal(bareResource.flag, '含配套答案')
+  assert.match(bareResource.card, /网络原版 PDF/)
+  assert.match(bareResource.text, /身份、文件角色、全页机械渲染及分层视觉抽样已检查。 未独立逐题核验数学内容/)
+  assert.match(bareResource.text, /保留来源 PDF 版式及原有水印/)
+  assert.match(bareResource.details, /来源配套答案\/解析。 未独立逐题核验数学答案，非官方答案。/)
+  const bareVerified = await renderPaper(bare({ verification: { status: 'verified' }, answer: { available: true, status: 'verified', preview_pages: 1 } }))
+  assert.equal(bareVerified.flag, '含参考答案')
+  assert.match(bareVerified.text, /逐题来源核对并经独立复核；不代表官方认证。/)
+  assert.match(bareVerified.details, /非官方参考答案，经多个独立来源核对并独立复核。/)
+  const bareGenerated = await renderPaper(bare({ answer: { available: true, status: 'generated', preview_pages: 1 } }))
+  assert.equal(bareGenerated.flag, '含 AI 参考答案')
+  assert.match(bareGenerated.details, /AI 解答生成的参考答案。 非官方答案，未经人工逐题审核/)
+
+  // Every list state the page can be in, as the teacher reaches it.
+  const henan = { key: 'henan', name: '河南', years: [2024, 2023] }
+  const withheld = { rights_pending: 1, not_verified: 2 }
+  const listing = (over = {}) => ({ data: { stage_supported: true, items: [item], ...over, facets: { years: [2024], series: [], regions: [], ...over.facets } } })
+  const states = {}
+  {
+    // Browsing by region (the default) first asks for a region, then lists
+    // what that region actually sat.
+    const { page } = await openLibrary(t, { list: () => listing({ withheld, facets: { regions: [henan] } }) })
+    const picker = page.root.byClass('region-picker')
+    assert.ok(picker, 'region browsing asks for a region first')
+    assert.match(picker.text, /请选择省份或直辖市，查看该地历年实际使用的数学试卷/)
+    assert.match(picker.byText('el-button', '河南').text, /河南\s*2 年/)
+    states.region = page.html()
+    await picker.byText('el-button', '河南').dispatch('click')
+    await flush()
+    assert.match(page.root.byClass('year-title').text, /2024年 河南实际使用的试卷/)
+    assert.match(page.root.byClass('withheld').text, /另有1 套标记为旧 verified 的未开放资料.*2 套其他未开放资料.*未向教师开放/)
+    states.regionResults = page.html()
+    page.unmount()
+  }
+  {
+    const { page } = await openLibrary(t, { list: () => listing() })
+    assert.ok(page.root.find(el => el.tagName === 'el-empty' && el.getAttribute('description') === '现有试卷的适用地区尚在核实中，请先按卷型浏览'))
+    assert.ok(page.root.byText('el-button', '按卷型浏览'))
+    states.noRegions = page.html()
+    page.unmount()
+  }
+  {
+    const { page } = await openLibrary(t, { list: () => listing({ items: [], withheld, facets: { years: [] } }) })
+    const empty = page.root.find(el => el.tagName === 'el-empty' && el.getAttribute('description') === '试卷库暂未开放可下载的整卷真题')
+    assert.ok(empty, 'an empty library says so')
+    assert.match(empty.byClass('withheld').text, /管理员提示：另有1 套.*，2 套.*，未向教师开放。/)
+    states.libraryEmpty = page.html()
+    page.unmount()
+  }
+  {
+    const message = '整卷真题目前只提供高中数学，请在个人资料中切换学段。'
+    const { page } = await openLibrary(t, { list: () => ({ data: { stage_supported: false, items: [], message } }) })
+    assert.ok(page.root.find(el => el.tagName === 'el-empty' && el.getAttribute('description') === message))
+    assert.ok(page.root.byText('el-button', '前往个人资料'))
+    states.stage = page.html()
+    page.unmount()
+  }
+  {
+    const { page } = await openLibrary(t, { list: () => listing({ items: [] }) })
+    await showSeries(page)
+    assert.ok(page.root.find(el => el.tagName === 'el-empty' && el.getAttribute('description') === '没有符合条件的试卷'))
+    assert.ok(page.root.byText('el-button', '清除筛选'))
+    states.filteredEmpty = page.html()
+    page.unmount()
+  }
+  {
+    const { page } = await openLibrary(t, { list: () => ({ status: 503, data: { detail: '目录暂不可用' } }) })
+    assert.equal(page.root.find(el => el.tagName === 'el-result')?.getAttribute('title'), '整卷真题加载失败')
+    states.error = page.html()
+    page.unmount()
+  }
+
+  // Nothing the page shows, tooltips and help included, calls a paper bought or paid for.
+  for (const shown of [purchased, unpaged, legacy, generated, unanswered, unknown, bareResource, bareVerified, bareGenerated]) {
+    assert.doesNotMatch(shown.html, /购买|付费/)
+  }
+  for (const [state, html] of Object.entries(states)) assert.doesNotMatch(html, /购买|付费/, state)
 })
 
 test('the past-paper library opens at /bank/past-papers in the teacher layout', async () => {
@@ -193,17 +320,84 @@ test('the past-paper library opens at /bank/past-papers in the teacher layout', 
   assert.deepEqual(renderedFiles(route), ['views/Layout.vue', 'views/PastPapers.vue'])
 })
 
-test('entry points and identity-only API calls are wired', () => {
-  const layout = src('views/Layout.vue')
-  assert.match(layout, /index="\/bank\/past-papers"[\s\S]*?整卷真题/)
-  assert.match(layout, /startsWith\('\/bank\/past-papers'\)\) return '\/bank\/past-papers'/)
-  assert.match(src('views/Bank.vue'), /goPastPapers[\s\S]*整卷真题|整卷真题[\s\S]*goPastPapers/)
-  const api = src('api/index.js')
-  const block = api.slice(api.indexOf('pastPapers: {'), api.indexOf('pastPapers: {') + 1400)
-  assert.match(block, /\/past-papers\/\$\{encodeURIComponent\(paperId\)\}\/download\/\$\{encodeURIComponent\(kind\)\}/)
-  assert.doesNotMatch(block, /path|url\s*:\s*[a-z]+Url/i)
-  const view = src('views/PastPapers.vue')
-  for (const text of ['下载试卷', '下载答案/解析', '按地区', '按卷型', '整卷真题加载失败', '没有符合条件的试卷', '试卷库暂未开放可下载的整卷真题']) {
-    assert.ok(view.includes(text), text)
+test('entry points and identity-only API calls are wired', async (t) => {
+  // The sidebar lists 整卷真题 and highlights it (not 题库) on its page.
+  {
+    const { client, pinia } = await signIn({ stage: 'senior' })
+    holdingBackend(client, config => (route(config) === 'get /auth/classes'
+      ? { data: { classes: [{ id: 1, class_name: '高三（1）班', student_count: 1 }], current_class_id: 1 } }
+      : { data: {} }))
+    const { default: Layout } = await import('../src/views/Layout.vue?sfc')
+    installTeleportToBody(t)
+    const page = await mountComponent(t, { render: () => null }, { path: '/bank/past-papers', layout: Layout, pinia })
+    const menu = page.root.find(el => el.tagName === 'el-menu')
+    const entry = menu.find(el => el.tagName === 'el-menu-item' && el.getAttribute('index') === '/bank/past-papers')
+    assert.ok(entry, 'the sidebar has an entry for the past-paper library')
+    assert.match(entry.text, /整卷真题/)
+    assert.equal(menu.getAttribute('default-active'), '/bank/past-papers')
+    assert.equal(page.root.byClass('crumb-group').text, '教学资源')
+    assert.equal(page.root.byClass('page-title').text, '整卷真题')
+    await page.router.push('/bank/photo-import')
+    await flush()
+    assert.equal(menu.getAttribute('default-active'), '/bank', 'other bank pages still highlight 题库')
+    page.unmount()
+  }
+  // The question bank links to it.
+  {
+    const { client, pinia } = await signIn({ stage: 'senior' })
+    holdingBackend(client, () => ({ data: {} }))
+    const { default: Bank } = await import('../src/views/Bank.vue?sfc')
+    const page = await mountView(t, Bank, { path: '/bank', pinia })
+    await button(page, '整卷真题').dispatch('click')
+    await flush()
+    assert.equal(page.router.currentRoute.value.fullPath, '/bank/past-papers')
+    page.unmount()
+  }
+  // Papers are addressed by their catalogue id and file kind only.
+  {
+    const listed = paper({ paper_id: 'gk/2024 甲', preview_pages: 1, answer_available: true,
+      answer: { available: true, status: 'generated', preview_pages: 1 }, notes: [], attribution: [], regions: [] })
+    const { client, page } = await openLibrary(t, { items: [listed] })
+    const downloads = captureDownloads(t, page)
+    for (const text of ['按地区', '按卷型']) assert.ok(page.root.byText('el-radio-button', text), text)
+    await showSeries(page)
+    await page.root.byClass('paper-card').byText('el-button', '预览').dispatch('click')
+    await flush()
+    const card = page.root.byClass('paper-card')
+    await card.byText('el-button', '下载试卷').dispatch('click')
+    await card.byText('el-button', '下载答案/解析').dispatch('click')
+    await flush()
+    const id = encodeURIComponent('gk/2024 甲')
+    const fileRequests = client.requests.filter(config => config.url.startsWith(`/past-papers/${id}`))
+    assert.deepEqual(fileRequests.map(config => config.url), [
+      `/past-papers/${id}/preview/student/1`,
+      `/past-papers/${id}`,
+      `/past-papers/${id}/download/student`,
+      `/past-papers/${id}/download/answer`,
+    ])
+    for (const config of fileRequests) {
+      assert.equal(config.params, undefined, `${config.url} sends no path or url`)
+      assert.equal(config.data, undefined, `${config.url} sends no body`)
+    }
+    for (const config of client.requests.filter(config => config.url === '/past-papers')) {
+      assert.ok(Object.keys(config.params ?? {}).every(key => ['region', 'series_key', 'year', 'track'].includes(key)), JSON.stringify(config.params))
+    }
+    assert.deepEqual(downloads.map(download => download.filename), ['2024高考数学新课标Ⅰ卷_试卷.pdf', '2024高考数学新课标Ⅰ卷_参考答案.pdf'])
+    page.unmount()
+  }
+  // Each list state says what it is.
+  {
+    const { page } = await openLibrary(t, { list: () => ({ status: 503, data: { detail: '目录暂不可用' } }) })
+    const failed = page.root.find(el => el.tagName === 'el-result')
+    assert.equal(failed.getAttribute('title'), '整卷真题加载失败')
+    assert.equal(failed.getAttribute('sub-title'), '目录暂不可用')
+    assert.deepEqual(messages, [], 'the page reports the failure itself, without a second toast')
+    page.unmount()
+  }
+  for (const [years, description] of [[[2024], '没有符合条件的试卷'], [[], '试卷库暂未开放可下载的整卷真题']]) {
+    const { page } = await openLibrary(t, { items: [], years })
+    await showSeries(page)
+    assert.ok(page.root.find(el => el.tagName === 'el-empty' && el.getAttribute('description') === description), description)
+    page.unmount()
   }
 })
