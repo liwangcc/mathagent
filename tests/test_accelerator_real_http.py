@@ -9,6 +9,7 @@ import subprocess
 import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
+from datetime import timedelta
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -379,6 +380,14 @@ def test_consumed_and_accepted_superseded_receipts_remain_device_bound(bound_nod
         )
         for page in (1, 2, 3)
     ]
+    # Leases go oldest first, ties broken by the random job id, and on Windows
+    # utcnow() moves in ~1 ms steps: the three jobs often share one creation
+    # time. Give them distinct ones, in enqueue order, so the leases follow it.
+    with context.Session() as db:
+        created = db.get(AcceleratorJob, job_ids[0]).created_at
+        for offset, job_id in enumerate(job_ids):
+            db.get(AcceleratorJob, job_id).created_at = created + timedelta(milliseconds=offset)
+        db.commit()
     attempts = []
     for index in range(3):
         client = context.clients[index % 2]
