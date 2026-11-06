@@ -60,7 +60,6 @@ const KNOWN_SOURCE_TEXT_READS = {
   'template-crop-editing.test.js': ['views/Upload.vue'],
   'template-drawing-preview.test.mjs': ['components/DrawingReferenceEditor.vue', 'views/Upload.vue'],
   'template-geometry-review-resolve.test.js': ['views/Upload.vue'],
-  'template-layout-save.test.js': ['views/Upload.vue'],
   'template-recognition-button.test.js': ['views/Upload.vue'],
   'template-recognition-network-state.test.js': ['views/Upload.vue'],
   'template-review.test.js': ['views/Upload.vue'],
