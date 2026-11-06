@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { anchor, CHECKPOINT_KEY, cutPage, openTemplateEditor, question, regions, ROUTES } from './helpers/templateCrop.js'
+import { templateDiagnosticHasPendingGeometryReview, templateResolveLowConfidenceDiagnostic } from '../src/utils/templateGeometry.js'
 
 // Regression: a page saved by the teacher must clear its model review markers
 // on the client exactly like the layout-overrides endpoint does on the server.
@@ -12,7 +13,7 @@ import { anchor, CHECKPOINT_KEY, cutPage, openTemplateEditor, question, regions,
 // The real 批改 page (Upload.vue) runs every case: the teacher opens the
 // template editor with a diagnostic on the page and saves it; where no button
 // reaches a case (geometry the teacher has only partly confirmed), the page's
-// own resolver is called on its mounted instance.
+// resolver itself is called (utils/templateGeometry.js, which the page uses).
 
 const REASON = '部分 Q 标签无法放入页面，请教师调整定位'
 const confirmedAnchors = () => [{ question_number: '1', human_confirmed: true }]
@@ -51,7 +52,7 @@ test('a saved page resolves directory-stage geometry diagnostics instead of bloc
   assert.equal(resolved.review_reason, 'teacher_confirmed')
   assert.equal(resolved.resolved_by, 'teacher')
   assert.equal(resolved.resolved_from, REASON)
-  assert.equal(editor.page.setup.templateDiagnosticHasPendingGeometryReview(resolved), false)
+  assert.equal(templateDiagnosticHasPendingGeometryReview(resolved), false)
   assert.equal(editor.preview().anchorDiagnostics.resolved_by, 'teacher', 'the editor page holds the same resolution')
   // No review left: the template is confirmed in the same click.
   assert.equal(editor.confirms().length, 1)
@@ -65,12 +66,12 @@ test('an unconfirmed page keeps its pending geometry review fail-closed', async 
   await editor.save()
   assert.deepEqual(editor.layoutSaves().map(body => body.page_index), [0], 'the page is saved')
   assert.equal(storedDiagnostic(editor), before, 'its diagnostic stays as it was')
-  assert.equal(editor.page.setup.templateDiagnosticHasPendingGeometryReview(storedDiagnostic(editor)), true)
+  assert.equal(templateDiagnosticHasPendingGeometryReview(storedDiagnostic(editor)), true)
   assert.ok(editor.warnings().some(text => text.includes('模型定位或逐图关联仍需人工复核')))
   assert.equal(editor.confirms().length, 0)
 
   // Partly confirmed geometry (confirmed anchors, an unconfirmed region) leaves it untouched too.
-  const resolve = editor.page.setup.templateResolveLowConfidenceDiagnostic
+  const resolve = templateResolveLowConfidenceDiagnostic
   assert.equal(resolve(diagnostic, [], []), diagnostic)
   assert.equal(resolve(diagnostic, confirmedAnchors(), [{ question_number: '1', regions: [[10, 20, 30, 40]] }]), diagnostic)
   assert.notEqual(resolve(diagnostic, confirmedAnchors(), confirmedHandwriting()), diagnostic)
@@ -81,16 +82,16 @@ test('one page save also resolves nested image association markers and their uns
     const diagnostic = { needs_review: false, geometry_review_pending: false, image_association }
     const editor = await editorWith(t, diagnostic)
     // A pending association is an unsaved teacher decision and holds the gate.
-    assert.equal(editor.page.setup.templateDiagnosticHasPendingGeometryReview(diagnostic), true)
+    assert.equal(templateDiagnosticHasPendingGeometryReview(diagnostic), true)
     assert.match(editor.card().text, /请核对本页定位/)
     assert.match(editor.alert(), /模型诊断待复核（.*第1页：image_association/)
-    assert.equal(editor.page.setup.templateResolveLowConfidenceDiagnostic(diagnostic, [], []), diagnostic)
+    assert.equal(templateResolveLowConfidenceDiagnostic(diagnostic, [], []), diagnostic)
 
     await editor.save()
     const resolved = storedDiagnostic(editor)
     assert.equal(resolved.image_association.needs_review, false)
     assert.equal(resolved.image_association.status, 'teacher_confirmed')
-    assert.equal(editor.page.setup.templateDiagnosticHasPendingGeometryReview(resolved), false)
+    assert.equal(templateDiagnosticHasPendingGeometryReview(resolved), false)
     assert.equal(editor.confirms().length, 1)
     editor.unmount()
   }
@@ -104,7 +105,7 @@ test('legacy diagnostics without an explicit geometry result resolve after the t
   const resolved = storedDiagnostic(editor)
   assert.equal(resolved.needs_review, false)
   assert.equal(resolved.resolved_from, reason)
-  assert.equal(editor.page.setup.templateDiagnosticHasPendingGeometryReview(resolved), false)
+  assert.equal(templateDiagnosticHasPendingGeometryReview(resolved), false)
   assert.equal(editor.confirms().length, 1)
 })
 
@@ -117,7 +118,8 @@ test('an explicit non-geometry review result is neither blocking nor rewritten',
   const editor = await editorWith(t, advisory)
   assert.equal(editor.alert(), '', 'an advisory note does not hold the geometry gate')
   assert.doesNotMatch(editor.card().text, /请核对本页定位/)
-  const { templateDiagnosticHasPendingGeometryReview: pending, templateResolveLowConfidenceDiagnostic: resolve } = editor.page.setup
+  const pending = templateDiagnosticHasPendingGeometryReview
+  const resolve = templateResolveLowConfidenceDiagnostic
   assert.equal(pending(advisory), false)
   assert.equal(resolve(advisory, confirmedAnchors(), confirmedHandwriting()), advisory)
   assert.equal(resolve(advisory, [], []), advisory)
