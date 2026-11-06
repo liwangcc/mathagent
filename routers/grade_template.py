@@ -93,17 +93,19 @@ from models import QuestionBank
 from models_user import User
 from routers.auth import _require_user
 from routers.grade import (
-    _sse,
-    _settle_template_component,
     _batch_grade_service_availability,
     _save_batch_uploads,
+    _template_handwriting_regions_for_mode,
+)
+from config import MAX_TEMPLATE_PAGES, MAX_UPLOAD_TOTAL_SIZE
+from routers.grade_common import (
+    _sse,
+    _settle_template_component,
     _new_template_session,
     _load_owned_template_session,
     _locked_owned_template_session,
     _template_knowledge_classifier,
-    _template_handwriting_regions_for_mode,
 )
-from config import MAX_TEMPLATE_PAGES, MAX_UPLOAD_TOTAL_SIZE
 
 logger = logging.getLogger(__name__)
 router = APIRouter()

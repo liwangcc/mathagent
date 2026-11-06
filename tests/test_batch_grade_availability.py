@@ -19,6 +19,7 @@ from services import (
     ocr_teacher_fairness,
 )
 from services.quick_grader import QuickBatch
+from tests.grade_family import set_grade_global
 
 
 class _LocalLimiter:
@@ -865,16 +866,7 @@ def test_confirm_rechecks_readiness_before_first_grading_side_effect(
     )
     monkeypatch.setattr(grade_pipeline, "SessionLocal", _ReadOnlyDB)
     monkeypatch.setattr(grade, "SessionLocal", _ReadOnlyDB)
-    monkeypatch.setattr(
-        grade_pipeline,
-        "batch_operation_lock",
-        lambda *_args, **_kwargs: nullcontext(),
-    )
-    monkeypatch.setattr(
-        grade,
-        "batch_operation_lock",
-        lambda *_args, **_kwargs: nullcontext(),
-    )
+    set_grade_global(monkeypatch, "batch_operation_lock", lambda *_args, **_kwargs: nullcontext())
 
     async def exercise():
         response = await grade.batch_grade_confirm(
@@ -941,16 +933,7 @@ def test_completed_confirm_replay_does_not_require_live_chain(tmp_path, monkeypa
     monkeypatch.setattr(grade, "batch_grade_availability", must_not_check)
     monkeypatch.setattr(grade_pipeline, "SessionLocal", _ReadOnlyDB)
     monkeypatch.setattr(grade, "SessionLocal", _ReadOnlyDB)
-    monkeypatch.setattr(
-        grade_pipeline,
-        "batch_operation_lock",
-        lambda *_args, **_kwargs: nullcontext(),
-    )
-    monkeypatch.setattr(
-        grade,
-        "batch_operation_lock",
-        lambda *_args, **_kwargs: nullcontext(),
-    )
+    set_grade_global(monkeypatch, "batch_operation_lock", lambda *_args, **_kwargs: nullcontext())
 
     async def exercise():
         response = await grade.batch_grade_confirm(

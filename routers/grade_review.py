@@ -29,8 +29,10 @@ from routers.auth import _require_user
 from routers.grade import (
     _RAW_PAPER_EXPIRED_MESSAGE,
     _batch_report_response,
-    _review_avg_score,
     _batch_review_image_path,
+)
+from routers.grade_common import (
+    _review_avg_score,
     _stable_review_image_hash,
     _load_owned_review_batch,
     _locked_owned_review_batch,

@@ -45,6 +45,16 @@ from services.student_service import canonical_student_no
 from models import Student
 from models_user import User
 from config import UPLOAD_DIR
+from routers.grade_common import (
+    _GRADE_HEARTBEAT_SECONDS,
+    _require_owned_batch,
+    _review_avg_score,
+    _review_timestamp,
+    _save_quick_batch_meta,
+    _settle_template_component,
+    _sse,
+    _stable_review_image_hash,
+)
 
 _GENERIC_GRADE_ERROR = "批改处理失败，请稍后重试"
 # Reserve nine minutes for the text-only Flash grading stage after the
@@ -1157,7 +1167,6 @@ def _grading_elapsed_seconds(batch: QuickBatch) -> float | None:
 # ``logger`` is routers.grade's, so these records keep their logger name.
 from routers.grade import (  # noqa: E402
     ConfirmReq,
-    _GRADE_HEARTBEAT_SECONDS,
     _GRADING_CONTRACT_VERSION,
     _REVIEW_FINISHED_STATUSES,
     _anonymous_page_identity,
@@ -1173,13 +1182,6 @@ from routers.grade import (  # noqa: E402
     _require_batch_scoring_chain,
     _require_complete_batch_ocr,
     _require_orientation_ready,
-    _require_owned_batch,
-    _review_avg_score,
-    _review_timestamp,
-    _save_quick_batch_meta,
-    _settle_template_component,
-    _sse,
-    _stable_review_image_hash,
     _start_batch_report_generation,
     logger,
 )

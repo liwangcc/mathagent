@@ -964,7 +964,6 @@ def test_review_image_recovers_old_boxes_from_the_matched_template_page(monkeypa
     from types import SimpleNamespace
     from PIL import Image
     import routers.grade as grade_router
-    from routers import grade_template
 
     client, _upload_dir, batch = _setup_review_image_batch(monkeypatch, tmp_path)
     batch.template_id = "two-page-template"
@@ -979,8 +978,7 @@ def test_review_image_recovers_old_boxes_from_the_matched_template_page(monkeypa
         "page_2": {"template_image": "page2.png", "question_schema": [{"question_number": "1"}],
                    "template_answer_regions": [{"question_number": "1", "regions": [[100, 100, 150, 120]]}]},
     })
-    monkeypatch.setattr(grade_router, "_load_owned_template_session", lambda *args: template)
-    monkeypatch.setattr(grade_template, "_load_owned_template_session", lambda *args: template)
+    set_grade_global(monkeypatch, "_load_owned_template_session", lambda *args: template)
     mapped = []
     def align(details, source, target):
         assert Path(source).name == "page2.png"

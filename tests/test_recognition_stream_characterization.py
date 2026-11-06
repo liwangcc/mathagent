@@ -38,6 +38,7 @@ from models_user import User
 from services import analyzer, ocr_service
 from services.quick_grader import BatchOperationBusy, QuickBatch, batch_operation_lock
 from tests.test_batch_calibration_flow import _events, _setup
+from tests.grade_family import set_grade_global
 
 
 GOLDEN_DIR = Path(__file__).parent / "golden" / "recognition_stream"
@@ -77,7 +78,6 @@ def deterministic_runtime(monkeypatch):
 def record_ledger(monkeypatch):
     """Record each persisted snapshot and each lock transition, in order."""
     import routers.grade as grade
-    from routers import grade_pipeline
 
     _LEDGER.clear()
     save_meta = QuickBatch.save_meta
@@ -116,8 +116,7 @@ def record_ledger(monkeypatch):
             return self.inner.__exit__(*exc_info)
 
     monkeypatch.setattr(QuickBatch, "save_meta", recording_save_meta)
-    monkeypatch.setattr(grade_pipeline, "batch_operation_lock", RecordingLock)
-    monkeypatch.setattr(grade, "batch_operation_lock", RecordingLock)
+    set_grade_global(monkeypatch, "batch_operation_lock", RecordingLock)
 
 
 class _Normalizer:
@@ -361,7 +360,6 @@ def _break_stream_database(monkeypatch, Session):
 
 def _busy_lock(monkeypatch):
     import routers.grade as grade
-    from routers import grade_pipeline
 
     real_lock = grade.batch_operation_lock
 
@@ -371,8 +369,7 @@ def _busy_lock(monkeypatch):
         _LEDGER.append(["lock", "batch", "busy"])
         raise BatchOperationBusy("synthetic concurrent recognition")
 
-    monkeypatch.setattr(grade_pipeline, "batch_operation_lock", busy)
-    monkeypatch.setattr(grade, "batch_operation_lock", busy)
+    set_grade_global(monkeypatch, "batch_operation_lock", busy)
 
 
 # ── initial recognition ─────────────────────────────────────────────────────
@@ -846,7 +843,6 @@ def test_resume_busy_batch_lock(monkeypatch, tmp_path):
 def test_resume_checkpoint_changed_before_lock(monkeypatch, tmp_path, change):
     client, _Session = _setup(monkeypatch, tmp_path)
     import routers.grade as grade
-    from routers import grade_pipeline
 
     _checkpoint(tmp_path)
     boundary = _Boundary(monkeypatch)
@@ -859,8 +855,7 @@ def test_resume_checkpoint_changed_before_lock(monkeypatch, tmp_path, change):
         meta.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
         return real_lock(batch_id, upload_dir)
 
-    monkeypatch.setattr(grade_pipeline, "batch_operation_lock", lock_after_concurrent_change)
-    monkeypatch.setattr(grade, "batch_operation_lock", lock_after_concurrent_change)
+    set_grade_global(monkeypatch, "batch_operation_lock", lock_after_concurrent_change)
 
     response = _resume(client)
 

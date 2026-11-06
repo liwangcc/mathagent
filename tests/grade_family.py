@@ -9,7 +9,24 @@ from __future__ import annotations
 
 import importlib
 
-from tests.patch_reach import reach
+from tests.patch_reach import _project, reach
+
+_GRADE = "routers.grade"
+
+
+def _readers(name: str) -> list[str]:
+    """Family modules reading ``name`` bound to one origin, split modules first."""
+    project = _project()
+    reached, _ = reach(_GRADE, name)
+    split = sorted(module for module in project if module.startswith(_GRADE + "_"))
+    if name in project[_GRADE].origins or name in project[_GRADE].reads:
+        origins = {project[_GRADE].origin(name)}
+    else:
+        origins = {project[module].origin(name) for module in split if name in project[module].reads}
+    assert len(origins) == 1, f"{name} has no single origin in the routers.grade family: {origins}"
+    readers = [module for module in split
+               if name in project[module].reads and project[module].origin(name) in origins]
+    return readers + ([_GRADE] if reached else [])
 
 
 def set_grade_global(monkeypatch, name: str, value) -> None:
@@ -18,8 +35,7 @@ def set_grade_global(monkeypatch, name: str, value) -> None:
     The readers come from the same static index as tests/patch_reach.py, and
     the split modules are patched before routers.grade, as that guard requires.
     """
-    reached, split_readers = reach("routers.grade", name)
-    readers = [*split_readers, *(["routers.grade"] if reached else [])]
+    readers = _readers(name)
     assert readers, f"no module of the routers.grade family reads {name}"
     for module in readers:
         monkeypatch.setattr(importlib.import_module(module), name, value)

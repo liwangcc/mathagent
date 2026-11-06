@@ -28,6 +28,11 @@ from config import (
     OCR_BATCH_DISPATCH_CONCURRENT,
     OCR_TEACHER_WAVE_SIZE,
 )
+from routers.grade_common import (
+    _GRADE_HEARTBEAT_SECONDS,
+    _settle_template_component,
+    _sse,
+)
 
 
 async def _recognize_upload(
@@ -183,12 +188,9 @@ async def _ocr_phase_events(
 # re-exports the names above; importing it last works in either import order.
 # ``logger`` is routers.grade's, so these records keep their logger name.
 from routers.grade import (  # noqa: E402
-    _GRADE_HEARTBEAT_SECONDS,
     _RecognitionRun,
     _ensure_batch_upload_inspected,
     _recognize_batch_upload,
-    _settle_template_component,
-    _sse,
     logger,
 )
 # The per-paper grading pipeline lives in routers/grade_pipeline.py.
