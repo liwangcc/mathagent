@@ -8,11 +8,9 @@ import uuid
 import logging
 from contextlib import aclosing
 from dataclasses import dataclass
-from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
 from fastapi.responses import StreamingResponse
-from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from database import get_db, SessionLocal
@@ -51,8 +49,6 @@ from services.template_session import TemplateSession
 from services.grading_contract import VALID_GRADING_CATEGORIES
 from services.collection_identity import parse_source_paths
 from services.identity_inheritance import inheritance_upload_order_key
-from services.student_service import canonical_student_no
-from models import Student
 from models_user import User
 from routers.auth import _require_user
 from config import OCR_PREPROCESS_LOCAL_MAX_CONCURRENT, UPLOAD_DIR
@@ -170,6 +166,50 @@ from routers.grade_paper_checks import (
     _recognize_reoriented_upload,
     _finish_orientation_retry,
     batch_grade_paper_image,
+)
+from routers.grade_papers import (
+    _IdentityResolution,
+    _prepare_anonymous_identity_plan,
+    _prepare_identity_plan,
+)
+from routers.grade_pipeline import router as _pipeline_router
+from routers.grade_pipeline import (
+    ConfirmReq,
+    _REVIEW_FINISHED_STATUSES,
+    batch_grade_confirm,
+    _GENERIC_GRADE_ERROR,
+    _GRADE_BATCH_DEADLINE_S,
+    _GradingProgress,
+    _GradingRefused,
+    _PerPaperGradingPipeline,
+    _RUBRIC_METADATA_KEYS,
+    _batch_rubric_hash,
+    _build_template_confirmed_map,
+    _completed_papers_replay,
+    _confirmation_questions_from_contract,
+    _contract_answer_specs,
+    _finish_grading_run,
+    _finished_grading_replay,
+    _freeze_grading_contract,
+    _grade_paper_core,
+    _graded_papers,
+    _grading_contract_for_run,
+    _grading_elapsed_seconds,
+    _grading_events,
+    _mark_grading_interrupted,
+    _mark_grading_started,
+    _pin_batch_rubric,
+    _pipeline_grading_answer_map,
+    _pipeline_identity_assignment,
+    _pipeline_result_sse,
+    _record_graded_paper,
+    _row_matches_rubric_pin,
+    _scoring_chain_unavailable,
+    _start_grading_run,
+    _start_per_paper_grading,
+    _stop_for_deferred_papers,
+    _stop_for_grading_deadline,
+    _upsert_batch_paper_result,
 )
 
 logger = logging.getLogger(__name__)
@@ -1332,243 +1372,11 @@ async def _resumed_recognition_events(batch_id: str, batch: QuickBatch, user: Us
         await lease.release(run.pipeline)
 
 
-class _IdentityResolution(BaseModel):
-    paper_id: str
-    action: Literal["existing", "create"]
-    student_id: int | None = None
-    confirmed_name: str = ""
-    confirmed_student_no: str = ""
-
-
-class ConfirmReq(BaseModel):
-    # Answers come from the batch's frozen template. Clients may still send
-    # ``confirmed_answers``; like any unknown field it is ignored.
-    batch_id: str
-    mode: str = "precise"
-    category: str = "daily"
-    exam_name: str = ""
-    identity_resolutions: list[_IdentityResolution] = []
-
-
-def _prepare_anonymous_identity_plan(batch: QuickBatch) -> dict[str, dict]:
-    """Keep every uploaded page independent and outside student records."""
-    plan: dict[str, dict] = {}
-    upload_order = {
-        str(item.get("paper_id") or ""): index + 1
-        for index, item in enumerate(batch.uploads)
-        if item.get("paper_id")
-    }
-    for index, paper in enumerate(batch.papers):
-        paper_id = str(paper.get("paper_id") or f"paper-{index + 1}")
-        paper["paper_id"] = paper_id
-        label = f"匿名页 {upload_order.get(paper_id, index + 1)}"
-        paper["student_name"] = label
-        paper["student_no"] = ""
-        paper["identity"] = {
-            "status": "anonymous",
-            "student_id": None,
-            "reason": "anonymous_batch",
-        }
-        plan[paper_id] = {
-            "action": "anonymous",
-            "student_id": None,
-            "name": label,
-            "student_no": "",
-        }
-    return plan
-
-
-def _prepare_identity_plan(
-    db: Session,
-    batch: QuickBatch,
-    resolutions: list[_IdentityResolution],
-    teacher_id: int,
-    frozen_fallback: dict[str, dict] | None = None,
-) -> dict[str, dict]:
-    """Validate every page identity before any grading call or database write."""
-    by_paper = {item.paper_id: item for item in resolutions}
-    if len(by_paper) != len(resolutions):
-        raise HTTPException(400, detail="同一张试卷不能提交多条学生身份确认")
-    _refresh_identity_inheritance(batch)
-    plan: dict[str, dict] = {}
-    planned_creates: dict[str, str] = {}
-    valid_paper_ids: set[str] = set()
-
-    for index, paper in enumerate(batch.papers):
-        paper_id = str(paper.get("paper_id") or f"paper-{index + 1}")
-        paper["paper_id"] = paper_id
-        valid_paper_ids.add(paper_id)
-        identity = paper.get("identity") or {}
-        if identity.get("status") == "matched" and identity.get("student_id"):
-            student = db.query(Student).filter(
-                Student.id == int(identity["student_id"]),
-                Student.teacher_id == teacher_id,
-                Student.class_id == batch.class_id,
-            ).first()
-            if student is None:
-                raise HTTPException(400, detail=f"{paper.get('filename', paper_id)} 的自动匹配学生已失效，请重新确认身份")
-            plan[paper_id] = {
-                "action": "existing",
-                "student_id": student.id,
-                "name": student.name,
-                "student_no": student.student_no or "",
-            }
-            continue
-
-        resolution = by_paper.get(paper_id)
-        frozen = (frozen_fallback or {}).get(paper_id) or {}
-        if resolution is None and frozen:
-            action = str(frozen.get("action") or "")
-            if action == "existing" and int(frozen.get("student_id") or 0) > 0:
-                plan[paper_id] = {
-                    "action": "existing",
-                    "student_id": int(frozen["student_id"]),
-                    "name": str(frozen.get("name") or ""),
-                    "student_no": str(frozen.get("student_no") or ""),
-                }
-                continue
-            if action == "create":
-                frozen_name = str(frozen.get("name") or "").strip()
-                frozen_no = canonical_student_no(frozen.get("student_no"))
-                if frozen_name:
-                    plan[paper_id] = {
-                        "action": "create",
-                        "student_id": None,
-                        "name": frozen_name,
-                        "student_no": frozen_no,
-                    }
-                    if frozen_no:
-                        planned_creates[frozen_no] = frozen_name
-                    continue
-        if resolution is None:
-            raise HTTPException(400, detail=f"{paper.get('filename', paper_id)} 的学生身份尚未确认")
-
-        if resolution.action == "existing":
-            if not resolution.student_id:
-                raise HTTPException(400, detail=f"{paper.get('filename', paper_id)} 必须选择已有学生")
-            student = db.query(Student).filter(
-                Student.id == resolution.student_id,
-                Student.teacher_id == teacher_id,
-                Student.class_id == batch.class_id,
-            ).first()
-            if student is None:
-                raise HTTPException(400, detail=f"{paper.get('filename', paper_id)} 选择的学生不在本批次班级")
-            plan[paper_id] = {
-                "action": "existing",
-                "student_id": student.id,
-                "name": student.name,
-                "student_no": student.student_no or "",
-            }
-            continue
-
-        name = resolution.confirmed_name.strip()
-        student_no = canonical_student_no(resolution.confirmed_student_no)
-        if not name:
-            raise HTTPException(400, detail=f"{paper.get('filename', paper_id)} 新建学生必须确认姓名")
-        if student_no:
-            duplicate = db.query(Student).filter(
-                Student.teacher_id == teacher_id,
-                Student.student_no == student_no,
-            ).first()
-            if duplicate is not None:
-                raise HTTPException(
-                    400,
-                    detail=f"学号 {student_no} 已属于 {duplicate.name}，请选择已有学生而不是新建",
-                )
-            prior_name = planned_creates.get(student_no)
-            if prior_name is not None and prior_name != name:
-                raise HTTPException(400, detail=f"同一学号 {student_no} 被确认成了两个不同姓名")
-            planned_creates[student_no] = name
-        plan[paper_id] = {
-            "action": "create",
-            "student_id": None,
-            "name": name,
-            "student_no": student_no,
-        }
-
-    unknown_papers = set(by_paper) - valid_paper_ids
-    if unknown_papers:
-        raise HTTPException(400, detail="学生身份确认中包含不属于本批次的试卷")
-    return plan
-
-
-_REVIEW_FINISHED_STATUSES = {"review_ready", "voided", "archived"}
-
-
 # Identity options, orientation, exclusion and paper images keep their place
 # after the recognition routes.
 router.include_router(_paper_checks_router)
-
-
-@router.post("/batch-grade/confirm")
-async def batch_grade_confirm(
-    req: ConfirmReq,
-    user: User = Depends(_require_user),
-    db: Session = Depends(get_db),
-):
-    """阶段二：按批次冻结模板的答案批改（SSE）。
-
-    两种模式流程完全一致（题型分流 + 整卷调用），只有 Flash 输出详细程度不同：
-    - precise（详细）：输出解析 + 标准答案 + 指导建议
-    - simple （简单）：只输出对/错（兼容旧值 auto）
-    选择题恒走机械比对（0 成本），填空/大题走 Flash 整卷调用。
-    批次必须来自已确认模板并直接复用冻结快照。
-
-    SSE events:
-      - progress: {message, current, total}
-      - result:   {student_name, grading_result_id, profile_id, score, correct, partial, wrong, total, ...}
-      - done:     {total, avg_score, [idempotent]}
-      - error:    {message}
-    """
-    if req.mode not in ("precise", "auto", "simple"):
-        raise HTTPException(400, detail="mode 必须是 precise/auto/simple")
-    if req.category not in VALID_GRADING_CATEGORIES:
-        raise HTTPException(400, detail="category 必须是 daily 或 exam")
-    batch = QuickBatch.load_meta(req.batch_id, UPLOAD_DIR)
-    _require_owned_batch(batch, user)
-    _require_complete_batch_ocr(batch)
-    _require_orientation_ready(batch)
-    if not batch.papers and batch.status != "done":
-        raise HTTPException(404, detail="批次不存在或已过期")
-
-    # One answer per frozen question; empty or duplicate numbers fail with 409.
-    confirmed = _authoritative_answers_for_confirmation(batch, req.category)
-    terminal_result_replay = bool(
-        batch.status in _REVIEW_FINISHED_STATUSES
-        and batch.results
-    )
-    # Pure request validation must happen before StreamingResponse is created,
-    # otherwise FastAPI has already committed HTTP 200 when an identity error
-    # is discovered. The generator repeats this check after taking the batch
-    # lock to protect against a concurrent metadata change.
-    frozen_identity_plan = (
-        batch.grading_contract.get("identity_plan") or {}
-        if isinstance(batch.grading_contract, dict)
-        else {}
-    )
-    if batch.identity_mode == "anonymous":
-        _prepare_anonymous_identity_plan(batch)
-    elif frozen_identity_plan or not terminal_result_replay:
-        _prepare_identity_plan(
-            db,
-            batch,
-            req.identity_resolutions,
-            user.id,
-            frozen_fallback=frozen_identity_plan,
-        )
-
-    # Completed batches only replay durable results (or return a frozen-contract
-    # error), so they remain readable during an outage. Every request that can
-    # start or resume grading must fail with HTTP 503 before StreamingResponse
-    # commits its status line.
-    if not terminal_result_replay:
-        await _require_batch_scoring_chain(batch)
-
-    return StreamingResponse(
-        stream_teaching(batch.teaching_context, _grading_events(req, user, batch, confirmed)),
-        media_type="text/event-stream",
-        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
-    )
+# POST /batch-grade/confirm follows them.
+router.include_router(_pipeline_router)
 
 
 # GET /batch-grade/report/{batch_id} stays this router's last route.
@@ -1583,43 +1391,4 @@ from routers.grade_recognition import (  # noqa: E402,F401
     _ocr_outcome_message,
     _ocr_phase_events,
     _recognize_upload,
-)
-
-# Grading execution (the per-paper pipeline, its rubric pins and the confirm
-# grading stream) lives in routers/grade_pipeline.py, which reads the helpers
-# above from this module; its names stay importable from here.
-from routers.grade_pipeline import (  # noqa: E402,F401
-    _GENERIC_GRADE_ERROR,
-    _GRADE_BATCH_DEADLINE_S,
-    _GradingProgress,
-    _GradingRefused,
-    _PerPaperGradingPipeline,
-    _RUBRIC_METADATA_KEYS,
-    _batch_rubric_hash,
-    _build_template_confirmed_map,
-    _completed_papers_replay,
-    _confirmation_questions_from_contract,
-    _contract_answer_specs,
-    _finish_grading_run,
-    _finished_grading_replay,
-    _freeze_grading_contract,
-    _grade_paper_core,
-    _graded_papers,
-    _grading_contract_for_run,
-    _grading_elapsed_seconds,
-    _grading_events,
-    _mark_grading_interrupted,
-    _mark_grading_started,
-    _pin_batch_rubric,
-    _pipeline_grading_answer_map,
-    _pipeline_identity_assignment,
-    _pipeline_result_sse,
-    _record_graded_paper,
-    _row_matches_rubric_pin,
-    _scoring_chain_unavailable,
-    _start_grading_run,
-    _start_per_paper_grading,
-    _stop_for_deferred_papers,
-    _stop_for_grading_deadline,
-    _upsert_batch_paper_result,
 )

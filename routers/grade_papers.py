@@ -8,7 +8,10 @@
   the teacher must review; ``_refresh_identity_inheritance`` lets blank pages
   inherit the identity of the page before them.
 - ``_require_complete_batch_ocr`` / ``_require_orientation_ready``: every paper
-  is recognized and upright before grading may start.
+  is recognized and upright before grading may start; ``_prepare_identity_plan``
+  (or ``_prepare_anonymous_identity_plan``) settles which student each paper
+  belongs to, from the teacher's ``_IdentityResolution`` choices, before any
+  grading call or database write.
 - ``_batch_paper_display_path`` / ``_batch_review_image_path``: the paper image
   to show, plain or with review marks, unless privacy retention removed it.
 
@@ -20,8 +23,10 @@ import logging
 import os
 import uuid
 from pathlib import Path
+from typing import Literal
 
 from fastapi import HTTPException
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from models import Student
@@ -50,6 +55,7 @@ from services.review_marks import (
     render_review_marks,
     review_cache_name,
 )
+from services.student_service import canonical_student_no
 from services.teaching_context import await_teaching
 
 # routers.grade's logger, so these records keep their logger name.
@@ -479,7 +485,7 @@ def _refresh_identity_inheritance(batch: QuickBatch) -> None:
             if job.get("status") == "excluded"
         ),
     )
-# ── Ready to grade ───────────────────────────────────────────────────────
+# ── Before grading: every paper recognized, upright and assigned ─────────
 def _require_complete_batch_ocr(batch: QuickBatch) -> None:
     """Reject partial OCR batches before any grading or database mutation."""
     if batch.status == "failed":
@@ -533,6 +539,156 @@ def _require_orientation_ready(batch: QuickBatch) -> None:
                 "files": blocked,
             },
         )
+
+
+class _IdentityResolution(BaseModel):
+    paper_id: str
+    action: Literal["existing", "create"]
+    student_id: int | None = None
+    confirmed_name: str = ""
+    confirmed_student_no: str = ""
+
+
+def _prepare_anonymous_identity_plan(batch: QuickBatch) -> dict[str, dict]:
+    """Keep every uploaded page independent and outside student records."""
+    plan: dict[str, dict] = {}
+    upload_order = {
+        str(item.get("paper_id") or ""): index + 1
+        for index, item in enumerate(batch.uploads)
+        if item.get("paper_id")
+    }
+    for index, paper in enumerate(batch.papers):
+        paper_id = str(paper.get("paper_id") or f"paper-{index + 1}")
+        paper["paper_id"] = paper_id
+        label = f"匿名页 {upload_order.get(paper_id, index + 1)}"
+        paper["student_name"] = label
+        paper["student_no"] = ""
+        paper["identity"] = {
+            "status": "anonymous",
+            "student_id": None,
+            "reason": "anonymous_batch",
+        }
+        plan[paper_id] = {
+            "action": "anonymous",
+            "student_id": None,
+            "name": label,
+            "student_no": "",
+        }
+    return plan
+
+
+def _prepare_identity_plan(
+    db: Session,
+    batch: QuickBatch,
+    resolutions: list[_IdentityResolution],
+    teacher_id: int,
+    frozen_fallback: dict[str, dict] | None = None,
+) -> dict[str, dict]:
+    """Validate every page identity before any grading call or database write."""
+    by_paper = {item.paper_id: item for item in resolutions}
+    if len(by_paper) != len(resolutions):
+        raise HTTPException(400, detail="同一张试卷不能提交多条学生身份确认")
+    _refresh_identity_inheritance(batch)
+    plan: dict[str, dict] = {}
+    planned_creates: dict[str, str] = {}
+    valid_paper_ids: set[str] = set()
+
+    for index, paper in enumerate(batch.papers):
+        paper_id = str(paper.get("paper_id") or f"paper-{index + 1}")
+        paper["paper_id"] = paper_id
+        valid_paper_ids.add(paper_id)
+        identity = paper.get("identity") or {}
+        if identity.get("status") == "matched" and identity.get("student_id"):
+            student = db.query(Student).filter(
+                Student.id == int(identity["student_id"]),
+                Student.teacher_id == teacher_id,
+                Student.class_id == batch.class_id,
+            ).first()
+            if student is None:
+                raise HTTPException(400, detail=f"{paper.get('filename', paper_id)} 的自动匹配学生已失效，请重新确认身份")
+            plan[paper_id] = {
+                "action": "existing",
+                "student_id": student.id,
+                "name": student.name,
+                "student_no": student.student_no or "",
+            }
+            continue
+
+        resolution = by_paper.get(paper_id)
+        frozen = (frozen_fallback or {}).get(paper_id) or {}
+        if resolution is None and frozen:
+            action = str(frozen.get("action") or "")
+            if action == "existing" and int(frozen.get("student_id") or 0) > 0:
+                plan[paper_id] = {
+                    "action": "existing",
+                    "student_id": int(frozen["student_id"]),
+                    "name": str(frozen.get("name") or ""),
+                    "student_no": str(frozen.get("student_no") or ""),
+                }
+                continue
+            if action == "create":
+                frozen_name = str(frozen.get("name") or "").strip()
+                frozen_no = canonical_student_no(frozen.get("student_no"))
+                if frozen_name:
+                    plan[paper_id] = {
+                        "action": "create",
+                        "student_id": None,
+                        "name": frozen_name,
+                        "student_no": frozen_no,
+                    }
+                    if frozen_no:
+                        planned_creates[frozen_no] = frozen_name
+                    continue
+        if resolution is None:
+            raise HTTPException(400, detail=f"{paper.get('filename', paper_id)} 的学生身份尚未确认")
+
+        if resolution.action == "existing":
+            if not resolution.student_id:
+                raise HTTPException(400, detail=f"{paper.get('filename', paper_id)} 必须选择已有学生")
+            student = db.query(Student).filter(
+                Student.id == resolution.student_id,
+                Student.teacher_id == teacher_id,
+                Student.class_id == batch.class_id,
+            ).first()
+            if student is None:
+                raise HTTPException(400, detail=f"{paper.get('filename', paper_id)} 选择的学生不在本批次班级")
+            plan[paper_id] = {
+                "action": "existing",
+                "student_id": student.id,
+                "name": student.name,
+                "student_no": student.student_no or "",
+            }
+            continue
+
+        name = resolution.confirmed_name.strip()
+        student_no = canonical_student_no(resolution.confirmed_student_no)
+        if not name:
+            raise HTTPException(400, detail=f"{paper.get('filename', paper_id)} 新建学生必须确认姓名")
+        if student_no:
+            duplicate = db.query(Student).filter(
+                Student.teacher_id == teacher_id,
+                Student.student_no == student_no,
+            ).first()
+            if duplicate is not None:
+                raise HTTPException(
+                    400,
+                    detail=f"学号 {student_no} 已属于 {duplicate.name}，请选择已有学生而不是新建",
+                )
+            prior_name = planned_creates.get(student_no)
+            if prior_name is not None and prior_name != name:
+                raise HTTPException(400, detail=f"同一学号 {student_no} 被确认成了两个不同姓名")
+            planned_creates[student_no] = name
+        plan[paper_id] = {
+            "action": "create",
+            "student_id": None,
+            "name": name,
+            "student_no": student_no,
+        }
+
+    unknown_papers = set(by_paper) - valid_paper_ids
+    if unknown_papers:
+        raise HTTPException(400, detail="学生身份确认中包含不属于本批次的试卷")
+    return plan
 # ── Paper images ─────────────────────────────────────────────────────────
 _RAW_PAPER_EXPIRED_MESSAGE = "原卷已按隐私保留策略清理，错题、得分和正确率记录仍保留"
 

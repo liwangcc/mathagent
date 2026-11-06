@@ -13,38 +13,24 @@ import asyncio
 import copy
 import hashlib
 import json as _json
+import logging
 import os
 from contextlib import aclosing
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Optional
 
-from fastapi import HTTPException
+from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import StreamingResponse
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
-from database import SessionLocal
-from services.processing_errors import report_failure
-from services.teaching_context import await_teaching
-from services.grader import (
-    GradingModelUnavailable,
-    grade_paper_unified,
-)
-from services.bounded_dispatch import (
-    bounded_completion_map,
-)
-from services.paper_orientation import orientation_is_ready
-from services.quick_grader import (
-    BatchOperationBusy,
-    QuickBatch,
-    batch_operation_lock,
-)
-from services.template_session import TemplateSession
-from services.flash_grading import FLASH_LOCAL_MAX_CONCURRENT
-from services.grading_contract import AnswerSpec
-from services.student_service import canonical_student_no
+from config import UPLOAD_DIR
+from database import SessionLocal, get_db
 from models import Student
 from models_user import User
-from config import UPLOAD_DIR
+from routers.auth import _require_user
+from routers.grade_availability import _require_batch_scoring_chain
 from routers.grade_common import (
     _GRADE_HEARTBEAT_SECONDS,
     _require_owned_batch,
@@ -54,13 +40,6 @@ from routers.grade_common import (
     _settle_template_component,
     _sse,
     _stable_review_image_hash,
-)
-from routers.grade_availability import (
-    _require_batch_scoring_chain,
-)
-from routers.grade_report import (
-    _refresh_batch_knowledge,
-    _start_batch_report_generation,
 )
 from routers.grade_contract import (
     _GRADING_CONTRACT_VERSION,
@@ -72,10 +51,31 @@ from routers.grade_contract import (
     _reject_answer_key_matching_local_recoveries,
 )
 from routers.grade_papers import (
+    _IdentityResolution,
     _anonymous_page_identity,
+    _prepare_anonymous_identity_plan,
+    _prepare_identity_plan,
     _require_complete_batch_ocr,
     _require_orientation_ready,
 )
+from routers.grade_report import (
+    _refresh_batch_knowledge,
+    _start_batch_report_generation,
+)
+from services.bounded_dispatch import bounded_completion_map
+from services.flash_grading import FLASH_LOCAL_MAX_CONCURRENT
+from services.grader import GradingModelUnavailable, grade_paper_unified
+from services.grading_contract import AnswerSpec, VALID_GRADING_CATEGORIES
+from services.paper_orientation import orientation_is_ready
+from services.processing_errors import report_failure
+from services.quick_grader import BatchOperationBusy, QuickBatch, batch_operation_lock
+from services.student_service import canonical_student_no
+from services.teaching_context import await_teaching, stream_teaching
+from services.template_session import TemplateSession
+
+# routers.grade's logger, so these records keep their logger name.
+logger = logging.getLogger("routers.grade")
+router = APIRouter()
 
 _GENERIC_GRADE_ERROR = "批改处理失败，请稍后重试"
 # Reserve nine minutes for the text-only Flash grading stage after the
@@ -1183,13 +1183,85 @@ def _grading_elapsed_seconds(batch: QuickBatch) -> float | None:
     return round(max(0.0, (datetime.now(timezone.utc) - started).total_seconds()), 1)
 
 
-# routers.grade imports this module only after defining everything below, and
-# re-exports the names above; importing it last works in either import order.
-# ``logger`` is routers.grade's, so these records keep their logger name.
-from routers.grade import (  # noqa: E402
-    ConfirmReq,
-    _REVIEW_FINISHED_STATUSES,
-    _prepare_anonymous_identity_plan,
-    _prepare_identity_plan,
-    logger,
-)
+class ConfirmReq(BaseModel):
+    # Answers come from the batch's frozen template. Clients may still send
+    # ``confirmed_answers``; like any unknown field it is ignored.
+    batch_id: str
+    mode: str = "precise"
+    category: str = "daily"
+    exam_name: str = ""
+    identity_resolutions: list[_IdentityResolution] = []
+
+
+_REVIEW_FINISHED_STATUSES = {"review_ready", "voided", "archived"}
+
+
+@router.post("/batch-grade/confirm")
+async def batch_grade_confirm(
+    req: ConfirmReq,
+    user: User = Depends(_require_user),
+    db: Session = Depends(get_db),
+):
+    """阶段二：按批次冻结模板的答案批改（SSE）。
+
+    两种模式流程完全一致（题型分流 + 整卷调用），只有 Flash 输出详细程度不同：
+    - precise（详细）：输出解析 + 标准答案 + 指导建议
+    - simple （简单）：只输出对/错（兼容旧值 auto）
+    选择题恒走机械比对（0 成本），填空/大题走 Flash 整卷调用。
+    批次必须来自已确认模板并直接复用冻结快照。
+
+    SSE events:
+      - progress: {message, current, total}
+      - result:   {student_name, grading_result_id, profile_id, score, correct, partial, wrong, total, ...}
+      - done:     {total, avg_score, [idempotent]}
+      - error:    {message}
+    """
+    if req.mode not in ("precise", "auto", "simple"):
+        raise HTTPException(400, detail="mode 必须是 precise/auto/simple")
+    if req.category not in VALID_GRADING_CATEGORIES:
+        raise HTTPException(400, detail="category 必须是 daily 或 exam")
+    batch = QuickBatch.load_meta(req.batch_id, UPLOAD_DIR)
+    _require_owned_batch(batch, user)
+    _require_complete_batch_ocr(batch)
+    _require_orientation_ready(batch)
+    if not batch.papers and batch.status != "done":
+        raise HTTPException(404, detail="批次不存在或已过期")
+
+    # One answer per frozen question; empty or duplicate numbers fail with 409.
+    confirmed = _authoritative_answers_for_confirmation(batch, req.category)
+    terminal_result_replay = bool(
+        batch.status in _REVIEW_FINISHED_STATUSES
+        and batch.results
+    )
+    # Pure request validation must happen before StreamingResponse is created,
+    # otherwise FastAPI has already committed HTTP 200 when an identity error
+    # is discovered. The generator repeats this check after taking the batch
+    # lock to protect against a concurrent metadata change.
+    frozen_identity_plan = (
+        batch.grading_contract.get("identity_plan") or {}
+        if isinstance(batch.grading_contract, dict)
+        else {}
+    )
+    if batch.identity_mode == "anonymous":
+        _prepare_anonymous_identity_plan(batch)
+    elif frozen_identity_plan or not terminal_result_replay:
+        _prepare_identity_plan(
+            db,
+            batch,
+            req.identity_resolutions,
+            user.id,
+            frozen_fallback=frozen_identity_plan,
+        )
+
+    # Completed batches only replay durable results (or return a frozen-contract
+    # error), so they remain readable during an outage. Every request that can
+    # start or resume grading must fail with HTTP 503 before StreamingResponse
+    # commits its status line.
+    if not terminal_result_replay:
+        await _require_batch_scoring_chain(batch)
+
+    return StreamingResponse(
+        stream_teaching(batch.teaching_context, _grading_events(req, user, batch, confirmed)),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
