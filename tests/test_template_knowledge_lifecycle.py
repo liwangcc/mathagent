@@ -766,3 +766,40 @@ async def test_text_ready_observer_failure_cannot_fail_template(tmp_path, monkey
         result = await pipeline.recognize_directory_template(
             str(source), template_mode="marked", layout_result={}, on_text_ready=broken_observer)
     assert "error" not in result and len(result["questions"]) == 1
+
+
+def test_ledger_reads_and_path_lookups_never_fail_a_concurrent_replace(tmp_path):
+    """On Windows a reader holding knowledge.json open, or resolving its path,
+    fails a concurrent os.replace (WinError 5); they share the ledger's I/O lock."""
+    import threading
+    import time
+    from concurrent.futures import ThreadPoolExecutor
+    sess = session(tmp_path)
+    sess.add_page(0, [question()])
+    sess.save_meta()
+    knowledge._mutate(sess, lambda data: None)
+    stop = threading.Event()
+    failures = []
+
+    def until_stopped(access):
+        while not stop.is_set():
+            try:
+                access(sess)
+            except OSError as exc:
+                failures.append(exc)
+            time.sleep(0)  # let the writers run
+
+    others = [threading.Thread(target=until_stopped, args=(access,))
+              for access in (knowledge._read, knowledge._read, knowledge._ledger_key)]
+    for thread in others:
+        thread.start()
+    try:
+        with ThreadPoolExecutor(max_workers=4) as pool:
+            list(pool.map(lambda index: knowledge._mutate(
+                sess, lambda data: data["sources"].update({str(index): {"id": str(index)}})), range(48)))
+    finally:
+        stop.set()
+        for thread in others:
+            thread.join()
+    assert failures == []
+    assert set(knowledge._read(sess)["sources"]) == {str(index) for index in range(48)}
