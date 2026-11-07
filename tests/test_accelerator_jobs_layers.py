@@ -22,6 +22,7 @@ ROOT = Path(__file__).resolve().parents[1]
 LAYERS = [
     "accelerator_jobs_base",
     "accelerator_jobs_identity",
+    "accelerator_jobs_nodes",
 ]
 # The module every caller imports: it may use any layer, and no layer imports it.
 TOP = ["accelerator_jobs"]
