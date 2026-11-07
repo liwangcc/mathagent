@@ -7,6 +7,7 @@ from types import SimpleNamespace
 import pytest
 
 from services import system_readiness
+from services import accelerator_jobs_nodes
 
 
 def test_hardware_readiness_distinguishes_ready_waiting_and_unavailable(
@@ -32,12 +33,21 @@ def test_hardware_readiness_distinguishes_ready_waiting_and_unavailable(
             pass
 
     monkeypatch.setattr("database.SessionLocal", lambda: FakeSession())
+    monkeypatch.setattr(accelerator_jobs_nodes, "utcnow", lambda: now)
     monkeypatch.setattr(accelerator_jobs, "utcnow", lambda: now)
+    monkeypatch.setattr(accelerator_jobs_nodes, "NODE_STALE_SECONDS", 30)
     monkeypatch.setattr(accelerator_jobs, "NODE_STALE_SECONDS", 30)
     monkeypatch.setattr(
         accelerator_jobs,
         "node_supports_stage",
         lambda node, stage: node.compatible and stage == "template_registration",
+    )
+    monkeypatch.setattr(
+        accelerator_jobs_nodes,
+        "node_supports_artifact_contract",
+        lambda node, contract: (
+            node.artifact_compatible and contract == "client-evidence-v1"
+        ),
     )
     monkeypatch.setattr(
         accelerator_jobs,
@@ -99,12 +109,19 @@ def test_hardware_readiness_filters_by_requested_stage_and_contract(monkeypatch)
             pass
 
     monkeypatch.setattr("database.SessionLocal", lambda: FakeSession())
+    monkeypatch.setattr(accelerator_jobs_nodes, "utcnow", lambda: now)
     monkeypatch.setattr(accelerator_jobs, "utcnow", lambda: now)
+    monkeypatch.setattr(accelerator_jobs_nodes, "NODE_STALE_SECONDS", 30)
     monkeypatch.setattr(accelerator_jobs, "NODE_STALE_SECONDS", 30)
     monkeypatch.setattr(
         accelerator_jobs,
         "node_supports_stage",
         lambda node, stage: stage in node.stages,
+    )
+    monkeypatch.setattr(
+        accelerator_jobs_nodes,
+        "node_supports_artifact_contract",
+        lambda node, contract: contract in node.artifact_contracts,
     )
     monkeypatch.setattr(
         accelerator_jobs,
