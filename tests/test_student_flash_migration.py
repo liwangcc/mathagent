@@ -19,6 +19,7 @@ from services import template_column_layout as layout
 from services import ocr_service as ocr
 from services.key_pool import KeyPool
 from services.model_concurrency import RedisModelLimiter
+from services import template_column_layout_provider
 
 
 @pytest.mark.parametrize("legacy_model", [
@@ -109,8 +110,8 @@ def test_mixed_ocr_layout_and_grading_share_capacity_across_workers(monkeypatch,
     monkeypatch.setattr(config, "MODEL_TEACHER_BASE_CONCURRENCY", 1)
     monkeypatch.setattr(config, "MODEL_TEACHER_BURST_CONCURRENCY", 3)
     monkeypatch.setattr(config, "MODEL_GLOBAL_RESERVE_CONCURRENCY", 0)
-    monkeypatch.setattr(layout, "DASHSCOPE_GLOBAL_CONCURRENCY", 3, raising=False)
-    monkeypatch.setattr(layout, "TEMPLATE_CUT_KEY_CONCURRENCY", 1)
+    monkeypatch.setattr(template_column_layout_provider, "DASHSCOPE_GLOBAL_CONCURRENCY", 3)
+    monkeypatch.setattr(template_column_layout_provider, "TEMPLATE_CUT_KEY_CONCURRENCY", 1)
 
     real_client = httpx.AsyncClient
 

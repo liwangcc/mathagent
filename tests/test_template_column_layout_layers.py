@@ -22,6 +22,7 @@ ROOT = Path(__file__).resolve().parents[1]
 LAYERS = [
     "template_column_layout_contract",
     "template_column_layout_image",
+    "template_column_layout_provider",
 ]
 # The module every caller imports: it may use any layer, and no layer imports it.
 TOP = ["template_column_layout"]
