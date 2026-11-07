@@ -6,6 +6,7 @@ from fastapi import HTTPException
 
 from routers import grade_template
 from routers import grade_uploads
+from routers import grade_template_import_steps
 
 
 class _Upload:
@@ -131,7 +132,7 @@ def test_template_cpu_work_uses_the_shared_bounded_gate(monkeypatch):
     async def exercise():
         gate = asyncio.Semaphore(1)
         monkeypatch.setattr(
-            grade_template,
+            grade_template_import_steps,
             "_get_local_ocr_preprocess_semaphore",
             lambda: gate,
         )

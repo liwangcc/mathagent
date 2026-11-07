@@ -362,8 +362,7 @@ async def test_late_classification_updates_real_grading_review_report_without_sc
         report_inputs.append(copy.deepcopy(stats))
         return "合成教学报告", ""
 
-    monkeypatch.setattr(grade_report, "_template_knowledge_classifier", classifier)
-    monkeypatch.setattr(grade_template, "_template_knowledge_classifier", classifier)
+    set_grade_global(monkeypatch, "_template_knowledge_classifier", classifier)
     monkeypatch.setattr(grade_report, "generate_batch_report", narrative)
     # The report may wait for the labels as long as it takes: its deadline never comes.
     monkeypatch.setattr(knowledge, "_reconcile_clock", ReconcileClock())
@@ -430,8 +429,7 @@ async def test_report_pending_and_failure_never_finalize_stale_labels_and_retry_
         narrative_calls.append(stats)
         return "报告", ""
 
-    monkeypatch.setattr(grade_report, "_template_knowledge_classifier", failing)
-    monkeypatch.setattr(grade_template, "_template_knowledge_classifier", failing)
+    set_grade_global(monkeypatch, "_template_knowledge_classifier", failing)
     monkeypatch.setattr(grade_report, "generate_batch_report", narrative)
     await grade._start_batch_report_generation(batch, 7)
     task = grade._batch_report_tasks[batch.batch_id]
@@ -456,8 +454,7 @@ async def test_report_pending_and_failure_never_finalize_stale_labels_and_retry_
     async def recovered(items):
         return classified(items)
 
-    monkeypatch.setattr(grade_report, "_template_knowledge_classifier", recovered)
-    monkeypatch.setattr(grade_template, "_template_knowledge_classifier", recovered)
+    set_grade_global(monkeypatch, "_template_knowledge_classifier", recovered)
     monkeypatch.setattr(knowledge, "RECONCILE_TIMEOUT", 2)
     await grade._ensure_batch_report_generation(failed, 7)
     await grade._batch_report_tasks[batch.batch_id]
@@ -533,8 +530,7 @@ async def test_real_template_route_wires_text_ready_and_global_binding(tmp_path,
         return classified(items)
 
     monkeypatch.setattr(pipeline, "_request", request)
-    monkeypatch.setattr(grade_report, "_template_knowledge_classifier", classifier)
-    monkeypatch.setattr(grade_template, "_template_knowledge_classifier", classifier)
+    set_grade_global(monkeypatch, "_template_knowledge_classifier", classifier)
     app = _client(factory, monkeypatch).app
     async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://test") as client:
         importing = asyncio.create_task(client.post(
@@ -598,8 +594,7 @@ async def test_unavailable_choice_text_is_visible_without_phantom_pending_job(tm
     async def narrative(stats, **kwargs):
         return "统计报告", ""
 
-    monkeypatch.setattr(grade_report, "_template_knowledge_classifier", forbidden)
-    monkeypatch.setattr(grade_template, "_template_knowledge_classifier", forbidden)
+    set_grade_global(monkeypatch, "_template_knowledge_classifier", forbidden)
     monkeypatch.setattr(grade_report, "generate_batch_report", narrative)
     await grade._start_batch_report_generation(batch, 7)
     await grade._batch_report_tasks[batch.batch_id]

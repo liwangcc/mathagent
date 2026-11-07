@@ -227,7 +227,7 @@ async def test_template_cut_is_owned_persisted_and_idempotent(tmp_path, monkeypa
         calls.append((Path(image_path), "question", "mimo"))
         return _cut_result(artifact)
 
-    monkeypatch.setattr(grade_template, "recognize_column_layout", fake_question_cut)
+    set_grade_global(monkeypatch, "recognize_column_layout", fake_question_cut)
     monkeypatch.setattr(grade_recognition, "_check_limits_or_raise", lambda db, teacher_id: limiter)
     request = grade_template.TemplateCutCandidatesReq(
         action_id="template-cut-action-1",
@@ -425,7 +425,7 @@ async def test_new_template_cut_action_reuses_frozen_question_plan(tmp_path, mon
         calls.append(Path(image_path))
         return _cut_result(artifact, request_id=f"request-{len(calls)}")
 
-    monkeypatch.setattr(grade_template, "recognize_column_layout", fake_question_cut)
+    set_grade_global(monkeypatch, "recognize_column_layout", fake_question_cut)
     monkeypatch.setattr(grade_recognition, "_check_limits_or_raise", lambda db, teacher_id: limiter)
     user = SimpleNamespace(id=7)
 
@@ -611,7 +611,7 @@ async def test_review_layout_blocks_confirmation_until_teacher_saves_boundaries(
     async def fake_question_cut(image_path, *, teacher_id="system", **_kwargs):
         return _review_cut_result(artifact)
 
-    monkeypatch.setattr(grade_template, "recognize_column_layout", fake_question_cut)
+    set_grade_global(monkeypatch, "recognize_column_layout", fake_question_cut)
     monkeypatch.setattr(grade_recognition, "_check_limits_or_raise", lambda db, teacher_id: limiter)
     user = SimpleNamespace(id=7)
 
@@ -781,7 +781,7 @@ async def test_anchor_review_blocks_with_crop_plan_then_override_clears_candidat
         layout_calls.append(Path(image_path))
         return _cut_result(artifact, request_id=f"review-retry-{len(layout_calls)}")
 
-    monkeypatch.setattr(grade_template, "recognize_column_layout", fake_question_cut)
+    set_grade_global(monkeypatch, "recognize_column_layout", fake_question_cut)
     monkeypatch.setattr(
         grade_recognition,
         "_check_limits_or_raise",

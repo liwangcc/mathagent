@@ -24,6 +24,7 @@ from routers import grade_availability
 from routers import grade_papers
 from routers import grade_recognition
 from routers import grade_template_availability
+from routers import grade_template_import_form
 
 
 def _events(response):
@@ -191,7 +192,7 @@ def test_bad_collection_metadata_is_rejected_before_upload_or_model_work(monkeyp
         raise AssertionError("invalid source metadata must be rejected before saving uploads")
 
     monkeypatch.setattr(grade_recognition, "_save_batch_uploads", must_not_save)
-    monkeypatch.setattr(grade_template, "_save_batch_uploads", must_not_save)
+    monkeypatch.setattr(grade_template_import_form, "_save_batch_uploads", must_not_save)
     for paths in [["../张三/abc.jpg"], ["a.jpg", "b.jpg"], ["C:/users/a.jpg"]]:
         response = client.post("/api/batch-grade/recognize", files=[
             ("files", ("abc.ocr-ready-v1.jpg", b"synthetic", "image/jpeg")),

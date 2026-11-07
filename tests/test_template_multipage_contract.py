@@ -53,6 +53,7 @@ from tests.test_template_shared_slots import (
 )
 from tests.grade_family import set_grade_global
 from routers import grade_recognition
+from routers import grade_template_import
 
 
 # ---------------------------------------------------------------------------
@@ -222,7 +223,7 @@ def test_multi_page_template_import_confirm_and_build_have_unique_numbers(monkey
     monkeypatch.setattr(grade_recognition, "_check_limits_or_raise", lambda db, uid: None)
     _patch_template_layout(monkeypatch, gr_router)
     calls = []
-    monkeypatch.setattr(grade_template, "recognize_template_pipeline", _two_page_pipeline(calls))
+    monkeypatch.setattr(grade_template_import, "recognize_template_pipeline", _two_page_pipeline(calls))
     client = _client(Session, monkeypatch)
 
     response = client.post(
@@ -655,7 +656,7 @@ def test_import_with_teacher_roles_skips_ungraded_page_and_confirms(monkeypatch,
     monkeypatch.setattr(grade_recognition, "_check_limits_or_raise", lambda db, uid: None)
     _patch_template_layout(monkeypatch, gr_router)
     calls = []
-    monkeypatch.setattr(grade_template, "recognize_template_pipeline", _two_page_pipeline(calls))
+    monkeypatch.setattr(grade_template_import, "recognize_template_pipeline", _two_page_pipeline(calls))
     client = _client(Session, monkeypatch)
 
     rejected = client.post(
