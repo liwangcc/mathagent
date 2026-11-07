@@ -10,6 +10,7 @@ from services import system_readiness
 from services import accelerator_jobs_nodes
 from services import accelerator_jobs_queue
 from services import accelerator_jobs_leases
+from services import accelerator_jobs_completion
 
 
 def test_hardware_readiness_distinguishes_ready_waiting_and_unavailable(
@@ -38,6 +39,7 @@ def test_hardware_readiness_distinguishes_ready_waiting_and_unavailable(
     monkeypatch.setattr(accelerator_jobs_queue, "utcnow", lambda: now)
     monkeypatch.setattr(accelerator_jobs_nodes, "utcnow", lambda: now)
     monkeypatch.setattr(accelerator_jobs_leases, "utcnow", lambda: now)
+    monkeypatch.setattr(accelerator_jobs_completion, "utcnow", lambda: now)
     monkeypatch.setattr(accelerator_jobs, "utcnow", lambda: now)
     monkeypatch.setattr(accelerator_jobs_nodes, "NODE_STALE_SECONDS", 30)
     monkeypatch.setattr(accelerator_jobs_leases, "NODE_STALE_SECONDS", 30)
@@ -117,6 +119,7 @@ def test_hardware_readiness_filters_by_requested_stage_and_contract(monkeypatch)
     monkeypatch.setattr(accelerator_jobs_queue, "utcnow", lambda: now)
     monkeypatch.setattr(accelerator_jobs_nodes, "utcnow", lambda: now)
     monkeypatch.setattr(accelerator_jobs_leases, "utcnow", lambda: now)
+    monkeypatch.setattr(accelerator_jobs_completion, "utcnow", lambda: now)
     monkeypatch.setattr(accelerator_jobs, "utcnow", lambda: now)
     monkeypatch.setattr(accelerator_jobs_nodes, "NODE_STALE_SECONDS", 30)
     monkeypatch.setattr(accelerator_jobs_leases, "NODE_STALE_SECONDS", 30)
