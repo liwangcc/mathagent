@@ -17,6 +17,7 @@ from database import Base
 from models_accelerator import AcceleratorJob
 from models_user import User
 from services import accelerator_jobs as jobs
+from services import accelerator_jobs_base
 
 
 @pytest.fixture
@@ -971,6 +972,7 @@ def test_worker_claims_remain_untrusted_until_server_validation(db, tmp_path):
 
 
 def test_expired_lease_requeues_then_falls_back_after_attempt_limit(db, tmp_path, monkeypatch):
+    monkeypatch.setattr(accelerator_jobs_base, "MAX_ATTEMPTS", 2)
     monkeypatch.setattr(jobs, "MAX_ATTEMPTS", 2)
     node, _token = _ready_node(db)
     job = _enqueue(db, tmp_path)
