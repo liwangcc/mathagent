@@ -26,6 +26,7 @@ from services.template_evidence import (
     normalize_answer_regions,
     verify_template_artifacts,
 )
+from services import template_evidence_artifacts
 
 
 QUESTIONS = [
@@ -2325,6 +2326,7 @@ def test_twenty_template_features_remain_cached_for_second_match(
         loaded_paths.append(Path(path))
         return original_load(path)
 
+    monkeypatch.setattr(template_evidence_artifacts, "_load_rgb_image", counted_load)
     monkeypatch.setattr(template_evidence, "_load_rgb_image", counted_load)
 
     with pytest.raises(TemplateEvidenceError, match="multiple templates"):

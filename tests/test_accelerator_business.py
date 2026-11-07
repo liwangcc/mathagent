@@ -1625,6 +1625,10 @@ def test_paper_cache_uses_accelerator_artifact_without_running_cpu_matcher(
         raise AssertionError("client evidence must not be rebuilt on server CPU")
 
     monkeypatch.setattr(
+        "services.template_evidence_artifacts._load_rgb_image",
+        must_not_rebuild_crop,
+    )
+    monkeypatch.setattr(
         "services.template_evidence._load_rgb_image",
         must_not_rebuild_crop,
     )
