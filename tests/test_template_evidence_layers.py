@@ -27,6 +27,7 @@ LAYERS = [
     "template_evidence_crops",
     "template_evidence_residue",
     "template_evidence_pixels",
+    "template_evidence_artifacts",
 ]
 # The module every caller imports: it may use any layer, and no layer imports it.
 TOP = ["template_evidence"]
