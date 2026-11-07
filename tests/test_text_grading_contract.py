@@ -10,6 +10,7 @@ from services.text_grading_rules import TEXT_GRADING_RULES
 from services.grading_contract import AnswerSpec
 from services.scoring_engine import build_grading_units, llm_payload_for_unit
 from tests.grade_family import set_grade_global
+from routers import grade_template_confirm
 
 
 def question():
@@ -220,7 +221,7 @@ def test_method_survives_real_template_save_confirm_reopen_and_dispatch_payload(
 
     _, factory = _make_app_and_session()
     set_grade_global(monkeypatch, "UPLOAD_DIR", str(tmp_path))
-    monkeypatch.setattr(grade_template, "_classify_confirmed_template_knowledge", AsyncMock())
+    monkeypatch.setattr(grade_template_confirm, "_classify_confirmed_template_knowledge", AsyncMock())
     session, boxes, anchors = seed(tmp_path)
     client = _client(factory, monkeypatch, raise_server_exceptions=True)
     q = copy.deepcopy(session.pages[0]["questions"][0])
