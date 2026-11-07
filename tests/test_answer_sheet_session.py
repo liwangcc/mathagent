@@ -35,6 +35,8 @@ from routers import answer_sheet_assets
 from routers import answer_sheet_sessions
 from routers import answer_sheet_source
 from routers import answer_sheet_layout
+from routers import answer_sheet_student_pages
+from routers import answer_sheet_student_upload
 
 
 def _question(number="1", qtype="choice"):
@@ -182,17 +184,17 @@ def client_env(tmp_path, monkeypatch):
         return {"ready": True, "status": "available", "code": "ready"}
 
     monkeypatch.setattr(
+        answer_sheet_student_upload,
+        "get_upload_storage_readiness_async",
+        storage_ready,
+    )
+    monkeypatch.setattr(
         answer_sheet_availability,
         "get_upload_storage_readiness_async",
         storage_ready,
     )
     monkeypatch.setattr(
         answer_sheet_assets,
-        "get_upload_storage_readiness_async",
-        storage_ready,
-    )
-    monkeypatch.setattr(
-        answer_sheet,
         "get_upload_storage_readiness_async",
         storage_ready,
     )
@@ -1453,6 +1455,11 @@ def _install_student_asset_matcher(monkeypatch, calls: list[str]):
             return Result()
 
     monkeypatch.setattr(
+        answer_sheet_student_upload,
+        "TemplateEvidenceMatcher",
+        lambda *_args, **_kwargs: Matcher(),
+    )
+    monkeypatch.setattr(
         answer_sheet,
         "TemplateEvidenceMatcher",
         lambda *_args, **_kwargs: Matcher(),
@@ -1815,6 +1822,11 @@ def test_save_images_streams_to_disk_before_path_validation_and_hashing(
         return function(*args, **kwargs)
 
     monkeypatch.setattr(
+        answer_sheet_student_upload,
+        "get_upload_storage_readiness_async",
+        storage_ready,
+    )
+    monkeypatch.setattr(
         answer_sheet_availability,
         "get_upload_storage_readiness_async",
         storage_ready,
@@ -1824,11 +1836,8 @@ def test_save_images_streams_to_disk_before_path_validation_and_hashing(
         "get_upload_storage_readiness_async",
         storage_ready,
     )
-    monkeypatch.setattr(
-        answer_sheet,
-        "get_upload_storage_readiness_async",
-        storage_ready,
-    )
+    monkeypatch.setattr(answer_sheet_student_upload, "_run_answer_sheet_image_work", run_image_work)
+    monkeypatch.setattr(answer_sheet_student_pages, "_run_answer_sheet_image_work", run_image_work)
     monkeypatch.setattr(answer_sheet_layout, "_run_answer_sheet_image_work", run_image_work)
     monkeypatch.setattr(answer_sheet_assets, "_run_answer_sheet_image_work", run_image_work)
     monkeypatch.setattr(answer_sheet, "_run_answer_sheet_image_work", run_image_work)
@@ -1859,17 +1868,17 @@ def test_save_images_preserves_browser_ocr_ready_contract(tmp_path, monkeypatch)
         return {"ready": True, "status": "available", "code": "ready"}
 
     monkeypatch.setattr(
+        answer_sheet_student_upload,
+        "get_upload_storage_readiness_async",
+        storage_ready,
+    )
+    monkeypatch.setattr(
         answer_sheet_availability,
         "get_upload_storage_readiness_async",
         storage_ready,
     )
     monkeypatch.setattr(
         answer_sheet_assets,
-        "get_upload_storage_readiness_async",
-        storage_ready,
-    )
-    monkeypatch.setattr(
-        answer_sheet,
         "get_upload_storage_readiness_async",
         storage_ready,
     )
@@ -1908,6 +1917,11 @@ def test_save_images_rolls_back_prior_and_current_partial_files(
         return len(raw)
 
     monkeypatch.setattr(
+        answer_sheet_student_upload,
+        "get_upload_storage_readiness_async",
+        storage_ready,
+    )
+    monkeypatch.setattr(
         answer_sheet_availability,
         "get_upload_storage_readiness_async",
         storage_ready,
@@ -1917,13 +1931,10 @@ def test_save_images_rolls_back_prior_and_current_partial_files(
         "get_upload_storage_readiness_async",
         storage_ready,
     )
-    monkeypatch.setattr(
-        answer_sheet,
-        "get_upload_storage_readiness_async",
-        storage_ready,
-    )
+    monkeypatch.setattr(answer_sheet_student_upload, "stream_to_disk_capped", partial_second_write)
     monkeypatch.setattr(answer_sheet_assets, "stream_to_disk_capped", partial_second_write)
-    monkeypatch.setattr(answer_sheet, "stream_to_disk_capped", partial_second_write)
+    monkeypatch.setattr(answer_sheet_student_upload, "_run_answer_sheet_image_work", run_image_work)
+    monkeypatch.setattr(answer_sheet_student_pages, "_run_answer_sheet_image_work", run_image_work)
     monkeypatch.setattr(answer_sheet_layout, "_run_answer_sheet_image_work", run_image_work)
     monkeypatch.setattr(answer_sheet_assets, "_run_answer_sheet_image_work", run_image_work)
     monkeypatch.setattr(answer_sheet, "_run_answer_sheet_image_work", run_image_work)
@@ -2019,6 +2030,16 @@ def test_orientation_confirmation_hashes_the_source_as_a_stream(
         return await real_image_work(function, *args, **kwargs)
 
     monkeypatch.setattr(Path, "read_bytes", forbid_read_bytes)
+    monkeypatch.setattr(
+        answer_sheet_student_upload,
+        "_run_answer_sheet_image_work",
+        tracked_image_work,
+    )
+    monkeypatch.setattr(
+        answer_sheet_student_pages,
+        "_run_answer_sheet_image_work",
+        tracked_image_work,
+    )
     monkeypatch.setattr(answer_sheet_layout, "_run_answer_sheet_image_work", tracked_image_work)
     monkeypatch.setattr(answer_sheet_assets, "_run_answer_sheet_image_work", tracked_image_work)
     monkeypatch.setattr(answer_sheet, "_run_answer_sheet_image_work", tracked_image_work)
@@ -2895,8 +2916,8 @@ def test_student_upload_write_failure_removes_current_partial_file(
         Path(path).write_bytes(raw[:8])
         raise OSError("simulated disk write failure")
 
+    monkeypatch.setattr(answer_sheet_student_upload, "stream_to_disk_capped", fail_write)
     monkeypatch.setattr(answer_sheet_assets, "stream_to_disk_capped", fail_write)
-    monkeypatch.setattr(answer_sheet, "stream_to_disk_capped", fail_write)
 
     with pytest.raises(OSError, match="simulated disk write failure"):
         client.post(
@@ -2932,13 +2953,13 @@ def test_student_upload_total_limit_removes_partial_file(client_env, monkeypatch
     }]
     restored.student_upload["total_bytes"] = 6
     restored.save()
+    monkeypatch.setattr(answer_sheet_student_upload, "MAX_UPLOAD_FILE_SIZE", 8)
     monkeypatch.setattr(answer_sheet_assets, "MAX_UPLOAD_FILE_SIZE", 8)
-    monkeypatch.setattr(answer_sheet, "MAX_UPLOAD_FILE_SIZE", 8)
+    monkeypatch.setattr(answer_sheet_student_upload, "MAX_UPLOAD_TOTAL_SIZE", 10)
     monkeypatch.setattr(answer_sheet_source, "MAX_UPLOAD_TOTAL_SIZE", 10)
     monkeypatch.setattr(answer_sheet_layout, "MAX_UPLOAD_TOTAL_SIZE", 10)
     monkeypatch.setattr(answer_sheet_availability, "MAX_UPLOAD_TOTAL_SIZE", 10)
     monkeypatch.setattr(answer_sheet_assets, "MAX_UPLOAD_TOTAL_SIZE", 10)
-    monkeypatch.setattr(answer_sheet, "MAX_UPLOAD_TOTAL_SIZE", 10)
 
     response = client.post(
         f"/api/answer-sheet/sessions/{session.session_id}/students/upload",
@@ -3004,7 +3025,7 @@ def test_student_upload_processing_resumes_page_checkpoints_and_swaps_atomically
             "orientation_confidence": 1.0,
         }
 
-    monkeypatch.setattr(answer_sheet, "_accelerator_managed_orientation", inspect)
+    monkeypatch.setattr(answer_sheet_student_upload, "_accelerator_managed_orientation", inspect)
     failed = client.post(
         f"/api/answer-sheet/sessions/{session.session_id}/students/upload/{upload_id}/process/stream"
     )
@@ -3076,6 +3097,11 @@ def test_student_recognition_stream_skips_durable_page_checkpoint(
     session.save()
     calls = []
 
+    monkeypatch.setattr(
+        answer_sheet_student_upload,
+        "TemplateEvidenceMatcher",
+        lambda *_args: object(),
+    )
     monkeypatch.setattr(answer_sheet, "TemplateEvidenceMatcher", lambda *_args: object())
 
     async def recognize_page(locked, page, *_args):
@@ -3291,6 +3317,11 @@ def test_student_recognition_done_survives_immediate_stream_close(
     }]
     session.save()
 
+    monkeypatch.setattr(
+        answer_sheet_student_upload,
+        "TemplateEvidenceMatcher",
+        lambda *_args: object(),
+    )
     monkeypatch.setattr(answer_sheet, "TemplateEvidenceMatcher", lambda *_args: object())
 
     async def recognize_page(locked, page, *_args):
@@ -3497,11 +3528,12 @@ def _forbid_runtime_work(monkeypatch, answer_sheet, work_kind: str, calls: list[
         )
     elif work_kind == "upload":
         monkeypatch.setattr(
-            answer_sheet,
+            answer_sheet_student_upload,
             "_accelerator_managed_orientation",
             forbidden,
         )
     elif work_kind == "students":
+        monkeypatch.setattr(answer_sheet_student_upload, "TemplateEvidenceMatcher", forbidden)
         monkeypatch.setattr(answer_sheet, "TemplateEvidenceMatcher", forbidden)
     else:
         from services import grader

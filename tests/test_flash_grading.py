@@ -17,6 +17,7 @@ from services import analyzer, flash_grading as flash, ocr_service as ocr
 from services.key_pool import KeyPool
 from routers import answer_sheet_availability
 from routers import answer_sheet_assets
+from routers import answer_sheet_student_upload
 
 
 _PRODUCTION_POST = ocr._post_vision_request
@@ -570,9 +571,9 @@ def _answer_sheet_gate(monkeypatch, *, redis: bool, sync_ready: bool, async_read
         return {"status": "available"}
 
     monkeypatch.setattr(config, "ANSWER_SHEET_GRADING_ENABLED", True)
+    monkeypatch.setattr(answer_sheet_student_upload, "get_upload_storage_readiness_async", storage)
     monkeypatch.setattr(answer_sheet_availability, "get_upload_storage_readiness_async", storage)
     monkeypatch.setattr(answer_sheet_assets, "get_upload_storage_readiness_async", storage)
-    monkeypatch.setattr(answer_sheet, "get_upload_storage_readiness_async", storage)
     monkeypatch.setattr(ocr, "get_ocr_readiness", ocr_ready)
     monkeypatch.setattr(model_concurrency, "get_model_limiter", lambda: limiter)
     monkeypatch.setattr(analyzer, "get_grading_readiness", sync_readiness)

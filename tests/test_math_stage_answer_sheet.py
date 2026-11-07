@@ -11,6 +11,7 @@ from routers import answer_sheet_availability
 from routers import answer_sheet_common
 from routers import answer_sheet_sessions
 from routers import answer_sheet_source
+from routers import answer_sheet_student_upload
 
 
 def _question():
@@ -28,6 +29,7 @@ def _route_setup(monkeypatch, tmp_path):
     async def ready(_user):
         return None
 
+    monkeypatch.setattr(answer_sheet_student_upload, "_require_answer_sheet_chain", ready)
     monkeypatch.setattr(answer_sheet_source, "_require_answer_sheet_chain", ready)
     monkeypatch.setattr(answer_sheet_sessions, "_require_answer_sheet_chain", ready)
     monkeypatch.setattr(answer_sheet, "_require_answer_sheet_chain", ready)
