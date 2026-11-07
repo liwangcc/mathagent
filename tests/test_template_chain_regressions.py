@@ -78,10 +78,10 @@ def test_approved_exemption_preserves_all_valid_student_pixels(mode, has_student
 @pytest.mark.parametrize('mode', ['blank', 'marked'])
 def test_refresh_uses_answer_contract_even_without_handwriting_field(tmp_path, monkeypatch, mode):
     import routers.grade as grade
-    from routers import grade_template
+    from routers import grade_template, grade_template_artifacts
     artifact = {'question_numbers': ['1'], 'template_answer_regions': [
         {'question_number': '1', 'regions': [[300, 300, 650, 650]]}]}
-    monkeypatch.setattr(grade_template, 'materialize_template_difference_artifact', lambda directory, value: value)
+    monkeypatch.setattr(grade_template_artifacts, 'materialize_template_difference_artifact', lambda directory, value: value)
     original = copy.deepcopy(artifact)
     result = grade_template._refresh_template_difference_artifact(str(tmp_path), artifact, template_mode=mode)
     assert result['template_handwriting_regions'] == artifact['template_answer_regions']
