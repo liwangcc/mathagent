@@ -26,6 +26,7 @@ LAYERS = [
     "template_column_layout_prompts",
     "template_column_layout_local",
     "template_column_layout_drafts",
+    "template_column_layout_recognize",
 ]
 # The module every caller imports: it may use any layer, and no layer imports it.
 TOP = ["template_column_layout"]

@@ -14,6 +14,7 @@ from services import dashscope_budget
 from services import model_concurrency as mc
 from services import ocr_service as ocr
 from services import template_column_layout_provider
+from services import template_column_layout_recognize
 
 
 PROVIDER = "dashscope:test-model"
@@ -804,8 +805,12 @@ def test_template_split_full_path_settles_actual_usage(backend, monkeypatch, tmp
     Image.new("RGB", (800, 1200), "white").save(image_path)
     pool = KeyPool(["test-only-key"], max_concurrent_per_key=4,
                    base_urls=["https://unit.invalid/v1"])
+    monkeypatch.setattr(
+        template_column_layout_recognize,
+        "_resolve_template_key_pool",
+        lambda: pool,
+    )
     monkeypatch.setattr(template_column_layout_provider, "_resolve_template_key_pool", lambda: pool)
-    monkeypatch.setattr(mimo, "_resolve_template_key_pool", lambda: pool)
     monkeypatch.setattr(
         template_column_layout_provider,
         "_template_capability_unavailable_until",
@@ -826,11 +831,15 @@ def test_template_split_full_path_settles_actual_usage(backend, monkeypatch, tmp
     async def run():
         async with workers(backend) as (limiter, _, redis):
             monkeypatch.setattr(
+                template_column_layout_recognize,
+                "get_model_limiter",
+                lambda: limiter,
+            )
+            monkeypatch.setattr(
                 template_column_layout_provider,
                 "get_model_limiter",
                 lambda: limiter,
             )
-            monkeypatch.setattr(mimo, "get_model_limiter", lambda: limiter)
             async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
                 result = await mimo.recognize_column_layout(image_path, client=client)
             assert result["summary"]["total"] == 1
