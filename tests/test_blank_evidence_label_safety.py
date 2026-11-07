@@ -10,6 +10,7 @@ from PIL import Image
 
 from services import template_evidence as evidence
 from services.template_anchor_crops import build_anchor_crop_plan
+from services import template_evidence_sheets
 
 
 def _layout(regions, *, columns=1, anchors=None, mode="blank", schema=None):
@@ -38,7 +39,16 @@ def _render(tmp_path, monkeypatch, difference, layout, *, allow_fixed_solve_over
     # Test the actual production evidence renderer with an exact known
     # difference. This isolates label safety from diff-cleaner recall.
     original = difference.copy()
-    monkeypatch.setattr(evidence, "_answer_only_pixels_v2", lambda *args, **kwargs: difference.copy())
+    monkeypatch.setattr(
+        template_evidence_sheets,
+        "_answer_only_pixels_v2",
+        lambda *args, **kwargs: difference.copy(),
+    )
+    monkeypatch.setattr(
+        evidence,
+        "_answer_only_pixels_v2",
+        lambda *args, **kwargs: difference.copy(),
+    )
     result = evidence.build_full_column_difference_evidence_from_aligned(
         difference.copy(),
         np.full(difference.shape[:2], 255, np.uint8),

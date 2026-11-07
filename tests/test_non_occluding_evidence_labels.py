@@ -6,6 +6,7 @@ import pytest
 from PIL import Image
 
 from services import template_evidence as evidence
+from services import template_evidence_sheets
 
 
 @pytest.mark.parametrize("size", [(320, 240), (1200, 800), (2400, 1600)])
@@ -29,6 +30,11 @@ def test_dense_edge_long_labels_preserve_every_foreground_pixel(tmp_path, monkey
               "question_anchors": anchors, "template_answer_regions": regions,
               "template_handwriting_regions": regions}
     before = copy.deepcopy(layout)
+    monkeypatch.setattr(
+        template_evidence_sheets,
+        "_answer_only_pixels_v2",
+        lambda *a, **kw: pixels.copy(),
+    )
     monkeypatch.setattr(evidence, "_answer_only_pixels_v2", lambda *a, **kw: pixels.copy())
     result = evidence.build_full_column_difference_evidence_from_aligned(
         pixels, np.full((height, width), 255, np.uint8), np.full_like(pixels, 255), layout, tmp_path)
@@ -55,6 +61,11 @@ def test_separator_cannot_recolor_bottom_answer_stroke(tmp_path, monkeypatch):
     pixels = np.full((800, 1200, 3), 255, np.uint8)
     pixels[319:321, 600:840] = 0
     regions = [{"question_number": "1", "regions": [[500, 300, 700, 400]]}]
+    monkeypatch.setattr(
+        template_evidence_sheets,
+        "_answer_only_pixels_v2",
+        lambda *a, **kw: pixels.copy(),
+    )
     monkeypatch.setattr(evidence, "_answer_only_pixels_v2", lambda *a, **kw: pixels.copy())
     result = evidence.build_full_column_difference_evidence_from_aligned(
         pixels, np.full((800, 1200), 255, np.uint8), np.full_like(pixels, 255),
@@ -75,6 +86,11 @@ def test_drawing_text_mask_applies_source_offset_and_keeps_rail(tmp_path, monkey
          "drawing_regions": [[500, 300, 900, 700]], "label_anchor": [490, 450]}]
     regions = [{"question_number": "1", "regions": [[0, 10, 400, 250]]},
                {"question_number": "2", "regions": [[500, 720, 900, 990]]}]
+    monkeypatch.setattr(
+        template_evidence_sheets,
+        "_answer_only_pixels_v2",
+        lambda *a, **kw: source.copy(),
+    )
     monkeypatch.setattr(evidence, "_answer_only_pixels_v2", lambda *a, **kw: source.copy())
     result = evidence.build_full_column_difference_evidence_from_aligned(
         source, np.full(source.shape[:2], 255, np.uint8), np.full_like(source, 255),

@@ -9,6 +9,7 @@ import pytest
 
 from services import template_evidence as evidence
 from services.template_anchor_crops import build_anchor_crop_plan
+from services import template_evidence_sheets
 
 
 def drawing(number="2.3", kind="drawing", box=None, anchor=None):
@@ -122,6 +123,11 @@ def test_graphic_type_is_preserved_with_exactly_one_q_in_gate_and_difference(
     )
     verified = evidence.verify_template_artifacts(tmp_path / "artifacts", {"page_1": artifact})["page_1"]
     assert verified["question_schema"][1]["question_type"] == question_type
+    monkeypatch.setattr(
+        template_evidence_sheets,
+        "_answer_only_pixels_v2",
+        lambda *a, **k: student.copy(),
+    )
     monkeypatch.setattr(evidence, "_answer_only_pixels_v2", lambda *a, **k: student.copy())
     result = evidence.build_full_column_difference_evidence_from_aligned(
         student, np.full((1000, 1000), 255, np.uint8), student, {"page_type_id": "page_1", **verified}, tmp_path / "diff")
@@ -237,6 +243,11 @@ def test_actual_difference_preserves_drawing_student_pixels_and_one_q_for_mixed(
     original_student = student.copy()
     plain = np.full_like(student, 255)
     plain[910:930, 10:30] = 35
+    monkeypatch.setattr(
+        template_evidence_sheets,
+        "_answer_only_pixels_v2",
+        lambda *args, **kwargs: plain.copy(),
+    )
     monkeypatch.setattr(evidence, "_answer_only_pixels_v2", lambda *args, **kwargs: plain.copy())
     result = evidence.build_full_column_difference_evidence_from_aligned(
         student, np.full((1000, 1000), 255, np.uint8), np.full_like(student, 255), value, tmp_path)
@@ -265,6 +276,11 @@ def test_missing_student_drawing_source_is_review_not_synthetic_fill(tmp_path, m
     student = np.full((1000, 1000, 3), 255, np.uint8)
     mask = np.full((1000, 1000), 255, np.uint8)
     mask[500, 700] = 0
+    monkeypatch.setattr(
+        template_evidence_sheets,
+        "_answer_only_pixels_v2",
+        lambda *args, **kwargs: student.copy(),
+    )
     monkeypatch.setattr(evidence, "_answer_only_pixels_v2", lambda *args, **kwargs: student.copy())
     with pytest.raises(evidence.TemplateEvidenceError, match="照片不完整"):
         evidence.build_full_column_difference_evidence_from_aligned(student, mask, student, value, tmp_path)
@@ -317,7 +333,16 @@ def test_actual_frozen_column_conversion_uses_page_width_not_column_width(tmp_pa
     value["template_answer_regions"][1]["regions"] = [[750, 400, 950, 700]]
     value["template_handwriting_regions"][1]["regions"] = []
     student = np.full((1000, 1000, 3), 245, np.uint8)
-    monkeypatch.setattr(evidence, "_answer_only_pixels_v2", lambda *args, **kwargs: np.full_like(student, 255))
+    monkeypatch.setattr(
+        template_evidence_sheets,
+        "_answer_only_pixels_v2",
+        lambda *args, **kwargs: np.full_like(student, 255),
+    )
+    monkeypatch.setattr(
+        evidence,
+        "_answer_only_pixels_v2",
+        lambda *args, **kwargs: np.full_like(student, 255),
+    )
     result = evidence.build_full_column_difference_evidence_from_aligned(
         student, np.full((1000, 1000), 255, np.uint8), student, value, tmp_path)
     assert len(result.evidence_paths) == 2
