@@ -22,6 +22,13 @@ from pathlib import Path
 from services.accelerator_artifacts import (
     CLIENT_EVIDENCE_FULL_COLUMN_CONTRACT_VERSION,
 )
+from services.paper_cache_base import (
+    _VISUAL_GRADING_EVIDENCE_STRATEGIES,
+    _normalize_question_number,
+    _question_number_sort_key,
+    normalize_questions,
+    question_number_signature,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -58,14 +65,6 @@ def _adjacent_answer_ambiguity(question_answers: list[dict]) -> set[str]:
 
 # ── 填空题答案长度检查 ──
 MAX_FILL_BLANK_LENGTH = 45            # 填空题答案最大字符数（超过直接判错）
-# Full-page/full-height evidence is transcription-only for new requests.  The
-# separate grading provider consumes the frozen transcription contract.
-_VISUAL_GRADING_EVIDENCE_STRATEGIES = {
-    "full_height_columns",
-    "full_height_column_plan",
-    "full_column_difference",
-    "client-evidence-multi-v2",
-}
 _SPLIT_TRANSCRIPTION_EVIDENCE_STRATEGIES = (
     _VISUAL_GRADING_EVIDENCE_STRATEGIES
     | {"confirmed_bbox_focus_sheets"}
@@ -393,15 +392,6 @@ def _compact_transcription_kinds(questions: list[dict]) -> dict[str, str]:
 # 题号归一化
 # ═══════════════════════════════════════════════════════
 
-def _normalize_question_number(qn: str) -> str:
-    """归一化题号：去除前缀/后缀词、点号、多余空白，保留子题号。"""
-    import re
-    qn = qn.strip().rstrip('.')
-    qn = re.sub(r'^第\s*', '', qn)
-    qn = re.sub(r'\s*题$', '', qn)
-    qn = re.sub(r'\s+', '', qn)
-    return qn
-
 
 _PRINTED_LABEL_EDGE_PUNCTUATION = " .．。、,，:：;；()（）[]【】"
 
@@ -442,13 +432,6 @@ def _snippet_matches_stems(snippet: str, stems: list[str]) -> bool:
         if len(grams & stem_grams) / len(grams) >= _STEM_BIGRAM_CONTAINMENT:
             return True
     return False
-
-
-def _question_number_sort_key(qn: str):
-    """题号自然排序键：按其中的数字序列排序，使 "2" 排在 "10" 前，"1(2)" 排在 "1(10)" 前。"""
-    import re
-    nums = re.findall(r'\d+', qn)
-    return ([int(n) for n in nums], qn)
 
 
 def is_fill_blank_question(question_text: str) -> bool:
@@ -513,32 +496,6 @@ def _enforce_question_type_answer_constraints(questions: list[dict]) -> None:
         question["_ocr_raw_student_answer"] = raw_answer
         question["student_answer"] = "[无法识别]"
         question["answer_state"] = "unreadable"
-
-
-def normalize_questions(questions: list) -> list:
-    """归一化questions列表中的question_number。"""
-    for q in questions:
-        if "question_number" in q:
-            q["question_number"] = _normalize_question_number(q["question_number"])
-    return questions
-
-
-def question_number_signature(question_numbers) -> dict:
-    """Question-number signature stored with each template page.
-
-    Nothing reads it back, but it is part of a template page and so of the
-    confirmed contract hash: its value must stay byte-for-byte stable.
-    """
-    numbers = sorted({
-        number
-        for number in (_normalize_question_number(str(raw)) for raw in question_numbers)
-        if number
-    })
-    return {
-        "qn_set": numbers,
-        "qn_hash": hashlib.md5("|".join(numbers).encode()).hexdigest()[:12],
-        "qn_count": len(numbers),
-    }
 
 
 class PaperCache:
