@@ -25,6 +25,7 @@ LAYERS = [
     "ocr_pool_scheduler_redis",
     "ocr_pool_scheduler_acquire",
     "ocr_pool_scheduler_transport",
+    "ocr_pool_scheduler_requests",
 ]
 # The module every caller imports: it may use any layer, and no layer imports it.
 TOP = ["ocr_pool_scheduler"]
