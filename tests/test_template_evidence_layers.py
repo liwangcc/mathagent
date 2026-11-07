@@ -23,6 +23,8 @@ LAYERS = [
     "template_evidence_base",
     "template_evidence_schema",
     "template_evidence_canonical",
+    "template_evidence_alignment",
+    "template_evidence_crops",
 ]
 # The module every caller imports: it may use any layer, and no layer imports it.
 TOP = ["template_evidence"]
