@@ -24,14 +24,8 @@ from services.template_evidence_base import TemplateEvidenceError
 
 
 MAX_ANSWER_REGIONS = 200
-
-
 MAX_QUESTION_ANCHORS = 200
-
-
 MAX_TEMPLATE_HANDWRITING_QUESTIONS = 200
-
-
 MAX_TEMPLATE_HANDWRITING_BOXES = 400
 
 
@@ -44,26 +38,12 @@ MAX_TEMPLATE_HANDWRITING_BOXES_PER_QUESTION = 20
 # Model confidence is advisory only until it passes this explicit gate.  Keep
 # the version beside the thresholds so persisted diagnostics remain auditable.
 TEMPLATE_CONFIDENCE_GATE_VERSION = "template-confidence-gate-v1"
-
-
 TEMPLATE_ANCHOR_CONFIDENCE_THRESHOLD = 0.75
-
-
 TEMPLATE_HANDWRITING_CONFIDENCE_THRESHOLD = 0.75
-
-
 MAX_TEMPLATE_HANDWRITING_BOX_AREA = 250_000
-
-
 MAX_TOTAL_TEMPLATE_HANDWRITING_AREA = 600_000
-
-
 MAX_ANSWER_REGION_AREA = 1_000_000
-
-
 MAX_TOTAL_ANSWER_REGION_AREA = 1_500_000
-
-
 MAX_ANSWER_REGION_OVERLAP_RATIO = 0.25
 
 

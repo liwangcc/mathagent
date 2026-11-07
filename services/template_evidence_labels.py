@@ -42,17 +42,9 @@ from services.template_evidence_schema import (
 # the ownership marker small and blue. Horizontal slot labels alone may blend
 # at 65% opacity when they overlap a preceding answer box; never draw frames.
 EVIDENCE_Q_LABEL_COLOR = (20, 84, 178)
-
-
 EVIDENCE_Q_LABEL_FONT_SIZE = 30
-
-
 EVIDENCE_Q_LABEL_PADDING_X = 8
-
-
 EVIDENCE_Q_LABEL_PADDING_Y = 8
-
-
 EVIDENCE_Q_LABEL_GAP = 12
 
 

@@ -31,11 +31,7 @@ from services.template_evidence_schema import _validated_template_handwriting_re
 # contrast, rather than an absolute white threshold, so photographed paper
 # shadows do not become fake template ink.
 TEMPLATE_INK_LOCAL_CONTRAST = 12
-
-
 TEMPLATE_INK_MAX_GRAY = 235
-
-
 TEMPLATE_EDGE_DILATION_SIZE = 5
 
 
@@ -43,32 +39,14 @@ TEMPLATE_EDGE_DILATION_SIZE = 5
 # low-frequency difference before pixel subtraction, but keep the correction
 # bounded so it cannot cancel a real dark student stroke.
 TEMPLATE_ILLUMINATION_SIGMA = 31.0
-
-
 TEMPLATE_ILLUMINATION_MAX_OFFSET = 45.0
-
-
 MIN_NEW_STROKE_SUPPORT_PIXELS = 8
-
-
 MIN_NEW_STROKE_SUPPORT_RATIO = 0.20
-
-
 FILL_LINE_OPENING_WIDTH = 25
-
-
 FILL_LINE_VERTICAL_DILATION = 5
-
-
 FILL_LINE_SUPPORT_PAD_X = 10
-
-
 FILL_LINE_SUPPORT_PAD_Y = 12
-
-
 FILL_LINE_CROSSING_HORIZONTAL_PAD = 2
-
-
 FILL_LINE_MIN_SIDE_SUPPORT_PIXELS = 2
 
 
@@ -81,26 +59,12 @@ TEMPLATE_HANDWRITING_MIN_AREA = 200
 # enough registered-difference pixels to prove that it is new. Recovery stays
 # inside the teacher-confirmed exemption neighborhood and rejects page rules.
 TEMPLATE_HANDWRITING_RECOVERY_PAD = 4
-
-
 TEMPLATE_HANDWRITING_RECOVERY_MIN_SEED_PIXELS = 3
-
-
 TEMPLATE_HANDWRITING_RECOVERY_STRONG_SEED_RATIO = 0.65
-
-
 TEMPLATE_HANDWRITING_RECOVERY_MIN_AREA = 50
-
-
 TEMPLATE_HANDWRITING_RECOVERY_MIN_SEED_RATIO = 0.15
-
-
 TEMPLATE_HANDWRITING_RECOVERY_MAX_EXTENT = 0.55
-
-
 TEMPLATE_HANDWRITING_RECOVERY_MIN_ELONGATION = 3.0
-
-
 TEMPLATE_HANDWRITING_RECOVERY_MAX_PAGE_SPAN_RATIO = 0.25
 
 
