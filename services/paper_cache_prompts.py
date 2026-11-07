@@ -31,6 +31,7 @@ from services.paper_cache_base import (
 logger = logging.getLogger("services.paper_cache")
 
 
+# ── 冻结模板后的页型匹配与学生答案转录 prompt ──
 # Production transcription prompts are intentionally short.  The frozen
 # template and the JSON contract already carry the routing information.
 RECOGNIZE_PAGE_AND_ANSWERS_PROMPT = """[task=student_transcription_only]
