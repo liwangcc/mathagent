@@ -32,11 +32,7 @@ logger = logging.getLogger("routers.answer_sheet")
 
 
 _ALIGNED_EVIDENCE_RE = re.compile(r"aligned-[0-9a-f]{32}\.png\Z")
-
-
 _ANSWER_CROP_RE = re.compile(r"crop-[0-9a-f]{24}\.png\Z")
-
-
 _STUDENT_RECOGNITION_ATTEMPT_RE = re.compile(
     r"\.student-recognition-[0-9a-f]{32}\Z"
 )
