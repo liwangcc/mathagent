@@ -40,6 +40,7 @@ from routers import answer_sheet_student_upload
 from routers import answer_sheet_recognition
 from routers import answer_sheet_recognize_page
 from routers import answer_sheet_student_files
+from routers import answer_sheet_grading
 
 
 def _question(number="1", qtype="choice"):
@@ -2548,8 +2549,8 @@ def test_answer_sheet_long_operation_emits_heartbeats(monkeypatch):
     from routers import answer_sheet
 
     monkeypatch.setattr(answer_sheet_recognition, "_ANSWER_SHEET_HEARTBEAT_SECONDS", 0.005)
+    monkeypatch.setattr(answer_sheet_grading, "_ANSWER_SHEET_HEARTBEAT_SECONDS", 0.005)
     monkeypatch.setattr(answer_sheet_common, "_ANSWER_SHEET_HEARTBEAT_SECONDS", 0.005)
-    monkeypatch.setattr(answer_sheet, "_ANSWER_SHEET_HEARTBEAT_SECONDS", 0.005)
 
     async def slow_result():
         await asyncio.sleep(0.03)
@@ -3880,7 +3881,7 @@ def test_grading_draft_stream_uses_bounded_student_concurrency(
             active -= 1
 
     monkeypatch.setattr(grader, "grade_paper_unified", grade)
-    monkeypatch.setattr(answer_sheet, "FLASH_LOCAL_MAX_CONCURRENT", 2)
+    monkeypatch.setattr(answer_sheet_grading, "FLASH_LOCAL_MAX_CONCURRENT", 2)
 
     response = make_client(1).post(
         f"/api/answer-sheet/sessions/{session.session_id}/grading/draft/stream"

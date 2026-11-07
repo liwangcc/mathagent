@@ -32,6 +32,7 @@ LAYERS = [
     "answer_sheet_student_files",
     "answer_sheet_recognize_page",
     "answer_sheet_recognition",
+    "answer_sheet_grading",
 ]
 # The router app.py includes: it may use any layer, and no layer imports it.
 TOP = ["answer_sheet"]
