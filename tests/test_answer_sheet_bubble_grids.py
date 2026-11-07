@@ -38,6 +38,7 @@ from tests.answer_sheet_redesign_helpers import (
     teacher_confirmed_bubble_grid,
 )
 from tests.test_answer_sheet_session import client_env  # noqa: F401
+from routers import answer_sheet_sessions
 
 
 PAGE_SIZE = (800, 1200)
@@ -670,6 +671,11 @@ def test_grading_gate_resolves_only_a_confirmed_bound_template(tmp_path, monkeyp
     from routers import answer_sheet
 
     registry = AnswerSheetTemplateRegistry(tmp_path / "registry")
+    monkeypatch.setattr(
+        answer_sheet_sessions,
+        "get_answer_sheet_template_registry",
+        lambda: registry,
+    )
     monkeypatch.setattr(answer_sheet, "get_answer_sheet_template_registry", lambda: registry)
 
     # Frozen with confirmed draft rows but never published: not gradable.
@@ -708,6 +714,11 @@ def test_grading_gate_rejects_a_batch_bound_to_a_template_without_grids(tmp_path
     from routers import answer_sheet
 
     registry = AnswerSheetTemplateRegistry(tmp_path / "registry")
+    monkeypatch.setattr(
+        answer_sheet_sessions,
+        "get_answer_sheet_template_registry",
+        lambda: registry,
+    )
     monkeypatch.setattr(answer_sheet, "get_answer_sheet_template_registry", lambda: registry)
     legacy = _draft(tmp_path / "authoring", batch=False)
     _freeze(legacy)

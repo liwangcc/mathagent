@@ -38,6 +38,7 @@ from services.teaching_context import (
 from routers import grade_papers
 from routers import answer_sheet_availability
 from routers import answer_sheet_common
+from routers import answer_sheet_sessions
 
 
 STAGES = ("primary", "junior", "senior")
@@ -398,16 +399,17 @@ def test_primary_answer_sheet_source_and_grading_use_original_session(monkeypatc
     from routers import answer_sheet
     from services.answer_sheet_session import AnswerSheetSession
 
+    monkeypatch.setattr(answer_sheet_sessions, "UPLOAD_DIR", str(tmp_path))
     monkeypatch.setattr(answer_sheet_common, "UPLOAD_DIR", str(tmp_path))
     monkeypatch.setattr(answer_sheet_availability, "UPLOAD_DIR", str(tmp_path))
-    monkeypatch.setattr(answer_sheet, "UPLOAD_DIR", str(tmp_path))
     monkeypatch.setattr(answer_sheet_common, "_answer_sheet_writes_enabled", lambda: None)
 
     async def ready(_user):
         return None
 
+    monkeypatch.setattr(answer_sheet_sessions, "_require_answer_sheet_chain", ready)
     monkeypatch.setattr(answer_sheet, "_require_answer_sheet_chain", ready)
-    monkeypatch.setattr(answer_sheet, "_owned_class", lambda *_args: SimpleNamespace(id=1))
+    monkeypatch.setattr(answer_sheet_sessions, "_owned_class", lambda *_args: SimpleNamespace(id=1))
     # Answer-sheet redesign slice 1: the class is inherited from the global
     # current class and a batch binds a frozen paper template of its stage.
     from tests.answer_sheet_redesign_helpers import confirmed_detailed_template, install_registries
