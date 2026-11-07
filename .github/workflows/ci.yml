@@ -34,6 +34,13 @@ jobs:
       - name: 语法检查（全量 Python 文件可编译）
         run: python -m compileall -q app.py config.py routers services database.py
 
+      - name: 源文件行数预算
+        # 新文件不超过 800 行，已登记的大文件只减不增；规则见 scripts/check_file_sizes.py。
+        # CI 检出的工作区就是这次提交，所以不需要 --staged。
+        run: |
+          python scripts/check_file_sizes.py
+          pytest -q tests/test_check_file_sizes.py
+
       - name: 鉴权与安全回归
         # 只跑不依赖外部模型/网络的用例：认证、短信限流、连接测试、安全加固，
         # 以及设置页写 .env 的注入/并发回归、CSP 白名单、Host 校验。
