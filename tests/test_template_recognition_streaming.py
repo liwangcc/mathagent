@@ -55,6 +55,7 @@ from routers import grade_recognition
 from routers import grade_template_import_steps
 from routers import grade_template_import
 from routers import answer_sheet_source
+from routers import answer_sheet_student_upload
 
 
 def _on_event_loop() -> bool:
@@ -611,7 +612,7 @@ def _upload_stream_case(monkeypatch, client, upload_dir):
     def inspect(_path):
         return {"orientation_status": "auto_passed", "orientation_reason": "test", "orientation_confidence": 1.0}
 
-    monkeypatch.setattr(answer_sheet, "_accelerator_managed_orientation", inspect)
+    monkeypatch.setattr(answer_sheet_student_upload, "_accelerator_managed_orientation", inspect)
     return f"/api/answer-sheet/sessions/{session.session_id}/students/upload/{upload_id}/process/stream"
 
 
@@ -627,6 +628,11 @@ def _students_stream_case(monkeypatch, client, upload_dir):
         for index in (1, 2)
     ]
     session.save()
+    monkeypatch.setattr(
+        answer_sheet_student_upload,
+        "TemplateEvidenceMatcher",
+        lambda *_args: object(),
+    )
     monkeypatch.setattr(answer_sheet, "TemplateEvidenceMatcher", lambda *_args: object())
 
     async def recognize_page(locked, page, *_args):

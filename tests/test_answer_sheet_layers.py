@@ -27,6 +27,8 @@ LAYERS = [
     "answer_sheet_sessions",
     "answer_sheet_source",
     "answer_sheet_layout",
+    "answer_sheet_student_upload",
+    "answer_sheet_student_pages",
 ]
 # The router app.py includes: it may use any layer, and no layer imports it.
 TOP = ["answer_sheet"]
