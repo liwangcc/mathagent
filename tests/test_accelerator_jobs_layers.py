@@ -25,6 +25,7 @@ LAYERS = [
     "accelerator_jobs_nodes",
     "accelerator_jobs_queue",
     "accelerator_jobs_leases",
+    "accelerator_jobs_results",
 ]
 # The module every caller imports: it may use any layer, and no layer imports it.
 TOP = ["accelerator_jobs"]

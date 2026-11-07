@@ -17,6 +17,7 @@ from models_user import User
 from services import accelerator_artifacts as artifacts
 from services import accelerator_jobs as jobs
 from services import accelerator_validation as validation
+from services import accelerator_jobs_results
 
 
 def _image(path: Path) -> None:
@@ -1082,7 +1083,7 @@ def test_legacy_aligned_result_is_rejected_at_submit_before_geometry(
         "paper-legacy-submit",
     )
     monkeypatch.setattr(
-        jobs,
+        accelerator_jobs_results,
         "normalize_homography",
         lambda *_args, **_kwargs: (_ for _ in ()).throw(
             AssertionError("legacy contract reached geometry validation")
