@@ -15,6 +15,7 @@ import time
 import httpx
 import pytest
 from PIL import Image
+from services import ocr_service_local_image
 
 
 async def _qwen_post_ok(url, _headers, _payload, _api_key):
@@ -551,8 +552,8 @@ def test_vision_payload_memory_is_bounded_by_bytes_not_only_request_count(
         assert await asyncio.gather(*tasks) == ["ok", "ok", "ok"]
 
     # A 30-byte file is charged as 30 raw + three 40-byte Base64/JSON copies.
-    monkeypatch.setattr(ocr, "OCR_IMAGE_PAYLOAD_MEMORY_BUDGET_BYTES", 320)
-    monkeypatch.setattr(ocr, "_local_ocr_payload_budget", None)
+    monkeypatch.setattr(ocr_service_local_image, "OCR_IMAGE_PAYLOAD_MEMORY_BUDGET_BYTES", 320)
+    monkeypatch.setattr(ocr_service_local_image, "_local_ocr_payload_budget", None)
     monkeypatch.setattr(ocr, "_call_vision_request", blocked_request)
     asyncio.run(run())
 
@@ -564,8 +565,8 @@ def test_single_vision_payload_larger_than_memory_budget_fails_before_encoding(
 
     image = tmp_path / "oversized-payload.jpg"
     image.write_bytes(b"x" * 30)
-    monkeypatch.setattr(ocr, "OCR_IMAGE_PAYLOAD_MEMORY_BUDGET_BYTES", 100)
-    monkeypatch.setattr(ocr, "_local_ocr_payload_budget", None)
+    monkeypatch.setattr(ocr_service_local_image, "OCR_IMAGE_PAYLOAD_MEMORY_BUDGET_BYTES", 100)
+    monkeypatch.setattr(ocr_service_local_image, "_local_ocr_payload_budget", None)
     monkeypatch.setattr(
         ocr,
         "_call_vision_request",
@@ -592,7 +593,7 @@ def test_multi_image_vision_uses_one_scheduler_request_in_manifest_order(
         requests.append(payload)
         return await _qwen_post_ok(url, headers, payload, api_key)
 
-    monkeypatch.setattr(ocr, "_local_ocr_payload_budget", None)
+    monkeypatch.setattr(ocr_service_local_image, "_local_ocr_payload_budget", None)
     monkeypatch.setattr(ocr, "_vision_pool", None)
     monkeypatch.setattr(ocr, "_post_vision_request", capture_post)
 
@@ -622,8 +623,8 @@ def test_multi_image_memory_budget_uses_total_payload(monkeypatch, tmp_path):
         path = tmp_path / f"multi-{index}.png"
         path.write_bytes(b"x" * 30)
         paths.append(str(path))
-    monkeypatch.setattr(ocr, "OCR_IMAGE_PAYLOAD_MEMORY_BUDGET_BYTES", 250)
-    monkeypatch.setattr(ocr, "_local_ocr_payload_budget", None)
+    monkeypatch.setattr(ocr_service_local_image, "OCR_IMAGE_PAYLOAD_MEMORY_BUDGET_BYTES", 250)
+    monkeypatch.setattr(ocr_service_local_image, "_local_ocr_payload_budget", None)
     monkeypatch.setattr(
         ocr,
         "_call_vision_request",
@@ -675,9 +676,9 @@ def test_payload_budget_wait_times_out_without_releasing_active_reservation(
         assert await first == "ok"
         assert await ocr.call_vision(images[2], "prompt") == "ok"
 
-    monkeypatch.setattr(ocr, "OCR_IMAGE_PAYLOAD_MEMORY_BUDGET_BYTES", 150)
+    monkeypatch.setattr(ocr_service_local_image, "OCR_IMAGE_PAYLOAD_MEMORY_BUDGET_BYTES", 150)
     monkeypatch.setattr(ocr, "_LOCAL_OCR_PAYLOAD_BUDGET_WAIT_SECONDS", 0.02)
-    monkeypatch.setattr(ocr, "_local_ocr_payload_budget", None)
+    monkeypatch.setattr(ocr_service_local_image, "_local_ocr_payload_budget", None)
     monkeypatch.setattr(ocr, "_encode_vision_image", encode)
     monkeypatch.setattr(ocr, "_vision_pool", None)
     monkeypatch.setattr(ocr, "_post_vision_request", _qwen_post_ok)
@@ -728,8 +729,8 @@ def test_payload_budget_wait_allows_a_slow_active_request_to_release_memory(
 
         assert await asyncio.gather(first, second) == ["ok", "ok"]
 
-    monkeypatch.setattr(ocr, "OCR_IMAGE_PAYLOAD_MEMORY_BUDGET_BYTES", 150)
-    monkeypatch.setattr(ocr, "_local_ocr_payload_budget", None)
+    monkeypatch.setattr(ocr_service_local_image, "OCR_IMAGE_PAYLOAD_MEMORY_BUDGET_BYTES", 150)
+    monkeypatch.setattr(ocr_service_local_image, "_local_ocr_payload_budget", None)
     monkeypatch.setattr(ocr, "_call_vision_request", slow_request)
 
     asyncio.run(run())
@@ -790,8 +791,8 @@ def test_cancelled_vision_encoding_holds_memory_budget_until_thread_settles(
         assert await second == "ok"
 
     # Each 30-byte file is charged 150 bytes, allowing exactly one encoder.
-    monkeypatch.setattr(ocr, "OCR_IMAGE_PAYLOAD_MEMORY_BUDGET_BYTES", 150)
-    monkeypatch.setattr(ocr, "_local_ocr_payload_budget", None)
+    monkeypatch.setattr(ocr_service_local_image, "OCR_IMAGE_PAYLOAD_MEMORY_BUDGET_BYTES", 150)
+    monkeypatch.setattr(ocr_service_local_image, "_local_ocr_payload_budget", None)
     monkeypatch.setattr(ocr, "_encode_vision_image", blocked_encode)
     monkeypatch.setattr(ocr, "_vision_pool", None)
     monkeypatch.setattr(ocr, "_post_vision_request", _qwen_post_ok)
@@ -892,9 +893,9 @@ def test_timed_out_local_image_component_returns_but_keeps_gate_and_readiness_fa
         recovered = ocr.get_local_image_readiness()
         return stalled, recovered, gate.locked()
 
-    monkeypatch.setattr(ocr, "_LOCAL_IMAGE_COMPONENT_TIMEOUT_SECONDS", 0.02)
-    monkeypatch.setattr(ocr, "_LOCAL_IMAGE_STALL_HEARTBEAT_SECONDS", 0.005)
-    monkeypatch.setattr(ocr, "_LOCAL_IMAGE_STALL_MARKER_DIR", tmp_path)
+    monkeypatch.setattr(ocr_service_local_image, "_LOCAL_IMAGE_COMPONENT_TIMEOUT_SECONDS", 0.02)
+    monkeypatch.setattr(ocr_service_local_image, "_LOCAL_IMAGE_STALL_HEARTBEAT_SECONDS", 0.005)
+    monkeypatch.setattr(ocr_service_local_image, "_LOCAL_IMAGE_STALL_MARKER_DIR", tmp_path)
     stalled, recovered, gate_locked = asyncio.run(run())
 
     assert stalled["ready"] is False
@@ -913,10 +914,10 @@ def test_shared_image_stall_marker_blocks_other_worker_and_stale_marker_is_prune
 
     marker = tmp_path / "ocr-image-other-worker.stall"
     marker.write_text("", encoding="ascii")
-    monkeypatch.setattr(ocr, "_LOCAL_IMAGE_STALL_MARKER_DIR", tmp_path)
+    monkeypatch.setattr(ocr_service_local_image, "_LOCAL_IMAGE_STALL_MARKER_DIR", tmp_path)
     # Windows stamps file times from a coarse clock (~15.6 ms ticks), so a
     # fresh marker can already look older than a millisecond-scale window.
-    monkeypatch.setattr(ocr, "_LOCAL_IMAGE_STALL_MARKER_STALE_SECONDS", 5.0)
+    monkeypatch.setattr(ocr_service_local_image, "_LOCAL_IMAGE_STALL_MARKER_STALE_SECONDS", 5.0)
 
     assert ocr.get_local_image_readiness()["ready"] is False
     old = time.time() - 10
@@ -955,7 +956,7 @@ def test_stalled_local_image_component_fails_readiness_until_it_settles(
         recovered = ocr.get_local_image_readiness()
         return stalled, recovered
 
-    monkeypatch.setattr(ocr, "_LOCAL_IMAGE_WORK_STALL_SECONDS", 0.01)
+    monkeypatch.setattr(ocr_service_local_image, "_LOCAL_IMAGE_WORK_STALL_SECONDS", 0.01)
     stalled, recovered = asyncio.run(run())
 
     assert stalled["ready"] is False

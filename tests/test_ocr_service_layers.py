@@ -21,6 +21,7 @@ ROOT = Path(__file__).resolve().parents[1]
 # Lowest first: a module may import only the modules listed before it.
 LAYERS = [
     "ocr_service_context",
+    "ocr_service_local_image",
 ]
 # The module every caller imports: it may use any layer, and no layer imports it.
 TOP = ["ocr_service"]
