@@ -22,6 +22,7 @@ ROOT = Path(__file__).resolve().parents[1]
 LAYERS = [
     "paper_cache_base",
     "paper_cache_review",
+    "paper_cache_prompts",
 ]
 # The module every caller imports: it may use any layer, and no layer imports it.
 TOP = ["paper_cache"]
