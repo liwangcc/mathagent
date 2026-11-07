@@ -11,6 +11,7 @@ from tests.test_template_directory_routes import _session
 from tests.test_template_session import _client, _make_app_and_session
 from tests.grade_family import set_grade_global
 from routers import grade_recognition
+from routers import grade_template_import
 
 
 def _reference(*, mode="fixed", point=(800, 450)):
@@ -35,7 +36,7 @@ def reference_client(tmp_path, monkeypatch):
     async def no_classifier(*_args, **_kwargs):
         return None
 
-    monkeypatch.setattr(grade_template, "recognize_template_pipeline", forbidden_model)
+    monkeypatch.setattr(grade_template_import, "recognize_template_pipeline", forbidden_model)
     monkeypatch.setattr(grade_template, "_classify_confirmed_template_knowledge", no_classifier)
     with _client(Session, monkeypatch, raise_server_exceptions=True) as client:
         yield client

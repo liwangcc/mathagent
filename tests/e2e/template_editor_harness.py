@@ -47,7 +47,14 @@ from PIL import Image, ImageDraw
 
 import app as app_module
 import config
-from routers import grade_availability, grade_recognition, grade_report, grade_template, grade_template_availability
+from routers import (
+    grade_availability,
+    grade_recognition,
+    grade_report,
+    grade_template,
+    grade_template_availability,
+    grade_template_import,
+)
 from services import template_directory_pipeline as pipeline
 from services import template_one_three as one_three
 
@@ -264,7 +271,7 @@ async def _no_classifier(_questions):
     raise RuntimeError("knowledge classification is disabled in the template editor harness")
 
 
-_real_column_layout = grade_template.recognize_column_layout
+_real_column_layout = grade_template_import.recognize_column_layout
 
 
 async def scripted_column_layout(image_path, **kwargs):
@@ -294,7 +301,7 @@ async def scripted_column_layout(image_path, **kwargs):
         previous_layout=kwargs.get("previous_layout"))
 
 
-_real_accept_candidate = grade_template.accept_canonical_template_candidate
+_real_accept_candidate = grade_template_import.accept_canonical_template_candidate
 
 
 def recorded_accept_candidate(source_image_path, canonical_image_path, raw_metadata, template_dir, page_index, **kwargs):
@@ -359,7 +366,8 @@ def install_patches() -> None:
     system_readiness.get_grading_infrastructure_readiness = _infrastructure_ready
     pipeline._request = scripted_request
     grade_template.recognize_column_layout = scripted_column_layout
-    grade_template.accept_canonical_template_candidate = recorded_accept_candidate
+    grade_template_import.recognize_column_layout = scripted_column_layout
+    grade_template_import.accept_canonical_template_candidate = recorded_accept_candidate
     grade_recognition._check_limits_or_raise = lambda *_args, **_kwargs: None
     grade_availability.batch_grade_availability = _available
     grade_availability._batch_grade_service_availability = _available
@@ -370,6 +378,7 @@ def install_patches() -> None:
     grade_template_availability._batch_grade_service_availability = _available
     grade_template_availability.get_public_hardware_readiness = _hardware_ready
     grade_template._template_knowledge_classifier = _no_classifier
+    grade_template_import._template_knowledge_classifier = _no_classifier
 
 
 # ---------------------------------------------------------------------------

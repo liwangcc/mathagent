@@ -52,6 +52,8 @@ from tests.test_template_session import (  # noqa: F401 - autouse readiness stub
 )
 from tests.grade_family import set_grade_global
 from routers import grade_recognition
+from routers import grade_template_import_steps
+from routers import grade_template_import
 
 
 def _on_event_loop() -> bool:
@@ -153,7 +155,7 @@ class _TemplateImport:
         set_grade_global(monkeypatch, "UPLOAD_DIR", str(tmp_path))
         monkeypatch.setattr(grade_recognition, "_check_limits_or_raise", lambda db, uid: None)
         # Heartbeat cadence only; nothing below waits for an interval to pass.
-        monkeypatch.setattr(grade_template, "_TEMPLATE_COMPONENT_HEARTBEAT_S", 0.01)
+        monkeypatch.setattr(grade_template_import_steps, "_TEMPLATE_COMPONENT_HEARTBEAT_S", 0.01)
         _patch_template_layout(monkeypatch, grade)
         self.trace: list = []
         self.saves: list[dict] = []
@@ -176,7 +178,7 @@ class _TemplateImport:
         async def model(_path, **_kwargs):
             return _model_output()
 
-        monkeypatch.setattr(grade_template, "recognize_template_pipeline", model)
+        monkeypatch.setattr(grade_template_import, "recognize_template_pipeline", model)
 
     async def start(self, pages: int = 1, *, page_roles=None, canonical: bool = False):
         raws = [_template_png_bytes(chr(ord("A") + index)) for index in range(pages)]
@@ -256,7 +258,7 @@ def _is_step_heartbeat(step: str, event: str, payload: dict) -> bool:
 def _hold(monkeypatch, run: _TemplateImport, step: str):
     """Hold ``step``'s component until released; returns the release callback."""
     name, kind = _STEP_COMPONENTS[step]
-    original = getattr(run.grade_template, name)
+    original = getattr(grade_template_import, name)
     if kind == "thread":
         gate = threading.Event()
 
@@ -265,7 +267,7 @@ def _hold(monkeypatch, run: _TemplateImport, step: str):
             run.trace.append(("returned", step))
             return original(*args, **kwargs)
 
-        monkeypatch.setattr(run.grade_template, name, held)
+        set_grade_global(monkeypatch, name, held)
         run.releases.append(gate.set)
         return gate.set
 
@@ -285,7 +287,7 @@ def _hold(monkeypatch, run: _TemplateImport, step: str):
         run.trace.append(("returned", step))
         return await original(*args, **kwargs)
 
-    monkeypatch.setattr(run.grade_template, name, held_async)
+    set_grade_global(monkeypatch, name, held_async)
     run.releases.append(lambda: gate_for_loop().set())
     return lambda: gate_for_loop().set()
 
@@ -395,7 +397,7 @@ def _read_import_stream_directly(monkeypatch, run: _TemplateImport) -> dict:
     with the step still running; only the stream's own cleanup can stop it.
     """
     captured: dict = {}
-    import_events = run.grade_template._template_import_events
+    import_events = grade_template_import._template_import_events
 
     def recording_import_events(job):
         captured["job"] = job
@@ -408,8 +410,8 @@ def _read_import_stream_directly(monkeypatch, run: _TemplateImport) -> dict:
         captured["stream"] = source
         return no_relay()
 
-    monkeypatch.setattr(run.grade_template, "_template_import_events", recording_import_events)
-    monkeypatch.setattr(run.grade_template, "_relay_template_recognition", capture_stream)
+    set_grade_global(monkeypatch, "_template_import_events", recording_import_events)
+    set_grade_global(monkeypatch, "_relay_template_recognition", capture_stream)
     return captured
 
 
@@ -432,7 +434,7 @@ def _hold_until_cancelled(monkeypatch, run: _TemplateImport, step: str, captured
             present = await asyncio.to_thread(Path(candidate_dir).is_dir)
             run.trace.append(("cleaned", step, present))
 
-    monkeypatch.setattr(run.grade_template, name, component)
+    set_grade_global(monkeypatch, name, component)
     return held
 
 
@@ -484,14 +486,14 @@ def test_reader_closing_the_stream_between_events_settles_the_running_step_first
 
 def _built_artifacts(monkeypatch, run: _TemplateImport) -> list[dict]:
     built = []
-    original = run.grade_template.build_template_artifact
+    original = grade_template_import.build_template_artifact
 
     def recording(*args, **kwargs):
         artifact = original(*args, **kwargs)
         built.append(artifact)
         return artifact
 
-    monkeypatch.setattr(run.grade_template, "build_template_artifact", recording)
+    set_grade_global(monkeypatch, "build_template_artifact", recording)
     return built
 
 
@@ -539,7 +541,7 @@ def test_import_failure_is_checkpointed_off_the_event_loop(monkeypatch, tmp_path
     async def empty_page(_path, **_kwargs):
         return {"questions": []}
 
-    monkeypatch.setattr(run.grade_template, "recognize_template_pipeline", empty_page)
+    set_grade_global(monkeypatch, "recognize_template_pipeline", empty_page)
 
     async def scenario():
         return await run.consume(await run.start())
@@ -738,7 +740,7 @@ def test_page_model_budget_is_measured_on_the_import_clock_and_given_as_loop_tim
             return 100.0
 
     monkeypatch.setattr(asyncio, "get_running_loop", lambda: Loop())
-    monkeypatch.setattr(grade_template, "_template_import_clock", lambda: 7.0)
+    set_grade_global(monkeypatch, "_template_import_clock", lambda: 7.0)
     # 480 s of the import remain on its own clock; the model stages time out
     # on the event loop's, so the page deadline is a loop time.
     assert grade_template._template_page_model_deadline(7.0 + 480, 1) == 100.0 + 450

@@ -17,6 +17,7 @@ from tests.test_template_session import (  # noqa: F401 - autouse readiness fixt
 )
 from tests.grade_family import set_grade_global
 from routers import grade_recognition
+from routers import grade_template_import
 
 
 def _one_question_pipeline(box):
@@ -45,7 +46,7 @@ def _import(monkeypatch, tmp_path, box):
     set_grade_global(monkeypatch, "UPLOAD_DIR", str(tmp_path))
     monkeypatch.setattr(grade_recognition, "_check_limits_or_raise", lambda db, uid: None)
     _patch_template_layout(monkeypatch, gr_router)
-    monkeypatch.setattr(grade_template, "recognize_template_pipeline", _one_question_pipeline(box))
+    monkeypatch.setattr(grade_template_import, "recognize_template_pipeline", _one_question_pipeline(box))
     response = _client(Session, monkeypatch).post(
         "/api/batch-grade/template/recognize",
         data={"template_mode": "blank", "category": "daily"},

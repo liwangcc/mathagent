@@ -51,6 +51,9 @@ from routers import grade_availability
 from routers import grade_report
 from routers import grade_papers
 from routers import grade_recognition
+from routers import grade_template_import_steps
+from routers import grade_template_import_form
+from routers import grade_template_import
 
 
 @pytest.fixture(autouse=True)
@@ -461,8 +464,7 @@ def test_confirmed_template_background_classifies_only_missing_knowledge(monkeyp
         ]
 
     set_grade_global(monkeypatch, "UPLOAD_DIR", str(tmp_path))
-    monkeypatch.setattr(grade_report, "_template_knowledge_classifier", classify)
-    monkeypatch.setattr(grade_template, "_template_knowledge_classifier", classify)
+    set_grade_global(monkeypatch, "_template_knowledge_classifier", classify)
 
     asyncio.run(grade_template._classify_confirmed_template_knowledge(
         sess.template_id, 7, original_hash,
@@ -1200,7 +1202,7 @@ def _patch_template_layout(monkeypatch, grade_router):
             "summary": {"total": 2},
         }
 
-    monkeypatch.setattr(grade_template, "recognize_column_layout", fake_layout)
+    set_grade_global(monkeypatch, "recognize_column_layout", fake_layout)
     return events
 
 
@@ -1224,7 +1226,7 @@ def _patch_fast_template_pre_ocr(monkeypatch, grade_router):
             },
         )
 
-    monkeypatch.setattr(grade_template, "canonicalize_template_image", local_canonical)
+    monkeypatch.setattr(grade_template_import, "canonicalize_template_image", local_canonical)
 
 
 class _ImportDeadlineClock:
@@ -1272,7 +1274,7 @@ def test_template_recognize_ocrs_each_page(
             {"question_number": "1", "question_text": "1+1=?", "question_type": "fill",
              "standard_answer": "2", "answer_bbox": [500, 400, 850, 500]},
         ]}
-    monkeypatch.setattr(grade_template, "recognize_template_pipeline", _mock_with_answers)
+    monkeypatch.setattr(grade_template_import, "recognize_template_pipeline", _mock_with_answers)
     client = _client(Session, monkeypatch)
     r = client.post(
         "/api/batch-grade/template/recognize",
@@ -1347,7 +1349,7 @@ def test_template_recognize_builds_one_box_collection_for_both_roles(
             "template_answer_regions": boxes,
         }
 
-    monkeypatch.setattr(grade_template, "recognize_template_pipeline", _mock_with_unified_boxes)
+    monkeypatch.setattr(grade_template_import, "recognize_template_pipeline", _mock_with_unified_boxes)
     client = _client(Session, monkeypatch)
     r = client.post(
         "/api/batch-grade/template/recognize",
@@ -1427,7 +1429,7 @@ def test_template_anchor_review_keeps_questions_and_persists_candidates(
         }
 
     monkeypatch.setattr(
-        grade_template,
+        grade_template_import,
         "recognize_template_pipeline",
         reviewable_pipeline,
     )
@@ -1578,7 +1580,7 @@ def test_template_multi_image_association_review_keeps_answers_and_blocks_confir
         }
 
     monkeypatch.setattr(
-        grade_template,
+        grade_template_import,
         "recognize_template_pipeline",
         reviewable_pipeline,
     )
@@ -1692,7 +1694,7 @@ def test_template_nonsemantic_error_with_questions_still_fails(
             "layout_result": kwargs["layout_result"],
         }
 
-    monkeypatch.setattr(grade_template, "recognize_template_pipeline", failed_pipeline)
+    monkeypatch.setattr(grade_template_import, "recognize_template_pipeline", failed_pipeline)
     response = _client(Session, monkeypatch).post(
         "/api/batch-grade/template/recognize",
         data={"template_mode": "marked", "category": "daily"},
@@ -1781,8 +1783,8 @@ def test_template_recognize_sends_canonical_page_without_legacy_ocr_crops(
             "pages": [{"candidates": []}],
         }
 
-    monkeypatch.setattr(grade_template, "canonicalize_template_image", local_canonical)
-    monkeypatch.setattr(grade_template, "recognize_column_layout", stable_layout)
+    monkeypatch.setattr(grade_template_import, "canonicalize_template_image", local_canonical)
+    set_grade_global(monkeypatch, "recognize_column_layout", stable_layout)
     observed = {}
 
     async def fake_pipeline(path, **kwargs):
@@ -1798,7 +1800,7 @@ def test_template_recognize_sends_canonical_page_without_legacy_ocr_crops(
             "standard_answer": "2",
         }]}
 
-    monkeypatch.setattr(grade_template, "recognize_template_pipeline", fake_pipeline)
+    monkeypatch.setattr(grade_template_import, "recognize_template_pipeline", fake_pipeline)
     response = _client(Session, monkeypatch).post(
         "/api/batch-grade/template/recognize",
         data={"has_answers": "false", "category": "daily"},
@@ -1886,7 +1888,7 @@ def test_template_recognize_accepts_desktop_canonical_bytes_without_server_fallb
             "answer_bbox": [500, 400, 850, 500],
         }]}
 
-    monkeypatch.setattr(grade_template, "recognize_template_pipeline", fake_ocr)
+    monkeypatch.setattr(grade_template_import, "recognize_template_pipeline", fake_ocr)
     async def hardware_probe_forbidden(_user):
         raise AssertionError("client candidate queried accelerator readiness")
 
@@ -1948,7 +1950,7 @@ def test_template_recognize_uses_local_canonicalization_without_accelerator(
             "answer_bbox": [500, 400, 850, 500],
         }]}
 
-    monkeypatch.setattr(grade_template, "recognize_template_pipeline", fake_ocr)
+    monkeypatch.setattr(grade_template_import, "recognize_template_pipeline", fake_ocr)
 
     response = _client(Session, monkeypatch).post(
         "/api/batch-grade/template/recognize",
@@ -1983,7 +1985,7 @@ def test_template_local_canonicalization_failure_keeps_source(
     def fail_local(*_args, **_kwargs):
         raise OSError(f"local canonicalization {state}")
 
-    monkeypatch.setattr(grade_template, "canonicalize_template_image", fail_local)
+    monkeypatch.setattr(grade_template_import, "canonicalize_template_image", fail_local)
     response = _client(Session, monkeypatch).post(
         "/api/batch-grade/template/recognize",
         data={"has_answers": "true", "category": "daily"},
@@ -2035,7 +2037,7 @@ def test_template_full_page_model_skips_legacy_ocr_evidence_accelerator(
             "answer_bbox": [500, 400, 850, 500],
         }]}
 
-    monkeypatch.setattr(grade_template, "recognize_template_pipeline", fake_ocr)
+    monkeypatch.setattr(grade_template_import, "recognize_template_pipeline", fake_ocr)
 
     response = _client(Session, monkeypatch).post(
         "/api/batch-grade/template/recognize",
@@ -2147,7 +2149,7 @@ def test_template_candidate_files_do_not_reduce_the_template_page_limit(monkeypa
     from routers import grade_template
 
     set_grade_global(monkeypatch, "UPLOAD_DIR", str(tmp_path / "uploads"))
-    monkeypatch.setattr(grade_template, "MAX_TEMPLATE_PAGES", 1)
+    monkeypatch.setattr(grade_template_import_form, "MAX_TEMPLATE_PAGES", 1)
     raw = _template_png_bytes()
     canonical_bytes, metadata = _canonical_submission(tmp_path, raw, "count-limit")
     response = _client(Session, monkeypatch).post(
@@ -2202,7 +2204,7 @@ def test_blank_template_recognize_builds_server_owned_visual_artifact(monkeypatc
             "regions": [[500, 400, 850, 500]],
         }]}
 
-    monkeypatch.setattr(grade_template, "recognize_template_pipeline", fake_blank)
+    monkeypatch.setattr(grade_template_import, "recognize_template_pipeline", fake_blank)
     response = _client(Session, monkeypatch).post(
         "/api/batch-grade/template/recognize",
         data={"has_answers": "false", "category": "daily"},
@@ -2239,7 +2241,7 @@ def test_template_recognize_rejects_blank_before_ocr(monkeypatch, tmp_path):
         ocr_called = True
         return {"questions": []}
 
-    monkeypatch.setattr(grade_template, "recognize_template_pipeline", _unexpected_ocr)
+    monkeypatch.setattr(grade_template_import, "recognize_template_pipeline", _unexpected_ocr)
     stream = io.BytesIO()
     Image.new("RGB", (600, 800), "white").save(stream, format="PNG")
     response = _client(Session, monkeypatch).post(
@@ -2269,7 +2271,7 @@ def test_blank_template_vision_auth_failure_never_creates_confirmable_empty_temp
     async def _vision_auth_failed(_path, **_kwargs):
         return {"error": "Client error '401 Unauthorized' for vision endpoint", "questions": []}
 
-    monkeypatch.setattr(grade_template, "recognize_template_pipeline", _vision_auth_failed)
+    monkeypatch.setattr(grade_template_import, "recognize_template_pipeline", _vision_auth_failed)
     client = _client(Session, monkeypatch)
 
     response = client.post(
@@ -2308,7 +2310,7 @@ def test_blank_template_empty_model_result_never_creates_confirmable_empty_templ
     async def _empty_result(_path, **_kwargs):
         return {"questions": []}
 
-    monkeypatch.setattr(grade_template, "recognize_template_pipeline", _empty_result)
+    monkeypatch.setattr(grade_template_import, "recognize_template_pipeline", _empty_result)
     client = _client(Session, monkeypatch)
     response = client.post(
         "/api/batch-grade/template/recognize",
@@ -2336,7 +2338,7 @@ def test_template_contract_error_is_not_reported_as_visual_service_failure(monke
     async def _invalid_contract(_path, **_kwargs):
         return {"error": "模板 OCR 第 10 题题型无效", "questions": []}
 
-    monkeypatch.setattr(grade_template, "recognize_template_pipeline", _invalid_contract)
+    monkeypatch.setattr(grade_template_import, "recognize_template_pipeline", _invalid_contract)
     response = _client(Session, monkeypatch).post(
         "/api/batch-grade/template/recognize",
         data={"has_answers": "false", "category": "daily"},
@@ -2362,7 +2364,7 @@ def test_template_pool_timeout_has_a_truthful_retryable_error(monkeypatch, tmp_p
     async def _timed_out(_path, **_kwargs):
         return {"error": "absolute_attempt_ttl", "questions": []}
 
-    monkeypatch.setattr(grade_template, "recognize_template_pipeline", _timed_out)
+    monkeypatch.setattr(grade_template_import, "recognize_template_pipeline", _timed_out)
     response = _client(Session, monkeypatch).post(
         "/api/batch-grade/template/recognize",
         data={"has_answers": "false", "category": "daily"},
@@ -2388,9 +2390,9 @@ def test_template_total_deadline_reports_unusable_and_cleans_ocr_task(
     set_grade_global(monkeypatch, "UPLOAD_DIR", str(tmp_path))
     monkeypatch.setattr(grade_recognition, "_check_limits_or_raise", lambda db, uid: None)
     clock = _ImportDeadlineClock()
-    monkeypatch.setattr(grade_template, "_template_import_clock", clock)
-    monkeypatch.setattr(grade_template, "_template_import_deadline_seconds", lambda _count: 0.1)
-    monkeypatch.setattr(grade_template, "_TEMPLATE_COMPONENT_HEARTBEAT_S", 0.01)
+    set_grade_global(monkeypatch, "_template_import_clock", clock)
+    monkeypatch.setattr(grade_template_import, "_template_import_deadline_seconds", lambda _count: 0.1)
+    monkeypatch.setattr(grade_template_import_steps, "_TEMPLATE_COMPONENT_HEARTBEAT_S", 0.01)
     _patch_fast_template_pre_ocr(monkeypatch, gr_router)
     cancelled = threading.Event()
     status_when_cancelled = []
@@ -2404,7 +2406,7 @@ def test_template_total_deadline_reports_unusable_and_cleans_ocr_task(
             status_when_cancelled.append(_template_status_on_disk(tmp_path))
             cancelled.set()
 
-    monkeypatch.setattr(grade_template, "recognize_template_pipeline", hanging_ocr)
+    monkeypatch.setattr(grade_template_import, "recognize_template_pipeline", hanging_ocr)
     response = _client(Session, monkeypatch).post(
         "/api/batch-grade/template/recognize",
         data={"has_answers": "false", "category": "daily"},
@@ -2439,9 +2441,9 @@ def test_template_deadline_during_layout_is_reported_as_the_import_timeout(
     set_grade_global(monkeypatch, "UPLOAD_DIR", str(tmp_path))
     monkeypatch.setattr(grade_recognition, "_check_limits_or_raise", lambda db, uid: None)
     clock = _ImportDeadlineClock()
-    monkeypatch.setattr(grade_template, "_template_import_clock", clock)
-    monkeypatch.setattr(grade_template, "_template_import_deadline_seconds", lambda _count: 0.1)
-    monkeypatch.setattr(grade_template, "_TEMPLATE_COMPONENT_HEARTBEAT_S", 0.01)
+    set_grade_global(monkeypatch, "_template_import_clock", clock)
+    monkeypatch.setattr(grade_template_import, "_template_import_deadline_seconds", lambda _count: 0.1)
+    monkeypatch.setattr(grade_template_import_steps, "_TEMPLATE_COMPONENT_HEARTBEAT_S", 0.01)
     _patch_fast_template_pre_ocr(monkeypatch, gr_router)
     cancelled = threading.Event()
     status_when_cancelled = []
@@ -2455,7 +2457,7 @@ def test_template_deadline_during_layout_is_reported_as_the_import_timeout(
             status_when_cancelled.append(_template_status_on_disk(tmp_path))
             cancelled.set()
 
-    monkeypatch.setattr(grade_template, "recognize_column_layout", hanging_layout)
+    set_grade_global(monkeypatch, "recognize_column_layout", hanging_layout)
     response = _client(Session, monkeypatch).post(
         "/api/batch-grade/template/recognize",
         data={"has_answers": "false", "category": "daily"},
@@ -2477,8 +2479,8 @@ def test_template_stream_disconnect_keeps_background_ocr_running(monkeypatch, tm
 
     set_grade_global(monkeypatch, "UPLOAD_DIR", str(tmp_path))
     monkeypatch.setattr(grade_recognition, "_check_limits_or_raise", lambda db, uid: None)
-    monkeypatch.setattr(grade_template, "_template_import_deadline_seconds", lambda _count: 60.0)
-    monkeypatch.setattr(grade_template, "_TEMPLATE_COMPONENT_HEARTBEAT_S", 0.01)
+    monkeypatch.setattr(grade_template_import, "_template_import_deadline_seconds", lambda _count: 60.0)
+    monkeypatch.setattr(grade_template_import_steps, "_TEMPLATE_COMPONENT_HEARTBEAT_S", 0.01)
     _patch_template_layout(monkeypatch, gr_router)
     cancelled = asyncio.Event()
     ocr_started = asyncio.Event()
@@ -2505,7 +2507,7 @@ def test_template_stream_disconnect_keeps_background_ocr_running(monkeypatch, tm
             "regions": [[500, 400, 850, 500]],
         }]}
 
-    monkeypatch.setattr(grade_template, "recognize_template_pipeline", hanging_ocr)
+    monkeypatch.setattr(grade_template_import, "recognize_template_pipeline", hanging_ocr)
 
     async def scenario():
         upload = UploadFile(
@@ -2568,7 +2570,7 @@ def test_template_recognition_progress_discloses_page_scaled_stop(monkeypatch, t
             "standard_answer": "2",
         }]}
 
-    monkeypatch.setattr(grade_template, "recognize_template_pipeline", _success)
+    monkeypatch.setattr(grade_template_import, "recognize_template_pipeline", _success)
     response = _client(Session, monkeypatch).post(
         "/api/batch-grade/template/recognize",
         data={"has_answers": "false", "category": "daily"},
@@ -2607,7 +2609,7 @@ def test_partial_template_ocr_failure_can_never_be_confirmed(monkeypatch, tmp_pa
             }]}
         return {"error": "401 Unauthorized", "questions": []}
 
-    monkeypatch.setattr(grade_template, "recognize_template_pipeline", _first_page_then_auth_failure)
+    monkeypatch.setattr(grade_template_import, "recognize_template_pipeline", _first_page_then_auth_failure)
     client = _client(Session, monkeypatch)
     response = client.post(
         "/api/batch-grade/template/recognize",
@@ -3330,7 +3332,7 @@ def test_current_one_three_import_confirm_and_reopen(monkeypatch, tmp_path):
     phases = []
     slot_ids = {"1": ["1[1]", "1[2]", "1[3]"], "2": ["2[1]"]}
     artifact_errors = []
-    build_artifact = grade_template.build_template_artifact
+    build_artifact = grade_template_import.build_template_artifact
 
     def capture_artifact(*args, **kwargs):
         try:
@@ -3339,7 +3341,7 @@ def test_current_one_three_import_confirm_and_reopen(monkeypatch, tmp_path):
             artifact_errors.append(str(exc))
             raise
 
-    monkeypatch.setattr(grade_template, "build_template_artifact", capture_artifact)
+    monkeypatch.setattr(grade_template_import, "build_template_artifact", capture_artifact)
 
     async def forbidden(*args, **kwargs):
         raise AssertionError("Upstream transport must be mocked")
@@ -3441,10 +3443,10 @@ def _recognize_directory_timeout_draft(monkeypatch, tmp_path, phase, *,
     # ModelFixture represents failed stages with missing output fields. Allow
     # local image processing to finish so recovery tests reach those fields:
     # the import's clock stands still, so machine load cannot use up its time.
-    monkeypatch.setattr(grade_template, "_template_import_clock", _ImportDeadlineClock())
-    monkeypatch.setattr(grade_template, "_template_import_deadline_seconds", lambda _count: 5.0)
-    monkeypatch.setattr(grade_template, "_TEMPLATE_MODEL_SAVE_RESERVE_S", 0.3)
-    monkeypatch.setattr(grade_template, "_TEMPLATE_COMPONENT_HEARTBEAT_S", 0.01)
+    set_grade_global(monkeypatch, "_template_import_clock", _ImportDeadlineClock())
+    monkeypatch.setattr(grade_template_import, "_template_import_deadline_seconds", lambda _count: 5.0)
+    monkeypatch.setattr(grade_template_import_steps, "_TEMPLATE_MODEL_SAVE_RESERVE_S", 0.3)
+    monkeypatch.setattr(grade_template_import_steps, "_TEMPLATE_COMPONENT_HEARTBEAT_S", 0.01)
     _patch_template_layout(monkeypatch, gr_router)
 
     async def no_background_classifier(*_args, **_kwargs):
@@ -3512,7 +3514,7 @@ def _recognize_directory_timeout_draft(monkeypatch, tmp_path, phase, *,
                 "requires_teacher_confirmation": pending, "template_ocr_diagnostics": diagnostics,
                 "anchor_diagnostics": diagnostics}
     monkeypatch.setattr(pipeline, "recognize_directory_template", synthetic_directory)
-    monkeypatch.setattr(grade_template, "recognize_template_pipeline", template_recognition.recognize_template_pipeline)
+    monkeypatch.setattr(grade_template_import, "recognize_template_pipeline", template_recognition.recognize_template_pipeline)
     client = _client(Session, monkeypatch)
     response = client.post(
         "/api/batch-grade/template/recognize",
