@@ -10,6 +10,7 @@ from services.teaching_context import current_teaching_context, make_teaching_co
 from routers import answer_sheet_availability
 from routers import answer_sheet_common
 from routers import answer_sheet_sessions
+from routers import answer_sheet_source
 
 
 def _question():
@@ -27,6 +28,7 @@ def _route_setup(monkeypatch, tmp_path):
     async def ready(_user):
         return None
 
+    monkeypatch.setattr(answer_sheet_source, "_require_answer_sheet_chain", ready)
     monkeypatch.setattr(answer_sheet_sessions, "_require_answer_sheet_chain", ready)
     monkeypatch.setattr(answer_sheet, "_require_answer_sheet_chain", ready)
     return answer_sheet
@@ -79,9 +81,9 @@ def test_sync_source_models_receive_session_stage_not_changed_teacher(monkeypatc
         calls.append(("solve", current_teaching_context()))
         return {"answers": {"1": {"standard_answer": "2", "model_answer": ["解方程"]}}}
 
-    monkeypatch.setattr(route, "recognize_template_blank", recognize)
-    monkeypatch.setattr(route, "recognize_template_with_answers", recognize)
-    monkeypatch.setattr(route, "generate_template_answers_batch", solve)
+    monkeypatch.setattr(answer_sheet_source, "recognize_template_blank", recognize)
+    monkeypatch.setattr(answer_sheet_source, "recognize_template_with_answers", recognize)
+    monkeypatch.setattr(answer_sheet_source, "generate_template_answers_batch", solve)
     result = asyncio.run(route.recognize_source(session.session_id, user=SimpleNamespace(id=1, education_stage="senior")))
     assert result["status"] == "source_recognized"
     assert calls and all(context == junior for _, context in calls)
@@ -105,7 +107,7 @@ def test_source_sse_resumption_checks_snapshot_and_binds_iteration(monkeypatch, 
         seen.append(current_teaching_context())
         return {"questions": [_question()]}
 
-    monkeypatch.setattr(route, "recognize_template_with_answers", recognize)
+    monkeypatch.setattr(answer_sheet_source, "recognize_template_with_answers", recognize)
 
     async def consume():
         response = await route.recognize_source_stream(session.session_id, user=SimpleNamespace(id=1, education_stage="senior"))

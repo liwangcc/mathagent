@@ -39,6 +39,7 @@ from routers import grade_papers
 from routers import answer_sheet_availability
 from routers import answer_sheet_common
 from routers import answer_sheet_sessions
+from routers import answer_sheet_source
 
 
 STAGES = ("primary", "junior", "senior")
@@ -407,6 +408,7 @@ def test_primary_answer_sheet_source_and_grading_use_original_session(monkeypatc
     async def ready(_user):
         return None
 
+    monkeypatch.setattr(answer_sheet_source, "_require_answer_sheet_chain", ready)
     monkeypatch.setattr(answer_sheet_sessions, "_require_answer_sheet_chain", ready)
     monkeypatch.setattr(answer_sheet, "_require_answer_sheet_chain", ready)
     monkeypatch.setattr(answer_sheet_sessions, "_owned_class", lambda *_args: SimpleNamespace(id=1))
@@ -437,7 +439,7 @@ def test_primary_answer_sheet_source_and_grading_use_original_session(monkeypatc
         seen.append(current_teaching_context())
         return {"details": [{"question_no": "1", "result": "correct"}]}
 
-    monkeypatch.setattr(answer_sheet, "recognize_template_with_answers", recognize)
+    monkeypatch.setattr(answer_sheet_source, "recognize_template_with_answers", recognize)
     assert asyncio.run(answer_sheet.recognize_source(session.session_id, user=user))["status"] == "source_recognized"
     group = {"questions": [{"question_number": "1", "student_answer": "2"}], "student_name": "合成学生", "pages": ["p1"], "question_pages": {"1": ["p1"]}}
     with use_teaching_context(make_teaching_context("senior")):
