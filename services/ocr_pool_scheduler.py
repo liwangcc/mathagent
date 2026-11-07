@@ -8,27 +8,28 @@ cannot multiply paid calls.
 No image, prompt, response, or credential is stored in Redis.  Redis receives
 only opaque hashes, short-lived lease IDs, token-bucket state, circuit state, and
 batch retry counters.
+
+The code lives in one module per part; each imports only the parts above it:
+
+    ocr_pool_scheduler_base       pools, permits, errors, call signatures and template routes
+    ocr_pool_scheduler_local      the process-local coordinator (tests, explicit dev mode)
+    ocr_pool_scheduler_redis      the cross-worker Redis coordinator and its Lua scripts
+    ocr_pool_scheduler_acquire    getting pool capacity before a call (mixin)
+    ocr_pool_scheduler_transport  sending one call to a pool and reading a failure (mixin)
+    ocr_pool_scheduler_requests   one OCR request end to end, with its cross-pool retry (mixin)
+
+This module keeps ``OcrPoolScheduler`` itself (its construction, ``stats`` and
+``close``; it inherits the three mixins) and the process-wide template
+schedulers (``get_template_ocr_pool_scheduler``,
+``ensure_ocr_pool_scheduler_ready``).  It re-exports every name, so ``from
+services.ocr_pool_scheduler import ...`` keeps working for callers and tests;
+new code may import from the module that defines a name.
 """
 
 from __future__ import annotations
 
-import asyncio
-import hashlib
-import hmac
-import inspect
-import json
-import logging
-import math
-import time
-import uuid
-from dataclasses import dataclass
-from typing import Any, Awaitable, Callable
-
-import httpx
-
-from services.retry_backoff import jittered_backoff, parse_retry_after_seconds
-from services.template_max_owned import MaxTemplateRejection
-from services.ocr_pool_scheduler_base import (
+# Shared pools, permits, errors, call signatures and template routes (ocr_pool_scheduler_base.py).
+from services.ocr_pool_scheduler_base import (  # noqa: F401
     ResponseValidator,
     Transport,
     _ACTIVE_PRIMARY_TTL_S,
@@ -42,11 +43,13 @@ from services.ocr_pool_scheduler_base import (
     AcquireDecision,
     PoolPermit,
 )
-from services.ocr_pool_scheduler_local import (
+# The process-local coordinator (ocr_pool_scheduler_local.py).
+from services.ocr_pool_scheduler_local import (  # noqa: F401
     _TokenBucket,
     LocalPoolCoordinator,
 )
-from services.ocr_pool_scheduler_redis import (
+# The cross-worker Redis coordinator and its Lua scripts (ocr_pool_scheduler_redis.py).
+from services.ocr_pool_scheduler_redis import (  # noqa: F401
     _ACQUIRE_LUA,
     _RELEASE_LUA,
     _REMOVE_FIRST_ATTEMPT_WAITER_LUA,
@@ -57,10 +60,12 @@ from services.ocr_pool_scheduler_redis import (
     _ABANDON_PROBE_LUA,
     RedisPoolCoordinator,
 )
-from services.ocr_pool_scheduler_acquire import (
+# OcrPoolScheduler's capacity methods (a mixin) (ocr_pool_scheduler_acquire.py).
+from services.ocr_pool_scheduler_acquire import (  # noqa: F401
     _SchedulerAcquireMixin,
 )
-from services.ocr_pool_scheduler_transport import (
+# OcrPoolScheduler's methods for sending one call (a mixin) (ocr_pool_scheduler_transport.py).
+from services.ocr_pool_scheduler_transport import (  # noqa: F401
     _SchedulerTransportMixin,
     _TRUNCATED_FINISH_REASONS,
     _SHARED_RETRYABLE_HTTP_STATUSES,
@@ -70,11 +75,28 @@ from services.ocr_pool_scheduler_transport import (
     _is_student_transcription_payload,
     _chat_messages_from_payload,
 )
-from services.ocr_pool_scheduler_requests import (
+# OcrPoolScheduler's request flow (a mixin) (ocr_pool_scheduler_requests.py).
+from services.ocr_pool_scheduler_requests import (  # noqa: F401
     _SchedulerRequestsMixin,
     _RETRY_LEDGER_TTL_S,
     _set_template_route_diagnostics,
 )
+# Everything this module imported before the split stays importable from it;
+# tests patch time, asyncio and httpx through it.
+import asyncio
+import hashlib
+import hmac
+import inspect
+import json
+import logging
+import math
+import time
+import uuid
+from dataclasses import dataclass
+from typing import Any, Awaitable, Callable
+import httpx
+from services.retry_backoff import jittered_backoff, parse_retry_after_seconds
+from services.template_max_owned import MaxTemplateRejection
 
 logger = logging.getLogger(__name__)
 
