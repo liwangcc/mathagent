@@ -40,7 +40,7 @@
   "services/scoring_engine.py": 810,
   "services/template_column_layout.py": 2587,
   "services/template_directory_pipeline.py": 846,
-  "services/template_evidence.py": 3493,
+  "services/template_evidence.py": 2830,
   "services/template_recognition.py": 986,
   "services/template_session.py": 968
 }

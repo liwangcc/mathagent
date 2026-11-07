@@ -25,6 +25,8 @@ LAYERS = [
     "template_evidence_canonical",
     "template_evidence_alignment",
     "template_evidence_crops",
+    "template_evidence_residue",
+    "template_evidence_pixels",
 ]
 # The module every caller imports: it may use any layer, and no layer imports it.
 TOP = ["template_evidence"]
