@@ -11,6 +11,7 @@ from PIL import Image
 from services import template_evidence as evidence
 from services.template_anchor_crops import build_anchor_crop_plan
 from services import template_evidence_sheets
+from services import template_evidence_columns
 
 
 def _layout(regions, *, columns=1, anchors=None, mode="blank", schema=None):
@@ -45,7 +46,7 @@ def _render(tmp_path, monkeypatch, difference, layout, *, allow_fixed_solve_over
         lambda *args, **kwargs: difference.copy(),
     )
     monkeypatch.setattr(
-        evidence,
+        template_evidence_columns,
         "_answer_only_pixels_v2",
         lambda *args, **kwargs: difference.copy(),
     )
