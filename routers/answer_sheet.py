@@ -154,13 +154,39 @@ from routers.answer_sheet_availability import (
     _require_answer_sheet_chain,
 )
 from routers.answer_sheet_availability import router as _availability_router
+from routers.answer_sheet_assets import (
+    _ALLOWED_EXTENSIONS,
+    _CLIENT_OCR_READY_SUFFIX,
+    _CLIENT_OCR_READY_MAX_EDGE,
+    _RAW_PAPER_EXPIRED_MESSAGE,
+    _remove_upload_path,
+    _save_images,
+    _session_asset_path,
+    _require_raw_assets_available,
+    _layout_asset_paths,
+    _remove_layout_assets,
+)
+from routers.answer_sheet_student_state import (
+    _GRADING_DRAFT_CHECKPOINT_KEY,
+    _STUDENT_UPLOAD_ACTIVE_STATES,
+    _valid_student_upload_id,
+    _student_upload_is_active,
+    _require_no_student_upload,
+    _student_recognition_source_path,
+)
+from routers.answer_sheet_pairing import (
+    _ORDERED_DUPLEX_PAIRING,
+    _ORDERED_PAIRING_REASONS,
+    _add_pairing_reason,
+    _clear_pairing_reasons,
+    _ordered_duplex_layout_ids,
+    _apply_student_page_pairing,
+    _apply_ordered_duplex_identity,
+)
 
 router = APIRouter(prefix="/answer-sheet")
 router.include_router(_availability_router)
 logger = logging.getLogger(__name__)
-_ALLOWED_EXTENSIONS = {".jpg", ".jpeg", ".png"}
-_CLIENT_OCR_READY_SUFFIX = ".ocr-ready-v1.jpg"
-_CLIENT_OCR_READY_MAX_EDGE = 1920
 _ALIGNED_EVIDENCE_RE = re.compile(r"aligned-[0-9a-f]{32}\.png\Z")
 _ANSWER_CROP_RE = re.compile(r"crop-[0-9a-f]{24}\.png\Z")
 _STUDENT_RECOGNITION_ATTEMPT_RE = re.compile(
@@ -168,18 +194,8 @@ _STUDENT_RECOGNITION_ATTEMPT_RE = re.compile(
 )
 _ANSWER_SHEET_ACCELERATOR_WAIT_SECONDS = 60.0
 _ANSWER_SHEET_OCR_BATCH_DEADLINE_SECONDS = 600.0
-_GRADING_DRAFT_CHECKPOINT_KEY = "grading_draft_checkpoint"
-_RAW_PAPER_EXPIRED_MESSAGE = "原卷已按隐私保留策略清理，错题、得分和正确率记录仍保留"
-_ORDERED_DUPLEX_PAIRING = "ordered_duplex"
 _IDENTITY_READY_STATUSES = {
     "recognized", "teacher_confirmed", "ordered_pair_inherited", PATH_PAIRED_STATUS,
-}
-_ORDERED_PAIRING_REASONS = {
-    "ordered_pair_missing_back",
-    "ordered_pair_template_unknown",
-    "ordered_pair_page_type_mismatch",
-    "ordered_pair_front_identity_missing",
-    "ordered_pair_identity_conflict",
 }
 
 
@@ -423,188 +439,6 @@ def _verified_bubble_grids(session: AnswerSheetSession) -> dict | None:
         return get_answer_sheet_template_registry().resolve_bubble_regions(session)
     except ValueError as exc:
         raise HTTPException(409, detail=f"涂卡网格未通过教师确认模板校验，禁止判分：{exc}") from exc
-
-
-def _remove_upload_path(path: str | os.PathLike[str] | None) -> None:
-    """Best-effort removal for a file that may have been only partly written."""
-    if not path:
-        return
-    try:
-        Path(path).unlink(missing_ok=True)
-    except OSError:
-        logger.warning("failed to remove incomplete upload asset")
-
-
-async def _save_images(
-    files: list[UploadFile],
-    target: str,
-    prefix: str,
-    *,
-    total_byte_budget: int | None = None,
-) -> list[dict]:
-    if not files:
-        raise HTTPException(400, detail="未上传图片")
-    if len(files) > MAX_UPLOAD_FILES:
-        raise HTTPException(413, detail=f"单次最多上传 {MAX_UPLOAD_FILES} 个文件")
-    if total_byte_budget is None:
-        total_byte_budget = MAX_UPLOAD_TOTAL_SIZE
-    if total_byte_budget <= 0 or total_byte_budget > MAX_UPLOAD_TOTAL_SIZE:
-        raise HTTPException(413, detail="上传文件总大小超过限制")
-    storage = await get_upload_storage_readiness_async(
-        target,
-        min(total_byte_budget, len(files) * MAX_UPLOAD_FILE_SIZE),
-        required_copies=1,
-    )
-    if not storage.get("ready"):
-        raise HTTPException(
-            503,
-            detail={
-                "error": "SERVER_STORAGE_UNAVAILABLE",
-                "message": "服务器存储空间不足或不可写，当前无法接收新的答题卡批阅任务。",
-            },
-        )
-    os.makedirs(target, exist_ok=True)
-    saved: list[dict] = []
-    attempted_paths: list[str] = []
-    total_bytes = 0
-    completed = False
-    try:
-        for index, file in enumerate(files, 1):
-            suffix = Path(file.filename or "").suffix.lower()
-            if suffix not in _ALLOWED_EXTENSIONS:
-                raise HTTPException(400, detail="仅支持 JPG、JPEG、PNG 图片")
-            remaining_bytes = total_byte_budget - total_bytes
-            if remaining_bytes <= 0:
-                raise HTTPException(413, detail="上传文件总大小超过限制")
-            storage_suffix = (
-                ocr_ready_storage_suffix(file.filename or "") or suffix
-            )
-            name = f"{prefix}_{index}_{uuid.uuid4().hex}{storage_suffix}"
-            path = os.path.join(target, name)
-            attempted_paths.append(path)
-            byte_limit = min(MAX_UPLOAD_FILE_SIZE, remaining_bytes)
-            size = await stream_to_disk_capped(file, path, byte_limit)
-            if size < 0:
-                _remove_upload_path(path)
-                if remaining_bytes < MAX_UPLOAD_FILE_SIZE:
-                    raise HTTPException(413, detail="上传文件总大小超过限制")
-                raise HTTPException(413, detail="单个上传文件大小超过限制")
-            if size == 0:
-                raise HTTPException(400, detail="上传图片为空")
-            validation = await _run_answer_sheet_image_work(
-                validate_upload_path,
-                file.filename or f"upload{suffix}",
-                path,
-            )
-            if not validation.get("safe"):
-                raise HTTPException(
-                    400,
-                    detail=validation.get("reason") or "图片校验失败",
-                )
-            digest = await _run_answer_sheet_image_work(sha256_file, path)
-            saved.append({
-                "page_id": f"page_{index}",
-                "index": index - 1,
-                "path": path,
-                "sha256": digest,
-                "filename": file.filename or name,
-            })
-            total_bytes += size
-        completed = True
-    finally:
-        if not completed:
-            for path in attempted_paths:
-                _remove_upload_path(path)
-    return saved
-
-
-def _session_asset_path(root: Path, value: object, *, relative: bool) -> Path | None:
-    if not isinstance(value, str) or not value or "\x00" in value:
-        return None
-    try:
-        candidate = (root / value if relative else Path(value)).resolve(strict=False)
-        candidate.relative_to(root)
-    except (OSError, RuntimeError, ValueError):
-        return None
-    return candidate if candidate != root else None
-
-
-def _require_raw_assets_available(session: AnswerSheetSession) -> None:
-    lifecycle = session.asset_lifecycle if isinstance(session.asset_lifecycle, dict) else {}
-    if lifecycle.get("status") == "expired":
-        raise HTTPException(410, detail=_RAW_PAPER_EXPIRED_MESSAGE)
-
-
-def _layout_asset_paths(
-    session_dir: str,
-    pages: list[dict],
-    artifacts: dict[str, dict],
-) -> set[Path]:
-    from services.answer_sheet_page_registration import registered_image_path
-
-    root = Path(session_dir).resolve()
-    paths: set[Path] = set()
-    for item in [*pages, *artifacts.values()]:
-        if not isinstance(item, dict):
-            continue
-        for field in ("path", "working_path", "orientation_working_path"):
-            candidate = _session_asset_path(root, item.get(field), relative=False)
-            if candidate is not None:
-                paths.add(candidate)
-        template_image = _session_asset_path(
-            root,
-            item.get("template_image"),
-            relative=True,
-        )
-        if template_image is not None:
-            paths.add(template_image)
-        canonicalization = item.get("canonicalization")
-        if isinstance(canonicalization, dict):
-            source_image = _session_asset_path(
-                root,
-                canonicalization.get("source_image"),
-                relative=True,
-            )
-            if source_image is not None:
-                paths.add(source_image)
-        registered = item.get("registered_image")
-        if isinstance(registered, dict) and registered.get("file"):
-            try:
-                paths.add(registered_image_path(root, registered))
-            except ValueError:
-                pass
-    return paths
-
-
-def _remove_layout_assets(
-    session_dir: str,
-    pages: list[dict],
-    artifacts: dict[str, dict],
-    *,
-    preserve_pages: list[dict] | None = None,
-    preserve_artifacts: dict[str, dict] | None = None,
-) -> None:
-    root = Path(session_dir).resolve()
-    paths = _layout_asset_paths(session_dir, pages, artifacts)
-    preserved = _layout_asset_paths(
-        session_dir,
-        preserve_pages or [],
-        preserve_artifacts or {},
-    )
-    removed_parents: set[Path] = set()
-    for path in paths - preserved:
-        try:
-            path.unlink(missing_ok=True)
-            removed_parents.add(path.parent)
-        except OSError:
-            continue
-    for parent in sorted(removed_parents, key=lambda item: len(item.parts), reverse=True):
-        while parent != root:
-            try:
-                parent.rmdir()
-            except OSError:
-                break
-            parent = parent.parent
 
 
 @router.post("/sessions")
@@ -1766,35 +1600,10 @@ def discard_layout_bubble_grids(
     return {"session": session.to_dict(public=True), "summary": summary}
 
 
-_STUDENT_UPLOAD_ACTIVE_STATES = {"uploading", "processing"}
-
-
-def _valid_student_upload_id(value: object) -> bool:
-    text = str(value or "")
-    return len(text) == 32 and all(char in "0123456789abcdef" for char in text)
-
-
 def _student_upload_pages(session: AnswerSheetSession) -> list[dict]:
     upload = session.student_upload
     pages = upload.get("pages") if isinstance(upload, dict) else None
     return pages if isinstance(pages, list) else []
-
-
-def _student_upload_is_active(session: AnswerSheetSession) -> bool:
-    upload = session.student_upload
-    return (
-        isinstance(upload, dict)
-        and upload.get("status") in _STUDENT_UPLOAD_ACTIVE_STATES
-        and _valid_student_upload_id(upload.get("upload_id"))
-    )
-
-
-def _require_no_student_upload(session: AnswerSheetSession) -> None:
-    if _student_upload_is_active(session):
-        raise HTTPException(
-            409,
-            detail="学生答题卡仍在上传或方向处理中，请先完成或放弃本次上传",
-        )
 
 
 def _require_student_upload(
@@ -2488,17 +2297,6 @@ def _extract_student_page_regions(
         del aligned_rgb
 
 
-def _student_recognition_source_path(page: dict) -> str:
-    """Return an immutable/oriented source, never a previous aligned output."""
-    oriented = str(page.get("orientation_working_path") or "").strip()
-    if oriented and Path(oriented).name.startswith("teacher-oriented-"):
-        return oriented
-    working = str(page.get("working_path") or "").strip()
-    if working and Path(working).name.startswith("teacher-oriented-"):
-        return working
-    return str(page["path"])
-
-
 def _registration_source(page: dict) -> tuple[str, str]:
     """The oriented source a batch page is registered from, and its hash."""
     return (
@@ -2818,171 +2616,6 @@ def _identity_row_for_transcription(
         else "identity_requires_teacher_confirmation"
     )
     return candidate, None
-
-
-def _add_pairing_reason(page: dict, reason: str) -> None:
-    reasons = list(page.get("review_reasons") or [])
-    if reason not in reasons:
-        reasons.append(reason)
-    page["review_reasons"] = reasons
-
-
-def _clear_pairing_reasons(page: dict) -> None:
-    page["review_reasons"] = [
-        reason
-        for reason in list(page.get("review_reasons") or [])
-        if reason not in _ORDERED_PAIRING_REASONS
-    ]
-
-
-def _ordered_duplex_layout_ids(session: AnswerSheetSession) -> list[str]:
-    page_ids = [
-        str(page.get("page_id") or "").strip()
-        for page in session.answer_sheet_pages
-        if str(page.get("page_id") or "").strip()
-    ]
-    return page_ids
-
-
-def _apply_student_page_pairing(
-    session: AnswerSheetSession,
-    roster_rows: list[Student],
-) -> None:
-    """Pair by upload folder, side-marked file name or roster name when every
-    page fits one rule, otherwise by upload order."""
-    roster = [
-        {
-            "student_id": row.id,
-            "name": row.name,
-            "student_no": row.student_no or "",
-            "class_id": row.class_id,
-        }
-        for row in roster_rows
-    ]
-    if apply_path_pair_identity(
-        session.student_pages,
-        _ordered_duplex_layout_ids(session),
-        roster,
-    ):
-        return
-    _apply_ordered_duplex_identity(session)
-
-
-def _apply_ordered_duplex_identity(session: AnswerSheetSession) -> None:
-    """Pair adjacent capture pages and inherit identity only after hard checks."""
-    upload = session.student_upload if isinstance(session.student_upload, dict) else {}
-    if str(upload.get("pairing_mode") or _ORDERED_DUPLEX_PAIRING) != _ORDERED_DUPLEX_PAIRING:
-        return
-
-    pages = sorted(
-        session.student_pages,
-        key=lambda item: int(item.get("physical_order") or item.get("index", 0) + 1),
-    )
-    layout_ids = _ordered_duplex_layout_ids(session)
-    template_page_count = len(layout_ids)
-    if template_page_count == 1:
-        for position, page in enumerate(pages, 1):
-            page["physical_order"] = position
-            page["physical_pair_index"] = None
-            page["physical_side"] = "front"
-            page["sheet_index"] = position
-            page["sheet_page_index"] = 1
-            _clear_pairing_reasons(page)
-            page["pairing"] = {
-                "mode": "single_page",
-                "status": "not_applicable",
-                "sheet_index": position,
-                "side": "front",
-            }
-        return
-    valid_template = template_page_count >= 2 and template_page_count % 2 == 0
-    for position, page in enumerate(pages, 1):
-        page["physical_order"] = position
-        page["physical_pair_index"] = (position + 1) // 2
-        page["physical_side"] = "front" if position % 2 else "back"
-        page["sheet_index"] = (position - 1) // template_page_count + 1 if valid_template else None
-        page["sheet_page_index"] = (position - 1) % template_page_count + 1 if valid_template else None
-        _clear_pairing_reasons(page)
-        page["pairing"] = {
-            "mode": _ORDERED_DUPLEX_PAIRING,
-            "pair_index": (position + 1) // 2,
-            "side": "front" if position % 2 else "back",
-            "status": "pending",
-        }
-
-    if not valid_template:
-        for page in pages:
-            page["pairing"]["status"] = "template_unknown"
-            _add_pairing_reason(page, "ordered_pair_template_unknown")
-        return
-
-    if len(pages) % template_page_count:
-        incomplete_start = len(pages) - (len(pages) % template_page_count)
-        for page in pages[incomplete_start:]:
-            page["pairing"]["status"] = "missing_back"
-            _add_pairing_reason(page, "ordered_pair_missing_back")
-
-    for sheet_start in range(0, len(pages) - (len(pages) % template_page_count), template_page_count):
-        sheet_pages = pages[sheet_start:sheet_start + template_page_count]
-        page_type_ok = all(
-            page.get("page_id") == layout_ids[index]
-            for index, page in enumerate(sheet_pages)
-        )
-        if not page_type_ok:
-            for page in sheet_pages:
-                page["pairing"]["status"] = "page_type_mismatch"
-                _add_pairing_reason(page, "ordered_pair_page_type_mismatch")
-            continue
-
-        front_pages = sheet_pages[::2]
-        identity_page = front_pages[0]
-        identity = identity_page.get("identity") or {}
-        front_id = identity.get("student_id")
-        front_ready = identity.get("status") in {"recognized", "teacher_confirmed"} and front_id
-        if not front_ready:
-            for page in sheet_pages:
-                page["pairing"]["status"] = "front_identity_missing"
-                _add_pairing_reason(page, "ordered_pair_front_identity_missing")
-            continue
-
-        conflict = False
-        for page in sheet_pages[1:]:
-            page_identity = page.get("identity") or {}
-            page_id = page_identity.get("student_id")
-            if (
-                page_identity.get("status") in {"recognized", "teacher_confirmed"}
-                and page_id
-                and str(page_id) != str(front_id)
-            ):
-                conflict = True
-                break
-        if conflict:
-            for page in sheet_pages:
-                page["pairing"]["status"] = "identity_conflict"
-                _add_pairing_reason(page, "ordered_pair_identity_conflict")
-            continue
-
-        for page in sheet_pages:
-            page_identity = page.get("identity") or {}
-            if page is not identity_page and page_identity.get("status") not in {"recognized", "teacher_confirmed"}:
-                page["identity"] = {
-                    **page_identity,
-                    "status": "ordered_pair_inherited",
-                    "student_id": front_id,
-                    "student_name": identity.get("student_name") or "",
-                    "source": "physical_order_front",
-                    "source_paper_id": identity_page.get("paper_id"),
-                }
-                page["review_reasons"] = [
-                    reason
-                    for reason in list(page.get("review_reasons") or [])
-                    if not reason.startswith("identity_")
-                ]
-        for pair_offset in range(0, template_page_count, 2):
-            front = sheet_pages[pair_offset]
-            back = sheet_pages[pair_offset + 1]
-            front["pairing"].update(status="paired", paired_paper_id=back.get("paper_id"))
-            back["pairing"].update(status="identity_inherited", paired_paper_id=front.get("paper_id"))
 
 
 def _answer_row_for_transcription(item: dict) -> tuple[dict, str | None]:

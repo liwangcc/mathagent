@@ -31,6 +31,7 @@ from services.answer_sheet_session import AnswerSheetSession, answer_sheet_opera
 from services.template_evidence import canonicalize_template_image
 from routers import answer_sheet_availability
 from routers import answer_sheet_common
+from routers import answer_sheet_assets
 
 
 def _question(number="1", qtype="choice"):
@@ -179,6 +180,11 @@ def client_env(tmp_path, monkeypatch):
 
     monkeypatch.setattr(
         answer_sheet_availability,
+        "get_upload_storage_readiness_async",
+        storage_ready,
+    )
+    monkeypatch.setattr(
+        answer_sheet_assets,
         "get_upload_storage_readiness_async",
         storage_ready,
     )
@@ -1810,10 +1816,16 @@ def test_save_images_streams_to_disk_before_path_validation_and_hashing(
         storage_ready,
     )
     monkeypatch.setattr(
+        answer_sheet_assets,
+        "get_upload_storage_readiness_async",
+        storage_ready,
+    )
+    monkeypatch.setattr(
         answer_sheet,
         "get_upload_storage_readiness_async",
         storage_ready,
     )
+    monkeypatch.setattr(answer_sheet_assets, "_run_answer_sheet_image_work", run_image_work)
     monkeypatch.setattr(answer_sheet, "_run_answer_sheet_image_work", run_image_work)
     upload = RecordingUpload(raw)
 
@@ -1843,6 +1855,11 @@ def test_save_images_preserves_browser_ocr_ready_contract(tmp_path, monkeypatch)
 
     monkeypatch.setattr(
         answer_sheet_availability,
+        "get_upload_storage_readiness_async",
+        storage_ready,
+    )
+    monkeypatch.setattr(
+        answer_sheet_assets,
         "get_upload_storage_readiness_async",
         storage_ready,
     )
@@ -1891,11 +1908,18 @@ def test_save_images_rolls_back_prior_and_current_partial_files(
         storage_ready,
     )
     monkeypatch.setattr(
+        answer_sheet_assets,
+        "get_upload_storage_readiness_async",
+        storage_ready,
+    )
+    monkeypatch.setattr(
         answer_sheet,
         "get_upload_storage_readiness_async",
         storage_ready,
     )
+    monkeypatch.setattr(answer_sheet_assets, "stream_to_disk_capped", partial_second_write)
     monkeypatch.setattr(answer_sheet, "stream_to_disk_capped", partial_second_write)
+    monkeypatch.setattr(answer_sheet_assets, "_run_answer_sheet_image_work", run_image_work)
     monkeypatch.setattr(answer_sheet, "_run_answer_sheet_image_work", run_image_work)
     uploads = [
         UploadFile(filename="first.png", file=io.BytesIO(b"first-image")),
@@ -1989,6 +2013,7 @@ def test_orientation_confirmation_hashes_the_source_as_a_stream(
         return await real_image_work(function, *args, **kwargs)
 
     monkeypatch.setattr(Path, "read_bytes", forbid_read_bytes)
+    monkeypatch.setattr(answer_sheet_assets, "_run_answer_sheet_image_work", tracked_image_work)
     monkeypatch.setattr(answer_sheet, "_run_answer_sheet_image_work", tracked_image_work)
     response = client.post(
         f"/api/answer-sheet/sessions/{session.session_id}/students/student_1/orientation",
@@ -2862,6 +2887,7 @@ def test_student_upload_write_failure_removes_current_partial_file(
         Path(path).write_bytes(raw[:8])
         raise OSError("simulated disk write failure")
 
+    monkeypatch.setattr(answer_sheet_assets, "stream_to_disk_capped", fail_write)
     monkeypatch.setattr(answer_sheet, "stream_to_disk_capped", fail_write)
 
     with pytest.raises(OSError, match="simulated disk write failure"):
@@ -2898,8 +2924,10 @@ def test_student_upload_total_limit_removes_partial_file(client_env, monkeypatch
     }]
     restored.student_upload["total_bytes"] = 6
     restored.save()
+    monkeypatch.setattr(answer_sheet_assets, "MAX_UPLOAD_FILE_SIZE", 8)
     monkeypatch.setattr(answer_sheet, "MAX_UPLOAD_FILE_SIZE", 8)
     monkeypatch.setattr(answer_sheet_availability, "MAX_UPLOAD_TOTAL_SIZE", 10)
+    monkeypatch.setattr(answer_sheet_assets, "MAX_UPLOAD_TOTAL_SIZE", 10)
     monkeypatch.setattr(answer_sheet, "MAX_UPLOAD_TOTAL_SIZE", 10)
 
     response = client.post(

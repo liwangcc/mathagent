@@ -21,6 +21,9 @@ ROOT = Path(__file__).resolve().parents[1]
 LAYERS = [
     "answer_sheet_common",
     "answer_sheet_availability",
+    "answer_sheet_assets",
+    "answer_sheet_student_state",
+    "answer_sheet_pairing",
 ]
 # The router app.py includes: it may use any layer, and no layer imports it.
 TOP = ["answer_sheet"]
