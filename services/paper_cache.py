@@ -7,8 +7,24 @@ and transcribes only the student's answers; printed stems, question types
 and answer slots always come from the template. When a page cannot be
 matched or transcribed safely, the result fails closed for teacher review
 instead of falling back to full-page OCR.
+
+The code lives in one module per part; each imports only the parts above it:
+
+    paper_cache_base            question numbers and the evidence strategies
+    paper_cache_review          fail-closed results, transcription receipts, review placeholders
+    paper_cache_prompts         the frozen page contract and the OCR prompts built from it (mixin)
+    paper_cache_routing         which template page a student page is (mixin)
+    paper_cache_answers         transcribing one page's answers (mixin)
+    paper_cache_recovery        recovering a small OCR miss from its evidence crop (mixin)
+    paper_cache_local_evidence  recognizing a page from locally built evidence (mixin)
+
+This module keeps ``PaperCache`` itself (building it from the confirmed template
+and ``recognize_page``; it inherits the six mixins) and re-exports every name, so
+``from services.paper_cache import ...`` keeps working; new code may import from
+the module that defines a name.
 """
 
+# Everything this module imported before the split stays importable from it.
 import asyncio
 import copy
 import hashlib
@@ -18,18 +34,19 @@ import logging
 import tempfile
 from dataclasses import replace
 from pathlib import Path
-
 from services.accelerator_artifacts import (
     CLIENT_EVIDENCE_FULL_COLUMN_CONTRACT_VERSION,
 )
-from services.paper_cache_base import (
+# Question numbers and evidence strategies (paper_cache_base.py).
+from services.paper_cache_base import (  # noqa: F401
     _VISUAL_GRADING_EVIDENCE_STRATEGIES,
     _normalize_question_number,
     _question_number_sort_key,
     normalize_questions,
     question_number_signature,
 )
-from services.paper_cache_review import (
+# Fail-closed results, receipts and the review mixin (paper_cache_review.py).
+from services.paper_cache_review import (  # noqa: F401
     _PaperCacheReviewMixin,
     _DIAGNOSTIC_ID,
     _RECEIPT_KEY,
@@ -45,7 +62,8 @@ from services.paper_cache_review import (
     _transcription_receipt,
     _response_shape,
 )
-from services.paper_cache_prompts import (
+# OCR prompts and the prompt mixin (paper_cache_prompts.py).
+from services.paper_cache_prompts import (  # noqa: F401
     _PaperCachePromptsMixin,
     RECOGNIZE_PAGE_AND_ANSWERS_PROMPT,
     RECOGNIZE_ANSWERS_ONLY_PROMPT,
@@ -55,7 +73,8 @@ from services.paper_cache_prompts import (
     RECOGNIZE_FULL_HEIGHT_TRANSCRIPTION_PROMPT,
     _compact_transcription_kinds,
 )
-from services.paper_cache_routing import (
+# Page routing helpers and the routing mixin (paper_cache_routing.py).
+from services.paper_cache_routing import (  # noqa: F401
     _PaperCacheRoutingMixin,
     _PRINTED_LABEL_EDGE_PUNCTUATION,
     _normalize_page_label_text,
@@ -64,7 +83,8 @@ from services.paper_cache_routing import (
     _content_text,
     _snippet_matches_stems,
 )
-from services.paper_cache_answers import (
+# Answer constraints and the answer transcription mixin (paper_cache_answers.py).
+from services.paper_cache_answers import (  # noqa: F401
     _PaperCacheAnswersMixin,
     _adjacent_answer_ambiguity,
     MAX_FILL_BLANK_LENGTH,
@@ -72,10 +92,12 @@ from services.paper_cache_answers import (
     is_fill_blank_question,
     _enforce_question_type_answer_constraints,
 )
-from services.paper_cache_recovery import (
+# The unreadable-answer recovery mixin (paper_cache_recovery.py).
+from services.paper_cache_recovery import (  # noqa: F401
     _PaperCacheRecoveryMixin,
 )
-from services.paper_cache_local_evidence import (
+# The local evidence mixin (paper_cache_local_evidence.py).
+from services.paper_cache_local_evidence import (  # noqa: F401
     _PaperCacheLocalEvidenceMixin,
 )
 
