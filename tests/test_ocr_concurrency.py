@@ -17,6 +17,7 @@ import pytest
 from PIL import Image
 from services import ocr_service_local_image
 from services import ocr_service_template_route
+from services import ocr_service_papers
 
 
 async def _qwen_post_ok(url, _headers, _payload, _api_key):
@@ -265,7 +266,7 @@ def test_student_image_preparation_enables_review_ink_suppression(monkeypatch):
         })
         return image_path
 
-    monkeypatch.setattr(ocr, "preprocess_paper_image", fake_preprocess)
+    monkeypatch.setattr(ocr_service_papers, "preprocess_paper_image", fake_preprocess)
 
     result = asyncio.run(ocr._prepare_vision_image("paper.jpg"))
 
@@ -288,7 +289,7 @@ def test_browser_ocr_ready_jpeg_skips_server_pixel_preprocessing(
     def must_not_preprocess(*_args, **_kwargs):
         raise AssertionError("browser-normalized JPEG must not be decoded again")
 
-    monkeypatch.setattr(ocr, "preprocess_paper_image", must_not_preprocess)
+    monkeypatch.setattr(ocr_service_papers, "preprocess_paper_image", must_not_preprocess)
 
     result = asyncio.run(ocr._prepare_vision_image(str(source)))
 
@@ -306,7 +307,7 @@ def test_ocr_ready_filename_does_not_bypass_contract_checks(tmp_path, monkeypatc
         calls.append(image_path)
         return image_path
 
-    monkeypatch.setattr(ocr, "preprocess_paper_image", preprocess)
+    monkeypatch.setattr(ocr_service_papers, "preprocess_paper_image", preprocess)
 
     assert asyncio.run(ocr._prepare_vision_image(str(source))) == str(source)
     assert calls == [str(source)]
@@ -323,8 +324,8 @@ def test_enhanced_mode_still_trusts_verified_browser_contract(tmp_path, monkeypa
         calls.append((image_path, _kwargs.get("mode")))
         return image_path
 
-    monkeypatch.setattr(ocr, "OCR_PREPROCESS_MODE", "enhanced")
-    monkeypatch.setattr(ocr, "preprocess_paper_image", preprocess)
+    monkeypatch.setattr(ocr_service_papers, "OCR_PREPROCESS_MODE", "enhanced")
+    monkeypatch.setattr(ocr_service_papers, "preprocess_paper_image", preprocess)
 
     assert asyncio.run(ocr._prepare_vision_image(str(source))) == str(source)
     assert calls == []
@@ -389,7 +390,7 @@ def test_recognize_paper_caps_concurrency_per_teacher(monkeypatch):
         return '{"questions": [{"question_number": "1", "question_text": "x", "student_answer": "1", "answer_state": "visible", "question_type": "fill"}], "student_name": "张三", "student_no": "01"}'
 
     monkeypatch.setattr(ocr, "call_vision", _fake_call_vision)
-    monkeypatch.setattr(ocr, "preprocess_paper_image", lambda p: p)
+    monkeypatch.setattr(ocr_service_papers, "preprocess_paper_image", lambda p: p)
 
     async def _run():
         tasks = [
@@ -423,7 +424,7 @@ def test_different_teachers_not_capped_together(monkeypatch):
         return '{"questions": [{"question_number": "1", "question_text": "x", "student_answer": "1", "answer_state": "visible", "question_type": "fill"}], "student_name": "李四", "student_no": "02"}'
 
     monkeypatch.setattr(ocr, "call_vision", _fake_call_vision)
-    monkeypatch.setattr(ocr, "preprocess_paper_image", lambda p: p)
+    monkeypatch.setattr(ocr_service_papers, "preprocess_paper_image", lambda p: p)
 
     async def _run():
         tasks = []

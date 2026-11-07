@@ -1,5 +1,25 @@
-"""Vision API (Qwen/DashScope) 试卷识别 — 替代 PaddleOCR"""
+"""Vision API (Qwen/DashScope) 试卷识别 — 替代 PaddleOCR
 
+The code lives in one module per part; each imports only the parts above it:
+
+    ocr_service_context         the per-request vision context (teacher, route, phase, batch)
+    ocr_service_local_image     local image work: bounded threads, stall handoff, memory budgets
+    ocr_service_validation      student identity and transcription checks on a vision answer
+    ocr_service_transport       credentials, the legacy key pool, image encoding, response parsing
+    ocr_service_template_route  teacher-template requests on the qwen3.8-max route
+    ocr_service_papers          preparing a paper image, classifying a failure, the cached path
+
+This module keeps the student OCR route itself: the pool in use (``_vision_pool``,
+rebound by ``_sync_pool_from_profiles``), ``_post_vision_request``,
+``_call_vision_request``, ``call_vision``/``call_vision_images``/``read_image``,
+``get_ocr_readiness`` and the ``recognize_*`` entry points.  They stay together
+because ``_vision_pool`` is rebound at run time and services/flash_grading.py
+reads it, ``_post_vision_request`` and ``get_model_limiter`` from this module.
+It re-exports every name, so ``from services.ocr_service import ...`` keeps
+working; new code may import from the module that defines a name.
+"""
+
+# Everything this module imported before the split stays importable from it.
 import asyncio
 import base64
 import concurrent.futures
@@ -16,10 +36,8 @@ import uuid
 from contextlib import asynccontextmanager, nullcontext
 from contextvars import ContextVar
 from pathlib import Path
-
 import httpx
 import inspect
-
 from config import DASHSCOPE_BASE_URL as _DEFAULT_BASE_URL
 from config import DASHSCOPE_API_KEY as _DEFAULT_API_KEY
 from config import DASHSCOPE_MODEL as _DEFAULT_MODEL
@@ -46,7 +64,8 @@ from services.preprocess import (
     preprocess_paper_image,
 )
 from services.analyzer import parse_llm_json
-from services.ocr_service_context import (
+# The per-request vision context (ocr_service_context.py).
+from services.ocr_service_context import (  # noqa: F401
     _vision_teacher_id,
     _vision_route_ordinal,
     _vision_phase_key,
@@ -64,7 +83,8 @@ from services.ocr_service_context import (
     set_vision_batch_deadline_s,
     reset_vision_batch_deadline_s,
 )
-from services.ocr_service_local_image import (
+# Local image work and memory budgets (ocr_service_local_image.py).
+from services.ocr_service_local_image import (  # noqa: F401
     _LOCAL_IMAGE_WORK_STALL_SECONDS,
     _LOCAL_IMAGE_COMPONENT_TIMEOUT_SECONDS,
     _LOCAL_OCR_PAYLOAD_BUDGET_WAIT_SECONDS,
@@ -97,7 +117,8 @@ from services.ocr_service_local_image import (
     _estimated_vision_payload_bytes,
     _estimated_vision_images_payload_bytes,
 )
-from services.ocr_service_validation import (
+# Identity and transcription checks (ocr_service_validation.py).
+from services.ocr_service_validation import (  # noqa: F401
     _NAME_PATTERN,
     _STUDENT_NO_PATTERN,
     _ANSWER_STATES,
@@ -109,7 +130,8 @@ from services.ocr_service_validation import (
     _normalize_roster_candidate_names,
     _build_identity_crop,
 )
-from services.ocr_service_transport import (
+# Credentials, the legacy pool, encoding and parsing (ocr_service_transport.py).
+from services.ocr_service_transport import (  # noqa: F401
     STUDENT_OCR_MAX_OUTPUT_TOKENS,
     _cap_student_ocr_max_tokens,
     _create_dashscope_pool,
@@ -117,7 +139,8 @@ from services.ocr_service_transport import (
     _parse_streamed_vision_response,
     _encode_vision_image,
 )
-from services.ocr_service_template_route import (
+# The template qwen3.8-max route (ocr_service_template_route.py).
+from services.ocr_service_template_route import (  # noqa: F401
     _multi_pool_route_keys_for_phase,
     _multi_pool_route_keys,
     _multi_pool_response_validator,
@@ -127,6 +150,14 @@ from services.ocr_service_template_route import (
     _call_multi_pool_vision_request,
     call_gpt_vision,
     call_template_max_text,
+)
+# Paper image preparation and failures (ocr_service_papers.py).
+from services.ocr_service_papers import (  # noqa: F401
+    _prepare_vision_image,
+    _cleanup_prepared_image,
+    classify_ocr_exception,
+    ocr_failure_result,
+    recognize_paper_with_cache,
 )
 
 logger = logging.getLogger(__name__)
@@ -811,66 +842,6 @@ async def recognize_paper(image_path: str, teacher_id: str = "") -> dict:
         reset_vision_teacher_id(token)
 
 
-async def _prepare_vision_image(
-    image_path: str,
-    *,
-    max_edge: int | None = None,
-) -> str:
-    """Run CPU/image work in a bounded thread pool, never on Uvicorn's loop."""
-    effective_max_edge = OCR_PREPROCESS_MAX_EDGE if max_edge is None else max_edge
-    # The browser contract is fixed at 1920px and already includes EXIF
-    # normalization, review-ink suppression and JPEG encoding. Validate only
-    # its bounded headers, regardless of the optional server preprocess mode.
-    if await asyncio.to_thread(
-        is_ocr_ready_image,
-        image_path,
-        max_edge=1920,
-    ):
-        return image_path
-
-    def _preprocess() -> str:
-        # Keep small test/integration adapters that still expose the historical
-        # one-argument helper working while production uses explicit policy.
-        try:
-            params = inspect.signature(preprocess_paper_image).parameters
-        except (TypeError, ValueError):
-            params = {}
-        accepts_kwargs = any(
-            parameter.kind == inspect.Parameter.VAR_KEYWORD
-            for parameter in params.values()
-        )
-        kwargs = {}
-        if "mode" in params or accepts_kwargs:
-            kwargs["mode"] = OCR_PREPROCESS_MODE
-        if "max_edge" in params or accepts_kwargs:
-            kwargs["max_edge"] = effective_max_edge
-        if "suppress_review_ink" in params or accepts_kwargs:
-            kwargs["suppress_review_ink"] = True
-        return preprocess_paper_image(image_path, **kwargs)
-
-    return await _run_local_ocr_image_component(_preprocess)
-
-
-def _cleanup_prepared_image(image_path: str, processed_path: str) -> None:
-    """Delete only the sibling generated by preprocess_paper_image."""
-    source = Path(image_path).resolve()
-    processed = Path(processed_path).resolve()
-    expected_prefix = f"{source.stem}_preprocessed-"
-    if (
-        processed.parent != source.parent
-        or not processed.name.startswith(expected_prefix)
-        or not processed.name.endswith(".jpg")
-        or len(processed.name) != len(expected_prefix) + 32 + len(".jpg")
-    ):
-        return
-    try:
-        processed.unlink()
-    except FileNotFoundError:
-        pass
-    except OSError as exc:
-        logger.warning("Failed to remove temporary OCR image %s: %s", processed_path, exc)
-
-
 async def _recognize_paper_limited(image_path: str, teacher_id: str) -> dict:
     """Separate CPU-heavy preprocessing from the wider request-memory window."""
     processed_path = await _prepare_vision_image(image_path)
@@ -878,96 +849,6 @@ async def _recognize_paper_limited(image_path: str, teacher_id: str) -> dict:
         return await _recognize_paper_preprocessed(processed_path, teacher_id)
     finally:
         _cleanup_prepared_image(image_path, processed_path)
-
-
-def classify_ocr_exception(error: BaseException) -> tuple[bool, str]:
-    """Classify whether a later explicit batch recovery may try once more."""
-    if isinstance(error, LocalImagePipelineStalled):
-        return False, "local_image_pipeline_stalled"
-    if isinstance(error, httpx.HTTPStatusError):
-        status = int(error.response.status_code)
-        if status in {401, 403}:
-            return True, "credential_unavailable"
-        if status == 408:
-            return True, "provider_timeout"
-        if status == 429:
-            return True, "provider_rate_limited"
-        if status >= 500:
-            return True, "provider_unavailable"
-        return False, "provider_rejected_request"
-    if isinstance(error, httpx.TimeoutException):
-        return True, "provider_timeout"
-    if isinstance(error, httpx.TransportError):
-        return True, "provider_transport_error"
-
-    from services.ocr_pool_scheduler import OcrPoolError
-
-    if isinstance(error, OcrPoolError):
-        status = error.status_code
-        if status in {401, 403}:
-            return True, "credential_unavailable"
-        if status == 408:
-            return True, "provider_timeout"
-        if status == 429:
-            return True, "provider_rate_limited"
-        if status is not None and status >= 500:
-            return True, "provider_unavailable"
-        code = str(error).lower()
-        retryable = bool(
-            error.retryable
-            or error.transport_failure
-            or any(
-                marker in code
-                for marker in (
-                    "deadline",
-                    "budget_exhausted",
-                    "limit_reached",
-                    "circuit",
-                    "unavailable",
-                    "busy",
-                )
-            )
-        )
-        return retryable, (
-            "provider_transient_failure" if retryable else "provider_request_failed"
-        )
-    if isinstance(error, TimeoutError):
-        # Rate-budget, shared-capacity and payload-budget waits all expire as
-        # TimeoutError while the batch is saturated. That is a transient
-        # admission state, not evidence that this page is unreadable.
-        return True, "provider_capacity_timeout"
-    if isinstance(error, (json.JSONDecodeError, KeyError, IndexError, TypeError, ValueError)):
-        # The template evidence route sends one request without an inner
-        # retry, so a malformed or contract-violating response must keep the
-        # page's one durable recovery attempt (as the full-page route does).
-        return True, "invalid_provider_response"
-    if isinstance(error, RuntimeError):
-        # Empty content, ignored thinking flags and an exhausted key pool are
-        # raised as RuntimeError by the vision request loop.
-        return True, "provider_transient_failure"
-    return False, "local_processing_failed"
-
-
-def ocr_failure_result(
-    error: BaseException,
-    *,
-    message: str | None = None,
-    retryable: bool | None = None,
-    error_code: str | None = None,
-) -> dict:
-    classified_retryable, classified_code = classify_ocr_exception(error)
-    info = report_failure(error, stage="transcription")
-    return {
-        "questions": [],
-        "student_name": "",
-        "student_no": "",
-        "error": info["message"],
-        "error_info": info,
-        "_ocr_retryable": (
-            classified_retryable if retryable is None else bool(retryable)
-        ),
-        "_ocr_error_code": str(error_code or classified_code)[:80],
-    }
 
 
 async def _recognize_paper_preprocessed(image_path: str, teacher_id: str = "") -> dict:
@@ -1037,31 +918,6 @@ question_type 只能是 choice、fill 或 solve。选择题先按图抄录可见
         retryable=True,
         error_code="empty_provider_response",
     )
-
-
-async def recognize_paper_with_cache(
-    image_path: str,
-    batch_id: str,
-    cache,
-    teacher_id: str = "",
-    paper_id: str = "",
-) -> dict:
-    """Recognize one student page against the batch's frozen template.
-
-    ``cache`` is the batch's ``PaperCache``: it routes the page to a confirmed
-    template page and transcribes only the student's answers. The result has
-    the shape of ``recognize_paper``.
-    """
-    token = set_vision_teacher_id(teacher_id)
-    try:
-        return await cache.recognize_page(
-            image_path,
-            teacher_id=teacher_id,
-            batch_id=batch_id,
-            paper_id=paper_id,
-        )
-    finally:
-        reset_vision_teacher_id(token)
 
 
 async def recognize_student_info_with_roster(
