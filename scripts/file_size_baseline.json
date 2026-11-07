@@ -32,7 +32,7 @@
   "services/hermes_tools.py": 1376,
   "services/model_concurrency.py": 1514,
   "services/ocr_service.py": 2345,
-  "services/paper_cache.py": 2540,
+  "services/paper_cache.py": 2231,
   "services/question_classification.py": 1706,
   "services/report_templates.py": 925,
   "services/scoring_engine.py": 810,
