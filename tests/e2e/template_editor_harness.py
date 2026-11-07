@@ -51,8 +51,9 @@ from routers import (
     grade_availability,
     grade_recognition,
     grade_report,
-    grade_template,
     grade_template_availability,
+    grade_template_bank,
+    grade_template_confirm,
     grade_template_cut,
     grade_template_import,
 )
@@ -378,7 +379,8 @@ def install_patches() -> None:
     # The template modules hold their own references to these shared helpers.
     grade_template_availability._batch_grade_service_availability = _available
     grade_template_availability.get_public_hardware_readiness = _hardware_ready
-    grade_template._template_knowledge_classifier = _no_classifier
+    grade_template_confirm._template_knowledge_classifier = _no_classifier
+    grade_template_bank._template_knowledge_classifier = _no_classifier
     grade_template_import._template_knowledge_classifier = _no_classifier
 
 

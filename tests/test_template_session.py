@@ -54,6 +54,7 @@ from routers import grade_recognition
 from routers import grade_template_import_steps
 from routers import grade_template_import_form
 from routers import grade_template_import
+from routers import grade_template_confirm
 
 
 @pytest.fixture(autouse=True)
@@ -3219,7 +3220,7 @@ def _directory_confirmation_session(monkeypatch, tmp_path, *, question_type="sol
     async def no_background_classifier(*_args, **_kwargs):
         return None
 
-    monkeypatch.setattr(grade_template, "_classify_confirmed_template_knowledge", no_background_classifier)
+    monkeypatch.setattr(grade_template_confirm, "_classify_confirmed_template_knowledge", no_background_classifier)
     sess = TemplateSession("directory-confirm-gate", str(tmp_path), teacher_id=1)
     sess.status = "ocr_done"
     sess.category = "daily"
@@ -3327,7 +3328,7 @@ def test_current_one_three_import_confirm_and_reopen(monkeypatch, tmp_path):
     _engine, session_factory = _make_app_and_session()
     set_grade_global(monkeypatch, "UPLOAD_DIR", str(tmp_path))
     monkeypatch.setattr(grade_recognition, "_check_limits_or_raise", lambda *_args: None)
-    monkeypatch.setattr(grade_template, "_classify_confirmed_template_knowledge", AsyncMock())
+    monkeypatch.setattr(grade_template_confirm, "_classify_confirmed_template_knowledge", AsyncMock())
     _patch_template_layout(monkeypatch, grade)
     phases = []
     slot_ids = {"1": ["1[1]", "1[2]", "1[3]"], "2": ["2[1]"]}
@@ -3458,7 +3459,7 @@ def _recognize_directory_timeout_draft(monkeypatch, tmp_path, phase, *,
     async def forbidden_flash(*_args, **_kwargs):
         raise AssertionError("Flash reference generation is not part of this timeout fixture")
 
-    monkeypatch.setattr(grade_template, "_classify_confirmed_template_knowledge", no_background_classifier)
+    monkeypatch.setattr(grade_template_confirm, "_classify_confirmed_template_knowledge", no_background_classifier)
     monkeypatch.setattr(httpx.AsyncClient, "send", forbidden_network)
     from services import flash_grading
     monkeypatch.setattr(flash_grading, "call_flash", forbidden_flash)

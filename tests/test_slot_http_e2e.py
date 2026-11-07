@@ -9,6 +9,7 @@ from services.scoring_engine import build_grading_units
 from tests.test_template_session import _make_app_and_session, _client
 from tests.test_slot_cache_contract import contract, response
 from tests.grade_family import set_grade_global
+from routers import grade_template_confirm
 
 
 def seed(tmp_path):
@@ -29,7 +30,7 @@ def seed(tmp_path):
 def test_http_eight_slot_swap_save_confirm_reopen_and_score(monkeypatch,tmp_path):
     from routers import grade_template
     _,factory=_make_app_and_session(); set_grade_global(monkeypatch,'UPLOAD_DIR',str(tmp_path))
-    monkeypatch.setattr(grade_template,'_classify_confirmed_template_knowledge',AsyncMock())
+    monkeypatch.setattr(grade_template_confirm,'_classify_confirmed_template_knowledge',AsyncMock())
     sess,boxes,anchors=seed(tmp_path); client=_client(factory,monkeypatch,raise_server_exceptions=True)
     q=copy.deepcopy(sess.pages[0]['questions'][0]); changed=copy.deepcopy(boxes)
     changed[1],changed[2]=changed[2],changed[1]
@@ -85,7 +86,7 @@ def test_http_deleting_last_drawing_slot_drops_its_figure_and_confirms(monkeypat
     """
     from routers import grade_template
     _,factory=_make_app_and_session(); set_grade_global(monkeypatch,'UPLOAD_DIR',str(tmp_path))
-    monkeypatch.setattr(grade_template,'_classify_confirmed_template_knowledge',AsyncMock())
+    monkeypatch.setattr(grade_template_confirm,'_classify_confirmed_template_knowledge',AsyncMock())
     stem,text=[80,60,900,140],[80,300,450,420]
     reference={'version':'drawing-reference-v1','coordinate_space':'normalized_1000_v1','comparison_mode':'manual','variants':[]}
     q={'question_no':'3','question_text':'synthetic stem','question_type':'solve','standard_answer':'x=2',
@@ -144,7 +145,7 @@ def test_http_teacher_deleting_every_position_clears_slots_and_confirms(monkeypa
     with the boxes (sent as slot_ids null), nothing stale survives to confirm."""
     from routers import grade_template
     _,factory=_make_app_and_session(); set_grade_global(monkeypatch,'UPLOAD_DIR',str(tmp_path))
-    monkeypatch.setattr(grade_template,'_classify_confirmed_template_knowledge',AsyncMock())
+    monkeypatch.setattr(grade_template_confirm,'_classify_confirmed_template_knowledge',AsyncMock())
     stem,text=[80,60,900,140],[80,300,450,420]
     q={'question_no':'3','question_text':'synthetic stem','question_type':'solve','standard_answer':'x=2',
        'answer_slots':['x=2',''],'blank_count':2,'slot_ids':['3[1]','3[2]'],'region_kinds':['answer','drawing'],

@@ -25,6 +25,7 @@ from services.math_curriculum import catalog_version, get_knowledge_point, get_m
 from services.teaching_context import make_teaching_context
 from tests.grade_family import set_grade_global
 from routers import grade_report
+from routers import grade_template_bank
 
 SENIOR = make_teaching_context("senior")
 _MODULE = get_math_catalog("senior")[0]
@@ -352,7 +353,7 @@ def test_template_bank_import_does_not_block_past_its_bound(sessions, tmp_path, 
     db = sessions()
 
     set_grade_global(monkeypatch, "UPLOAD_DIR", str(tmp_path))
-    monkeypatch.setattr(grade_template, "TEMPLATE_BANK_IMPORT_KNOWLEDGE_WAIT_S", 0.1)
+    monkeypatch.setattr(grade_template_bank, "TEMPLATE_BANK_IMPORT_KNOWLEDGE_WAIT_S", 0.1)
     set_grade_global(monkeypatch, "_template_knowledge_classifier", _template_classifier(5, []))
     _confirmed_template(tmp_path, "tplslow")
 

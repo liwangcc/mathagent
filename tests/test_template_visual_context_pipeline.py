@@ -14,6 +14,7 @@ from services.teaching_context import make_teaching_context, use_teaching_contex
 from services.template_session import TemplateSession
 from tests import legacy_template_hierarchy as legacy
 from tests.grade_family import set_grade_global
+from routers import grade_template_confirm
 
 
 @pytest.fixture(autouse=True)
@@ -136,7 +137,7 @@ def test_template_confirm_reopen_keeps_visual_attachment_and_independent_slots(t
 
     _engine, session = _make_app_and_session()
     set_grade_global(monkeypatch, "UPLOAD_DIR", str(tmp_path))
-    monkeypatch.setattr(grade_template, "_classify_confirmed_template_knowledge", AsyncMock())
+    monkeypatch.setattr(grade_template_confirm, "_classify_confirmed_template_knowledge", AsyncMock())
     template = TemplateSession("visual-context", str(tmp_path), teacher_id=1)
     template.status = "ocr_done"
     question = {"question_no": "1.1", "question_text": "求 A、B 处气温", "question_type": "fill",
