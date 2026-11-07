@@ -24,6 +24,7 @@ LAYERS = [
     "ocr_service_local_image",
     "ocr_service_validation",
     "ocr_service_transport",
+    "ocr_service_template_route",
 ]
 # The module every caller imports: it may use any layer, and no layer imports it.
 TOP = ["ocr_service"]

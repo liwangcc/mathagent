@@ -10,6 +10,7 @@ from services import analyzer, template_directory_pipeline as pipeline, template
 from services.teaching_context import make_teaching_context, use_teaching_context
 from services.template_recognition import _render_coordinate_grid
 from tests import legacy_template_hierarchy as legacy
+from services import ocr_service_template_route
 
 
 def test_locator_column_grid_retains_full_page_coordinates(tmp_path, monkeypatch):
@@ -113,7 +114,12 @@ def test_template_transport_error_keeps_stage_and_identity(monkeypatch, phase, s
         raise failure
     monkeypatch.setattr(pipeline, 'call_gpt_vision', fail)
     monkeypatch.setattr(flash_grading, 'call_flash', fail)
-    monkeypatch.setattr(ocr_service, '_encode_vision_image', lambda path: ('aW1hZ2U=', 'image/png'))
+    monkeypatch.setattr(
+        ocr_service_template_route,
+        "_encode_vision_image",
+        lambda path: ('aW1hZ2U=', 'image/png'),
+    )
+    monkeypatch.setattr(ocr_service, "_encode_vision_image", lambda path: ('aW1hZ2U=', 'image/png'))
     with pytest.raises(ConnectionError) as caught:
         asyncio.run(pipeline._request(['unused.png'], 'prompt', phase, lambda value: value))
     assert caught.value is failure
@@ -143,7 +149,12 @@ def test_hierarchy_failure_returns_structured_error(tmp_path, monkeypatch):
 @pytest.mark.parametrize('explicit', [False, True])
 def test_student_transcription_cannot_silently_enable_thinking(monkeypatch, explicit):
     from services import ocr_service
-    monkeypatch.setattr(ocr_service, '_encode_vision_image', lambda path: ('aW1hZ2U=', 'image/png'))
+    monkeypatch.setattr(
+        ocr_service_template_route,
+        "_encode_vision_image",
+        lambda path: ('aW1hZ2U=', 'image/png'),
+    )
+    monkeypatch.setattr(ocr_service, "_encode_vision_image", lambda path: ('aW1hZ2U=', 'image/png'))
     monkeypatch.setenv('OCR_TRANSCRIPTION_REASONING_EFFORT', 'high' if not explicit else 'none')
     async def forbidden(*args, **kwargs):
         raise AssertionError('must reject thinking before provider admission')

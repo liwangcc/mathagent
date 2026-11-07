@@ -9,6 +9,7 @@ import pytest
 
 from services import analyzer
 from services.key_pool import KeyPool
+from services import ocr_service_template_route
 
 
 def _max_route_config(**overrides):
@@ -599,6 +600,11 @@ def test_explicit_template_fallback_route_uses_qwen_pool(monkeypatch, tmp_path):
         ocr_pool_scheduler,
         "get_template_ocr_pool_scheduler",
         lambda: _Scheduler(),
+    )
+    monkeypatch.setattr(
+        ocr_service_template_route,
+        "_encode_vision_image",
+        lambda _path: ("encoded", "image/png"),
     )
     monkeypatch.setattr(
         ocr_service,

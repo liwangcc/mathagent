@@ -16,6 +16,7 @@ import httpx
 import pytest
 from PIL import Image
 from services import ocr_service_local_image
+from services import ocr_service_template_route
 
 
 async def _qwen_post_ok(url, _headers, _payload, _api_key):
@@ -677,8 +678,10 @@ def test_payload_budget_wait_times_out_without_releasing_active_reservation(
         assert await ocr.call_vision(images[2], "prompt") == "ok"
 
     monkeypatch.setattr(ocr_service_local_image, "OCR_IMAGE_PAYLOAD_MEMORY_BUDGET_BYTES", 150)
+    monkeypatch.setattr(ocr_service_template_route, "_LOCAL_OCR_PAYLOAD_BUDGET_WAIT_SECONDS", 0.02)
     monkeypatch.setattr(ocr, "_LOCAL_OCR_PAYLOAD_BUDGET_WAIT_SECONDS", 0.02)
     monkeypatch.setattr(ocr_service_local_image, "_local_ocr_payload_budget", None)
+    monkeypatch.setattr(ocr_service_template_route, "_encode_vision_image", encode)
     monkeypatch.setattr(ocr, "_encode_vision_image", encode)
     monkeypatch.setattr(ocr, "_vision_pool", None)
     monkeypatch.setattr(ocr, "_post_vision_request", _qwen_post_ok)
@@ -793,6 +796,7 @@ def test_cancelled_vision_encoding_holds_memory_budget_until_thread_settles(
     # Each 30-byte file is charged 150 bytes, allowing exactly one encoder.
     monkeypatch.setattr(ocr_service_local_image, "OCR_IMAGE_PAYLOAD_MEMORY_BUDGET_BYTES", 150)
     monkeypatch.setattr(ocr_service_local_image, "_local_ocr_payload_budget", None)
+    monkeypatch.setattr(ocr_service_template_route, "_encode_vision_image", blocked_encode)
     monkeypatch.setattr(ocr, "_encode_vision_image", blocked_encode)
     monkeypatch.setattr(ocr, "_vision_pool", None)
     monkeypatch.setattr(ocr, "_post_vision_request", _qwen_post_ok)

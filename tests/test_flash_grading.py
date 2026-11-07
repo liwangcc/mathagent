@@ -18,6 +18,7 @@ from services.key_pool import KeyPool
 from routers import answer_sheet_availability
 from routers import answer_sheet_assets
 from routers import answer_sheet_student_upload
+from services import ocr_service_template_route
 
 
 _PRODUCTION_POST = ocr._post_vision_request
@@ -184,7 +185,11 @@ def test_template_hierarchy_uses_payg_low_while_grading_keeps_medium(monkeypatch
     calls = []
     def forbidden_subscription(*args, **kwargs):
         raise AssertionError("Flash hierarchy must use the payg route")
-    monkeypatch.setattr(ocr, "_get_template_ocr_scheduler_for_route", forbidden_subscription)
+    monkeypatch.setattr(
+        ocr_service_template_route,
+        "_get_template_ocr_scheduler_for_route",
+        forbidden_subscription,
+    )
 
     async def post(url, headers, payload, api_key):
         calls.append((url, payload["reasoning_effort"]))

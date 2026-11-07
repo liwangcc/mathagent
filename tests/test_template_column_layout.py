@@ -8,6 +8,7 @@ import pytest
 from PIL import Image
 
 from services import dashscope_budget
+from services import ocr_service_template_route
 from services import template_column_layout as layout
 from services.template_column_layout import TemplateCutError
 from services.key_pool import KeyPool
@@ -1123,6 +1124,11 @@ async def test_template_payload_uses_shared_byte_budget_until_http_finishes(
             state["reserved"] = amount
             return Reservation()
 
+    monkeypatch.setattr(
+        ocr_service_template_route,
+        "_get_local_ocr_payload_budget",
+        lambda: Budget(),
+    )
     monkeypatch.setattr(ocr_service, "_get_local_ocr_payload_budget", lambda: Budget())
 
     async def handler(_request):
@@ -1160,6 +1166,11 @@ async def test_template_payload_over_budget_fails_before_provider_call(
         def reserve(self, _amount):
             return Reservation()
 
+    monkeypatch.setattr(
+        ocr_service_template_route,
+        "_get_local_ocr_payload_budget",
+        lambda: Budget(),
+    )
     monkeypatch.setattr(ocr_service, "_get_local_ocr_payload_budget", lambda: Budget())
 
     async def handler(_request):
