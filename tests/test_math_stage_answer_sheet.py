@@ -9,6 +9,7 @@ from services.answer_sheet_session import AnswerSheetSession
 from services.teaching_context import current_teaching_context, make_teaching_context, use_teaching_context
 from routers import answer_sheet_availability
 from routers import answer_sheet_common
+from routers import answer_sheet_sessions
 
 
 def _question():
@@ -18,14 +19,15 @@ def _question():
 def _route_setup(monkeypatch, tmp_path):
     from routers import answer_sheet
 
+    monkeypatch.setattr(answer_sheet_sessions, "UPLOAD_DIR", str(tmp_path))
     monkeypatch.setattr(answer_sheet_common, "UPLOAD_DIR", str(tmp_path))
     monkeypatch.setattr(answer_sheet_availability, "UPLOAD_DIR", str(tmp_path))
-    monkeypatch.setattr(answer_sheet, "UPLOAD_DIR", str(tmp_path))
     monkeypatch.setattr(answer_sheet_common, "_answer_sheet_writes_enabled", lambda: None)
 
     async def ready(_user):
         return None
 
+    monkeypatch.setattr(answer_sheet_sessions, "_require_answer_sheet_chain", ready)
     monkeypatch.setattr(answer_sheet, "_require_answer_sheet_chain", ready)
     return answer_sheet
 
@@ -37,10 +39,11 @@ def test_new_session_requires_profile_and_freezes_snapshot(monkeypatch, tmp_path
     from tests.answer_sheet_redesign_helpers import confirmed_detailed_template
 
     route = _route_setup(monkeypatch, tmp_path)
-    monkeypatch.setattr(route, "_owned_class", lambda *_args: SimpleNamespace(id=1))
+    monkeypatch.setattr(answer_sheet_sessions, "_owned_class", lambda *_args: SimpleNamespace(id=1))
     # The class is inherited from the teacher's global current class and the
     # paper semantics come from a frozen paper template of the same stage.
     registry = PaperTemplateRegistry(tmp_path / "paper-registry")
+    monkeypatch.setattr(answer_sheet_sessions, "get_paper_template_registry", lambda: registry)
     monkeypatch.setattr(route, "get_paper_template_registry", lambda: registry)
     paper = registry.register(
         confirmed_detailed_template(str(tmp_path), stage="junior"), teacher_id=1,

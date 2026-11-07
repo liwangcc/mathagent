@@ -32,6 +32,7 @@ from services.template_evidence import canonicalize_template_image
 from routers import answer_sheet_availability
 from routers import answer_sheet_common
 from routers import answer_sheet_assets
+from routers import answer_sheet_sessions
 
 
 def _question(number="1", qtype="choice"):
@@ -152,9 +153,9 @@ def client_env(tmp_path, monkeypatch):
 
     from routers import answer_sheet
     upload_dir = str(tmp_path / "uploads")
+    monkeypatch.setattr(answer_sheet_sessions, "UPLOAD_DIR", upload_dir)
     monkeypatch.setattr(answer_sheet_common, "UPLOAD_DIR", upload_dir)
     monkeypatch.setattr(answer_sheet_availability, "UPLOAD_DIR", upload_dir)
-    monkeypatch.setattr(answer_sheet, "UPLOAD_DIR", upload_dir)
 
     async def fake_column_layout(*_args, **_kwargs):
         assert _kwargs.get("column_mode") == "triple"
