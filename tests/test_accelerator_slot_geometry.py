@@ -20,6 +20,7 @@ from services import accelerator_business as business
 from services import accelerator_jobs as jobs
 from services import template_evidence as evidence
 from services.template_anchor_crops import build_anchor_crop_plan
+from services import template_evidence_matcher
 
 
 @pytest.fixture
@@ -115,6 +116,11 @@ def _worker_render(tmp_path, monkeypatch, payload, artifact):
         rendered.append(result)
         return result
 
+    monkeypatch.setattr(
+        template_evidence_matcher,
+        "build_full_column_difference_evidence_from_aligned",
+        capture,
+    )
     monkeypatch.setattr(evidence, "build_full_column_difference_evidence_from_aligned", capture)
     # Known synthetic alignment only; warp, replay checks, difference pixels,
     # label renderer and manifest generation all execute the real worker code.
