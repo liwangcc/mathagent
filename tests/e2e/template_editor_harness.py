@@ -53,6 +53,7 @@ from routers import (
     grade_report,
     grade_template,
     grade_template_availability,
+    grade_template_cut,
     grade_template_import,
 )
 from services import template_directory_pipeline as pipeline
@@ -365,7 +366,7 @@ def install_patches() -> None:
     import services.system_readiness as system_readiness
     system_readiness.get_grading_infrastructure_readiness = _infrastructure_ready
     pipeline._request = scripted_request
-    grade_template.recognize_column_layout = scripted_column_layout
+    grade_template_cut.recognize_column_layout = scripted_column_layout
     grade_template_import.recognize_column_layout = scripted_column_layout
     grade_template_import.accept_canonical_template_candidate = recorded_accept_candidate
     grade_recognition._check_limits_or_raise = lambda *_args, **_kwargs: None
