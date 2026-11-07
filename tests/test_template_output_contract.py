@@ -17,6 +17,7 @@ from services.key_pool import KeyPool
 from services.processing_errors import processing_context, report_failure
 from tests.test_flash_grading import Limiter, _event, _response
 from tests.test_template_one_three import v4_payloads, run_pipeline
+from services import ocr_service_template_route
 
 
 @pytest.fixture(autouse=True)
@@ -208,6 +209,11 @@ def test_failed_raw_output_private_receipt_and_public_log_are_connected(monkeypa
         return _response([_event(raw, finish="stop", reasoning="PRIVATE_REASONING")])
 
     monkeypatch.setattr(ocr, "_post_vision_request", post)
+    monkeypatch.setattr(
+        ocr_service_template_route,
+        "_encode_vision_image",
+        lambda _: ("iVBORw0KGgo=", "image/png"),
+    )
     monkeypatch.setattr(ocr, "_encode_vision_image", lambda _: ("iVBORw0KGgo=", "image/png"))
     caplog.set_level("INFO", logger="mathagent.processing")
     with processing_context() as cid:

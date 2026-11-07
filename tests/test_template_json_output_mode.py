@@ -16,6 +16,7 @@ from services import flash_grading as flash
 from services import ocr_pool_scheduler as sched
 from services import ocr_service as ocr
 from services.key_pool import KeyPool
+from services import ocr_service_template_route
 
 
 class Limiter:
@@ -271,6 +272,11 @@ def _wire_body(monkeypatch, payload, *, protocol, model="qwen3.8-max"):
 
 
 def test_ocr_opt_in_survives_the_adapter_to_the_qwen_wire(monkeypatch):
+    monkeypatch.setattr(
+        ocr_service_template_route,
+        "_encode_vision_image",
+        lambda path: ("aGVsbG8=", "image/png"),
+    )
     monkeypatch.setattr(ocr, "_encode_vision_image", lambda path: ("aGVsbG8=", "image/png"))
     scheduler = _CapturingScheduler()
     for flag in (True, False):
@@ -331,7 +337,7 @@ def test_call_gpt_vision_forwards_the_opt_in(tmp_path, monkeypatch):
         seen.update(kwargs)
         return "ok"
 
-    monkeypatch.setattr(ocr, "_call_multi_pool_vision_request", recorder)
+    monkeypatch.setattr(ocr_service_template_route, "_call_multi_pool_vision_request", recorder)
     image = tmp_path / "unit-template.png"
     image.write_bytes(b"\x89PNG\r\n\x1a\n" + b"0" * 64)
     assert asyncio.run(ocr.call_gpt_vision(str(image), "定位题号", json_object=True)) == "ok"
@@ -340,6 +346,7 @@ def test_call_gpt_vision_forwards_the_opt_in(tmp_path, monkeypatch):
 
 
 def test_ocr_json_object_rejects_bad_values_without_encoding(monkeypatch):
+    monkeypatch.setattr(ocr_service_template_route, "_encode_vision_image", _forbid_transport)
     monkeypatch.setattr(ocr, "_encode_vision_image", _forbid_transport)
     for bad in ("json_object", 1, 0, None, {"type": "json_object"}):
         with pytest.raises(ValueError):
