@@ -3,32 +3,31 @@
 The artifact format is intentionally small and self-verifying.  A caller keeps
 the returned mapping in template metadata, then passes a mapping keyed by
 ``page_type_id`` to :class:`TemplateEvidenceMatcher`.
-"""
 
+The code lives in one module per step; each imports only the steps above it:
+
+    template_evidence_base       lazily loaded image runtimes, shared limits, error/result types
+    template_evidence_schema     the question contract: schema, answer/anchor/handwriting boxes, confidence
+    template_evidence_canonical  a template page loaded, found and rectified, or a client candidate accepted
+    template_evidence_alignment  local alignment beyond the homography, within tight limits
+    template_evidence_crops      which pixels belong to each confirmed answer box
+    template_evidence_residue    taking the template out of a student page
+    template_evidence_pixels     the student's new ink in each answer region
+    template_evidence_artifacts  build, difference baseline and verification of template artifacts
+    template_evidence_sheets     focus evidence sheets, one per frozen column
+    template_evidence_aligned    the OCR evidence of one verified aligned page
+    template_evidence_labels     question labels; where an unmarked slot puts its answer
+    template_evidence_columns    full-column difference evidence
+    template_evidence_matcher    TemplateEvidenceMatcher and cleanup_evidence
+
+This module re-exports every name, so ``from services.template_evidence import
+...`` keeps working for callers and tests; new code may import from the module
+that defines a name.
+"""
 from __future__ import annotations
 
-from services.grading_contract import reconcile_drawing_contract
-from services.processing_errors import TemplateSchemaError
-
-import hashlib
-import importlib
-import json
-import math
-import os
-import re
-import shutil
-import threading
-import uuid
-from dataclasses import dataclass, field
-from pathlib import Path, PurePosixPath, PureWindowsPath
-from typing import Any
-
-from services.accelerator_artifacts import validate_uploaded_artifact_file
-from services.template_anchor_crops import validate_anchor_crop_plan
-from services.template_canonicalization_contract import (
-    validate_canonicalization_metadata,
-)
-from services.template_evidence_base import (
+# Kept importable: shared runtimes, limits and types (template_evidence_base.py).
+from services.template_evidence_base import (  # noqa: F401
     _LazyModule,
     cv2,
     np,
@@ -43,7 +42,8 @@ from services.template_evidence_base import (
     TemplateEvidenceError,
     EvidenceResult,
 )
-from services.template_evidence_schema import (
+# Kept importable: the question contract (template_evidence_schema.py).
+from services.template_evidence_schema import (  # noqa: F401
     MAX_ANSWER_REGIONS,
     MAX_QUESTION_ANCHORS,
     MAX_TEMPLATE_HANDWRITING_QUESTIONS,
@@ -79,7 +79,8 @@ from services.template_evidence_schema import (
     normalize_question_anchors,
     normalize_template_handwriting_regions,
 )
-from services.template_evidence_canonical import (
+# Kept importable: canonical template pages (template_evidence_canonical.py).
+from services.template_evidence_canonical import (  # noqa: F401
     CANONICALIZATION_VERSION,
     CANONICAL_COORDINATE_SYSTEM,
     CANONICAL_SOURCE_COORDINATE_SYSTEM,
@@ -110,7 +111,8 @@ from services.template_evidence_canonical import (
     _safe_source_image_path,
     _validate_canonicalization,
 )
-from services.template_evidence_alignment import (
+# Kept importable: local alignment (template_evidence_alignment.py).
+from services.template_evidence_alignment import (  # noqa: F401
     LOCAL_TILES_X,
     LOCAL_MIN_INLIERS,
     LOCAL_MIN_INLIER_RATIO,
@@ -124,7 +126,8 @@ from services.template_evidence_alignment import (
     _refine_local_alignment,
     _refine_source_mask,
 )
-from services.template_evidence_crops import (
+# Kept importable: answer boxes in pixels (template_evidence_crops.py).
+from services.template_evidence_crops import (  # noqa: F401
     _answer_region_source_coverage,
     _answer_crop_boxes,
     _answer_crop_source_coverage,
@@ -135,7 +138,8 @@ from services.template_evidence_crops import (
     _same_answer_lane,
     _answer_crops,
 )
-from services.template_evidence_residue import (
+# Kept importable: taking the template out (template_evidence_residue.py).
+from services.template_evidence_residue import (  # noqa: F401
     TEMPLATE_INK_LOCAL_CONTRAST,
     TEMPLATE_INK_MAX_GRAY,
     TEMPLATE_EDGE_DILATION_SIZE,
@@ -166,14 +170,16 @@ from services.template_evidence_residue import (
     _local_ink_mask,
     _illumination_normalized_student_gray,
 )
-from services.template_evidence_pixels import (
+# Kept importable: the student's new ink (template_evidence_pixels.py).
+from services.template_evidence_pixels import (  # noqa: F401
     TEMPLATE_OVERLAP_DARKER_MARGIN,
     _answer_only_pixels_v2,
     _choice_answer_pixels,
     _new_ink_pixel_count,
     _confident_blank_questions,
 )
-from services.template_evidence_artifacts import (
+# Kept importable: template artifacts (template_evidence_artifacts.py).
+from services.template_evidence_artifacts import (  # noqa: F401
     ARTIFACT_VERSION,
     PRINTED_SOLVE_LABEL_POLICY,
     build_template_artifact,
@@ -183,7 +189,8 @@ from services.template_evidence_artifacts import (
     _verified_template_manifest,
     verify_template_artifacts,
 )
-from services.template_evidence_sheets import (
+# Kept importable: focus evidence sheets (template_evidence_sheets.py).
+from services.template_evidence_sheets import (  # noqa: F401
     FOCUS_EVIDENCE_LABEL_WIDTH,
     FOCUS_EVIDENCE_PADDING,
     FOCUS_EVIDENCE_MAX_IMAGE_PIXELS,
@@ -194,10 +201,12 @@ from services.template_evidence_sheets import (
     build_focus_evidence_sheet_layout,
     build_multi_evidence_from_aligned,
 )
-from services.template_evidence_aligned import (
+# Kept importable: evidence of an aligned page (template_evidence_aligned.py).
+from services.template_evidence_aligned import (  # noqa: F401
     build_evidence_from_aligned,
 )
-from services.template_evidence_labels import (
+# Kept importable: question labels and unmarked answers (template_evidence_labels.py).
+from services.template_evidence_labels import (  # noqa: F401
     EVIDENCE_Q_LABEL_COLOR,
     EVIDENCE_Q_LABEL_FONT_SIZE,
     EVIDENCE_Q_LABEL_PADDING_X,
@@ -211,7 +220,8 @@ from services.template_evidence_labels import (
     _unmarked_zones,
     _route_unmarked_answer_positions,
 )
-from services.template_evidence_columns import (
+# Kept importable: full-column evidence (template_evidence_columns.py).
+from services.template_evidence_columns import (  # noqa: F401
     _FullColumnLayout,
     _ColumnLabelSets,
     _snapshot_page_type_id,
@@ -229,7 +239,8 @@ from services.template_evidence_columns import (
     _full_column_diagnostics,
     build_full_column_difference_evidence_from_aligned,
 )
-from services.template_evidence_matcher import (
+# Kept importable: the matcher (template_evidence_matcher.py).
+from services.template_evidence_matcher import (  # noqa: F401
     FEATURE_MAX_EDGE,
     FEATURE_NFEATURES,
     MIN_GOOD_MATCHES,
@@ -246,4 +257,25 @@ from services.template_evidence_matcher import (
     _build_question_anchor_overlay,
     TemplateEvidenceMatcher,
     cleanup_evidence,
+)
+# Kept importable: everything this module imported before the split;
+# callers and tests read some of these names through it.
+from services.grading_contract import reconcile_drawing_contract
+from services.processing_errors import TemplateSchemaError
+import hashlib
+import importlib
+import json
+import math
+import os
+import re
+import shutil
+import threading
+import uuid
+from dataclasses import dataclass, field
+from pathlib import Path, PurePosixPath, PureWindowsPath
+from typing import Any
+from services.accelerator_artifacts import validate_uploaded_artifact_file
+from services.template_anchor_crops import validate_anchor_crop_plan
+from services.template_canonicalization_contract import (
+    validate_canonicalization_metadata,
 )
