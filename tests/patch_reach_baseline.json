@@ -78,48 +78,8 @@
   ],
   [
    "routers.grade",
-   "MAX_UPLOAD_TOTAL_SIZE",
-   "routers.grade_template"
-  ],
-  [
-   "routers.grade",
    "OCR_TEMPLATE_LOCAL_DISPATCH_CONCURRENT",
    "<inert>"
-  ],
-  [
-   "routers.grade",
-   "SessionLocal",
-   "routers.grade_template"
-  ],
-  [
-   "routers.grade",
-   "_batch_grade_service_availability",
-   "routers.grade_template"
-  ],
-  [
-   "routers.grade",
-   "_load_owned_template_session",
-   "routers.grade_template"
-  ],
-  [
-   "routers.grade",
-   "_save_batch_uploads",
-   "routers.grade_template"
-  ],
-  [
-   "routers.grade",
-   "_template_knowledge_classifier",
-   "routers.grade_template"
-  ],
-  [
-   "routers.grade",
-   "get_public_hardware_readiness",
-   "routers.grade_template"
-  ],
-  [
-   "routers.grade",
-   "reset_grading_teacher_id",
-   "routers.grade_template"
   ],
   [
    "services.accelerator_artifacts",
