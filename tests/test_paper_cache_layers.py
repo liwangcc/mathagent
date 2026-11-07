@@ -26,6 +26,7 @@ LAYERS = [
     "paper_cache_routing",
     "paper_cache_answers",
     "paper_cache_recovery",
+    "paper_cache_local_evidence",
 ]
 # The module every caller imports: it may use any layer, and no layer imports it.
 TOP = ["paper_cache"]
