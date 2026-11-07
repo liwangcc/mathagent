@@ -23,7 +23,8 @@ MathAgent 以 **AGPL-3.0** 开源发布，并以商业双许可提供商用授�
    ```
 4. 改动页面交互时补充或运行 `frontend/tests/*.browser.mjs`（启动方式见脚本头部注释；只用合成数据）。
 5. 提交前运行 `git diff --check`、`git status --short`，确认没有敏感或生成文件。
-6. 说明行为变化、实际测试命令、退出状态和未覆盖风险。
+6. 运行 `python scripts/check_file_sizes.py`：新文件不超过 800 行，已列入 `scripts/file_size_baseline.json` 的大文件只减不增。文件变小后用 `--update` 记下新行数；确实需要变大时加 `--accept-growth`，并在提交说明里写清原因。
+7. 说明行为变化、实际测试命令、退出状态和未覆盖风险。
 
 ## 业务底线
 
