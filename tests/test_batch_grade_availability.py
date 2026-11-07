@@ -24,6 +24,7 @@ from tests.grade_family import set_grade_global
 from routers import grade_availability
 from routers import grade_recognition
 from routers import grade_template_availability
+from services import template_column_layout_provider
 
 
 class _LocalLimiter:
@@ -566,13 +567,18 @@ def test_column_layout_readiness_fails_closed_on_invalid_credentials(monkeypatch
             }
 
     monkeypatch.setattr(
+        template_column_layout_provider,
+        "_resolve_template_key_pool",
+        lambda: InvalidPool(),
+    )
+    monkeypatch.setattr(
         template_column_layout,
         "_resolve_template_key_pool",
         lambda: InvalidPool(),
     )
-    monkeypatch.setattr(template_column_layout, "TEMPLATE_CUT_MODEL", "qwen3.8-flash")
+    monkeypatch.setattr(template_column_layout_provider, "TEMPLATE_CUT_MODEL", "qwen3.8-flash")
     monkeypatch.setattr(
-        template_column_layout,
+        template_column_layout_provider,
         "TEMPLATE_CUT_BASE_URL",
         "https://mimo.example.invalid/v1",
     )
