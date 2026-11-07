@@ -39,6 +39,8 @@ LAYERS = [
     "grade_template_import_pages",
     "grade_template_import",
     "grade_template_cut",
+    "grade_template_layout_overrides",
+    "grade_template_questions",
 ]
 # Routers that app.py includes on their own, above every layer: they may use
 # any layer, and no module of the family imports them.
