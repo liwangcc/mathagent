@@ -73,11 +73,15 @@ jobs:
         # golden 钉的是解码后的像素（尺寸 + RGB 字节），锁渲染结果而不是 PNG
         # 编码器；这三个文件只调本地函数和内存内的 FastAPI 测试客户端，不需要
         # 模型、Redis 或网络，所以可以进 CI。
+        #
+        # 路由表契约也在这一步：它导入真实 app、比对有序路由表与 OpenAPI
+        # 摘要，任何拆分只要移动了接口就会红。
         run: |
           pytest -q \
             tests/test_full_column_evidence_characterization.py \
             tests/test_recognition_stream_characterization.py \
-            tests/test_orientation_confirm_characterization.py
+            tests/test_orientation_confirm_characterization.py \
+            tests/test_route_table_identity.py
 
   frontend-test:
     name: 前端测试与构建
