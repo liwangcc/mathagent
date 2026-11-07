@@ -13,6 +13,7 @@ from services.teaching_context import make_teaching_context
 from services.template_session import TemplateSession
 from routers import answer_sheet_sessions
 from routers import answer_sheet_layout
+from routers import answer_sheet_grading
 
 
 def paper_questions() -> list[dict]:
@@ -119,7 +120,11 @@ def install_registries(monkeypatch, tmp_path: Path):
         "get_paper_template_registry",
         lambda: paper_registry,
     )
-    monkeypatch.setattr(answer_sheet, "get_paper_template_registry", lambda: paper_registry)
+    monkeypatch.setattr(
+        answer_sheet_grading,
+        "get_paper_template_registry",
+        lambda: paper_registry,
+    )
     monkeypatch.setattr(
         answer_sheet_sessions,
         "get_answer_sheet_template_registry",
@@ -131,7 +136,7 @@ def install_registries(monkeypatch, tmp_path: Path):
         lambda: sheet_registry,
     )
     monkeypatch.setattr(
-        answer_sheet,
+        answer_sheet_grading,
         "get_answer_sheet_template_registry",
         lambda: sheet_registry,
     )

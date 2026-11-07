@@ -7,6 +7,7 @@ from types import SimpleNamespace
 from services import accelerator_validation as validation
 from routers.answer_sheet import _required_answer_source_complete
 from routers import answer_sheet_recognize_page
+from routers import answer_sheet_grading
 
 
 def _job(layout: dict) -> SimpleNamespace:
@@ -139,7 +140,7 @@ def test_accelerated_recognition_passes_every_evidence_image(monkeypatch) -> Non
         lambda *_: "sig",
     )
     monkeypatch.setattr(answer_sheet_recognize_page, "orientation_is_ready", lambda _page: True)
-    monkeypatch.setattr(answer_sheet, "orientation_is_ready", lambda _page: True)
+    monkeypatch.setattr(answer_sheet_grading, "orientation_is_ready", lambda _page: True)
     monkeypatch.setattr(
         answer_sheet_recognize_page,
         "build_answer_sheet_acceleration_plan",

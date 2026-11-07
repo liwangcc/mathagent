@@ -214,12 +214,13 @@ def test_same_template_same_second_cannot_share_a_label(client_env, tmp_path, mo
 def test_simultaneous_same_template_batches_cannot_both_claim_a_label(
     client_env, tmp_path, monkeypatch,  # noqa: F811
 ):
-    from routers import answer_sheet
+    from routers import answer_sheet_sessions
 
     make_client, upload_dir = client_env
     client = make_client(1)
     paper_code, sheet_code = _codes(client, upload_dir, tmp_path, monkeypatch)
-    sheet_registry = answer_sheet.get_answer_sheet_template_registry()
+    # The registry the batch-creating route uses (the fixture patches its readers).
+    sheet_registry = answer_sheet_sessions.get_answer_sheet_template_registry()
     original_apply = sheet_registry.apply_to_session
 
     class FrozenClock(datetime):

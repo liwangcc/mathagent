@@ -13,6 +13,7 @@ from routers import answer_sheet_sessions
 from routers import answer_sheet_source
 from routers import answer_sheet_student_upload
 from routers import answer_sheet_recognition
+from routers import answer_sheet_grading
 
 
 def _question():
@@ -34,7 +35,7 @@ def _route_setup(monkeypatch, tmp_path):
     monkeypatch.setattr(answer_sheet_source, "_require_answer_sheet_chain", ready)
     monkeypatch.setattr(answer_sheet_sessions, "_require_answer_sheet_chain", ready)
     monkeypatch.setattr(answer_sheet_recognition, "_require_answer_sheet_chain", ready)
-    monkeypatch.setattr(answer_sheet, "_require_answer_sheet_chain", ready)
+    monkeypatch.setattr(answer_sheet_grading, "_require_answer_sheet_chain", ready)
     return answer_sheet
 
 
@@ -50,7 +51,7 @@ def test_new_session_requires_profile_and_freezes_snapshot(monkeypatch, tmp_path
     # paper semantics come from a frozen paper template of the same stage.
     registry = PaperTemplateRegistry(tmp_path / "paper-registry")
     monkeypatch.setattr(answer_sheet_sessions, "get_paper_template_registry", lambda: registry)
-    monkeypatch.setattr(route, "get_paper_template_registry", lambda: registry)
+    monkeypatch.setattr(answer_sheet_grading, "get_paper_template_registry", lambda: registry)
     paper = registry.register(
         confirmed_detailed_template(str(tmp_path), stage="junior"), teacher_id=1,
     )
@@ -226,7 +227,7 @@ def test_grading_sse_workers_and_saved_drafts_inherit_session_stage(monkeypatch,
     session.student_pages = [{"paper_id": "p1"}]
     session.save()
     group = {"questions": [{"question_number": "1", "student_answer": "2"}], "student_name": "模拟学生", "pages": ["p1"], "question_pages": {"1": ["p1"]}}
-    monkeypatch.setattr(route, "_grading_groups", lambda _session: {10: group})
+    monkeypatch.setattr(answer_sheet_grading, "_grading_groups", lambda _session: {10: group})
     seen = []
 
     async def grade(*_args, **_kwargs):

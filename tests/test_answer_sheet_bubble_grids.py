@@ -40,6 +40,7 @@ from tests.answer_sheet_redesign_helpers import (
 from tests.test_answer_sheet_session import client_env  # noqa: F401
 from routers import answer_sheet_sessions
 from routers import answer_sheet_layout
+from routers import answer_sheet_grading
 
 
 PAGE_SIZE = (800, 1200)
@@ -683,7 +684,7 @@ def test_grading_gate_resolves_only_a_confirmed_bound_template(tmp_path, monkeyp
         lambda: registry,
     )
     monkeypatch.setattr(
-        answer_sheet,
+        answer_sheet_grading,
         "get_answer_sheet_template_registry",
         lambda: registry,
     )
@@ -735,7 +736,7 @@ def test_grading_gate_rejects_a_batch_bound_to_a_template_without_grids(tmp_path
         lambda: registry,
     )
     monkeypatch.setattr(
-        answer_sheet,
+        answer_sheet_grading,
         "get_answer_sheet_template_registry",
         lambda: registry,
     )

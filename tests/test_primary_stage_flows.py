@@ -42,6 +42,7 @@ from routers import answer_sheet_sessions
 from routers import answer_sheet_source
 from routers import answer_sheet_student_upload
 from routers import answer_sheet_recognition
+from routers import answer_sheet_grading
 
 
 STAGES = ("primary", "junior", "senior")
@@ -414,7 +415,7 @@ def test_primary_answer_sheet_source_and_grading_use_original_session(monkeypatc
     monkeypatch.setattr(answer_sheet_source, "_require_answer_sheet_chain", ready)
     monkeypatch.setattr(answer_sheet_sessions, "_require_answer_sheet_chain", ready)
     monkeypatch.setattr(answer_sheet_recognition, "_require_answer_sheet_chain", ready)
-    monkeypatch.setattr(answer_sheet, "_require_answer_sheet_chain", ready)
+    monkeypatch.setattr(answer_sheet_grading, "_require_answer_sheet_chain", ready)
     monkeypatch.setattr(answer_sheet_sessions, "_owned_class", lambda *_args: SimpleNamespace(id=1))
     # Answer-sheet redesign slice 1: the class is inherited from the global
     # current class and a batch binds a frozen paper template of its stage.
