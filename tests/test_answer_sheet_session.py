@@ -41,6 +41,7 @@ from routers import answer_sheet_recognition
 from routers import answer_sheet_recognize_page
 from routers import answer_sheet_student_files
 from routers import answer_sheet_grading
+from routers import answer_sheet_layout_freeze
 
 
 def _question(number="1", qtype="choice"):
@@ -179,7 +180,7 @@ def client_env(tmp_path, monkeypatch):
         }
 
     monkeypatch.setattr(
-        answer_sheet,
+        answer_sheet_layout_freeze,
         "recognize_column_layout",
         fake_column_layout,
     )

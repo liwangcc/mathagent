@@ -8,6 +8,7 @@ from services import accelerator_validation as validation
 from routers.answer_sheet import _required_answer_source_complete
 from routers import answer_sheet_recognize_page
 from routers import answer_sheet_grading
+from routers import answer_sheet_layout_freeze
 
 
 def _job(layout: dict) -> SimpleNamespace:
@@ -147,7 +148,7 @@ def test_accelerated_recognition_passes_every_evidence_image(monkeypatch) -> Non
         lambda *_: ({"page_1": {}}, {"page_1": plan}),
     )
     monkeypatch.setattr(
-        answer_sheet,
+        answer_sheet_layout_freeze,
         "build_answer_sheet_acceleration_plan",
         lambda *_: ({"page_1": {}}, {"page_1": plan}),
     )
