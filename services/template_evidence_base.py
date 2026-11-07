@@ -42,26 +42,14 @@ class _LazyModule:
 
 
 cv2 = _LazyModule("cv2")
-
-
 np = _LazyModule("numpy")
-
-
 Image = _LazyModule("PIL.Image")
-
-
 ImageDraw = _LazyModule("PIL.ImageDraw")
-
-
 ImageFont = _LazyModule("PIL.ImageFont")
-
-
 ImageOps = _LazyModule("PIL.ImageOps")
 
 
 MAX_IMAGE_EDGE = 2200
-
-
 MAX_SOURCE_PIXELS = 16_000_000
 
 

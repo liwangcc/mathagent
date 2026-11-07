@@ -49,8 +49,6 @@ from services.template_evidence_schema import (
 
 
 ARTIFACT_VERSION = 1
-
-
 PRINTED_SOLVE_LABEL_POLICY = "printed-solve-v1"
 
 

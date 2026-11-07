@@ -60,8 +60,6 @@ FEATURE_MAX_EDGE = max(
         int(os.environ.get("OCR_TEMPLATE_FEATURE_MAX_EDGE", "1280")),
     ),
 )
-
-
 FEATURE_NFEATURES = max(
     500,
     min(
@@ -69,23 +67,11 @@ FEATURE_NFEATURES = max(
         int(os.environ.get("OCR_TEMPLATE_FEATURE_NFEATURES", "3000")),
     ),
 )
-
-
 MIN_GOOD_MATCHES = 25
-
-
 MIN_INLIERS = 15
-
-
 MIN_INLIER_RATIO = 0.20
-
-
 MIN_PAGE_COVERAGE = 0.78
-
-
 MAX_REPROJECTION_RMSE = 6.0
-
-
 LOWE_RATIO = 0.75
 
 

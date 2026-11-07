@@ -48,17 +48,9 @@ from services.template_evidence_schema import _is_int
 
 
 CANONICALIZATION_VERSION = "paper-canonical-v1"
-
-
 CANONICAL_COORDINATE_SYSTEM = "canonical_template_v1"
-
-
 CANONICAL_SOURCE_COORDINATE_SYSTEM = "exif_display_pixels_top_left"
-
-
 CANONICAL_PAGE_LONG_EDGE = 2000
-
-
 CANONICAL_PAGE_MARGIN = 32
 
 
