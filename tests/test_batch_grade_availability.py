@@ -23,6 +23,7 @@ from services.quick_grader import QuickBatch
 from tests.grade_family import set_grade_global
 from routers import grade_availability
 from routers import grade_recognition
+from routers import grade_template_availability
 
 
 class _LocalLimiter:
@@ -68,7 +69,7 @@ def _install_ready_chain(
         }
 
     monkeypatch.setattr(grade_availability, "get_public_hardware_readiness", hardware_ready)
-    monkeypatch.setattr(grade_template, "get_public_hardware_readiness", hardware_ready)
+    monkeypatch.setattr(grade_template_availability, "get_public_hardware_readiness", hardware_ready)
     return hardware_calls
 
 
@@ -187,7 +188,7 @@ def test_completed_ocr_scoring_gate_skips_image_dependencies_but_checks_flash(
     monkeypatch.setattr(ocr_service, "get_ocr_readiness", forbidden)
     monkeypatch.setattr(ocr_teacher_fairness, "public_teacher_availability", forbidden)
     monkeypatch.setattr(grade_availability, "get_public_hardware_readiness", forbidden)
-    monkeypatch.setattr(grade_template, "get_public_hardware_readiness", forbidden)
+    monkeypatch.setattr(grade_template_availability, "get_public_hardware_readiness", forbidden)
     set_grade_global(monkeypatch, "get_upload_storage_readiness_async", checkpoint_storage)
     monkeypatch.setattr(
         model_concurrency,
@@ -269,7 +270,7 @@ def test_confirm_uses_scoring_gate_for_template_batch_after_ocr(
     monkeypatch.setattr(grade_availability, "_batch_grade_scoring_availability", scoring_fault)
     monkeypatch.setattr(grade_availability, "batch_grade_availability", image_gate_forbidden)
     monkeypatch.setattr(grade_availability, "get_public_hardware_readiness", image_gate_forbidden)
-    monkeypatch.setattr(grade_template, "get_public_hardware_readiness", image_gate_forbidden)
+    monkeypatch.setattr(grade_template_availability, "get_public_hardware_readiness", image_gate_forbidden)
     monkeypatch.setattr(ocr_service, "get_ocr_readiness", image_gate_forbidden)
     monkeypatch.setattr(
         ocr_teacher_fairness,
@@ -465,7 +466,7 @@ def test_template_availability_adds_layout_model_without_blocking_plain_grading(
             "reason": "all_credentials_invalid",
         }
 
-    monkeypatch.setattr(grade_template, "get_column_layout_readiness", layout_unready)
+    monkeypatch.setattr(grade_template_availability, "get_column_layout_readiness", layout_unready)
 
     user = User(id=7, role="teacher")
     plain = asyncio.run(grade.batch_grade_availability(user))
@@ -489,7 +490,7 @@ def test_template_availability_maps_hardware_wait_to_queue(monkeypatch):
     async def layout_ready(_limiter=None):
         return {"configured": True, "ready": True, "status": "available"}
 
-    monkeypatch.setattr(grade_template, "get_column_layout_readiness", layout_ready)
+    monkeypatch.setattr(grade_template_availability, "get_column_layout_readiness", layout_ready)
 
     state = asyncio.run(
         grade_template.batch_grade_template_availability(User(id=7, role="teacher"))
@@ -509,7 +510,7 @@ def test_template_registration_hardware_is_explicitly_advisory(monkeypatch, hard
     async def layout_ready(_limiter=None):
         return {"configured": True, "ready": True, "status": "available"}
 
-    monkeypatch.setattr(grade_template, "get_column_layout_readiness", layout_ready)
+    monkeypatch.setattr(grade_template_availability, "get_column_layout_readiness", layout_ready)
     user = User(id=7, role="teacher")
     state = asyncio.run(grade_template.batch_grade_template_availability(user))
     assert state["registration_hardware"]["status"] == hardware_status
@@ -535,8 +536,8 @@ def test_template_availability_ignores_retired_template_hardware_stages(monkeypa
         return {"configured": True, "ready": True, "status": "available"}
 
     monkeypatch.setattr(grade_availability, "get_public_hardware_readiness", hardware)
-    monkeypatch.setattr(grade_template, "get_public_hardware_readiness", hardware)
-    monkeypatch.setattr(grade_template, "get_column_layout_readiness", layout_ready)
+    monkeypatch.setattr(grade_template_availability, "get_public_hardware_readiness", hardware)
+    monkeypatch.setattr(grade_template_availability, "get_column_layout_readiness", layout_ready)
 
     state = asyncio.run(
         grade_template.batch_grade_template_availability(User(id=7, role="teacher"))
@@ -595,8 +596,8 @@ def test_template_gate_keeps_local_layout_fallback_when_layout_model_is_unready(
 
     monkeypatch.setattr(grade_availability, "batch_grade_availability", core_ready)
     monkeypatch.setattr(grade_availability, "_batch_grade_service_availability", core_ready)
-    monkeypatch.setattr(grade_template, "_batch_grade_service_availability", core_ready)
-    monkeypatch.setattr(grade_template, "get_column_layout_readiness", layout_unready)
+    monkeypatch.setattr(grade_template_availability, "_batch_grade_service_availability", core_ready)
+    monkeypatch.setattr(grade_template_availability, "get_column_layout_readiness", layout_unready)
     user = SimpleNamespace(id=7)
 
     assert asyncio.run(grade._require_batch_grade_chain(user))["status"] == "available"
@@ -620,9 +621,9 @@ def test_template_gate_ignores_only_hardware_overlay_for_client_candidate(
         return {"status": "available", "ready": True}
 
     monkeypatch.setattr(grade_availability, "_batch_grade_service_availability", core_ready)
-    monkeypatch.setattr(grade_template, "_batch_grade_service_availability", core_ready)
+    monkeypatch.setattr(grade_template_availability, "_batch_grade_service_availability", core_ready)
     monkeypatch.setattr(grade_availability, "batch_grade_availability", hardware_probe_forbidden)
-    monkeypatch.setattr(grade_template, "get_column_layout_readiness", layout_ready)
+    monkeypatch.setattr(grade_template_availability, "get_column_layout_readiness", layout_ready)
 
     state = asyncio.run(
         grade_template._require_template_recognition_chain(SimpleNamespace(id=7))
@@ -689,7 +690,7 @@ def test_new_recognition_rejects_unavailable_chain_before_upload_side_effects(
         "_batch_grade_service_availability",
         _fault_availability,
     )
-    monkeypatch.setattr(grade_template,
+    monkeypatch.setattr(grade_template_availability,
         "_batch_grade_service_availability",
         _fault_availability,
     )
@@ -847,7 +848,7 @@ def test_confirm_rechecks_readiness_before_first_grading_side_effect(
         "get_public_hardware_readiness",
         lambda *_args, **_kwargs: pytest.fail("grading rechecked accelerator hardware"),
     )
-    monkeypatch.setattr(grade_template,
+    monkeypatch.setattr(grade_template_availability,
         "get_public_hardware_readiness",
         lambda *_args, **_kwargs: pytest.fail("grading rechecked accelerator hardware"),
     )

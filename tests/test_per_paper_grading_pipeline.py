@@ -36,6 +36,7 @@ from routers import grade_availability
 from routers import grade_report
 from routers import grade_papers
 from routers import grade_recognition
+from routers import grade_template_availability
 
 
 @pytest.fixture(autouse=True)
@@ -129,7 +130,7 @@ def _setup(monkeypatch, tmp_path):
 
     monkeypatch.setattr(grade_availability, "batch_grade_availability", available)
     monkeypatch.setattr(grade_availability, "get_public_hardware_readiness", hardware_ready)
-    monkeypatch.setattr(grade_template, "get_public_hardware_readiness", hardware_ready)
+    monkeypatch.setattr(grade_template_availability, "get_public_hardware_readiness", hardware_ready)
 
     # 模型边界 mock：判分整卷调用不打真实模型。
     judge_calls = []

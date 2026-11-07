@@ -23,6 +23,7 @@ from tests.grade_family import set_grade_global
 from routers import grade_availability
 from routers import grade_papers
 from routers import grade_recognition
+from routers import grade_template_availability
 
 
 def _events(response):
@@ -108,7 +109,7 @@ def _setup(monkeypatch, tmp_path, *, education_stage=""):
         "get_public_hardware_readiness",
         hardware_ready,
     )
-    monkeypatch.setattr(grade_template,
+    monkeypatch.setattr(grade_template_availability,
         "get_public_hardware_readiness",
         hardware_ready,
     )
@@ -301,7 +302,7 @@ def test_resume_disconnect_does_not_consume_second_ocr_attempt(monkeypatch, tmp_
         "get_public_hardware_readiness",
         forbidden_hardware,
     )
-    monkeypatch.setattr(grade_template,
+    monkeypatch.setattr(grade_template_availability,
         "get_public_hardware_readiness",
         forbidden_hardware,
     )
@@ -681,7 +682,7 @@ def test_busy_recognition_resume_does_not_advance_generation(monkeypatch, tmp_pa
         "get_public_hardware_readiness",
         hardware_must_not_be_required,
     )
-    monkeypatch.setattr(grade_template,
+    monkeypatch.setattr(grade_template_availability,
         "get_public_hardware_readiness",
         hardware_must_not_be_required,
     )
@@ -1257,7 +1258,7 @@ def test_single_page_template_ocr_failures_become_review_placeholders(monkeypatc
         "get_public_hardware_readiness",
         hardware_ready,
     )
-    monkeypatch.setattr(grade_template,
+    monkeypatch.setattr(grade_template_availability,
         "get_public_hardware_readiness",
         hardware_ready,
     )

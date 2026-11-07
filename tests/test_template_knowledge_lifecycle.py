@@ -16,6 +16,7 @@ from tests.grade_family import set_grade_global
 from routers import grade_availability
 from routers import grade_report
 from routers import grade_recognition
+from routers import grade_template_availability
 
 
 def question(number="1", text="求函数定义域", **extra):
@@ -504,10 +505,10 @@ async def test_real_template_route_wires_text_ready_and_global_binding(tmp_path,
 
     monkeypatch.setattr(grade_availability, "batch_grade_availability", available)
     monkeypatch.setattr(grade_availability, "_batch_grade_service_availability", available)
-    monkeypatch.setattr(grade_template, "_batch_grade_service_availability", available)
-    monkeypatch.setattr(grade_template, "get_column_layout_readiness", available)
+    monkeypatch.setattr(grade_template_availability, "_batch_grade_service_availability", available)
+    monkeypatch.setattr(grade_template_availability, "get_column_layout_readiness", available)
     monkeypatch.setattr(grade_availability, "get_public_hardware_readiness", hardware_ready)
-    monkeypatch.setattr(grade_template, "get_public_hardware_readiness", hardware_ready)
+    monkeypatch.setattr(grade_template_availability, "get_public_hardware_readiness", hardware_ready)
     raw, branches = v4_payloads((1,))
     classifier_started, classifier_release, max_release = (asyncio.Event() for _ in range(3))
     transcribed = asyncio.Event()

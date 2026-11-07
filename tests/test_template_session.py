@@ -72,11 +72,11 @@ def _ready_batch_grade_chain(monkeypatch):
         available,
     )
     monkeypatch.setattr(
-        "routers.grade_template._batch_grade_service_availability",
+        "routers.grade_template_availability._batch_grade_service_availability",
         available,
     )
     monkeypatch.setattr(
-        "routers.grade_template.get_column_layout_readiness",
+        "routers.grade_template_availability.get_column_layout_readiness",
         template_available,
     )
 
@@ -88,7 +88,7 @@ def _ready_batch_grade_chain(monkeypatch):
         hardware_ready,
     )
     monkeypatch.setattr(
-        "routers.grade_template.get_public_hardware_readiness",
+        "routers.grade_template_availability.get_public_hardware_readiness",
         hardware_ready,
     )
 
