@@ -56,6 +56,8 @@ from routers import grade_template_import_steps
 from routers import grade_template_import
 from routers import answer_sheet_source
 from routers import answer_sheet_student_upload
+from routers import answer_sheet_recognition
+from routers import answer_sheet_recognize_page
 
 
 def _on_event_loop() -> bool:
@@ -633,7 +635,16 @@ def _students_stream_case(monkeypatch, client, upload_dir):
         "TemplateEvidenceMatcher",
         lambda *_args: object(),
     )
-    monkeypatch.setattr(answer_sheet, "TemplateEvidenceMatcher", lambda *_args: object())
+    monkeypatch.setattr(
+        answer_sheet_recognize_page,
+        "TemplateEvidenceMatcher",
+        lambda *_args: object(),
+    )
+    monkeypatch.setattr(
+        answer_sheet_recognition,
+        "TemplateEvidenceMatcher",
+        lambda *_args: object(),
+    )
 
     async def recognize_page(locked, page, *_args):
         page["recognition_checkpoint"] = {
@@ -641,7 +652,7 @@ def _students_stream_case(monkeypatch, client, upload_dir):
             "state": "completed",
         }
 
-    monkeypatch.setattr(answer_sheet, "_recognize_one_student_page", recognize_page)
+    monkeypatch.setattr(answer_sheet_recognition, "_recognize_one_student_page", recognize_page)
     return f"/api/answer-sheet/sessions/{session.session_id}/students/recognize/stream"
 
 
