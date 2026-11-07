@@ -15,10 +15,15 @@ _GRADE = "routers.grade"
 
 
 def _readers(name: str) -> list[str]:
-    """Family modules reading ``name`` bound to one origin, split modules first."""
+    """Family modules reading ``name`` bound to one origin, split modules first.
+
+    Split modules have split modules of their own (routers/grade_template_*.py
+    for routers.grade_template); reverse order patches each of those before
+    the module it was split from, as tests/patch_reach.py requires.
+    """
     project = _project()
     reached, _ = reach(_GRADE, name)
-    split = sorted(module for module in project if module.startswith(_GRADE + "_"))
+    split = sorted((module for module in project if module.startswith(_GRADE + "_")), reverse=True)
     if name in project[_GRADE].origins or name in project[_GRADE].reads:
         origins = {project[_GRADE].origin(name)}
     else:
