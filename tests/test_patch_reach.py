@@ -54,6 +54,24 @@ def test_reading_through_the_original_module_keeps_the_patch_effective():
     assert reach_in(project, (), "routers.grade", "SessionLocal") == (True, ())
 
 
+def test_a_function_level_import_from_the_module_keeps_the_patch_effective():
+    # The import runs when check() is called, so it sees the patched binding.
+    project = _sources(
+        routers__grade="from database import SessionLocal\n",
+        services__readiness="def check():\n    from routers.grade import SessionLocal\n    return SessionLocal()\n",
+    )
+    assert reach_in(project, (), "routers.grade", "SessionLocal") == (True, ())
+
+
+def test_a_module_level_import_from_the_module_does_not():
+    # Bound once when services.readiness is imported: a later patch cannot reach it.
+    project = _sources(
+        routers__grade="from database import SessionLocal\n",
+        services__readiness="from routers.grade import SessionLocal\n\ndef check():\n    return SessionLocal()\n",
+    )
+    assert reach_in(project, (), "routers.grade", "SessionLocal") == (False, ())
+
+
 def test_unrelated_modules_with_the_same_import_are_not_shadows():
     project = _sources(
         routers__grade=GRADE_BEFORE,
