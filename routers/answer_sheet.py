@@ -1,5 +1,4 @@
 """Independent answer-sheet grading workflow API."""
-from __future__ import annotations
 
 import asyncio
 import copy
@@ -136,8 +135,28 @@ from services.teaching_context import (
     stream_teaching,
     use_teaching_context,
 )
+from routers.answer_sheet_common import (
+    _ANSWER_SHEET_HEARTBEAT_SECONDS,
+    _answer_sheet_sse,
+    _answer_sheet_stream,
+    _with_answer_sheet_heartbeats,
+    _load_owned,
+    _locked_owned,
+    _serialized_session_mutation,
+    _answer_sheet_writes_enabled,
+    _requires_answer_sheet_writes,
+    _run_answer_sheet_image_work,
+)
+from routers.answer_sheet_availability import (
+    _with_answer_sheet_hardware,
+    _answer_sheet_service_availability,
+    answer_sheet_availability,
+    _require_answer_sheet_chain,
+)
+from routers.answer_sheet_availability import router as _availability_router
 
 router = APIRouter(prefix="/answer-sheet")
+router.include_router(_availability_router)
 logger = logging.getLogger(__name__)
 _ALLOWED_EXTENSIONS = {".jpg", ".jpeg", ".png"}
 _CLIENT_OCR_READY_SUFFIX = ".ocr-ready-v1.jpg"
@@ -147,7 +166,6 @@ _ANSWER_CROP_RE = re.compile(r"crop-[0-9a-f]{24}\.png\Z")
 _STUDENT_RECOGNITION_ATTEMPT_RE = re.compile(
     r"\.student-recognition-[0-9a-f]{32}\Z"
 )
-_ANSWER_SHEET_HEARTBEAT_SECONDS = 15.0
 _ANSWER_SHEET_ACCELERATOR_WAIT_SECONDS = 60.0
 _ANSWER_SHEET_OCR_BATCH_DEADLINE_SECONDS = 600.0
 _GRADING_DRAFT_CHECKPOINT_KEY = "grading_draft_checkpoint"
@@ -212,200 +230,6 @@ def _accelerator_managed_orientation(_path: str) -> dict:
         "orientation_reason": "client_normalized_node_registered",
         "orientation_confidence": 1.0,
     }
-
-
-def _answer_sheet_sse(event: str, payload: dict) -> str:
-    return (
-        f"event: {event}\n"
-        f"data: {json.dumps(payload, ensure_ascii=False, separators=(',', ':'))}\n\n"
-    )
-
-
-def _answer_sheet_stream(events: AsyncIterator[str]) -> StreamingResponse:
-    return StreamingResponse(
-        events,
-        media_type="text/event-stream",
-        headers={
-            "Cache-Control": "no-cache",
-            "X-Accel-Buffering": "no",
-        },
-    )
-
-
-async def _with_answer_sheet_heartbeats(
-    awaitable: Awaitable,
-    *,
-    message: str,
-    current: int,
-    total: int,
-):
-    """Yield progress while one model or image operation is still alive."""
-    task = asyncio.create_task(awaitable)
-    try:
-        while True:
-            done, _ = await asyncio.wait(
-                {task}, timeout=_ANSWER_SHEET_HEARTBEAT_SECONDS
-            )
-            if done:
-                yield "result", task.result()
-                return
-            yield "progress", {
-                "message": message,
-                "current": current,
-                "total": total,
-                "heartbeat": True,
-            }
-    finally:
-        if not task.done():
-            task.cancel()
-        await asyncio.gather(task, return_exceptions=True)
-
-
-def _with_answer_sheet_hardware(availability: dict, hardware: dict) -> dict:
-    """Attach anonymous hardware readiness and apply its public severity."""
-    fallback_messages = {
-        "ready": "教师客户端或机会式加速节点已就绪。",
-        "waiting_accelerator": "等待教师客户端加速节点，已保存进度不会丢失。",
-        "unavailable": "本地加速节点不可用，已停止新的图像处理任务；已保存进度仍可查看。",
-        "fault": "本地加速节点故障，已停止新的图像处理任务；已保存进度仍可查看。",
-    }
-    hardware_status = str(hardware.get("status") or "fault")
-    if hardware_status not in fallback_messages:
-        hardware_status = "fault"
-    public_hardware = {
-        "status": hardware_status,
-        "message": str(hardware.get("message") or fallback_messages[hardware_status]),
-    }
-    result = dict(availability)
-    result["hardware"] = public_hardware
-
-    mapped_status = {
-        "waiting_accelerator": "queued",
-        "unavailable": "unavailable",
-        "fault": "fault",
-    }.get(hardware_status)
-    ranks = {"available": 0, "queued": 1, "unavailable": 2, "fault": 3}
-    current_status = str(result.get("status") or "fault")
-    if mapped_status and ranks[mapped_status] > ranks.get(current_status, 3):
-        result.update(
-            status=mapped_status,
-            label={
-                "queued": "需排队",
-                "unavailable": "暂不可用",
-                "fault": "链路故障",
-            }[mapped_status],
-            message=public_hardware["message"],
-        )
-    return result
-
-
-async def _answer_sheet_service_availability(user: User) -> dict:
-    """Return feature, storage, model and coordinator readiness."""
-    import config
-
-    if not config.ANSWER_SHEET_GRADING_ENABLED:
-        return {
-            "status": "unavailable",
-            "label": "暂不可用",
-            "message": "答题卡批阅暂时不可用：真实学生答题卡裁剪验收尚未通过。",
-        }
-
-    storage = await get_upload_storage_readiness_async(
-        UPLOAD_DIR,
-        MAX_UPLOAD_TOTAL_SIZE,
-        required_copies=2,
-    )
-    if not storage.get("ready"):
-        if storage.get("status") == "unavailable":
-            return {
-                "status": "unavailable",
-                "label": "暂不可用",
-                "message": "服务器存储空间不足，已暂停接收新答题卡批阅任务，请联系管理员清理空间。",
-            }
-        return {
-            "status": "fault",
-            "label": "链路故障",
-            "message": "服务器存储状态异常，已暂停接收新答题卡批阅任务，请联系管理员。",
-        }
-
-    from services.analyzer import get_grading_readiness, get_grading_readiness_async
-    from services.model_concurrency import RedisModelLimiter, get_model_limiter
-    from services.ocr_service import get_ocr_readiness
-    from services.ocr_teacher_fairness import public_teacher_availability
-
-    try:
-        async with asyncio.timeout(READINESS_IO_TIMEOUT_SECONDS):
-            limiter = get_model_limiter()
-            if isinstance(limiter, RedisModelLimiter):
-                await limiter.ping()
-            ocr = await get_ocr_readiness()
-            grading = get_grading_readiness()
-            if isinstance(limiter, RedisModelLimiter):
-                grading = await get_grading_readiness_async(limiter)
-    except Exception:
-        logger.exception("answer-sheet grading readiness coordination failed")
-        return {
-            "status": "fault",
-            "label": "链路故障",
-            "message": "答题卡批阅任务协调服务发生故障，请稍后重试或联系管理员。",
-        }
-
-    if not ocr.get("configured") or not ocr.get("ready"):
-        return {
-            "status": "unavailable",
-            "label": "暂不可用",
-            "message": "视觉识别服务尚未就绪，请稍后重试或联系管理员。",
-        }
-    if not grading.get("configured") or not grading.get("ready"):
-        return {
-            "status": "unavailable",
-            "label": "暂不可用",
-            "message": "数学批改服务尚未就绪，请稍后重试或联系管理员。",
-        }
-
-    try:
-        async with asyncio.timeout(READINESS_IO_TIMEOUT_SECONDS):
-            capacity = await public_teacher_availability(str(user.id))
-    except Exception:
-        logger.exception("answer-sheet teacher availability failed")
-        return {
-            "status": "fault",
-            "label": "链路故障",
-            "message": "答题卡批阅任务协调服务发生故障，请稍后重试或联系管理员。",
-        }
-    if capacity.get("status") == "queued":
-        return {
-            "status": "queued",
-            "label": "需排队",
-            "message": "当前使用人数较多，提交后会按顺序处理。",
-        }
-    if capacity.get("status") == "fault":
-        return {
-            "status": "fault",
-            "label": "链路故障",
-            "message": "答题卡批阅任务协调服务发生故障，请稍后重试或联系管理员。",
-        }
-    if capacity.get("status") != "available":
-        return {
-            "status": "unavailable",
-            "label": "暂不可用",
-            "message": "视觉识别服务暂不可用，请稍后重试或联系管理员。",
-        }
-    return {
-        "status": "available",
-        "label": "可用",
-        "message": "视觉识别、数学批改和任务协调链路已就绪。",
-    }
-
-
-@router.get("/availability")
-async def answer_sheet_availability(user: User = Depends(_require_user)):
-    """Expose whole-chain readiness without probing a billable model API."""
-    hardware, availability = await asyncio.gather(
-        get_public_hardware_readiness(user.id),
-        _answer_sheet_service_availability(user),
-    )
-    return _with_answer_sheet_hardware(availability, hardware)
 
 
 class SessionCreateRequest(BaseModel):
@@ -599,115 +423,6 @@ def _verified_bubble_grids(session: AnswerSheetSession) -> dict | None:
         return get_answer_sheet_template_registry().resolve_bubble_regions(session)
     except ValueError as exc:
         raise HTTPException(409, detail=f"涂卡网格未通过教师确认模板校验，禁止判分：{exc}") from exc
-
-
-def _load_owned(session_id: str, user_id: int) -> AnswerSheetSession:
-    try:
-        session = AnswerSheetSession.load(session_id, UPLOAD_DIR)
-    except (ValueError, OSError):
-        raise HTTPException(404, detail="答题卡会话不存在")
-    try:
-        session.ensure_owned(user_id)
-    except PermissionError:
-        raise HTTPException(404, detail="答题卡会话不存在")
-    return session
-
-
-@contextmanager
-def _locked_owned(session_id: str, user_id: int):
-    """Serialize grading mutations and always reload after lock acquisition."""
-    _load_owned(session_id, user_id)
-    try:
-        with answer_sheet_operation_lock(session_id, UPLOAD_DIR):
-            yield _load_owned(session_id, user_id)
-    except AnswerSheetOperationBusy as exc:
-        raise HTTPException(
-            409,
-            detail="该答题卡会话正在执行另一项操作，请稍后重试",
-        ) from exc
-    except FileNotFoundError as exc:
-        raise HTTPException(404, detail="答题卡会话不存在") from exc
-
-
-def _serialized_session_mutation(function):
-    """Serialize one complete metadata mutation while preserving FastAPI's signature."""
-    signature = inspect.signature(function)
-
-    def lock_arguments(args, kwargs):
-        bound = signature.bind_partial(*args, **kwargs)
-        return str(bound.arguments["session_id"]), bound.arguments["user"]
-
-    if inspect.iscoroutinefunction(function):
-        @wraps(function)
-        async def async_wrapper(*args, **kwargs):
-            session_id, user = lock_arguments(args, kwargs)
-            with _locked_owned(session_id, user.id):
-                return await function(*args, **kwargs)
-
-        return async_wrapper
-
-    @wraps(function)
-    def sync_wrapper(*args, **kwargs):
-        session_id, user = lock_arguments(args, kwargs)
-        with _locked_owned(session_id, user.id):
-            return function(*args, **kwargs)
-
-    return sync_wrapper
-
-
-def _answer_sheet_writes_enabled() -> None:
-    """Fail closed for every grading mutation while read-only evidence stays available."""
-    import config
-
-    if not config.ANSWER_SHEET_GRADING_ENABLED:
-        raise HTTPException(
-            503,
-            detail="答题卡批阅暂时不可用：真实学生答题卡裁剪验收尚未通过。",
-        )
-
-
-async def _require_answer_sheet_chain(user: User) -> None:
-    """Reject new model/image work while preserving read-only session access."""
-    availability = await answer_sheet_availability(user)
-    if availability.get("status") in {"available", "queued"}:
-        return
-    detail = "答题卡批阅服务当前暂不可用，请稍后重试。"
-    if availability.get("status") == "fault":
-        detail = str(
-            availability.get("message")
-            or "答题卡批阅链路发生故障，请稍后重试或联系管理员。"
-        )
-    raise HTTPException(503, detail=detail)
-
-
-def _requires_answer_sheet_writes(function):
-    """Preserve FastAPI signatures while guarding sync and async write routes."""
-    signature = inspect.signature(function)
-
-    def task_context(args, kwargs):
-        bound = signature.bind_partial(*args, **kwargs)
-        session_id = bound.arguments.get("session_id")
-        user = bound.arguments.get("user")
-        if session_id and user is not None:
-            return getattr(_load_owned(str(session_id), user.id), "teaching_context", {})
-        return {}
-
-    if inspect.iscoroutinefunction(function):
-        @wraps(function)
-        async def async_wrapper(*args, **kwargs):
-            _answer_sheet_writes_enabled()
-            with use_teaching_context(task_context(args, kwargs)):
-                return await function(*args, **kwargs)
-
-        return async_wrapper
-
-    @wraps(function)
-    def sync_wrapper(*args, **kwargs):
-        _answer_sheet_writes_enabled()
-        with use_teaching_context(task_context(args, kwargs)):
-            return function(*args, **kwargs)
-
-    return sync_wrapper
 
 
 def _remove_upload_path(path: str | os.PathLike[str] | None) -> None:
@@ -2771,15 +2486,6 @@ def _extract_student_page_regions(
         raise
     finally:
         del aligned_rgb
-
-
-async def _run_answer_sheet_image_work(function, /, *args, **kwargs):
-    return await _run_local_ocr_image_component(
-        function,
-        *args,
-        semaphore=_get_local_ocr_preprocess_semaphore(),
-        **kwargs,
-    )
 
 
 def _student_recognition_source_path(page: dict) -> str:
