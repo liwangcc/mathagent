@@ -22,6 +22,7 @@ ROOT = Path(__file__).resolve().parents[1]
 LAYERS = [
     "template_evidence_base",
     "template_evidence_schema",
+    "template_evidence_canonical",
 ]
 # The module every caller imports: it may use any layer, and no layer imports it.
 TOP = ["template_evidence"]
