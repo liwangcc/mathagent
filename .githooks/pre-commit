@@ -1,0 +1,16 @@
+#!/bin/sh
+# 提交前检查源文件行数：新文件不超过 800 行，已登记的大文件只减不增。
+# 规则见 scripts/check_file_sizes.py 开头的说明；只检查这次要提交的内容（--staged）。
+# 启用：在主仓库执行一次 git config core.hooksPath .githooks，所有工作树共用。
+root=$(git rev-parse --show-toplevel) || exit 1
+[ -f "$root/scripts/check_file_sizes.py" ] || exit 0  # 还没有这个脚本的分支不检查
+
+# 工作树里通常没有 .venv，再到主仓库找；Windows 上的 python3 可能是应用商店占位程序，先试跑。
+main=$(dirname "$(git rev-parse --path-format=absolute --git-common-dir)")
+for python in "$root/.venv/Scripts/python.exe" "$root/.venv/bin/python"               "$main/.venv/Scripts/python.exe" "$main/.venv/bin/python" python3 python; do
+    if "$python" -c "import sys; sys.exit(sys.version_info < (3, 9))" >/dev/null 2>&1; then
+        exec "$python" "$root/scripts/check_file_sizes.py" --staged
+    fi
+done
+echo "pre-commit: 找不到 Python 3.9 以上版本，无法检查源文件行数" >&2
+exit 1
