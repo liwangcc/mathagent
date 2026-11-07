@@ -15,6 +15,7 @@ from services.ocr_pool_scheduler import (
     RedisPoolCoordinator,
     _classify_http_failure,
 )
+from services import ocr_pool_scheduler_acquire
 from services import template_recognition
 
 
@@ -666,7 +667,7 @@ def test_retry_stagger_uses_jitter_and_stays_inside_deadline(monkeypatch):
 
     monkeypatch.setattr(scheduler_module.time, "time", lambda: 100.0)
     monkeypatch.setattr(
-        scheduler_module,
+        ocr_pool_scheduler_acquire,
         "jittered_backoff",
         lambda *_args, **_kwargs: 0.2,
     )
