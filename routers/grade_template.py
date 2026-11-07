@@ -124,6 +124,25 @@ from routers.grade_template_models import (
     TemplateQuestionEditReq,
     _contract_rejection_reason,
 )
+from routers.grade_template_layout_runs import (
+    _template_geometry_review_state,
+    _layout_result_from_frozen_question_plan,
+    _latest_page_layout_draft,
+    _TEMPLATE_GEOMETRY_REVIEW_METADATA_KEYS,
+    _latest_template_geometry_review_metadata,
+    _plan_column_bounds,
+    _template_layout_review_pending_pages,
+    _template_anchor_review_pending_pages,
+    _template_geometry_review_pending_pages,
+    _frozen_question_layout,
+    _drawing_geometry_unresolved,
+)
+from routers.grade_template_artifacts import (
+    _refresh_template_difference_artifact,
+    _synchronized_page_artifact,
+    _validate_template_drawing_geometry,
+    _question_numbers,
+)
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -491,60 +510,6 @@ async def _classify_confirmed_template_knowledge(
         logger.warning("模板知识点后台分类失败 template=%s: %s", template_id, type(exc).__name__)
 
 
-def _refresh_template_difference_artifact(
-    template_dir: str,
-    artifact: dict,
-    *,
-    template_mode: object = "marked",
-    raw_regions: object = None,
-) -> dict:
-    """Keep the reusable whiteout baseline aligned with approved boxes.
-
-    The original registration image remains intact for SIFT. Both template
-    modes get a hash-bound difference image whenever their visual contract
-    contains handwriting metadata, including the explicit empty-box baseline.
-    Legacy blank artifacts without that field remain readable and are not
-    retroactively given synthetic boxes.
-    """
-    updated = dict(artifact)
-    expected = [
-        str(value).strip()
-        for value in (updated.get("question_numbers") or [])
-        if str(value).strip()
-    ]
-    mode = normalize_template_mode(template_mode, default="marked")
-    # The unified answer-box collection is the exemption contract for every
-    # legacy mode label; never zero it for "blank". When the stored contract
-    # is missing or empty, the confirmed answer boxes themselves carry it.
-    has_region_contract = (
-        raw_regions is not None
-        or "template_handwriting_regions" in updated
-        or "template_answer_regions" in updated
-    )
-    if mode == "blank" and not has_region_contract:
-        # Old blank artifacts intentionally had no exemption contract. Keep
-        # them compatible until a teacher reimports and confirms a new one.
-        return updated
-    stored_regions = updated.get("template_handwriting_regions")
-    if raw_regions is not None:
-        contract_regions = raw_regions
-    elif stored_regions:
-        contract_regions = stored_regions
-    else:
-        # A stored empty list cannot mean "erase the boxes": fall back to
-        # the confirmed answer boxes so one collection serves both roles.
-        contract_regions = updated.get("template_answer_regions")
-    normalized = _template_handwriting_regions_for_mode(
-        template_mode,
-        contract_regions,
-        expected,
-    )
-    updated["template_handwriting_regions"] = normalized
-    updated.pop("difference_template_image", None)
-    updated.pop("difference_template_sha256", None)
-    return materialize_template_difference_artifact(template_dir, updated)
-
-
 # ════════════════════════════════════════════════════════════════════
 #  多页一次性模板：recognize（OCR N 页）→ confirm（老师核对即权威 + 沉淀题库）
 #  模板是本批次绝对权威；页数即类型数。学生卷匹配复用见 step 3。
@@ -574,113 +539,6 @@ def batch_grade_template_correction_candidates(
     }
 
 
-def _synchronized_page_artifact(
-    artifact: dict,
-    page: dict,
-    renames: dict[str, str],
-    *,
-    added_number: str = "",
-    before_number: str = "",
-) -> dict:
-    """Rebuild one page artifact around an edited question list.
-
-    Every collection in an artifact is keyed by question number and asserted to
-    cover the page's questions exactly, so a question edit has to move all of
-    them together or the next validation rejects the template.  A renamed
-    question keeps its boxes: the ink they mark did not move, only its label.
-    """
-    numbers = [
-        str(
-            question.get("question_no")
-            or question.get("question_number")
-            or ""
-        ).strip()
-        for question in (page.get("questions") or [])
-    ]
-    numbers = [number for number in numbers if number]
-    updated = dict(artifact)
-    updated["question_numbers"] = list(numbers)
-    from services.template_evidence import normalize_question_schema
-    updated["question_schema"] = normalize_question_schema(page.get("questions") or [])
-    if "question_anchors" in artifact:
-        existing = normalize_question_anchors(artifact.get("question_anchors") or [])
-        renamed = {
-            renames.get(anchor["question_number"], anchor["question_number"]): anchor
-            for anchor in existing
-        }
-        anchors: list[dict] = []
-        for number in numbers:
-            found = renamed.get(number)
-            if found is not None:
-                # Relabelling a question must not discard the confidence and
-                # provenance attached to its server-owned geometry.
-                preserved = dict(found)
-                preserved["question_number"] = number
-                if "question_number_bbox" in found:
-                    # Preserve legacy geometry while loading an old artifact;
-                    # new model responses do not create this field.
-                    preserved["question_number_bbox"] = list(
-                        found["question_number_bbox"]
-                    )
-                anchors.append(preserved)
-            elif number == added_number:
-                # This conspicuous top-of-page handle is an editable draft,
-                # NOT a located printed number. A review gate below prevents
-                # freezing until the teacher saves the corrected location.
-                new_anchor = {"question_number": number}
-                if artifact.get("question_label_policy"):
-                    new_anchor["question_number_bbox"] = [80, 20, 120, 45]
-                anchors.append(new_anchor)
-                updated["geometry_review_pending"] = True
-        updated["question_anchors"] = normalize_question_anchors(anchors)
-    if "template_handwriting_regions" in artifact:
-        existing_regions = normalize_template_handwriting_regions(
-            artifact.get("template_handwriting_regions") or []
-        )
-        renamed_regions = {
-            renames.get(item["question_number"], item["question_number"]): item
-            for item in existing_regions
-        }
-        synchronized_regions = []
-        for number in numbers:
-            found = renamed_regions.get(number)
-            if found is None:
-                synchronized_regions.append({
-                    "question_number": number,
-                    "regions": [],
-                })
-                continue
-            # Keep confidence/source/teacher-confirmed markers alongside the
-            # moved rectangles; only the question label changes.
-            preserved = dict(found)
-            preserved["question_number"] = number
-            preserved["regions"] = [list(box) for box in (found.get("regions") or [])]
-            synchronized_regions.append(preserved)
-        updated["template_handwriting_regions"] = normalize_template_handwriting_regions(
-            synchronized_regions
-        )
-    if "template_answer_regions" in artifact:
-        answer_by_number = {
-            renames.get(item["question_number"], item["question_number"]): item
-            for item in normalize_template_handwriting_regions(artifact["template_answer_regions"])
-        }
-        updated["template_answer_regions"] = [
-            {**copy.deepcopy(answer_by_number.get(number) or {"regions": []}), "question_number": number}
-            for number in numbers
-        ]
-    updated.pop("difference_template_image", None)
-    updated.pop("difference_template_sha256", None)
-    raw_plan = artifact.get("question_crop_plan")
-    if isinstance(raw_plan, dict):
-        synchronized_plan = dict(raw_plan)
-        synchronized_plan["expected_question_numbers"] = list(numbers)
-        updated["question_crop_plan"] = validate_anchor_crop_plan(
-            synchronized_plan,
-            artifact_sha256=str(artifact.get("sha256") or ""),
-        )
-    return updated
-
-
 def _validate_template_cut_request(req: TemplateCutCandidatesReq) -> tuple[str, list[str], str]:
     action_id = str(req.action_id or "").strip()
     if not 8 <= len(action_id) <= 64 or any(
@@ -691,41 +549,6 @@ def _validate_template_cut_request(req: TemplateCutCandidatesReq) -> tuple[str, 
     if cut_types != ["question"]:
         raise HTTPException(400, detail="当前模板定位只支持分栏裁题")
     return action_id, cut_types, req.image_type
-
-
-def _template_geometry_review_state(page_run: object) -> tuple[bool, bool]:
-    """Normalize current and legacy geometry-review markers for one page."""
-    if not isinstance(page_run, dict):
-        return False, False
-    anchor_diagnostics = page_run.get("anchor_diagnostics")
-    template_ocr_diagnostics = page_run.get("template_ocr_diagnostics")
-    has_candidate_draft = any(
-        isinstance(page_run.get(key), list) and bool(page_run[key])
-        for key in (
-            "question_anchor_candidates",
-            "template_answer_region_candidates",
-            "template_handwriting_region_candidates",
-        )
-    )
-    anchor_review_pending = bool(
-        page_run.get("anchor_review_pending")
-        or (
-            isinstance(anchor_diagnostics, dict)
-            and anchor_diagnostics.get("needs_review") is True
-        )
-        or has_candidate_draft
-    )
-    geometry_review_pending = bool(
-        page_run.get("geometry_review_pending")
-        or anchor_review_pending
-        or (
-            isinstance(template_ocr_diagnostics, dict)
-            and template_ocr_diagnostics.get(
-                "geometry_review_pending", template_ocr_diagnostics.get("needs_review")
-            ) is True
-        )
-    )
-    return anchor_review_pending, geometry_review_pending
 
 
 def _template_cut_response(sess: TemplateSession, run: dict) -> dict:
@@ -854,324 +677,6 @@ def _template_cut_response(sess: TemplateSession, run: dict) -> dict:
         "created_at": run.get("created_at"),
         "completed_at": run.get("completed_at"),
     }
-
-
-def _layout_result_from_frozen_question_plan(
-    artifact: dict,
-    plan: dict,
-) -> dict:
-    """Build a preview-compatible result without calling the layout model again."""
-    columns = list(plan["parameters"]["columns"])
-    candidates = []
-    for candidate_index, column in enumerate(columns):
-        left = int(column["x1_1000"])
-        right = int(column["x2_1000"])
-        column_name = f"col_{int(column['column_index'])}"
-        canonical = {
-            "column": column_name,
-            "bbox_1000": [left, 0, right, 1000],
-        }
-        candidates.append({
-            "candidate_index": candidate_index,
-            "candidate_role": "question_block",
-            "question_number_hint": "",
-            "question_number_hint_source": "frozen_plan",
-            "coordinate_trust": "model_coarse",
-            "usable_for_original_overlay": True,
-            "template_bbox_1000": [left, 0, right, 1000],
-            "raw_sha256": hashlib.sha256(
-                _json.dumps(canonical, sort_keys=True).encode("utf-8")
-            ).hexdigest(),
-        })
-    return {
-        "provider": "frozen_template_plan",
-        "operation": "RecognizeColumnLayout",
-        "cut_type": "question",
-        "output_oricoord": True,
-        "request_id": "frozen-plan",
-        "source": {
-            "sha256": artifact["sha256"],
-            "width": artifact["width"],
-            "height": artifact["height"],
-        },
-        "provider_dimensions": {
-            "org_width": artifact["width"],
-            "org_height": artifact["height"],
-            "rectified_width": artifact["width"],
-            "rectified_height": artifact["height"],
-        },
-        "pages": [{
-            "page_index": 0,
-            "provider_page_no": 1,
-            "provider_dimensions": {},
-            "candidates": candidates,
-        }],
-        "summary": {
-            "total": len(candidates),
-            "original": len(candidates),
-            "rectified_untrusted": 0,
-            "invalid": 0,
-            "missing": 0,
-        },
-        "column_layout": {
-            "column_count": len(columns),
-            "columns": columns,
-        },
-    }
-
-
-def _latest_page_layout_draft(
-    sess: TemplateSession,
-    page_label: str,
-    artifact: dict,
-) -> dict:
-    """Return the newest layout draft bound to this artifact, or a source stub.
-
-    A teacher edit is a revision of the draft the confirmation page displayed,
-    so the revision counter and column identities must continue from it. A
-    page that predates layout drafts gets a source-only stub; its first edit
-    then starts at revision 1 instead of inheriting a synthetic history.
-    """
-    artifact_sha = str(artifact.get("sha256") or "")
-    matching: list[tuple[tuple[int, str], dict]] = []
-    for run in (sess.layout_cut_runs or {}).values():
-        if not isinstance(run, dict):
-            continue
-        page_run = (run.get("pages") or {}).get(page_label)
-        if not isinstance(page_run, dict):
-            continue
-        mode = (page_run.get("modes") or {}).get("question")
-        if not isinstance(mode, dict) or not isinstance(mode.get("column_layout"), dict):
-            continue
-        if str((mode.get("source") or {}).get("sha256") or "") != artifact_sha:
-            continue
-        revision = mode.get("layout_revision")
-        if isinstance(revision, bool) or not isinstance(revision, int):
-            revision = 0
-        stamp = str(run.get("completed_at") or run.get("created_at") or "")
-        matching.append(((revision, stamp), mode))
-    if matching:
-        return max(matching, key=lambda item: item[0])[1]
-    stub: dict = {
-        "source": {
-            "sha256": artifact_sha,
-            "width": artifact.get("width"),
-            "height": artifact.get("height"),
-        },
-    }
-    # No draft survived in the runs, but the artifact may still hold the
-    # frozen plan of the previous edit. Rebuild enough of it for the revision
-    # counter to continue rather than restarting at 1 on every save.
-    plan = artifact.get("question_crop_plan")
-    columns = (plan.get("parameters") or {}).get("columns") if isinstance(plan, dict) else None
-    if isinstance(columns, list) and columns:
-        stub["column_layout"] = {"columns": [dict(column) for column in columns]}
-        stub["layout_mode"] = {1: "single", 2: "double", 3: "triple"}.get(len(columns), "")
-        revisions = {
-            column.get("layout_revision")
-            for column in columns
-            if isinstance(column, dict) and column.get("layout_revision") is not None
-        }
-        context_revision = (plan.get("layout_context") or {}).get("layout_revision")
-        if context_revision is not None:
-            revisions.add(context_revision)
-        if len(revisions) == 1:
-            stub["layout_revision"] = next(iter(revisions))
-    return stub
-
-
-_TEMPLATE_GEOMETRY_REVIEW_METADATA_KEYS = (
-    "anchor_review_pending",
-    "geometry_review_pending",
-    "question_anchor_candidates",
-    "template_answer_region_candidates",
-    "template_handwriting_region_candidates",
-    "question_schema_candidates",
-    "anchor_diagnostics",
-    "template_ocr_diagnostics",
-)
-
-
-def _latest_template_geometry_review_metadata(
-    sess: TemplateSession,
-    page_label: str,
-    artifact_sha256: str,
-) -> dict:
-    """Copy review and bounded-import metadata for one immutable page.
-
-    A new cut action owns a fresh layout-model run, but it does not rerun the
-    question-anchor/exemption recognizer.  Keep that review-only draft attached
-    to the page until a teacher override clears it from every historical run.
-    Completed geometry also retains model-stage metadata: pruning old cut
-    runs must not erase the missing-answer/reference confirmation contract.
-    The artifact hash prevents data from an older upload revision crossing
-    into the new page.
-    """
-    expected_sha = str(artifact_sha256 or "").strip()
-    if not expected_sha:
-        return {}
-    matching: list[tuple[tuple[str, int], dict]] = []
-    for order, run in enumerate((sess.layout_cut_runs or {}).values()):
-        if not isinstance(run, dict):
-            continue
-        page_run = (run.get("pages") or {}).get(page_label)
-        if not isinstance(page_run, dict):
-            continue
-        page_sha = str(page_run.get("artifact_sha256") or "").strip()
-        if not page_sha:
-            question_mode = (page_run.get("modes") or {}).get("question")
-            if isinstance(question_mode, dict):
-                page_sha = str(
-                    (question_mode.get("source") or {}).get("sha256") or ""
-                ).strip()
-        anchor_review_pending, geometry_review_pending = (
-            _template_geometry_review_state(page_run)
-        )
-        if page_sha != expected_sha:
-            continue
-        bounded_diagnostics = page_run.get("template_ocr_diagnostics") or {}
-        if not geometry_review_pending and not bounded_diagnostics.get("model_stages"):
-            continue
-        keys = (_TEMPLATE_GEOMETRY_REVIEW_METADATA_KEYS if geometry_review_pending
-                else ("template_ocr_diagnostics",))
-        metadata = {
-            key: copy.deepcopy(page_run[key])
-            for key in keys
-            if key in page_run
-        }
-        if not metadata:
-            continue
-        if anchor_review_pending:
-            metadata["anchor_review_pending"] = True
-        metadata["geometry_review_pending"] = geometry_review_pending
-        stamp = str(run.get("completed_at") or run.get("created_at") or "")
-        matching.append(((stamp, order), metadata))
-    if not matching:
-        return {}
-    return max(matching, key=lambda item: item[0])[1]
-
-
-def _plan_column_bounds(plan: object) -> list[tuple[int, int]] | None:
-    if not isinstance(plan, dict):
-        return None
-    columns = (plan.get("parameters") or {}).get("columns")
-    if not isinstance(columns, list):
-        return None
-    try:
-        return [(int(column["x1_1000"]), int(column["x2_1000"])) for column in columns]
-    except (KeyError, TypeError, ValueError):
-        return None
-
-
-def _template_layout_review_pending_pages(sess: TemplateSession) -> list[int]:
-    """Pages whose column draft still needs the teacher's boundaries.
-
-    A review draft is resolved only by a saved layout override, which writes a
-    frozen ``question_crop_plan`` into the artifact and clears the marker on
-    every run. Until then the template must not be confirmed.
-    """
-    pending: set[int] = set()
-    for run in (sess.layout_cut_runs or {}).values():
-        if not isinstance(run, dict):
-            continue
-        for page_label, page_run in (run.get("pages") or {}).items():
-            if not isinstance(page_run, dict) or not page_run.get("layout_review_pending"):
-                continue
-            artifact = (sess.page_artifacts or {}).get(page_label)
-            if isinstance(artifact, dict) and isinstance(
-                artifact.get("question_crop_plan"), dict
-            ):
-                continue
-            try:
-                pending.add(int(str(page_label).removeprefix("page_")) - 1)
-            except ValueError:
-                continue
-    return sorted(pending)
-
-
-def _template_anchor_review_pending_pages(sess: TemplateSession) -> list[int]:
-    """Pages whose model anchor/exemption draft still needs teacher approval.
-
-    Unlike a column-layout review, this marker is independent of the frozen
-    column crop plan.  A page can have trusted column boundaries while its
-    question-number or exemption boxes remain non-authoritative candidates.
-    """
-    pending: set[int] = set()
-    for run in (sess.layout_cut_runs or {}).values():
-        if not isinstance(run, dict):
-            continue
-        for page_label, page_run in (run.get("pages") or {}).items():
-            anchor_review_pending, _ = _template_geometry_review_state(page_run)
-            if not anchor_review_pending:
-                continue
-            try:
-                pending.add(int(str(page_label).removeprefix("page_")) - 1)
-            except ValueError:
-                continue
-    return sorted(pending)
-
-
-def _template_geometry_review_pending_pages(sess: TemplateSession) -> list[int]:
-    """Return every page blocked on layout, anchor, or OCR geometry review."""
-    pending = set(_template_layout_review_pending_pages(sess))
-    pending.update(_template_anchor_review_pending_pages(sess))
-    for run in (sess.layout_cut_runs or {}).values():
-        if not isinstance(run, dict):
-            continue
-        for page_label, page_run in (run.get("pages") or {}).items():
-            _, geometry_review_pending = _template_geometry_review_state(page_run)
-            if not geometry_review_pending:
-                continue
-            try:
-                pending.add(int(str(page_label).removeprefix("page_")) - 1)
-            except ValueError:
-                continue
-    return sorted(pending)
-
-
-def _frozen_question_layout(
-    sess: TemplateSession,
-    page_label: str,
-    artifact: dict,
-) -> tuple[dict, dict] | None:
-    """Return the layout and plan already bound to this artifact, if any."""
-    raw_plan = artifact.get("question_crop_plan")
-    if not isinstance(raw_plan, dict):
-        return None
-    artifact_sha = str(artifact.get("sha256") or "")
-    plan = validate_anchor_crop_plan(raw_plan, artifact_sha256=artifact_sha)
-    matching: list[tuple[str, dict]] = []
-    for run in (sess.layout_cut_runs or {}).values():
-        if not isinstance(run, dict) or run.get("status") != "complete":
-            continue
-        page_run = (run.get("pages") or {}).get(page_label)
-        if not isinstance(page_run, dict) or page_run.get("artifact_sha256") != artifact_sha:
-            continue
-        mode = (page_run.get("modes") or {}).get("question")
-        if not isinstance(mode, dict):
-            continue
-        if str((mode.get("source") or {}).get("sha256") or "") != artifact_sha:
-            continue
-        stored_plan = page_run.get("anchor_crop_plan")
-        if isinstance(stored_plan, dict):
-            try:
-                stored_plan = validate_anchor_crop_plan(
-                    stored_plan,
-                    artifact_sha256=artifact_sha,
-                )
-            except (AnchorCropPlanError, TypeError, ValueError):
-                continue
-            if stored_plan != plan:
-                continue
-        matching.append((
-            str(run.get("completed_at") or run.get("created_at") or ""),
-            mode,
-        ))
-    if matching:
-        _timestamp, mode = max(matching, key=lambda item: item[0])
-        return mode, plan
-    # Preserve older sessions that persisted the plan before layout metadata.
-    return _layout_result_from_frozen_question_plan(artifact, plan), plan
 
 
 def _template_recognition_status_payload(sess: TemplateSession) -> dict:
@@ -2612,38 +2117,6 @@ async def batch_grade_template_cut_candidates(
                 sess.layout_cut_runs.pop(old_action_id, None)
         sess.save_meta()
         return _template_cut_response(sess, run)
-
-
-def _validate_template_drawing_geometry(artifact: dict, template_mode: str) -> None:
-    from services.template_evidence import validate_drawing_label_geometry
-    validate_drawing_label_geometry(
-        artifact.get("question_schema") or [], artifact.get("question_anchors") or [],
-        artifact.get("template_answer_regions") or [], artifact.get("template_handwriting_regions") or [],
-        page_width=artifact["width"], page_height=artifact["height"],
-        question_crop_plan=artifact.get("question_crop_plan"), template_mode=template_mode,
-    )
-
-
-def _question_numbers(questions: list[dict]) -> list[str]:
-    """Each question's number (question_no, else question_number); blanks dropped."""
-    numbers = (
-        str(question.get("question_no") or question.get("question_number") or "").strip()
-        for question in questions
-    )
-    return [number for number in numbers if number]
-
-
-def _drawing_geometry_unresolved(sess: TemplateSession, page_label: str) -> bool:
-    """A layout run still has this page's drawing stage unfinished and unconfirmed."""
-    return any(
-        (page_run.get("template_ocr_diagnostics") or {}).get("teacher_geometry_confirmed") is not True
-        and (page_run.get("template_ocr_diagnostics") or {}).get("model_stages", {}).get(
-            "template-directory-drawing-v1", {}
-        ).get("status") not in (None, "completed")
-        for run in (sess.layout_cut_runs or {}).values()
-        if isinstance(run, dict)
-        for page_run in [(run.get("pages") or {}).get(page_label) or {}]
-    )
 
 
 def _drawing_schema_complete(question_schema: list[dict] | None, expected_numbers: list[str]) -> bool:

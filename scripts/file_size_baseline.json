@@ -19,7 +19,7 @@
   "routers/grade_pipeline.py": 1267,
   "routers/grade_recognition.py": 1423,
   "routers/grade_review.py": 968,
-  "routers/grade_template.py": 3999,
+  "routers/grade_template.py": 3472,
   "routers/report.py": 845,
   "services/accelerator_artifacts.py": 1483,
   "services/accelerator_business.py": 1637,
