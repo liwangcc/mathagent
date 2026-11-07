@@ -29,6 +29,8 @@ from models_user import User
 from routers.auth import _require_user
 from services.answer_sheet_session import AnswerSheetSession, answer_sheet_operation_lock
 from services.template_evidence import canonicalize_template_image
+from routers import answer_sheet_availability
+from routers import answer_sheet_common
 
 
 def _question(number="1", qtype="choice"):
@@ -149,6 +151,8 @@ def client_env(tmp_path, monkeypatch):
 
     from routers import answer_sheet
     upload_dir = str(tmp_path / "uploads")
+    monkeypatch.setattr(answer_sheet_common, "UPLOAD_DIR", upload_dir)
+    monkeypatch.setattr(answer_sheet_availability, "UPLOAD_DIR", upload_dir)
     monkeypatch.setattr(answer_sheet, "UPLOAD_DIR", upload_dir)
 
     async def fake_column_layout(*_args, **_kwargs):
@@ -174,6 +178,11 @@ def client_env(tmp_path, monkeypatch):
         return {"ready": True, "status": "available", "code": "ready"}
 
     monkeypatch.setattr(
+        answer_sheet_availability,
+        "get_upload_storage_readiness_async",
+        storage_ready,
+    )
+    monkeypatch.setattr(
         answer_sheet,
         "get_upload_storage_readiness_async",
         storage_ready,
@@ -183,7 +192,7 @@ def client_env(tmp_path, monkeypatch):
         return {"status": "ready", "message": "hardware:ready"}
 
     monkeypatch.setattr(
-        answer_sheet,
+        answer_sheet_availability,
         "get_public_hardware_readiness",
         hardware_ready,
     )
@@ -368,7 +377,7 @@ def test_answer_sheet_availability_applies_hardware_state(
         }
 
     monkeypatch.setattr(
-        "routers.answer_sheet.get_public_hardware_readiness",
+        "routers.answer_sheet_availability.get_public_hardware_readiness",
         hardware,
     )
     response = make_client(1).get("/api/answer-sheet/availability")
@@ -428,7 +437,7 @@ def test_answer_sheet_availability_has_one_bounded_readiness_budget(
 
     monkeypatch.setattr("services.ocr_service.get_ocr_readiness", stalled_ocr)
     monkeypatch.setattr(
-        "routers.answer_sheet.READINESS_IO_TIMEOUT_SECONDS",
+        "routers.answer_sheet_availability.READINESS_IO_TIMEOUT_SECONDS",
         0.01,
     )
 
@@ -1647,7 +1656,7 @@ def test_answer_sheet_image_work_respects_shared_preprocess_gate(monkeypatch):
     async def run():
         shared_gate = asyncio.Semaphore(1)
         monkeypatch.setattr(
-            answer_sheet,
+            answer_sheet_common,
             "_get_local_ocr_preprocess_semaphore",
             lambda: shared_gate,
         )
@@ -1685,7 +1694,7 @@ def test_cancelled_answer_sheet_image_work_holds_gate_until_thread_settles(
     async def run():
         gate = asyncio.Semaphore(1)
         monkeypatch.setattr(
-            answer_sheet,
+            answer_sheet_common,
             "_get_local_ocr_preprocess_semaphore",
             lambda: gate,
         )
@@ -1734,7 +1743,7 @@ def test_stalled_answer_sheet_image_work_fails_readiness_until_settled(
     async def run():
         gate = asyncio.Semaphore(1)
         monkeypatch.setattr(
-            answer_sheet,
+            answer_sheet_common,
             "_get_local_ocr_preprocess_semaphore",
             lambda: gate,
         )
@@ -1796,6 +1805,11 @@ def test_save_images_streams_to_disk_before_path_validation_and_hashing(
         return function(*args, **kwargs)
 
     monkeypatch.setattr(
+        answer_sheet_availability,
+        "get_upload_storage_readiness_async",
+        storage_ready,
+    )
+    monkeypatch.setattr(
         answer_sheet,
         "get_upload_storage_readiness_async",
         storage_ready,
@@ -1827,6 +1841,11 @@ def test_save_images_preserves_browser_ocr_ready_contract(tmp_path, monkeypatch)
     async def storage_ready(*_args, **_kwargs):
         return {"ready": True, "status": "available", "code": "ready"}
 
+    monkeypatch.setattr(
+        answer_sheet_availability,
+        "get_upload_storage_readiness_async",
+        storage_ready,
+    )
     monkeypatch.setattr(
         answer_sheet,
         "get_upload_storage_readiness_async",
@@ -1866,6 +1885,11 @@ def test_save_images_rolls_back_prior_and_current_partial_files(
         Path(path).write_bytes(raw)
         return len(raw)
 
+    monkeypatch.setattr(
+        answer_sheet_availability,
+        "get_upload_storage_readiness_async",
+        storage_ready,
+    )
     monkeypatch.setattr(
         answer_sheet,
         "get_upload_storage_readiness_async",
@@ -2450,6 +2474,7 @@ def test_answer_sheet_manual_decision_revision_audit_and_archived_assets(client_
 def test_answer_sheet_long_operation_emits_heartbeats(monkeypatch):
     from routers import answer_sheet
 
+    monkeypatch.setattr(answer_sheet_common, "_ANSWER_SHEET_HEARTBEAT_SECONDS", 0.005)
     monkeypatch.setattr(answer_sheet, "_ANSWER_SHEET_HEARTBEAT_SECONDS", 0.005)
 
     async def slow_result():
@@ -2874,6 +2899,7 @@ def test_student_upload_total_limit_removes_partial_file(client_env, monkeypatch
     restored.student_upload["total_bytes"] = 6
     restored.save()
     monkeypatch.setattr(answer_sheet, "MAX_UPLOAD_FILE_SIZE", 8)
+    monkeypatch.setattr(answer_sheet_availability, "MAX_UPLOAD_TOTAL_SIZE", 10)
     monkeypatch.setattr(answer_sheet, "MAX_UPLOAD_TOTAL_SIZE", 10)
 
     response = client.post(
@@ -3478,7 +3504,7 @@ def test_existing_answer_sheet_runtime_gate_has_no_side_effects(
             "message": f"runtime {runtime_status}",
         }
 
-    monkeypatch.setattr(answer_sheet, "answer_sheet_availability", runtime_down)
+    monkeypatch.setattr(answer_sheet_availability, "answer_sheet_availability", runtime_down)
     _forbid_runtime_work(monkeypatch, answer_sheet, work_kind, work_calls)
 
     response = make_client(1).post(endpoint)
@@ -3578,7 +3604,7 @@ def test_completed_answer_sheet_sse_replay_bypasses_runtime_gate(
         raise AssertionError("completed SSE replay must not depend on current readiness")
 
     monkeypatch.setattr(
-        answer_sheet,
+        answer_sheet_availability,
         "answer_sheet_availability",
         readiness_must_not_run,
     )

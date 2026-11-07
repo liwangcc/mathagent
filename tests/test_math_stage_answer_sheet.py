@@ -7,6 +7,8 @@ import pytest
 
 from services.answer_sheet_session import AnswerSheetSession
 from services.teaching_context import current_teaching_context, make_teaching_context, use_teaching_context
+from routers import answer_sheet_availability
+from routers import answer_sheet_common
 
 
 def _question():
@@ -16,8 +18,10 @@ def _question():
 def _route_setup(monkeypatch, tmp_path):
     from routers import answer_sheet
 
+    monkeypatch.setattr(answer_sheet_common, "UPLOAD_DIR", str(tmp_path))
+    monkeypatch.setattr(answer_sheet_availability, "UPLOAD_DIR", str(tmp_path))
     monkeypatch.setattr(answer_sheet, "UPLOAD_DIR", str(tmp_path))
-    monkeypatch.setattr(answer_sheet, "_answer_sheet_writes_enabled", lambda: None)
+    monkeypatch.setattr(answer_sheet_common, "_answer_sheet_writes_enabled", lambda: None)
 
     async def ready(_user):
         return None

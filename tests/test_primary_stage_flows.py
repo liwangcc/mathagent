@@ -36,6 +36,8 @@ from services.teaching_context import (
     use_teaching_context, validate_teaching_context,
 )
 from routers import grade_papers
+from routers import answer_sheet_availability
+from routers import answer_sheet_common
 
 
 STAGES = ("primary", "junior", "senior")
@@ -396,8 +398,10 @@ def test_primary_answer_sheet_source_and_grading_use_original_session(monkeypatc
     from routers import answer_sheet
     from services.answer_sheet_session import AnswerSheetSession
 
+    monkeypatch.setattr(answer_sheet_common, "UPLOAD_DIR", str(tmp_path))
+    monkeypatch.setattr(answer_sheet_availability, "UPLOAD_DIR", str(tmp_path))
     monkeypatch.setattr(answer_sheet, "UPLOAD_DIR", str(tmp_path))
-    monkeypatch.setattr(answer_sheet, "_answer_sheet_writes_enabled", lambda: None)
+    monkeypatch.setattr(answer_sheet_common, "_answer_sheet_writes_enabled", lambda: None)
 
     async def ready(_user):
         return None
