@@ -37,6 +37,9 @@ from routers import answer_sheet_source
 from routers import answer_sheet_layout
 from routers import answer_sheet_student_pages
 from routers import answer_sheet_student_upload
+from routers import answer_sheet_recognition
+from routers import answer_sheet_recognize_page
+from routers import answer_sheet_student_files
 
 
 def _question(number="1", qtype="choice"):
@@ -1289,7 +1292,7 @@ def test_student_region_extraction_decodes_page_once_and_uses_safe_crop_names(
         calls.append(path)
         return real_loader(path)
 
-    monkeypatch.setattr(answer_sheet, "load_rgb_image", tracked_loader)
+    monkeypatch.setattr(answer_sheet_recognize_page, "load_rgb_image", tracked_loader)
     identity, answers, reasons = answer_sheet._extract_student_page_regions(
         str(source),
         str(tmp_path / "evidence"),
@@ -1367,7 +1370,7 @@ def test_student_region_extraction_removes_partial_crops_on_failure(
     def fail_after_crop_write(*_args, **_kwargs):
         raise RuntimeError("simulated decoder failure")
 
-    monkeypatch.setattr(answer_sheet, "read_choice_marks", fail_after_crop_write)
+    monkeypatch.setattr(answer_sheet_recognize_page, "read_choice_marks", fail_after_crop_write)
     with pytest.raises(RuntimeError, match="simulated decoder failure"):
         answer_sheet._extract_student_page_regions(
             str(source),
@@ -1460,7 +1463,12 @@ def _install_student_asset_matcher(monkeypatch, calls: list[str]):
         lambda *_args, **_kwargs: Matcher(),
     )
     monkeypatch.setattr(
-        answer_sheet,
+        answer_sheet_recognize_page,
+        "TemplateEvidenceMatcher",
+        lambda *_args, **_kwargs: Matcher(),
+    )
+    monkeypatch.setattr(
+        answer_sheet_recognition,
         "TemplateEvidenceMatcher",
         lambda *_args, **_kwargs: Matcher(),
     )
@@ -1519,7 +1527,7 @@ def test_student_recognition_checkpoint_is_saved_before_remote_consumption(
         consumed.append((handle, fallback_succeeded))
         return 1
 
-    monkeypatch.setattr(answer_sheet, "finish_business_preprocessing", finish)
+    monkeypatch.setattr(answer_sheet_student_files, "finish_business_preprocessing", finish)
 
     asyncio.run(answer_sheet._persist_student_recognition_result(session, {
         "page_index": 0,
@@ -1577,7 +1585,7 @@ def test_failed_student_recognition_checkpoint_rolls_back_without_consuming_remo
 
     monkeypatch.setattr(session, "save", fail_save)
     monkeypatch.setattr(
-        answer_sheet,
+        answer_sheet_student_files,
         "finish_business_preprocessing",
         lambda *args, **kwargs: consumed.append((args, kwargs)),
     )
@@ -1838,9 +1846,9 @@ def test_save_images_streams_to_disk_before_path_validation_and_hashing(
     )
     monkeypatch.setattr(answer_sheet_student_upload, "_run_answer_sheet_image_work", run_image_work)
     monkeypatch.setattr(answer_sheet_student_pages, "_run_answer_sheet_image_work", run_image_work)
+    monkeypatch.setattr(answer_sheet_recognize_page, "_run_answer_sheet_image_work", run_image_work)
     monkeypatch.setattr(answer_sheet_layout, "_run_answer_sheet_image_work", run_image_work)
     monkeypatch.setattr(answer_sheet_assets, "_run_answer_sheet_image_work", run_image_work)
-    monkeypatch.setattr(answer_sheet, "_run_answer_sheet_image_work", run_image_work)
     upload = RecordingUpload(raw)
 
     saved = asyncio.run(
@@ -1935,9 +1943,9 @@ def test_save_images_rolls_back_prior_and_current_partial_files(
     monkeypatch.setattr(answer_sheet_assets, "stream_to_disk_capped", partial_second_write)
     monkeypatch.setattr(answer_sheet_student_upload, "_run_answer_sheet_image_work", run_image_work)
     monkeypatch.setattr(answer_sheet_student_pages, "_run_answer_sheet_image_work", run_image_work)
+    monkeypatch.setattr(answer_sheet_recognize_page, "_run_answer_sheet_image_work", run_image_work)
     monkeypatch.setattr(answer_sheet_layout, "_run_answer_sheet_image_work", run_image_work)
     monkeypatch.setattr(answer_sheet_assets, "_run_answer_sheet_image_work", run_image_work)
-    monkeypatch.setattr(answer_sheet, "_run_answer_sheet_image_work", run_image_work)
     uploads = [
         UploadFile(filename="first.png", file=io.BytesIO(b"first-image")),
         UploadFile(filename="second.png", file=io.BytesIO(b"second-image")),
@@ -2040,9 +2048,21 @@ def test_orientation_confirmation_hashes_the_source_as_a_stream(
         "_run_answer_sheet_image_work",
         tracked_image_work,
     )
-    monkeypatch.setattr(answer_sheet_layout, "_run_answer_sheet_image_work", tracked_image_work)
-    monkeypatch.setattr(answer_sheet_assets, "_run_answer_sheet_image_work", tracked_image_work)
-    monkeypatch.setattr(answer_sheet, "_run_answer_sheet_image_work", tracked_image_work)
+    monkeypatch.setattr(
+        answer_sheet_recognize_page,
+        "_run_answer_sheet_image_work",
+        tracked_image_work,
+    )
+    monkeypatch.setattr(
+        answer_sheet_layout,
+        "_run_answer_sheet_image_work",
+        tracked_image_work,
+    )
+    monkeypatch.setattr(
+        answer_sheet_assets,
+        "_run_answer_sheet_image_work",
+        tracked_image_work,
+    )
     response = client.post(
         f"/api/answer-sheet/sessions/{session.session_id}/students/student_1/orientation",
         json={"quarter_turns_clockwise": 0},
@@ -2527,6 +2547,7 @@ def test_answer_sheet_manual_decision_revision_audit_and_archived_assets(client_
 def test_answer_sheet_long_operation_emits_heartbeats(monkeypatch):
     from routers import answer_sheet
 
+    monkeypatch.setattr(answer_sheet_recognition, "_ANSWER_SHEET_HEARTBEAT_SECONDS", 0.005)
     monkeypatch.setattr(answer_sheet_common, "_ANSWER_SHEET_HEARTBEAT_SECONDS", 0.005)
     monkeypatch.setattr(answer_sheet, "_ANSWER_SHEET_HEARTBEAT_SECONDS", 0.005)
 
@@ -2697,7 +2718,7 @@ def test_source_recognition_stream_refreshes_deadline_generation_but_not_retry_s
 
     monkeypatch.setattr(answer_sheet_source, "recognize_template_with_answers", recognize)
     monkeypatch.setattr(answer_sheet_source, "reset_vision_phase_key", track_reset)
-    monkeypatch.setattr(answer_sheet, "reset_vision_phase_key", track_reset)
+    monkeypatch.setattr(answer_sheet_recognition, "reset_vision_phase_key", track_reset)
     client = make_client(1)
 
     exhausted = client.post(
@@ -3102,7 +3123,16 @@ def test_student_recognition_stream_skips_durable_page_checkpoint(
         "TemplateEvidenceMatcher",
         lambda *_args: object(),
     )
-    monkeypatch.setattr(answer_sheet, "TemplateEvidenceMatcher", lambda *_args: object())
+    monkeypatch.setattr(
+        answer_sheet_recognize_page,
+        "TemplateEvidenceMatcher",
+        lambda *_args: object(),
+    )
+    monkeypatch.setattr(
+        answer_sheet_recognition,
+        "TemplateEvidenceMatcher",
+        lambda *_args: object(),
+    )
 
     async def recognize_page(locked, page, *_args):
         calls.append(page["paper_id"])
@@ -3111,7 +3141,7 @@ def test_student_recognition_stream_skips_durable_page_checkpoint(
             "state": "completed",
         }
 
-    monkeypatch.setattr(answer_sheet, "_recognize_one_student_page", recognize_page)
+    monkeypatch.setattr(answer_sheet_recognition, "_recognize_one_student_page", recognize_page)
     response = make_client(1).post(
         f"/api/answer-sheet/sessions/{session.session_id}/students/recognize/stream"
     )
@@ -3187,10 +3217,10 @@ def test_student_recognition_stream_uses_bounded_isolated_workers(
             max_concurrent=kwargs["max_concurrent"],
         )
 
-    monkeypatch.setattr(answer_sheet, "_recognize_one_student_page", recognize_page)
-    monkeypatch.setattr(answer_sheet, "teacher_waved_completion_map", completion_map)
-    monkeypatch.setattr(answer_sheet, "OCR_BATCH_DISPATCH_CONCURRENT", 2)
-    monkeypatch.setattr(answer_sheet, "OCR_TEACHER_WAVE_SIZE", 8)
+    monkeypatch.setattr(answer_sheet_recognition, "_recognize_one_student_page", recognize_page)
+    monkeypatch.setattr(answer_sheet_recognition, "teacher_waved_completion_map", completion_map)
+    monkeypatch.setattr(answer_sheet_recognition, "OCR_BATCH_DISPATCH_CONCURRENT", 2)
+    monkeypatch.setattr(answer_sheet_recognition, "OCR_TEACHER_WAVE_SIZE", 8)
 
     response = make_client(1).post(
         f"/api/answer-sheet/sessions/{session.session_id}/students/recognize/stream"
@@ -3274,9 +3304,9 @@ def test_student_recognition_worker_failure_keeps_completed_page_checkpoint(
             max_concurrent=kwargs["max_concurrent"],
         )
 
-    monkeypatch.setattr(answer_sheet, "_recognize_one_student_page", recognize_page)
-    monkeypatch.setattr(answer_sheet, "teacher_waved_completion_map", completion_map)
-    monkeypatch.setattr(answer_sheet, "OCR_BATCH_DISPATCH_CONCURRENT", 2)
+    monkeypatch.setattr(answer_sheet_recognition, "_recognize_one_student_page", recognize_page)
+    monkeypatch.setattr(answer_sheet_recognition, "teacher_waved_completion_map", completion_map)
+    monkeypatch.setattr(answer_sheet_recognition, "OCR_BATCH_DISPATCH_CONCURRENT", 2)
 
     response = make_client(1).post(
         f"/api/answer-sheet/sessions/{session.session_id}/students/recognize/stream"
@@ -3322,7 +3352,16 @@ def test_student_recognition_done_survives_immediate_stream_close(
         "TemplateEvidenceMatcher",
         lambda *_args: object(),
     )
-    monkeypatch.setattr(answer_sheet, "TemplateEvidenceMatcher", lambda *_args: object())
+    monkeypatch.setattr(
+        answer_sheet_recognize_page,
+        "TemplateEvidenceMatcher",
+        lambda *_args: object(),
+    )
+    monkeypatch.setattr(
+        answer_sheet_recognition,
+        "TemplateEvidenceMatcher",
+        lambda *_args: object(),
+    )
 
     async def recognize_page(locked, page, *_args):
         page["recognition_checkpoint"] = {
@@ -3330,7 +3369,7 @@ def test_student_recognition_done_survives_immediate_stream_close(
             "state": "completed",
         }
 
-    monkeypatch.setattr(answer_sheet, "_recognize_one_student_page", recognize_page)
+    monkeypatch.setattr(answer_sheet_recognition, "_recognize_one_student_page", recognize_page)
 
     async def scenario():
         db = client.session_factory()
@@ -3534,7 +3573,8 @@ def _forbid_runtime_work(monkeypatch, answer_sheet, work_kind: str, calls: list[
         )
     elif work_kind == "students":
         monkeypatch.setattr(answer_sheet_student_upload, "TemplateEvidenceMatcher", forbidden)
-        monkeypatch.setattr(answer_sheet, "TemplateEvidenceMatcher", forbidden)
+        monkeypatch.setattr(answer_sheet_recognize_page, "TemplateEvidenceMatcher", forbidden)
+        monkeypatch.setattr(answer_sheet_recognition, "TemplateEvidenceMatcher", forbidden)
     else:
         from services import grader
 

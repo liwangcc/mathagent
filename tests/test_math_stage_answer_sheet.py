@@ -12,6 +12,7 @@ from routers import answer_sheet_common
 from routers import answer_sheet_sessions
 from routers import answer_sheet_source
 from routers import answer_sheet_student_upload
+from routers import answer_sheet_recognition
 
 
 def _question():
@@ -32,6 +33,7 @@ def _route_setup(monkeypatch, tmp_path):
     monkeypatch.setattr(answer_sheet_student_upload, "_require_answer_sheet_chain", ready)
     monkeypatch.setattr(answer_sheet_source, "_require_answer_sheet_chain", ready)
     monkeypatch.setattr(answer_sheet_sessions, "_require_answer_sheet_chain", ready)
+    monkeypatch.setattr(answer_sheet_recognition, "_require_answer_sheet_chain", ready)
     monkeypatch.setattr(answer_sheet, "_require_answer_sheet_chain", ready)
     return answer_sheet
 
@@ -194,8 +196,12 @@ def test_student_recognition_workers_inherit_persisted_stage(monkeypatch, tmp_pa
     async def persist(*_args):
         seen.append(current_teaching_context())
 
-    monkeypatch.setattr(route, "_student_recognition_completion_stream", recognize)
-    monkeypatch.setattr(route, "_persist_student_recognition_result", persist)
+    monkeypatch.setattr(
+        answer_sheet_recognition,
+        "_student_recognition_completion_stream",
+        recognize,
+    )
+    monkeypatch.setattr(answer_sheet_recognition, "_persist_student_recognition_result", persist)
     query = SimpleNamespace(all=lambda: [])
     query.filter = lambda *_args: query
     db = SimpleNamespace(query=lambda *_args: query)
