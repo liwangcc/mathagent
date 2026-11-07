@@ -54,6 +54,7 @@ from tests.grade_family import set_grade_global
 from routers import grade_recognition
 from routers import grade_template_import_steps
 from routers import grade_template_import
+from routers import answer_sheet_source
 
 
 def _on_event_loop() -> bool:
@@ -586,7 +587,7 @@ def _source_stream_case(monkeypatch, client, upload_dir):
     async def recognize(_path):
         return {"questions": [_question("2")]}
 
-    monkeypatch.setattr(answer_sheet, "recognize_template_with_answers", recognize)
+    monkeypatch.setattr(answer_sheet_source, "recognize_template_with_answers", recognize)
     return f"/api/answer-sheet/sessions/{session.session_id}/source/recognize/stream"
 
 

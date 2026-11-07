@@ -33,6 +33,7 @@ from routers import answer_sheet_availability
 from routers import answer_sheet_common
 from routers import answer_sheet_assets
 from routers import answer_sheet_sessions
+from routers import answer_sheet_source
 
 
 def _question(number="1", qtype="choice"):
@@ -937,6 +938,7 @@ def test_layout_upload_rejects_malformed_desktop_candidate_pair(client_env, monk
 
     from routers import answer_sheet
 
+    monkeypatch.setattr(answer_sheet_source, "MAX_TEMPLATE_PAGES", 1)
     monkeypatch.setattr(answer_sheet, "MAX_TEMPLATE_PAGES", 1)
     count_limit = client.post(
         f"/api/answer-sheet/sessions/{session_id}/layout/upload",
@@ -2557,7 +2559,7 @@ def test_source_recognition_stream_resumes_only_unfinished_pages(
         calls.append(Path(path).name)
         return {"questions": [_question("2")]}
 
-    monkeypatch.setattr(answer_sheet, "recognize_template_with_answers", recognize)
+    monkeypatch.setattr(answer_sheet_source, "recognize_template_with_answers", recognize)
     response = make_client(1).post(
         f"/api/answer-sheet/sessions/{session.session_id}/source/recognize/stream"
     )
@@ -2600,7 +2602,7 @@ def test_source_recognition_done_survives_immediate_stream_close(
     async def recognize(_path):
         return {"questions": [_question("1")]}
 
-    monkeypatch.setattr(answer_sheet, "recognize_template_with_answers", recognize)
+    monkeypatch.setattr(answer_sheet_source, "recognize_template_with_answers", recognize)
 
     async def scenario():
         response = await answer_sheet.recognize_source_stream(
@@ -2668,7 +2670,8 @@ def test_source_recognition_stream_refreshes_deadline_generation_but_not_retry_s
         reset_calls.append(token)
         real_reset(token)
 
-    monkeypatch.setattr(answer_sheet, "recognize_template_with_answers", recognize)
+    monkeypatch.setattr(answer_sheet_source, "recognize_template_with_answers", recognize)
+    monkeypatch.setattr(answer_sheet_source, "reset_vision_phase_key", track_reset)
     monkeypatch.setattr(answer_sheet, "reset_vision_phase_key", track_reset)
     client = make_client(1)
 
@@ -2736,8 +2739,8 @@ def test_legacy_source_recognition_keeps_one_phase_for_ocr_and_ai_answers(
             },
         }
 
-    monkeypatch.setattr(answer_sheet, "recognize_template_blank", recognize_blank)
-    monkeypatch.setattr(answer_sheet, "generate_template_answers_batch", generate_answers)
+    monkeypatch.setattr(answer_sheet_source, "recognize_template_blank", recognize_blank)
+    monkeypatch.setattr(answer_sheet_source, "generate_template_answers_batch", generate_answers)
     response = make_client(1).post(
         f"/api/answer-sheet/sessions/{session.session_id}/source/recognize"
     )
@@ -2927,6 +2930,7 @@ def test_student_upload_total_limit_removes_partial_file(client_env, monkeypatch
     restored.save()
     monkeypatch.setattr(answer_sheet_assets, "MAX_UPLOAD_FILE_SIZE", 8)
     monkeypatch.setattr(answer_sheet, "MAX_UPLOAD_FILE_SIZE", 8)
+    monkeypatch.setattr(answer_sheet_source, "MAX_UPLOAD_TOTAL_SIZE", 10)
     monkeypatch.setattr(answer_sheet_availability, "MAX_UPLOAD_TOTAL_SIZE", 10)
     monkeypatch.setattr(answer_sheet_assets, "MAX_UPLOAD_TOTAL_SIZE", 10)
     monkeypatch.setattr(answer_sheet, "MAX_UPLOAD_TOTAL_SIZE", 10)
@@ -3482,7 +3486,7 @@ def _forbid_runtime_work(monkeypatch, answer_sheet, work_kind: str, calls: list[
 
     if work_kind == "source":
         monkeypatch.setattr(
-            answer_sheet,
+            answer_sheet_source,
             "recognize_template_with_answers",
             forbidden_async,
         )
