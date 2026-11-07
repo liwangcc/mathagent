@@ -6,6 +6,7 @@ from PIL import Image, ImageDraw
 from services import template_evidence as evidence
 from services.template_anchor_crops import build_anchor_crop_plan
 from services import template_evidence_sheets
+from services import template_evidence_columns
 
 
 def contract(kind='solve', mode='blank', columns=1):
@@ -48,7 +49,11 @@ def test_each_region_uses_its_saved_id_across_columns(tmp_path, monkeypatch, kin
         "_answer_only_pixels_v2",
         lambda *a, **k: pixels.copy(),
     )
-    monkeypatch.setattr(evidence, "_answer_only_pixels_v2", lambda *a, **k: pixels.copy())
+    monkeypatch.setattr(
+        template_evidence_columns,
+        "_answer_only_pixels_v2",
+        lambda *a, **k: pixels.copy(),
+    )
     text = []
     actual_draw = ImageDraw.ImageDraw.text
     def capture(self, xy, value, *args, **kwargs):
@@ -94,7 +99,11 @@ def test_mixed_question_labels_only_text_slots_and_keeps_drawing_marker(tmp_path
         "_answer_only_pixels_v2",
         lambda *a, **k: pixels.copy(),
     )
-    monkeypatch.setattr(evidence, "_answer_only_pixels_v2", lambda *a, **k: pixels.copy())
+    monkeypatch.setattr(
+        template_evidence_columns,
+        "_answer_only_pixels_v2",
+        lambda *a, **k: pixels.copy(),
+    )
     result = evidence.build_full_column_difference_evidence_from_aligned(pixels,
         np.full(pixels.shape[:2], 255, np.uint8), pixels,
         {'page_type_id': 'page_1', 'template_mode': 'blank', 'question_numbers': ['2'],
@@ -132,7 +141,11 @@ def test_schema_and_region_binding_conflict_rejected(tmp_path, monkeypatch):
         "_answer_only_pixels_v2",
         lambda *a, **k: pixels.copy(),
     )
-    monkeypatch.setattr(evidence, "_answer_only_pixels_v2", lambda *a, **k: pixels.copy())
+    monkeypatch.setattr(
+        template_evidence_columns,
+        "_answer_only_pixels_v2",
+        lambda *a, **k: pixels.copy(),
+    )
     with pytest.raises(ValueError, match='slot|槽'):
         evidence.build_full_column_difference_evidence_from_aligned(pixels,
             np.full(pixels.shape[:2], 255, np.uint8), pixels, layout, tmp_path)
@@ -158,7 +171,11 @@ def test_full_evidence_blends_labels_but_drawing_replays_exact_source(tmp_path,m
         "_answer_only_pixels_v2",
         lambda *a,**k:pixels.copy(),
     )
-    monkeypatch.setattr(evidence, "_answer_only_pixels_v2", lambda *a,**k:pixels.copy())
+    monkeypatch.setattr(
+        template_evidence_columns,
+        "_answer_only_pixels_v2",
+        lambda *a,**k:pixels.copy(),
+    )
     result=evidence.build_full_column_difference_evidence_from_aligned(pixels,
         np.full(pixels.shape[:2],255,np.uint8),np.full_like(pixels,255),layout,tmp_path/'evidence')
     assert layout==original

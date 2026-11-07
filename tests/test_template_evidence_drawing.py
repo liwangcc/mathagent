@@ -10,6 +10,7 @@ import pytest
 from services import template_evidence as evidence
 from services.template_anchor_crops import build_anchor_crop_plan
 from services import template_evidence_sheets
+from services import template_evidence_columns
 
 
 def drawing(number="2.3", kind="drawing", box=None, anchor=None):
@@ -128,7 +129,11 @@ def test_graphic_type_is_preserved_with_exactly_one_q_in_gate_and_difference(
         "_answer_only_pixels_v2",
         lambda *a, **k: student.copy(),
     )
-    monkeypatch.setattr(evidence, "_answer_only_pixels_v2", lambda *a, **k: student.copy())
+    monkeypatch.setattr(
+        template_evidence_columns,
+        "_answer_only_pixels_v2",
+        lambda *a, **k: student.copy(),
+    )
     result = evidence.build_full_column_difference_evidence_from_aligned(
         student, np.full((1000, 1000), 255, np.uint8), student, {"page_type_id": "page_1", **verified}, tmp_path / "diff")
     actual = [p for c in result.diagnostics["evidence_columns"] for p in c["label_placements"]
@@ -248,7 +253,11 @@ def test_actual_difference_preserves_drawing_student_pixels_and_one_q_for_mixed(
         "_answer_only_pixels_v2",
         lambda *args, **kwargs: plain.copy(),
     )
-    monkeypatch.setattr(evidence, "_answer_only_pixels_v2", lambda *args, **kwargs: plain.copy())
+    monkeypatch.setattr(
+        template_evidence_columns,
+        "_answer_only_pixels_v2",
+        lambda *args, **kwargs: plain.copy(),
+    )
     result = evidence.build_full_column_difference_evidence_from_aligned(
         student, np.full((1000, 1000), 255, np.uint8), np.full_like(student, 255), value, tmp_path)
     pixels = np.asarray(Image.open(result.evidence_path).convert("RGB"))
@@ -281,7 +290,11 @@ def test_missing_student_drawing_source_is_review_not_synthetic_fill(tmp_path, m
         "_answer_only_pixels_v2",
         lambda *args, **kwargs: student.copy(),
     )
-    monkeypatch.setattr(evidence, "_answer_only_pixels_v2", lambda *args, **kwargs: student.copy())
+    monkeypatch.setattr(
+        template_evidence_columns,
+        "_answer_only_pixels_v2",
+        lambda *args, **kwargs: student.copy(),
+    )
     with pytest.raises(evidence.TemplateEvidenceError, match="照片不完整"):
         evidence.build_full_column_difference_evidence_from_aligned(student, mask, student, value, tmp_path)
     assert not list(tmp_path.glob("evidence-*.png"))
@@ -339,7 +352,7 @@ def test_actual_frozen_column_conversion_uses_page_width_not_column_width(tmp_pa
         lambda *args, **kwargs: np.full_like(student, 255),
     )
     monkeypatch.setattr(
-        evidence,
+        template_evidence_columns,
         "_answer_only_pixels_v2",
         lambda *args, **kwargs: np.full_like(student, 255),
     )

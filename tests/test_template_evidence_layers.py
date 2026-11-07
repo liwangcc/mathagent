@@ -31,6 +31,7 @@ LAYERS = [
     "template_evidence_sheets",
     "template_evidence_aligned",
     "template_evidence_labels",
+    "template_evidence_columns",
 ]
 # The module every caller imports: it may use any layer, and no layer imports it.
 TOP = ["template_evidence"]

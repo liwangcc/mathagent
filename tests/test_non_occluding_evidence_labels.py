@@ -7,6 +7,7 @@ from PIL import Image
 
 from services import template_evidence as evidence
 from services import template_evidence_sheets
+from services import template_evidence_columns
 
 
 @pytest.mark.parametrize("size", [(320, 240), (1200, 800), (2400, 1600)])
@@ -35,7 +36,11 @@ def test_dense_edge_long_labels_preserve_every_foreground_pixel(tmp_path, monkey
         "_answer_only_pixels_v2",
         lambda *a, **kw: pixels.copy(),
     )
-    monkeypatch.setattr(evidence, "_answer_only_pixels_v2", lambda *a, **kw: pixels.copy())
+    monkeypatch.setattr(
+        template_evidence_columns,
+        "_answer_only_pixels_v2",
+        lambda *a, **kw: pixels.copy(),
+    )
     result = evidence.build_full_column_difference_evidence_from_aligned(
         pixels, np.full((height, width), 255, np.uint8), np.full_like(pixels, 255), layout, tmp_path)
     column = result.diagnostics["evidence_columns"][0]
@@ -66,7 +71,11 @@ def test_separator_cannot_recolor_bottom_answer_stroke(tmp_path, monkeypatch):
         "_answer_only_pixels_v2",
         lambda *a, **kw: pixels.copy(),
     )
-    monkeypatch.setattr(evidence, "_answer_only_pixels_v2", lambda *a, **kw: pixels.copy())
+    monkeypatch.setattr(
+        template_evidence_columns,
+        "_answer_only_pixels_v2",
+        lambda *a, **kw: pixels.copy(),
+    )
     result = evidence.build_full_column_difference_evidence_from_aligned(
         pixels, np.full((800, 1200), 255, np.uint8), np.full_like(pixels, 255),
         {"page_type_id": "page_1", "template_mode": "blank", "question_numbers": ["1"],
@@ -91,7 +100,11 @@ def test_drawing_text_mask_applies_source_offset_and_keeps_rail(tmp_path, monkey
         "_answer_only_pixels_v2",
         lambda *a, **kw: source.copy(),
     )
-    monkeypatch.setattr(evidence, "_answer_only_pixels_v2", lambda *a, **kw: source.copy())
+    monkeypatch.setattr(
+        template_evidence_columns,
+        "_answer_only_pixels_v2",
+        lambda *a, **kw: source.copy(),
+    )
     result = evidence.build_full_column_difference_evidence_from_aligned(
         source, np.full(source.shape[:2], 255, np.uint8), np.full_like(source, 255),
         {"page_type_id": "page_1", "template_mode": "marked", "question_numbers": ["1", "2"],

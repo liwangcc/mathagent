@@ -28,6 +28,7 @@ from services.template_evidence import (
 )
 from services import template_evidence_artifacts
 from services import template_evidence_sheets
+from services import template_evidence_columns
 
 
 QUESTIONS = [
@@ -752,7 +753,7 @@ def test_full_column_production_path_uses_v2_difference(tmp_path, monkeypatch):
         return np.full_like(aligned_rgb, 255)
 
     monkeypatch.setattr(template_evidence_sheets, "_answer_only_pixels_v2", v2)
-    monkeypatch.setattr(template_evidence, "_answer_only_pixels_v2", v2)
+    monkeypatch.setattr(template_evidence_columns, "_answer_only_pixels_v2", v2)
     image = np.full((80, 120, 3), 255, dtype=np.uint8)
     source_mask = np.full((80, 120), 255, dtype=np.uint8)
 
@@ -785,7 +786,7 @@ def test_full_column_labels_use_the_same_handwriting_region_as_whiteout(
         return np.full_like(aligned_rgb, 255)
 
     monkeypatch.setattr(template_evidence_sheets, "_answer_only_pixels_v2", v2)
-    monkeypatch.setattr(template_evidence, "_answer_only_pixels_v2", v2)
+    monkeypatch.setattr(template_evidence_columns, "_answer_only_pixels_v2", v2)
     image = np.full((500, 1000, 3), 255, dtype=np.uint8)
     source_mask = np.full((500, 1000), 255, dtype=np.uint8)
 
@@ -828,7 +829,7 @@ def test_marked_full_column_labels_each_answer_region_under_same_question(
         ),
     )
     monkeypatch.setattr(
-        template_evidence,
+        template_evidence_columns,
         "_answer_only_pixels_v2",
         lambda aligned_rgb, template_rgb, source_mask, **kwargs: np.full_like(
             aligned_rgb, 255
@@ -885,7 +886,7 @@ def test_fixed_solve_label_keeps_exemptions_and_source_pixels_unchanged(
         return difference.copy()
 
     monkeypatch.setattr(template_evidence_sheets, "_answer_only_pixels_v2", v2)
-    monkeypatch.setattr(template_evidence, "_answer_only_pixels_v2", v2)
+    monkeypatch.setattr(template_evidence_columns, "_answer_only_pixels_v2", v2)
     result = template_evidence.build_full_column_difference_evidence_from_aligned(
         difference.copy(), np.full((700, 1000), 255, np.uint8), np.full_like(difference, 255),
         {"page_type_id": "page_1", "template_mode": template_mode,
@@ -964,7 +965,7 @@ def test_blank_template_does_not_label_from_legacy_question_anchor_position(
         return np.full_like(aligned_rgb, 255)
 
     monkeypatch.setattr(template_evidence_sheets, "_answer_only_pixels_v2", v2)
-    monkeypatch.setattr(template_evidence, "_answer_only_pixels_v2", v2)
+    monkeypatch.setattr(template_evidence_columns, "_answer_only_pixels_v2", v2)
     image = np.full((500, 1000, 3), 255, dtype=np.uint8)
     source_mask = np.full((500, 1000), 255, dtype=np.uint8)
 
@@ -991,7 +992,7 @@ def test_blank_template_labels_reuse_answer_region_position(
         ),
     )
     monkeypatch.setattr(
-        template_evidence,
+        template_evidence_columns,
         "_answer_only_pixels_v2",
         lambda aligned_rgb, template_rgb, source_mask, **kwargs: np.full_like(
             aligned_rgb, 255
@@ -1037,7 +1038,7 @@ def test_qwen37_labels_are_complete_and_left_of_regions(
         ),
     )
     monkeypatch.setattr(
-        template_evidence,
+        template_evidence_columns,
         "_answer_only_pixels_v2",
         lambda aligned_rgb, template_rgb, source_mask, **kwargs: np.full_like(
             aligned_rgb, 255
