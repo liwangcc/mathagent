@@ -9,8 +9,9 @@ Every patch of a project module attribute is checked against a static index
 of the source (no imports, independent of test order):
 
 * reach    the target module reads the name as a global, or project or test
-           code reads ``<target module>.<name>``; otherwise the patch is
-           *inert*;
+           code reads ``<target module>.<name>`` or imports the name from the
+           target inside a function (that import runs at call time, after the
+           patch); otherwise the patch is *inert*;
 * shadows  modules of the target's split family — ``routers/grade_*.py`` and
            ``routers/grade/`` for ``routers.grade`` — that bind the same origin
            under the same name and read it as a global; code there does not
@@ -98,11 +99,27 @@ class _ModuleIndex:
                 if isinstance(value, ast.Name):
                     dotted = ".".join([value.id, *reversed(chain)])
                     self.attr_reads.add((dotted, node.attr))
+        # ``from target import name`` inside a function runs when the function
+        # is called, so a patch of ``target.name`` reaches it like an attribute
+        # read does.  A module-level import binds once and is not counted.
+        self.deferred_imports: set[tuple[str, str]] = set()
+        for function in ast.walk(tree):
+            if not isinstance(function, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                continue
+            for node in ast.walk(function):
+                if isinstance(node, ast.ImportFrom):
+                    base = node.module or ""
+                    if node.level:
+                        parts = name.split(".")[:-node.level]
+                        base = ".".join([*parts, base] if base else parts)
+                    self.deferred_imports.update((base, alias.name) for alias in node.names)
 
     def origin(self, local: str) -> str:
         return self.origins.get(local, f"{self.name}.{local}")
 
     def reads_attr_of(self, module: str, attr: str) -> bool:
+        if (module, attr) in self.deferred_imports:
+            return True
         for dotted, read in self.attr_reads:
             if read != attr:
                 continue
