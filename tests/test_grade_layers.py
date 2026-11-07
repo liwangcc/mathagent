@@ -33,6 +33,7 @@ LAYERS = [
     "grade_template_layout_runs",
     "grade_template_artifacts",
     "grade_template_availability",
+    "grade_template_corrections",
 ]
 # Routers that app.py includes on their own, above every layer: they may use
 # any layer, and no module of the family imports them.
