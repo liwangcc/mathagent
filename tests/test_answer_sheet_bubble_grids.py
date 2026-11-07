@@ -39,6 +39,7 @@ from tests.answer_sheet_redesign_helpers import (
 )
 from tests.test_answer_sheet_session import client_env  # noqa: F401
 from routers import answer_sheet_sessions
+from routers import answer_sheet_layout
 
 
 PAGE_SIZE = (800, 1200)
@@ -676,7 +677,16 @@ def test_grading_gate_resolves_only_a_confirmed_bound_template(tmp_path, monkeyp
         "get_answer_sheet_template_registry",
         lambda: registry,
     )
-    monkeypatch.setattr(answer_sheet, "get_answer_sheet_template_registry", lambda: registry)
+    monkeypatch.setattr(
+        answer_sheet_layout,
+        "get_answer_sheet_template_registry",
+        lambda: registry,
+    )
+    monkeypatch.setattr(
+        answer_sheet,
+        "get_answer_sheet_template_registry",
+        lambda: registry,
+    )
 
     # Frozen with confirmed draft rows but never published: not gradable.
     unpublished = _draft(tmp_path / "authoring", "f" * 16)
@@ -719,7 +729,16 @@ def test_grading_gate_rejects_a_batch_bound_to_a_template_without_grids(tmp_path
         "get_answer_sheet_template_registry",
         lambda: registry,
     )
-    monkeypatch.setattr(answer_sheet, "get_answer_sheet_template_registry", lambda: registry)
+    monkeypatch.setattr(
+        answer_sheet_layout,
+        "get_answer_sheet_template_registry",
+        lambda: registry,
+    )
+    monkeypatch.setattr(
+        answer_sheet,
+        "get_answer_sheet_template_registry",
+        lambda: registry,
+    )
     legacy = _draft(tmp_path / "authoring", batch=False)
     _freeze(legacy)
     template = registry.publish(legacy, creator_teacher_id=1)
