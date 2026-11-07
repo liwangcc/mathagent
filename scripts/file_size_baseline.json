@@ -21,7 +21,7 @@
   "routers/report.py": 845,
   "services/accelerator_artifacts.py": 1483,
   "services/accelerator_business.py": 1637,
-  "services/accelerator_jobs.py": 1985,
+  "services/accelerator_jobs.py": 1332,
   "services/accelerator_validation.py": 1314,
   "services/analyzer.py": 1239,
   "services/answer_sheet_column_transcription.py": 1238,

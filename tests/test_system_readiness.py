@@ -8,6 +8,7 @@ import pytest
 
 from services import system_readiness
 from services import accelerator_jobs_nodes
+from services import accelerator_jobs_queue
 
 
 def test_hardware_readiness_distinguishes_ready_waiting_and_unavailable(
@@ -33,6 +34,7 @@ def test_hardware_readiness_distinguishes_ready_waiting_and_unavailable(
             pass
 
     monkeypatch.setattr("database.SessionLocal", lambda: FakeSession())
+    monkeypatch.setattr(accelerator_jobs_queue, "utcnow", lambda: now)
     monkeypatch.setattr(accelerator_jobs_nodes, "utcnow", lambda: now)
     monkeypatch.setattr(accelerator_jobs, "utcnow", lambda: now)
     monkeypatch.setattr(accelerator_jobs_nodes, "NODE_STALE_SECONDS", 30)
@@ -109,6 +111,7 @@ def test_hardware_readiness_filters_by_requested_stage_and_contract(monkeypatch)
             pass
 
     monkeypatch.setattr("database.SessionLocal", lambda: FakeSession())
+    monkeypatch.setattr(accelerator_jobs_queue, "utcnow", lambda: now)
     monkeypatch.setattr(accelerator_jobs_nodes, "utcnow", lambda: now)
     monkeypatch.setattr(accelerator_jobs, "utcnow", lambda: now)
     monkeypatch.setattr(accelerator_jobs_nodes, "NODE_STALE_SECONDS", 30)
