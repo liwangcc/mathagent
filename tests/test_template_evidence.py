@@ -29,6 +29,7 @@ from services.template_evidence import (
 from services import template_evidence_artifacts
 from services import template_evidence_sheets
 from services import template_evidence_columns
+from services import template_evidence_matcher
 
 
 QUESTIONS = [
@@ -702,7 +703,7 @@ def test_matcher_aligns_perspective_and_emits_answer_only_evidence(
 ):
     # Force the synthetic page through the reduced SIFT path.  The resulting
     # keypoint coordinates must still map back to the full artifact space.
-    monkeypatch.setattr(template_evidence, "FEATURE_MAX_EDGE", 640)
+    monkeypatch.setattr(template_evidence_matcher, "FEATURE_MAX_EDGE", 640)
     source = tmp_path / "template.png"
     template = _synthetic_template(source)
     student = tmp_path / "student.png"
@@ -2353,8 +2354,8 @@ def test_twenty_template_features_remain_cached_for_second_match(
         loaded_paths.append(Path(path))
         return original_load(path)
 
+    monkeypatch.setattr(template_evidence_matcher, "_load_rgb_image", counted_load)
     monkeypatch.setattr(template_evidence_artifacts, "_load_rgb_image", counted_load)
-    monkeypatch.setattr(template_evidence, "_load_rgb_image", counted_load)
 
     with pytest.raises(TemplateEvidenceError, match="multiple templates"):
         matcher.match_and_build(source, tmp_path / "first")
