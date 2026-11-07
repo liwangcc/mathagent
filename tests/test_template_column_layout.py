@@ -21,6 +21,7 @@ from services.template_column_layout import (
     validate_layout_boundaries,
 )
 from services import template_column_layout_provider
+from services import template_column_layout_recognize
 
 
 @pytest.fixture
@@ -86,10 +87,14 @@ def layout_runtime(monkeypatch):
         base_urls=["https://layout.test/v1"],
     )
     limiter = _Limiter()
+    monkeypatch.setattr(
+        template_column_layout_recognize,
+        "_resolve_template_key_pool",
+        lambda: pool,
+    )
     monkeypatch.setattr(template_column_layout_provider, "_resolve_template_key_pool", lambda: pool)
-    monkeypatch.setattr(layout, "_resolve_template_key_pool", lambda: pool)
+    monkeypatch.setattr(template_column_layout_recognize, "get_model_limiter", lambda: limiter)
     monkeypatch.setattr(template_column_layout_provider, "get_model_limiter", lambda: limiter)
-    monkeypatch.setattr(layout, "get_model_limiter", lambda: limiter)
     return SimpleNamespace(pool=pool, limiter=limiter)
 
 
@@ -102,8 +107,12 @@ async def test_template_readiness_rejects_missing_model(monkeypatch):
         max_concurrent_per_key=4,
         base_urls=["https://dashscope.test/v1"],
     )
+    monkeypatch.setattr(
+        template_column_layout_recognize,
+        "_resolve_template_key_pool",
+        lambda: pool,
+    )
     monkeypatch.setattr(template_column_layout_provider, "_resolve_template_key_pool", lambda: pool)
-    monkeypatch.setattr(layout, "_resolve_template_key_pool", lambda: pool)
     monkeypatch.setattr(template_column_layout_provider, "TEMPLATE_CUT_MODEL", "")
 
     state = await layout.get_column_layout_readiness(_Limiter())
@@ -123,8 +132,12 @@ async def test_template_readiness_reports_capability_circuit_as_fault(monkeypatc
     )
     limiter = _Limiter()
     limiter.provider_failures.add(layout._TEMPLATE_CAPABILITY)
+    monkeypatch.setattr(
+        template_column_layout_recognize,
+        "_resolve_template_key_pool",
+        lambda: pool,
+    )
     monkeypatch.setattr(template_column_layout_provider, "_resolve_template_key_pool", lambda: pool)
-    monkeypatch.setattr(layout, "_resolve_template_key_pool", lambda: pool)
     monkeypatch.setattr(template_column_layout_provider, "TEMPLATE_CUT_MODEL", "qwen3.8-flash")
 
     state = await layout.get_column_layout_readiness(limiter)
@@ -145,7 +158,11 @@ async def test_template_image_validation_runs_off_the_event_loop(monkeypatch):
         validation_thread = threading.get_ident()
         raise TemplateCutError("IMAGE_INVALID", "synthetic invalid image")
 
-    monkeypatch.setattr(layout, "_validate_template_image", failed_validation)
+    monkeypatch.setattr(
+        template_column_layout_recognize,
+        "_validate_template_image",
+        failed_validation,
+    )
 
     with pytest.raises(TemplateCutError) as exc_info:
         await recognize_column_layout("ignored.png")
@@ -227,8 +244,8 @@ async def test_single_mode_skips_model_and_returns_whole_page_draft(
         calls.append(True)
         raise AssertionError("single layout must not resolve or call the layout model")
 
+    monkeypatch.setattr(template_column_layout_recognize, "_resolve_template_key_pool", forbidden)
     monkeypatch.setattr(template_column_layout_provider, "_resolve_template_key_pool", forbidden)
-    monkeypatch.setattr(layout, "_resolve_template_key_pool", forbidden)
     result = await recognize_column_layout(image_path, column_mode="single")
     assert calls == []
     assert result["layout_status"] == "ready"
@@ -315,8 +332,12 @@ async def test_explicit_double_model_outage_raises_instead_of_review_draft(
     for y in range(150, 730, 8):
         draw.line((70, y, 1130, y), fill=35, width=3)
     image.convert("RGB").save(image_path)
+    monkeypatch.setattr(
+        template_column_layout_recognize,
+        "_resolve_template_key_pool",
+        lambda: None,
+    )
     monkeypatch.setattr(template_column_layout_provider, "_resolve_template_key_pool", lambda: None)
-    monkeypatch.setattr(layout, "_resolve_template_key_pool", lambda: None)
 
     with pytest.raises(TemplateCutError) as exc_info:
         await recognize_column_layout(image_path, column_mode="double")
@@ -815,7 +836,11 @@ async def test_triple_seam_evidence_is_advisory_not_a_veto(
             "seams": [],
         }
 
-    monkeypatch.setattr(layout, "_inspect_local_triple_evidence", noisy_gate)
+    monkeypatch.setattr(
+        template_column_layout_recognize,
+        "_inspect_local_triple_evidence",
+        noisy_gate,
+    )
 
     async def handler(_request):
         return httpx.Response(200, json={
@@ -1176,8 +1201,8 @@ async def test_template_does_not_fallback_to_generic_llm_pool(
     )
     monkeypatch.setattr(template_column_layout_provider, "TEMPLATE_CUT_MODEL", "qwen3.8-flash")
     monkeypatch.setattr(analyzer, "_llm_pool", pool)
+    monkeypatch.setattr(template_column_layout_recognize, "get_model_limiter", lambda: limiter)
     monkeypatch.setattr(template_column_layout_provider, "get_model_limiter", lambda: limiter)
-    monkeypatch.setattr(layout, "get_model_limiter", lambda: limiter)
     seen = []
 
     async def handler(request):
@@ -1205,10 +1230,14 @@ async def test_unauthorized_key_is_disabled_and_next_key_is_used(
         base_urls=["https://layout.test/v1", "https://layout.test/v1"],
     )
     limiter = _Limiter()
+    monkeypatch.setattr(
+        template_column_layout_recognize,
+        "_resolve_template_key_pool",
+        lambda: pool,
+    )
     monkeypatch.setattr(template_column_layout_provider, "_resolve_template_key_pool", lambda: pool)
-    monkeypatch.setattr(layout, "_resolve_template_key_pool", lambda: pool)
+    monkeypatch.setattr(template_column_layout_recognize, "get_model_limiter", lambda: limiter)
     monkeypatch.setattr(template_column_layout_provider, "get_model_limiter", lambda: limiter)
-    monkeypatch.setattr(layout, "get_model_limiter", lambda: limiter)
     seen = []
 
     async def handler(request):
@@ -1251,8 +1280,8 @@ async def test_rotated_single_key_gets_a_fresh_pool_after_permanent_disable(
     monkeypatch.setattr(template_column_layout_provider, "TEMPLATE_CUT_MODEL", "qwen3.8-flash")
     monkeypatch.setattr(template_column_layout_provider, "_template_pool", None)
     monkeypatch.setattr(template_column_layout_provider, "_template_pool_signature", "")
+    monkeypatch.setattr(template_column_layout_recognize, "get_model_limiter", lambda: limiter)
     monkeypatch.setattr(template_column_layout_provider, "get_model_limiter", lambda: limiter)
-    monkeypatch.setattr(layout, "get_model_limiter", lambda: limiter)
     seen = []
 
     async def handler(request):
@@ -1287,10 +1316,14 @@ async def test_request_http_error_does_not_open_template_capability_circuit(
         base_urls=["https://layout.test/v1"],
     )
     limiter = _Limiter()
+    monkeypatch.setattr(
+        template_column_layout_recognize,
+        "_resolve_template_key_pool",
+        lambda: pool,
+    )
     monkeypatch.setattr(template_column_layout_provider, "_resolve_template_key_pool", lambda: pool)
-    monkeypatch.setattr(layout, "_resolve_template_key_pool", lambda: pool)
+    monkeypatch.setattr(template_column_layout_recognize, "get_model_limiter", lambda: limiter)
     monkeypatch.setattr(template_column_layout_provider, "get_model_limiter", lambda: limiter)
-    monkeypatch.setattr(layout, "get_model_limiter", lambda: limiter)
     monkeypatch.setattr(template_column_layout_provider, "TEMPLATE_CUT_MODEL", "qwen3.8-flash")
 
     async def handler(_request):
@@ -1319,10 +1352,14 @@ async def test_endpoint_error_opens_template_capability_fault_without_leaking_sl
         base_urls=["https://layout.test/v1"],
     )
     limiter = _Limiter()
+    monkeypatch.setattr(
+        template_column_layout_recognize,
+        "_resolve_template_key_pool",
+        lambda: pool,
+    )
     monkeypatch.setattr(template_column_layout_provider, "_resolve_template_key_pool", lambda: pool)
-    monkeypatch.setattr(layout, "_resolve_template_key_pool", lambda: pool)
+    monkeypatch.setattr(template_column_layout_recognize, "get_model_limiter", lambda: limiter)
     monkeypatch.setattr(template_column_layout_provider, "get_model_limiter", lambda: limiter)
-    monkeypatch.setattr(layout, "get_model_limiter", lambda: limiter)
     monkeypatch.setattr(template_column_layout_provider, "TEMPLATE_CUT_MODEL", "qwen3.8-flash")
 
     async def handler(_request):
@@ -1357,10 +1394,14 @@ async def test_transient_http_failures_have_bounded_retries_and_release_capacity
         base_urls=["https://layout.test/v1"] * len(keys),
     )
     limiter = _Limiter()
+    monkeypatch.setattr(
+        template_column_layout_recognize,
+        "_resolve_template_key_pool",
+        lambda: pool,
+    )
     monkeypatch.setattr(template_column_layout_provider, "_resolve_template_key_pool", lambda: pool)
-    monkeypatch.setattr(layout, "_resolve_template_key_pool", lambda: pool)
+    monkeypatch.setattr(template_column_layout_recognize, "get_model_limiter", lambda: limiter)
     monkeypatch.setattr(template_column_layout_provider, "get_model_limiter", lambda: limiter)
-    monkeypatch.setattr(layout, "get_model_limiter", lambda: limiter)
 
     sleeps = []
 
@@ -1369,7 +1410,7 @@ async def test_transient_http_failures_have_bounded_retries_and_release_capacity
 
     monkeypatch.setattr(layout.asyncio, "sleep", record_sleep)
     monkeypatch.setattr(
-        layout,
+        template_column_layout_recognize,
         "exponential_retry_delay",
         lambda *_args, **_kwargs: 0.321,
     )
@@ -1417,10 +1458,14 @@ async def test_long_retry_after_fails_fast_without_retrying_early(
             self.cooldowns.append(credential["cooldown_seconds"])
 
     limiter = RecordingLimiter()
+    monkeypatch.setattr(
+        template_column_layout_recognize,
+        "_resolve_template_key_pool",
+        lambda: pool,
+    )
     monkeypatch.setattr(template_column_layout_provider, "_resolve_template_key_pool", lambda: pool)
-    monkeypatch.setattr(layout, "_resolve_template_key_pool", lambda: pool)
+    monkeypatch.setattr(template_column_layout_recognize, "get_model_limiter", lambda: limiter)
     monkeypatch.setattr(template_column_layout_provider, "get_model_limiter", lambda: limiter)
-    monkeypatch.setattr(layout, "get_model_limiter", lambda: limiter)
     sleeps = []
 
     async def record_sleep(delay):
@@ -1474,16 +1519,24 @@ async def test_template_key_pool_capacity_wait_has_finite_deadline(
     )
     key, _, _ = pool.get_key()
     assert key == "busy-key"
+    monkeypatch.setattr(
+        template_column_layout_recognize,
+        "_resolve_template_key_pool",
+        lambda: pool,
+    )
     monkeypatch.setattr(template_column_layout_provider, "_resolve_template_key_pool", lambda: pool)
-    monkeypatch.setattr(layout, "_resolve_template_key_pool", lambda: pool)
-    monkeypatch.setattr(layout, "_KEY_ACQUIRE_TIMEOUT_S", 0.01)
+    monkeypatch.setattr(template_column_layout_recognize, "_KEY_ACQUIRE_TIMEOUT_S", 0.01)
     monkeypatch.setattr(template_column_layout_provider, "TEMPLATE_CUT_MODEL", "qwen3.8-flash")
+    monkeypatch.setattr(
+        template_column_layout_recognize,
+        "get_model_limiter",
+        lambda: NoopModelLimiter(),
+    )
     monkeypatch.setattr(
         template_column_layout_provider,
         "get_model_limiter",
         lambda: NoopModelLimiter(),
     )
-    monkeypatch.setattr(layout, "get_model_limiter", lambda: NoopModelLimiter())
 
     try:
         with pytest.raises(TemplateCutError) as exc_info:
@@ -1507,10 +1560,14 @@ async def test_transport_retry_recovers_without_leaking_capacity(
         base_urls=["https://layout.test/v1"],
     )
     limiter = _Limiter()
+    monkeypatch.setattr(
+        template_column_layout_recognize,
+        "_resolve_template_key_pool",
+        lambda: pool,
+    )
     monkeypatch.setattr(template_column_layout_provider, "_resolve_template_key_pool", lambda: pool)
-    monkeypatch.setattr(layout, "_resolve_template_key_pool", lambda: pool)
+    monkeypatch.setattr(template_column_layout_recognize, "get_model_limiter", lambda: limiter)
     monkeypatch.setattr(template_column_layout_provider, "get_model_limiter", lambda: limiter)
-    monkeypatch.setattr(layout, "get_model_limiter", lambda: limiter)
 
     sleeps = []
 
@@ -1519,7 +1576,7 @@ async def test_transport_retry_recovers_without_leaking_capacity(
 
     monkeypatch.setattr(layout.asyncio, "sleep", record_sleep)
     monkeypatch.setattr(
-        layout,
+        template_column_layout_recognize,
         "exponential_retry_delay",
         lambda *_args, **_kwargs: 0.123,
     )
@@ -1554,10 +1611,14 @@ async def test_invalid_success_payload_retries_without_leaking_capacity(
         base_urls=["https://layout.test/v1"],
     )
     limiter = _Limiter()
+    monkeypatch.setattr(
+        template_column_layout_recognize,
+        "_resolve_template_key_pool",
+        lambda: pool,
+    )
     monkeypatch.setattr(template_column_layout_provider, "_resolve_template_key_pool", lambda: pool)
-    monkeypatch.setattr(layout, "_resolve_template_key_pool", lambda: pool)
+    monkeypatch.setattr(template_column_layout_recognize, "get_model_limiter", lambda: limiter)
     monkeypatch.setattr(template_column_layout_provider, "get_model_limiter", lambda: limiter)
-    monkeypatch.setattr(layout, "get_model_limiter", lambda: limiter)
 
     sleeps = []
 
@@ -1566,7 +1627,7 @@ async def test_invalid_success_payload_retries_without_leaking_capacity(
 
     monkeypatch.setattr(layout.asyncio, "sleep", record_sleep)
     monkeypatch.setattr(
-        layout,
+        template_column_layout_recognize,
         "exponential_retry_delay",
         lambda *_args, **_kwargs: 0.234,
     )
@@ -1601,10 +1662,14 @@ async def test_cancellation_propagates_and_releases_pool_and_shared_lease(
         base_urls=["https://layout.test/v1"],
     )
     limiter = _Limiter()
+    monkeypatch.setattr(
+        template_column_layout_recognize,
+        "_resolve_template_key_pool",
+        lambda: pool,
+    )
     monkeypatch.setattr(template_column_layout_provider, "_resolve_template_key_pool", lambda: pool)
-    monkeypatch.setattr(layout, "_resolve_template_key_pool", lambda: pool)
+    monkeypatch.setattr(template_column_layout_recognize, "get_model_limiter", lambda: limiter)
     monkeypatch.setattr(template_column_layout_provider, "get_model_limiter", lambda: limiter)
-    monkeypatch.setattr(layout, "get_model_limiter", lambda: limiter)
     started = asyncio.Event()
 
     class BlockingClient:
