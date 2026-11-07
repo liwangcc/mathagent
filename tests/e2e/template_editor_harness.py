@@ -47,7 +47,7 @@ from PIL import Image, ImageDraw
 
 import app as app_module
 import config
-from routers import grade_availability, grade_recognition, grade_report, grade_template
+from routers import grade_availability, grade_recognition, grade_report, grade_template, grade_template_availability
 from services import template_directory_pipeline as pipeline
 from services import template_one_three as one_three
 
@@ -363,12 +363,12 @@ def install_patches() -> None:
     grade_recognition._check_limits_or_raise = lambda *_args, **_kwargs: None
     grade_availability.batch_grade_availability = _available
     grade_availability._batch_grade_service_availability = _available
-    grade_template.get_column_layout_readiness = _available
+    grade_template_availability.get_column_layout_readiness = _available
     grade_availability.get_public_hardware_readiness = _hardware_ready
     grade_report._template_knowledge_classifier = _no_classifier
-    # The template router holds its own references to these shared helpers.
-    grade_template._batch_grade_service_availability = _available
-    grade_template.get_public_hardware_readiness = _hardware_ready
+    # The template modules hold their own references to these shared helpers.
+    grade_template_availability._batch_grade_service_availability = _available
+    grade_template_availability.get_public_hardware_readiness = _hardware_ready
     grade_template._template_knowledge_classifier = _no_classifier
 
 
