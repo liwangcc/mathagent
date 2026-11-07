@@ -23,6 +23,7 @@ LAYERS = [
     "template_column_layout_contract",
     "template_column_layout_image",
     "template_column_layout_provider",
+    "template_column_layout_prompts",
 ]
 # The module every caller imports: it may use any layer, and no layer imports it.
 TOP = ["template_column_layout"]
