@@ -20,9 +20,17 @@ import hashlib
 import json
 
 
+# Registered only when frontend/dist exists (app.py:752), so they differ between
+# a developer machine and a CI checkout that has not built the frontend.
+_SPA_ONLY_PATHS = frozenset({"/", "/{full_path:path}", "/{full_path}"})
+
+
 def observed() -> dict:
     from app import app
+    from fastapi.routing import APIRoute
 
+    # Only API routes are the contract. Static mounts differ by environment too,
+    # and neither they nor the SPA fallback are what a module split must preserve.
     routes = [
         [
             getattr(route, "path", ""),
@@ -30,14 +38,17 @@ def observed() -> dict:
             getattr(getattr(route, "endpoint", None), "__qualname__", ""),
         ]
         for route in app.routes
+        if isinstance(route, APIRoute) and route.path not in _SPA_ONLY_PATHS
     ]
     # The app memoises its OpenAPI document; drop the memo so the document
     # always describes the routes this process actually has.
     app.openapi_schema = None
     spec = app.openapi()
-    canonical = json.dumps(spec, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+    paths = {path: ops for path, ops in spec["paths"].items() if path not in _SPA_ONLY_PATHS}
+    document = {"paths": paths, "components": spec.get("components", {})}
+    canonical = json.dumps(document, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
     return {
         "routes": routes,
         "openapi_sha256": hashlib.sha256(canonical.encode("utf-8")).hexdigest(),
-        "openapi_paths": {path: sorted(ops) for path, ops in spec["paths"].items()},
+        "openapi_paths": {path: sorted(ops) for path, ops in paths.items()},
     }

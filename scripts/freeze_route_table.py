@@ -29,7 +29,7 @@ def main() -> int:
     fresh = _load_helper().observed()
     previous = json.loads(GOLDEN.read_text(encoding="utf-8")) if GOLDEN.exists() else {}
     GOLDEN.parent.mkdir(parents=True, exist_ok=True)
-    GOLDEN.write_text(json.dumps(fresh, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    GOLDEN.write_text(json.dumps(fresh, indent=2, ensure_ascii=False) + "\n", encoding="utf-8", newline="\n")
 
     before = previous.get("routes", [])
     after = fresh["routes"]

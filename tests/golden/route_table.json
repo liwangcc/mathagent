@@ -1,38 +1,6 @@
 {
   "routes": [
     [
-      "/openapi.json",
-      [
-        "GET",
-        "HEAD"
-      ],
-      "FastAPI.setup.<locals>.openapi"
-    ],
-    [
-      "/docs",
-      [
-        "GET",
-        "HEAD"
-      ],
-      "FastAPI.setup.<locals>.swagger_ui_html"
-    ],
-    [
-      "/docs/oauth2-redirect",
-      [
-        "GET",
-        "HEAD"
-      ],
-      "FastAPI.setup.<locals>.swagger_ui_redirect"
-    ],
-    [
-      "/redoc",
-      [
-        "GET",
-        "HEAD"
-      ],
-      "FastAPI.setup.<locals>.redoc_html"
-    ],
-    [
       "/health",
       [
         "GET"
@@ -1802,28 +1770,9 @@
         "GET"
       ],
       "serve_upload"
-    ],
-    [
-      "/assets",
-      [],
-      ""
-    ],
-    [
-      "/",
-      [
-        "GET"
-      ],
-      "root"
-    ],
-    [
-      "/{full_path:path}",
-      [
-        "GET"
-      ],
-      "spa_fallback"
     ]
   ],
-  "openapi_sha256": "487bc283ca7bfd0bae6feef934106712206ac3e9ee12c6e1acd8253f84fdbffa",
+  "openapi_sha256": "89436ec7228a444a435c9859263f45876022c45e36a9024066b5786f90b3be1c",
   "openapi_paths": {
     "/health": [
       "get"
@@ -2540,12 +2489,6 @@
       "get"
     ],
     "/uploads/{file_path}": [
-      "get"
-    ],
-    "/": [
-      "get"
-    ],
-    "/{full_path}": [
       "get"
     ]
   }
