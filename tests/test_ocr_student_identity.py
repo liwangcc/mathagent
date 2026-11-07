@@ -8,6 +8,7 @@ from PIL import Image
 from services import ocr_service
 from services.identity_regions import IDENTITY_LEFT_CROP_RATIO, IDENTITY_TOP_CROP_RATIO
 from services.ocr_service import _sanitize_student_name
+from services import ocr_service_local_image
 
 
 @pytest.mark.parametrize("raw", [
@@ -234,6 +235,11 @@ def test_identity_crop_also_uses_the_shared_image_gate(tmp_path, monkeypatch):
 
     monkeypatch.setattr(ocr_service, "_build_identity_crop", tracked_crop)
     monkeypatch.setattr(ocr_service, "call_vision", fake_call_vision)
+    monkeypatch.setattr(
+        ocr_service_local_image,
+        "_get_local_ocr_preprocess_semaphore",
+        lambda: gate_holder["gate"],
+    )
     monkeypatch.setattr(
         ocr_service,
         "_get_local_ocr_preprocess_semaphore",

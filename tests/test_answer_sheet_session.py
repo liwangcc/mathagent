@@ -42,6 +42,7 @@ from routers import answer_sheet_recognize_page
 from routers import answer_sheet_student_files
 from routers import answer_sheet_grading
 from routers import answer_sheet_layout_freeze
+from services import ocr_service_local_image
 
 
 def _question(number="1", qtype="choice"):
@@ -1787,7 +1788,7 @@ def test_stalled_answer_sheet_image_work_fails_readiness_until_settled(
         recovered = ocr_service.get_local_image_readiness()
         return stalled, recovered
 
-    monkeypatch.setattr(ocr_service, "_LOCAL_IMAGE_WORK_STALL_SECONDS", 0.01)
+    monkeypatch.setattr(ocr_service_local_image, "_LOCAL_IMAGE_WORK_STALL_SECONDS", 0.01)
     stalled, recovered = asyncio.run(run())
 
     assert stalled["ready"] is False

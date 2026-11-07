@@ -31,7 +31,7 @@
   "services/grading_persistence.py": 870,
   "services/hermes_tools.py": 1376,
   "services/model_concurrency.py": 1514,
-  "services/ocr_service.py": 2287,
+  "services/ocr_service.py": 1982,
   "services/question_classification.py": 1706,
   "services/report_templates.py": 925,
   "services/scoring_engine.py": 810,
