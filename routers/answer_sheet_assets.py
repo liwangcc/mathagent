@@ -33,14 +33,8 @@ from services.system_readiness import get_upload_storage_readiness_async
 
 # routers.answer_sheet's logger, so these records keep their logger name.
 logger = logging.getLogger("routers.answer_sheet")
-
-
 _ALLOWED_EXTENSIONS = {".jpg", ".jpeg", ".png"}
-
-
 _CLIENT_OCR_READY_SUFFIX = ".ocr-ready-v1.jpg"
-
-
 _CLIENT_OCR_READY_MAX_EDGE = 1920
 
 

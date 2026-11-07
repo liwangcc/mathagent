@@ -207,7 +207,6 @@ def _authorize_corrections(
             linked.revoked_at = None
     return kept
 
-
 def _revoke_dropped_authorizations(
     db,
     user: User,

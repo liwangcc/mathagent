@@ -103,8 +103,6 @@ router = APIRouter()
 
 
 _TEMPLATE_EVENT_BUFFER_SIZE = 64
-
-
 _TEMPLATE_RECOGNITION_TASKS: set[asyncio.Task] = set()
 
 
