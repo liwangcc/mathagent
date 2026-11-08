@@ -1512,17 +1512,7 @@ import api from '@/api'
 import { countGradablePapers, isExcludedPaper, normalizeBatchReadiness } from '@/utils/batchReadiness'
 import { gradingPhases } from '@/utils/gradingPhases'
 import { formatGradingDuration } from '@/utils/gradingTimer'
-import {
-  consumeSse,
-  createSseEventError,
-  createSseResponseError,
-  isSseRequestCancelled,
-  reportSseServiceFault,
-  SseTransportError,
-} from '@/utils/sse'
-import { validateUploadList, compressImageFiles } from '@/utils/uploadValidation'
-import { extractImagesFromFileList, IMPORT_ACCEPT, IMPORT_FORMATS } from '@/utils/fileExtraction'
-import { appendDesktopCanonicalCandidates } from '@/utils/desktopTemplateCanonicalization'
+import { IMPORT_ACCEPT, IMPORT_FORMATS } from '@/utils/fileExtraction'
 import {
   batchReportStatusText,
   batchReportStatusTone,
@@ -1557,8 +1547,6 @@ import {
   templateQuestionMetadata,
   templateDrawingReference,
   isTemplateDirectoryLeaf,
-  templateDrawingReview,
-  mergeTemplateDrawingCandidates,
 } from '@/utils/templateReview'
 import { templateSlotBoxes, templateSlotLabel } from '@/utils/templateSlots'
 import { useAuthStore } from '@/stores/auth'
@@ -1578,8 +1566,6 @@ import {
   templateBBoxIsValid,
   templateRegionEntries,
   templateBoxStyle,
-  cloneTemplateColumns,
-  cloneQuestionAnchors,
   templateQuestionAnchorBBox,
   templateVisibleAnswerBoxes,
   mergeTemplateAnswerRegionSources,
@@ -1595,7 +1581,6 @@ import {
   onFillScoringModeChange,
   onBlankScoresChange,
   onBlankCountChange,
-  normalizeAnswerSpecForEditor,
   onQuestionTypeChange,
   choiceModeLabel,
   setTemplateChoiceMode,
@@ -1627,6 +1612,8 @@ import {
   orientationReady,
   orientationReasonText,
 } from '@/utils/recognitionStatus'
+import { useTemplateRecognition } from './upload/useTemplateRecognition.js'
+import { useTemplateCut } from './upload/useTemplateCut.js'
 import { useTemplateGeometry } from './upload/useTemplateGeometry.js'
 import { useTemplateLayout } from './upload/useTemplateLayout.js'
 import { useTemplateConfirm } from './upload/useTemplateConfirm.js'
@@ -1918,13 +1905,13 @@ const manualDecisionShowPaper = ref(true)
 const templateRecognizeController = shallowRef(null)
 const templateConfirmController = shallowRef(null)
 const templateCutController = shallowRef(null)
-let templateCutPollTimer = null
+
 // Run token whose finished state was already applied.  Polling can observe the
 // completion before the POST resolves; rendering it again would rebuild every
 // page preview (refetching images and revoking blobs) on each tick.
 const templateCutCompletedRunToken = shallowRef(null)
 const templateCutRunToken = shallowRef(0)
-let templateCutPreviewLoadToken = 0
+
 const recognizeController = shallowRef(null)
 const gradeController = shallowRef(null)
 
@@ -2883,652 +2870,6 @@ function requireTemplateService() {
   return false
 }
 
-// ── 多页一次性模板：导入 N 页 → 识别 → 确认（即本次批改绝对权威）──
-async function onTemplateFileChange(e) {
-  const raw = Array.from(e.target.files || [])
-  e.target.value = ''
-  if (!raw.length || templatePreprocessing.value || !requireTemplateService()) return
-  templatePreprocessing.value = true
-  let failedCount = 0
-  const failedFiles = []
-  try {
-    const extracted = await extractImagesFromFileList(raw, { maxFiles: 20 })
-    const fakeList = extracted.map((f) => ({ raw: f, name: f.name, size: f.size }))
-    const result = validateUploadList(fakeList, { maxFiles: 20 })
-    if (result.errors.length) throw new Error(result.errors.join('；'))
-    if (!result.files.length) return
-    const preparedFiles = await compressImageFiles(result.files, 1920, 0.88, {
-      onFileError: ({ file }) => { failedCount += 1; failedFiles.push(file.name) },
-    })
-    if (failedCount) {
-      templateFiles.value = []
-      ElMessage.error(`[IMPORT_IMAGE_INVALID] ${failedFiles.join('、')}：${failedCount} 张模板图片损坏或尺寸超限，本次选择已清空，请检查原图后重新选择`)
-      return
-    }
-    templateFiles.value = preparedFiles
-    clearReviewDisplay()
-  } catch (err) {
-    notifyProcessingError(err, err.message || '模板图片预处理未完成，请重新选择')
-  } finally {
-    templatePreprocessing.value = false
-  }
-}
-
-function templateRecognitionStorageKey() {
-  const teacherId = auth.user?.id
-  const mode = anonymous.value ? ':anonymous' : ''
-  return teacherId ? `${TEMPLATE_RECOGNITION_STORAGE_PREFIX}${mode}:${teacherId}` : ''
-}
-
-function normalizeTemplateMode(value, fallback = 'blank') {
-  const mode = String(value || '').trim().toLowerCase()
-  if (mode === 'blank' || mode === 'marked') return mode
-  return fallback === 'marked' ? 'marked' : 'blank'
-}
-
-function rememberTemplateRecognition(templateId, mode = templateMode.value) {
-  const key = templateRecognitionStorageKey()
-  if (!key || !templateId) return
-  localStorage.setItem(key, JSON.stringify({
-    template_id: String(templateId),
-    category: form.category,
-    exam_name: form.exam_name,
-    template_mode: normalizeTemplateMode(mode, templateMode.value),
-    column_mode: normalizeTemplateColumnMode(templateColumnMode.value),
-  }))
-}
-
-function normalizeTemplateColumnMode(value, fallback = 'double') {
-  const mode = String(value || '').trim().toLowerCase()
-  if (['single', 'double', 'triple'].includes(mode)) return mode
-  return ['single', 'double', 'triple'].includes(fallback) ? fallback : 'double'
-}
-
-function forgetTemplateRecognition() {
-  const key = templateRecognitionStorageKey()
-  if (key) localStorage.removeItem(key)
-}
-
-function loadTemplateRecognitionCheckpoint() {
-  const key = templateRecognitionStorageKey()
-  if (!key) return null
-  try {
-    const saved = JSON.parse(localStorage.getItem(key) || 'null')
-    if (!saved?.template_id) throw new Error('invalid template checkpoint')
-    return saved
-  } catch {
-    localStorage.removeItem(key)
-    return null
-  }
-}
-
-function isTerminalTemplateFailure(error) {
-  return Boolean(error?.code) && error?.sseFailureKind === 'application'
-}
-
-function waitForTemplatePoll(milliseconds, signal) {
-  return new Promise((resolve, reject) => {
-    if (signal?.aborted) {
-      const error = new Error('模板识别状态查询已取消')
-      error.name = 'AbortError'
-      reject(error)
-      return
-    }
-    const onAbort = () => {
-      window.clearTimeout(timer)
-      const error = new Error('模板识别状态查询已取消')
-      error.name = 'AbortError'
-      reject(error)
-    }
-    const timer = window.setTimeout(() => {
-      signal?.removeEventListener('abort', onAbort)
-      resolve()
-    }, milliseconds)
-    signal?.addEventListener('abort', onAbort, { once: true })
-  })
-}
-
-async function waitForTemplateRecognition(templateId, signal) {
-  let consecutiveReadFailures = 0
-  while (true) {
-    let state
-    try {
-      state = await api.grade.templateRecognitionState(templateId, signal)
-      consecutiveReadFailures = 0
-    } catch (error) {
-      if (isSseRequestCancelled(error, signal)) throw error
-      consecutiveReadFailures += 1
-      if (consecutiveReadFailures >= 3) throw error
-      templateRecognizeMessage.value = '模板仍在服务器处理，正在重新连接任务状态…'
-      await waitForTemplatePoll(1000 * (2 ** (consecutiveReadFailures - 1)), signal)
-      continue
-    }
-
-    const status = String(state?.status || '')
-    if (['ocr_done', 'confirmed', 'frozen'].includes(status)) {
-      const pages = Array.isArray(state.pages) ? state.pages : []
-      if (!pages.length) throw new SseTransportError('模板任务已完成，但服务器未返回页面结果')
-      return { templateId: String(state.template_id || templateId), pages, state }
-    }
-    if (status === 'failed' || state?.terminal === true) {
-      throw createSseEventError({
-        code: state?.error_code || 'TEMPLATE_IMPORT_FAILED',
-        message: state?.error || state?.message || '模板识别失败',
-        error_info: state?.error_info,
-      }, '模板识别失败')
-    }
-
-    templateRecognizeMessage.value = state?.message || '模板仍在服务器处理中，请勿重复提交…'
-    const retryAfter = Math.min(5000, Math.max(500, Number(state?.retry_after_ms) || 1000))
-    await waitForTemplatePoll(retryAfter, signal)
-  }
-}
-
-async function applyTemplateRecognitionResult(tid, pages, mode = '', columnMode = '', teachingContext = {}) {
-  const runToken = ++templateCutRunToken.value
-  templateCutCompletedRunToken.value = null
-  templateCutController.value?.abort()
-  templateCutController.value = null
-  stopTemplateCutPolling()
-  templateCutBusy.value = false
-  revokeTemplateCutPreviews()
-  templateCutPreviewError.value = ''
-  // Keep the unfinished-draft checkpoint until the template is confirmed or
-  // cancelled: an unconfirmed template must stay recoverable after a reload
-  // instead of being silently orphaned with no editor entry.
-  pendingTemplateId.value = tid
-  templateTeachingContext.value = teachingContext || {}
-  templateMode.value = normalizeTemplateMode(mode, templateMode.value)
-  templateColumnMode.value = normalizeTemplateColumnMode(columnMode || (
-    pages?.[0]?.column_mode || pages?.[0]?.layout_mode || templateColumnMode.value
-  ))
-  templateBankImported.value = false
-  templateCutResult.value = null
-  templateCutActionId.value = ''
-  templateCutProgress.value = { completed: 0, total: pages.length, remaining: pages.length }
-  templatePages.value = pages.map((page) => ({
-    ...page,
-    template_mode: templateMode.value,
-    layout_review_pending: page.layout_review_pending === true,
-    anchor_diagnostics: page.anchor_diagnostics || null,
-    template_ocr_diagnostics: page.template_ocr_diagnostics || null,
-    questions: (page.questions || []).map((question) => {
-      const normalized = normalizeAnswerSpecForEditor(question)
-      return {
-        ...normalized,
-        _open: normalized.question_type === 'solve',
-        correction_excluded: normalized.correction_excluded === true,
-        authorized_wrong_cycle_ids: [],
-        correction_candidates: [],
-        correction_knowledge_summary: null,
-      }
-    }),
-  }))
-  syncTemplateBatchScores()
-  templateDialogVisible.value = true
-  const existingCut = await api.grade.templateCutCandidatesState(tid).catch(() => null)
-  if (tid !== pendingTemplateId.value || runToken !== templateCutRunToken.value) return
-  if (existingCut?.status === 'complete') {
-    applyTemplateCutState(existingCut, runToken)
-  } else {
-    void onRunTemplateCut()
-  }
-  void loadTemplateCorrectionCandidates()
-}
-
-async function onRecognizeTemplate() {
-  if (recognizingTemplate.value) return
-  if (!requireTemplateService()) return
-  if (!templateFiles.value.length) { ElMessage.warning('请先导入模板图片'); return }
-  if (!form.category) { ElMessage.warning('请先选择本次批阅类型'); return }
-  if (form.category === 'exam' && !form.exam_name.trim()) { ElMessage.warning('请先填写考试名称'); return }
-  const fd = new FormData()
-  templateFiles.value.forEach((f) => fd.append('files', f.raw || f))
-  fd.append('category', form.category)
-  fd.append('exam_name', form.category === 'exam' ? form.exam_name.trim() : '')
-  fd.append('template_mode', normalizeTemplateMode(templateMode.value))
-  const columnMode = normalizeTemplateColumnMode(templateColumnMode.value)
-  fd.append('column_mode', columnMode)
-  fd.append('layout_mode', columnMode)
-  recognizingTemplate.value = true
-  templateRecognizeError.value = ''
-  templateRecognizeMessage.value = '正在上传并准备模板…'
-  templateRecognizeController.value = new AbortController()
-  let tid = ''
-  try {
-    await appendDesktopCanonicalCandidates(fd, templateFiles.value)
-    const response = await api.grade.templateRecognize(fd, templateRecognizeController.value.signal)
-    if (!response.ok) {
-      throw await createSseResponseError(response, '模板识别失败')
-    }
-    tid = String(response.headers.get('X-Template-ID') || '')
-    if (tid) rememberTemplateRecognition(tid, templateMode.value)
-    let pages = []
-    let teachingContext = {}
-    await consumeSse(response, (evt, data) => {
-      if (data?.teaching_context) teachingContext = data.teaching_context
-      if (data?.template_id) {
-        tid = String(data.template_id)
-        if (data.template_mode) templateMode.value = normalizeTemplateMode(data.template_mode, templateMode.value)
-        if (data.column_mode || data.layout_mode) {
-          templateColumnMode.value = normalizeTemplateColumnMode(data.column_mode || data.layout_mode)
-        }
-        rememberTemplateRecognition(tid, templateMode.value)
-      }
-      if (evt === 'done') {
-        if (data?.template_mode) templateMode.value = normalizeTemplateMode(data.template_mode, templateMode.value)
-        if (data?.column_mode || data?.layout_mode) {
-          templateColumnMode.value = normalizeTemplateColumnMode(data.column_mode || data.layout_mode)
-        }
-        pages = data.pages || []
-      }
-      else if (evt === 'error') { throw createSseEventError(data, '模板识别出错') }
-      else if (evt === 'progress') templateRecognizeMessage.value = data.message || '模板识别中…'
-    })
-    if (!tid || !pages.length) {
-      throw new SseTransportError('识别连接已结束，但没有收到模板结果')
-    }
-    await applyTemplateRecognitionResult(tid, pages, templateMode.value, templateColumnMode.value, teachingContext)
-  } catch (err) {
-    const signal = templateRecognizeController.value?.signal
-    let failure = err
-    const rawFailure = String(failure?.message || '')
-    const canRecover = Boolean(tid) && (
-      failure instanceof SseTransportError
-      || failure?.sseFailureKind === 'transport'
-      || /network|fetch|连接提前结束|连接读取中断/i.test(rawFailure)
-    )
-    if (canRecover && !isSseRequestCancelled(failure, signal)) {
-      try {
-        templateRecognizeError.value = ''
-        templateRecognizeMessage.value = '模板识别连接中断，正在恢复服务器任务…'
-        const recovered = await waitForTemplateRecognition(tid, signal)
-        await applyTemplateRecognitionResult(
-          recovered.templateId,
-          recovered.pages,
-          recovered.state?.template_mode || templateMode.value,
-          recovered.state?.column_mode || recovered.state?.layout_mode || templateColumnMode.value,
-          recovered.state?.teaching_context || {},
-        )
-        return
-      } catch (recoveryError) {
-        failure = recoveryError
-      }
-    }
-    if (
-      isTerminalTemplateFailure(failure)
-      || [401, 403, 404].includes(Number(failure?.status || 0))
-    ) forgetTemplateRecognition()
-    if (!isSseRequestCancelled(failure, signal)) {
-      reportSseServiceFault(
-        failure,
-        markServiceFault,
-        '模板识别链路中断，请稍后重试；若持续发生请联系管理员。',
-        { signal },
-      )
-      const raw = String(failure.message || '')
-      templateRecognizeError.value = failure instanceof SseTransportError || /network|fetch|连接提前结束/i.test(raw)
-        ? '模板识别连接中断，且无法读取服务器任务状态。请勿连续重复提交；稍后重试，如仍失败请联系管理员。'
-        : (raw || '模板识别失败')
-      notifyProcessingError(failure, templateRecognizeError.value)
-    }
-  } finally {
-    recognizingTemplate.value = false
-    templateRecognizeMessage.value = ''
-    templateRecognizeController.value = null
-  }
-}
-
-async function resumeTemplateRecognitionCheckpoint() {
-  const checkpoint = loadTemplateRecognitionCheckpoint()
-  if (!checkpoint?.template_id || recognizingTemplate.value) return false
-  const checkpointCategory = String(checkpoint.category || '').trim().toLowerCase()
-  if (!['daily', 'exam'].includes(checkpointCategory)) {
-    forgetTemplateRecognition()
-    return false
-  }
-  form.category = checkpointCategory
-  form.exam_name = form.category === 'exam' ? String(checkpoint.exam_name || '') : ''
-  templateMode.value = normalizeTemplateMode(checkpoint.template_mode, 'marked')
-  templateColumnMode.value = normalizeTemplateColumnMode(checkpoint.column_mode)
-  recognizingTemplate.value = true
-  templateRecognizeError.value = ''
-  templateRecognizeMessage.value = '正在恢复上次未完成的模板识别…'
-  templateRecognizeController.value = new AbortController()
-  try {
-    const recovered = await waitForTemplateRecognition(
-      String(checkpoint.template_id),
-      templateRecognizeController.value.signal,
-    )
-    const stateCategory = String(recovered.state?.category || '')
-    if (['daily', 'exam'].includes(stateCategory)) {
-      form.category = stateCategory
-      form.exam_name = stateCategory === 'exam'
-        ? String(recovered.state?.exam_name || checkpoint.exam_name || '')
-        : ''
-    }
-    if (String(recovered.state?.status || '') === 'frozen') {
-      // The template already drives student recognition and cannot be edited
-      // any more; retire the checkpoint instead of reopening a frozen editor.
-      forgetTemplateRecognition()
-      return false
-    }
-    await applyTemplateRecognitionResult(
-      recovered.templateId,
-      recovered.pages,
-      recovered.state?.template_mode || templateMode.value,
-      recovered.state?.column_mode || recovered.state?.layout_mode || templateColumnMode.value,
-      recovered.state?.teaching_context || {},
-    )
-    ElMessage.success('已恢复服务器完成的模板识别结果')
-    return true
-  } catch (failure) {
-    if (
-      isTerminalTemplateFailure(failure)
-      || [401, 403, 404].includes(Number(failure?.status || 0))
-    ) forgetTemplateRecognition()
-    const signal = templateRecognizeController.value?.signal
-    if (!isSseRequestCancelled(failure, signal)) {
-      reportSseServiceFault(
-        failure,
-        markServiceFault,
-        '无法恢复模板识别任务，请检查网络或联系管理员。',
-        { signal },
-      )
-      templateRecognizeError.value = failure?.message || '模板识别任务恢复失败'
-      notifyProcessingError(failure, templateRecognizeError.value)
-    }
-    return false
-  } finally {
-    recognizingTemplate.value = false
-    templateRecognizeMessage.value = ''
-    templateRecognizeController.value = null
-  }
-}
-
-function templateCutPageOriginalCount(pageIndex) {
-  const page = (templateCutResult.value?.pages || []).find((item) => Number(item.page_index) === Number(pageIndex))
-  const result = page?.modes?.question
-  if (!result) return 0
-  return (result.pages || []).reduce((total, providerPage) => total + (providerPage.candidates || [])
-    .filter((candidate) => candidate.coordinate_trust === 'original').length, 0)
-}
-
-function stopTemplateCutPolling() {
-  if (templateCutPollTimer) clearTimeout(templateCutPollTimer)
-  templateCutPollTimer = null
-}
-
-function releaseFinishedTemplateCut(runToken) {
-  if (runToken !== templateCutRunToken.value) return
-  // The finished run is persisted server-side, so the pending POST no longer
-  // owns the editor: holding the lock until it returns locks the teacher out of
-  // a template that is already done.
-  templateCutBusy.value = false
-  stopTemplateCutPolling()
-}
-
-function applyTemplateCutState(data, expectedRunToken = templateCutRunToken.value) {
-  if (!pendingTemplateId.value || expectedRunToken !== templateCutRunToken.value) return
-  if (!data || (templateCutActionId.value && data.action_id && data.action_id !== templateCutActionId.value)) return
-  const finished = ['complete', 'failed'].includes(data.status)
-  if (templateCutCompletedRunToken.value === expectedRunToken) {
-    releaseFinishedTemplateCut(expectedRunToken)
-    return
-  }
-  if (data.progress) templateCutProgress.value = data.progress
-  if (['scan', 'photo'].includes(data.image_type)) templateCutImageType.value = data.image_type
-  if (data.status !== 'not_run') {
-    templateCutResult.value = data
-    const pendingPages = templateReviewPendingPageIndexes(data)
-    templateCutPreviewPages.value.forEach((page) => {
-      const pending = pendingPages.has(Number(page.pageIndex))
-        || data.pages?.some((item) => Number(item.page_index) === Number(page.pageIndex) && templatePageReviewPending(item))
-      if (pending) {
-        page.layoutReviewPending = true
-        page.layout_review_pending = true
-        page.anchorReviewPending = true
-        page.geometryReviewPending = true
-        page.columnsConfirmed = false
-      }
-    })
-    if (finished) {
-      templateCutCompletedRunToken.value = expectedRunToken
-      releaseFinishedTemplateCut(expectedRunToken)
-    }
-    if (data.status === 'failed') {
-      templateCutPreviewError.value = templateCutErrorMessage(data, '模板自动裁剪失败，请重试。')
-    }
-    if (data.status === 'complete') void loadTemplateCutPreviews(data, expectedRunToken)
-  }
-}
-
-function revokeTemplateCutPreviews() {
-  templateCutPreviewLoadToken += 1
-  templateCutPreviewPages.value.forEach((page) => {
-    if (page.imageUrl) URL.revokeObjectURL(page.imageUrl)
-  })
-  templateCutPreviewPages.value = []
-}
-
-async function loadTemplateCutPreviews(data = templateCutResult.value, expectedRunToken = templateCutRunToken.value) {
-  const templateId = pendingTemplateId.value
-  if (!templateId || expectedRunToken !== templateCutRunToken.value || data?.status !== 'complete') return
-  revokeTemplateCutPreviews()
-  const loadToken = templateCutPreviewLoadToken
-  const isCurrentLoad = () => templateId === pendingTemplateId.value
-    && expectedRunToken === templateCutRunToken.value && loadToken === templateCutPreviewLoadToken
-  const imageUrls = new Set()
-  let failed = false
-  templateCutPreviewError.value = ''
-  try {
-    const pendingPages = templateReviewPendingPageIndexes(data)
-    const pages = await Promise.all((data.pages || []).map(async (page, index) => {
-      // Normalize legacy responses in place so the established editor calls
-      // keep reading the server-owned page fields.
-      if (page.page_index === undefined || page.page_index === null) {
-        page.page_index = index
-      }
-      const pageIndex = Number(page.page_index)
-      const planColumns = cloneTemplateColumns(page.anchor_crop_plan?.parameters?.columns)
-      const questionMode = page.modes?.question || {}
-      // Real model runs also publish the detected layout under the question-mode
-      // contract while the crop plan still carries no trusted columns. Show that
-      // candidate so the teacher reviews the model's actual result instead of an
-      // empty layout — but never promote it: only a saved teacher override
-      // confirms a layout, so the candidate stays unconfirmed and under review.
-      const candidateColumns = planColumns.length
-        ? []
-        : cloneTemplateColumns(questionMode?.column_layout?.columns)
-      const columns = planColumns.length ? planColumns : candidateColumns
-      const reviewPending = pendingPages.has(pageIndex) || templatePageReviewPending(page, questionMode)
-      const layoutReviewPending = reviewPending
-        || !columns.length
-        || !planColumns.length
-      const columnState = columns.length
-        ? {
-          columnsSource: planColumns.length ? 'model' : 'model_candidate',
-          columnsConfirmed: !layoutReviewPending && planColumns.length > 0,
-        }
-        : { columnsSource: 'teacher_draft', columnsConfirmed: false }
-      // No trusted columns means the teacher must explicitly choose a count.
-      // Keeping this at zero avoids presenting the global two-column default
-      // as though it were an already reviewed page layout.
-      const columnCount = columns.length
-        ? Number(page.anchor_crop_plan?.parameters?.column_count
-          || questionMode?.column_layout?.column_count || columns.length)
-        : 0
-      const artifact = page.artifact || page.page_artifact || {}
-      // Semantic/geometry review deliberately keeps the approved fields empty.
-      // Prefer candidate fields only as the editor's initial draft; the single
-      // 作答框 contract is promoted only after the teacher saves an override.
-      const rawAnchors = reviewPending && Array.isArray(page.question_anchor_candidates) && page.question_anchor_candidates.length
-        ? page.question_anchor_candidates
-        : (Array.isArray(page.question_anchors) ? page.question_anchors : (artifact.question_anchors || []))
-      const rawHandwritingRegions = reviewPending && templateRegionCandidateUsable(page.template_handwriting_region_candidates)
-        ? page.template_handwriting_region_candidates
-        : (Array.isArray(page.template_handwriting_regions) ? page.template_handwriting_regions : (artifact.template_handwriting_regions || []))
-      const rawAnswerRegions = reviewPending && templateRegionCandidateUsable(page.template_answer_region_candidates)
-        ? page.template_answer_region_candidates
-        : (Array.isArray(page.template_answer_regions) ? page.template_answer_regions : (artifact.template_answer_regions || []))
-      const mergedAnswerBoxes = mergeTemplateAnswerRegionSources(rawAnswerRegions, rawHandwritingRegions)
-      const questionSchema = mergeTemplateDrawingCandidates(
-        page.question_schema || artifact.question_schema || [],
-        page.question_schema_candidates || [], reviewPending,
-      )
-      const imageUrl = await api.grade.templatePageImage(templateId, Number(page.page_index))
-      if (failed || !isCurrentLoad()) {
-        URL.revokeObjectURL(imageUrl)
-        return null
-      }
-      imageUrls.add(imageUrl)
-      return {
-        pageLabel: page.page_label,
-        pageIndex,
-        // Do not manufacture equal partitions while reviewing a pending page.
-        // The empty list is intentional and keeps the model result distinct
-        // from the teacher's later draft in resetTemplateColumns().
-        columns,
-        // A candidate layout is displayed for review but is never counted as
-        // this page's confirmed layout; zero keeps the upload default invisible.
-        columnCount,
-        ...columnState,
-        layoutReviewPending,
-        layout_review_pending: layoutReviewPending,
-        anchorReviewPending: reviewPending,
-        geometryReviewPending: reviewPending,
-        questionAnchors: cloneQuestionAnchors(rawAnchors),
-        questionSchema,
-        ...templateDrawingReview(questionSchema, { includeConflictingGeometry: reviewPending }),
-        hasAnswerRegionContract: mergedAnswerBoxes.length > 0,
-        answerBoxes: mergedAnswerBoxes,
-        // Compatibility alias for older code paths; both references represent
-        // the same unified 作答框 collection and are never edited separately.
-        handwritingBoxes: mergedAnswerBoxes,
-        anchorDiagnostics: page.anchor_diagnostics || questionMode.anchor_diagnostics || null,
-        templateOcrDiagnostics: page.template_ocr_diagnostics || questionMode.template_ocr_diagnostics || null,
-        newHandwritingQuestion: String(rawAnchors?.[0]?.question_number || ''),
-        editQuestionNumber: String(rawAnchors?.[0]?.question_number || ''),
-        drawingQuestionNumber: String(questionSchema[0]?.question_number || ''),
-        referenceQuestionNumber: '',
-        previewEditMode: 'geometry',
-        referenceImageReadyNumbers: {},
-        insertedPlaceholder: Boolean(page.inserted_placeholder || artifact.inserted_placeholder
-          || page.anchor_diagnostics?.review_reason === 'teacher_added_question_placeholder'),
-        // Review is an unsaved teacher decision even when the teacher accepts
-        // every visible candidate without dragging it first.
-        dirty: (reviewPending || layoutReviewPending) && columns.length > 0,
-        saving: false,
-        imageUrl,
-      }
-    }))
-    if (!isCurrentLoad()) {
-      imageUrls.forEach((url) => URL.revokeObjectURL(url))
-      return
-    }
-    for (const page of pages) initializeTemplatePageSlots(page)
-    templateCutPreviewPages.value = pages
-  } catch {
-    failed = true
-    imageUrls.forEach((url) => URL.revokeObjectURL(url))
-    if (!isCurrentLoad()) return
-    templateCutPreviewError.value = '裁剪模板读取失败，请重新打开模板或重试自动裁剪。'
-  }
-}
-
-async function pollTemplateCutState(templateId, expectedRunToken = templateCutRunToken.value) {
-  if (!templateCutBusy.value || templateId !== pendingTemplateId.value || expectedRunToken !== templateCutRunToken.value) return
-  try {
-    const state = await api.grade.templateCutCandidatesState(templateId)
-    if (templateId !== pendingTemplateId.value || expectedRunToken !== templateCutRunToken.value) return
-    applyTemplateCutState(state, expectedRunToken)
-  } catch {
-    // The POST request remains authoritative; transient polling errors stay quiet.
-  } finally {
-    if (templateCutBusy.value && templateId === pendingTemplateId.value && expectedRunToken === templateCutRunToken.value) {
-      templateCutPollTimer = setTimeout(() => pollTemplateCutState(templateId, expectedRunToken), 800)
-    }
-  }
-}
-
-async function loadTemplateCutState(templateId, expectedRunToken = templateCutRunToken.value) {
-  if (!templateId || templateId !== pendingTemplateId.value || expectedRunToken !== templateCutRunToken.value) return
-  try {
-    const state = await api.grade.templateCutCandidatesState(templateId)
-    if (templateId !== pendingTemplateId.value || expectedRunToken !== templateCutRunToken.value) return
-    if (state.status !== 'not_run') {
-      templateCutResult.value = state
-      templateCutProgress.value = state.progress || templateCutProgress.value
-      if (['scan', 'photo'].includes(state.image_type)) templateCutImageType.value = state.image_type
-      if (state.status === 'complete') void loadTemplateCutPreviews(state, expectedRunToken)
-    }
-  } catch {
-    // Existing template editing remains available if optional candidate state cannot load.
-  }
-}
-
-function templateCutErrorMessage(data, fallback) {
-  const detail = data?.detail ?? data?.message ?? data?.error
-  if (typeof detail === 'string') return detail
-  if (detail && typeof detail.message === 'string') return detail.message
-  return fallback
-}
-
-async function onRunTemplateCut({ force = false } = {}) {
-  if (!requireTemplateService()) return
-  const templateId = pendingTemplateId.value
-  if (!templateId || templateCutBusy.value) return
-  const runToken = ++templateCutRunToken.value
-  templateCutCompletedRunToken.value = null
-  templateCutController.value?.abort()
-  templateCutPreviewLoadToken += 1
-  templateCutPreviewError.value = ''
-  if (force) templateCutActionId.value = ''
-  if (!templateCutActionId.value) {
-    templateCutActionId.value = globalThis.crypto?.randomUUID?.()
-      || `template-cut-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
-  }
-  templateCutBusy.value = true
-  templateCutProgress.value = {
-    completed: 0,
-    total: templatePages.value.length,
-    remaining: templatePages.value.length,
-  }
-  templateCutController.value = new AbortController()
-  stopTemplateCutPolling()
-  templateCutPollTimer = setTimeout(() => pollTemplateCutState(templateId, runToken), 300)
-  try {
-    const response = await api.grade.templateCutCandidates(templateId, {
-      action_id: templateCutActionId.value,
-      cut_types: ['question'],
-      image_type: templateCutImageType.value,
-      force,
-    }, templateCutController.value.signal)
-    const data = await response.json().catch(() => ({}))
-    if (!response.ok) throw new Error(templateCutErrorMessage(data, `裁题失败 (${response.status})`))
-    if (runToken !== templateCutRunToken.value || templateId !== pendingTemplateId.value) return
-    if (!['complete', 'failed'].includes(data.status)
-      || (data.action_id && data.action_id !== templateCutActionId.value)) {
-      throw new Error('模板裁剪结果不完整或不属于本次任务，请重试。')
-    }
-    applyTemplateCutState(data, runToken)
-    templateCutActionId.value = ''
-    if (data.status === 'complete' && templateCutResult.value?.status === 'complete') {
-      ElMessage.success(`模板自动裁剪完成：已生成 ${data.pages?.reduce((total, page) => total + (page.anchor_crop_plan?.blocks?.length || 0), 0) || 0} 个连续裁剪块`)
-    }
-  } catch (err) {
-    if (runToken !== templateCutRunToken.value || templateId !== pendingTemplateId.value) return
-    if (templateCutCompletedRunToken.value === runToken) return
-    if (err.name !== 'AbortError') notifyProcessingError(err, err.message || '教师模板裁题失败')
-  } finally {
-    if (runToken === templateCutRunToken.value) {
-      templateCutBusy.value = false
-      templateCutController.value = null
-      stopTemplateCutPolling()
-    }
-  }
-}
-
 async function loadDailyUsage() {
   try {
     const data = await api.usage.stats()
@@ -3643,32 +2984,33 @@ async function refreshAvailability() {
 // holding what the earlier parts defined; it calls functions of later parts through ctx.
 const ctx = {
   anonymous, auth, router, REVIEW_BATCH_STORAGE_PREFIX, ORIENTATION_BATCH_STORAGE_PREFIX,
-  inheritIdentity, fileInputRef, folderInputRef, templateInputRef, fileList, phoneCaptureVisible,
-  studentSubmissionVisible, imagePreprocessing, imageExtracting, extractionProgress, isDragover,
-  batchDialogVisible, activeStep, recognizing, grading, gradingClockStart, gradingClockNow,
-  serviceState, availabilityPollTimer, recognitionBlocksNewWork, markServiceFault, templateMode,
-  templateColumnMode, templateFiles, templatePreprocessing, recognizingTemplate,
-  templateRecognizeMessage, templateRecognizeError, confirmedTemplateId, templatePageCount,
-  templateTeachingContext, templateDialogVisible, confirmingTemplate, importingTemplateBank,
-  templateBankImported, templatePages, templateCorrectionCandidatesLoading, templateCutBusy,
-  templateCutResult, templateCutProgress, templateCutActionId, templateCutImageType,
-  templateCutPreviewPages, templateCutPreviewError, templateCropGesture,
-  templateReferenceEditorInstances, templateActivePreviewPage, TEMPLATE_GEOMETRY_TOOLS,
-  templateEditorBusy, templateQuestionEditing, templateChoiceScore, templateFillScore,
-  pendingTemplateId, identityDialogVisible, identityResolutions, identityOptionsLoading,
-  identityOptionsError, form, batchId, papers, recognized, recognitionDone, recognitionAutoArmed,
-  recognitionCanGrade, recognitionError, recognitionRecoveryState, excludingPaperId, currentMessage,
-  questions, orientationDialogVisible, orientationPaper, orientationImageUrl,
-  orientationImageLoading, orientationImageError, orientationQuarterTurns, orientationSaving,
-  orientationActionId, progressList, gradeTotal, gradeError, summary, reviewRestoredLabel,
-  coursewareRecommendations, coursewareRecommendationState, coursewareRecommendationQuery,
-  coursewareRecommendationKey, batchReport, reviewBusy, reviewImagesDownloading, reviewArchived,
-  reviewRevision, manualDecisionDialogVisible, manualDecisionRow, manualDecisionDrafts,
-  manualDecisionSaving, manualDecisionImageUrl, manualDecisionImageLoading,
-  manualDecisionImageError, manualDecisionPages, manualDecisionPageIndex, manualDecisionShowPaper,
-  templateRecognizeController, templateConfirmController, templateCutController,
-  templateCutCompletedRunToken, templateCutRunToken, recognizeController, gradeController,
-  gradablePaperCount, templateReviewPendingPageIndexes, templateDiagnosticPendingPageIndexes,
+  TEMPLATE_RECOGNITION_STORAGE_PREFIX, inheritIdentity, fileInputRef, folderInputRef,
+  templateInputRef, fileList, phoneCaptureVisible, studentSubmissionVisible, imagePreprocessing,
+  imageExtracting, extractionProgress, isDragover, batchDialogVisible, activeStep, recognizing,
+  grading, gradingClockStart, gradingClockNow, serviceState, availabilityPollTimer,
+  recognitionBlocksNewWork, markServiceFault, templateMode, templateColumnMode, templateFiles,
+  templatePreprocessing, recognizingTemplate, templateRecognizeMessage, templateRecognizeError,
+  confirmedTemplateId, templatePageCount, templateTeachingContext, templateDialogVisible,
+  confirmingTemplate, importingTemplateBank, templateBankImported, templatePages,
+  templateCorrectionCandidatesLoading, templateCutBusy, templateCutResult, templateCutProgress,
+  templateCutActionId, templateCutImageType, templateCutPreviewPages, templateCutPreviewError,
+  templateCropGesture, templateReferenceEditorInstances, templateActivePreviewPage,
+  TEMPLATE_GEOMETRY_TOOLS, templateEditorBusy, templateQuestionEditing, templateChoiceScore,
+  templateFillScore, pendingTemplateId, identityDialogVisible, identityResolutions,
+  identityOptionsLoading, identityOptionsError, form, batchId, papers, recognized, recognitionDone,
+  recognitionAutoArmed, recognitionCanGrade, recognitionError, recognitionRecoveryState,
+  excludingPaperId, currentMessage, questions, orientationDialogVisible, orientationPaper,
+  orientationImageUrl, orientationImageLoading, orientationImageError, orientationQuarterTurns,
+  orientationSaving, orientationActionId, progressList, gradeTotal, gradeError, summary,
+  reviewRestoredLabel, coursewareRecommendations, coursewareRecommendationState,
+  coursewareRecommendationQuery, coursewareRecommendationKey, batchReport, reviewBusy,
+  reviewImagesDownloading, reviewArchived, reviewRevision, manualDecisionDialogVisible,
+  manualDecisionRow, manualDecisionDrafts, manualDecisionSaving, manualDecisionImageUrl,
+  manualDecisionImageLoading, manualDecisionImageError, manualDecisionPages,
+  manualDecisionPageIndex, manualDecisionShowPaper, templateRecognizeController,
+  templateConfirmController, templateCutController, templateCutCompletedRunToken,
+  templateCutRunToken, recognizeController, gradeController, gradablePaperCount,
+  templateReviewPendingPageIndexes, templateDiagnosticPendingPageIndexes,
   clearTemplateResolvedGeometryDiagnostics, templateGeometryReview, templateCanConfirm,
   templateChoiceConflicts, needsIdentityResolution, identityCanConfirm,
   resetRecognitionCompletionState, resetRecognitionRecoveryState, recoverRecognitionConnection,
@@ -3678,11 +3020,11 @@ const ctx = {
   templateDrawingReferenceQuestions, templateReferenceImagesReady, setTemplatePreviewEditMode,
   answerSpecFields, questionScoringValid, syncTemplateBatchScores, applyTemplateBatchScores,
   revokeIdentityImageUrls, prepareIdentityResolutions, identityResolutionPayload, batchConfirmValid,
-  requireBatchService, requireRecognitionService, requireTemplateService, normalizeTemplateMode,
-  normalizeTemplateColumnMode, forgetTemplateRecognition, resumeTemplateRecognitionCheckpoint,
-  stopTemplateCutPolling, revokeTemplateCutPreviews, loadTemplateCutState, loadDailyUsage,
+  requireBatchService, requireRecognitionService, requireTemplateService, loadDailyUsage,
   refreshAvailability,
 }
+Object.assign(ctx, useTemplateRecognition(ctx))
+Object.assign(ctx, useTemplateCut(ctx))
 Object.assign(ctx, useTemplateGeometry(ctx))
 Object.assign(ctx, useTemplateLayout(ctx))
 Object.assign(ctx, useTemplateConfirm(ctx))
@@ -3694,20 +3036,22 @@ Object.assign(ctx, useBatchReport(ctx))
 Object.assign(ctx, useReviewResults(ctx))
 Object.assign(ctx, useUploadLifecycle(ctx))
 const {
-  templatePreviewQuestionIdentity, templateLayoutConflictNotice, resetTemplateColumns,
-  initializeTemplatePageSlots, templateSlotAnswer, correctTemplateSlotPosition,
-  templatePageEditingLocked, templatePreviewPageIndex, templatePreviewPagePosition,
-  selectTemplatePreviewPage, templateGeometryToolLabel, selectTemplateGeometryTarget,
-  templateGeometryHint, setTemplateReferenceEditor, clearTemplateSelection,
-  setTemplateStrokeSelection, armTemplateGeometryTool, startTemplateGeometryCreation,
-  deleteTemplateSelection, startTemplateGeometryGesture, startTemplateDividerMove,
-  startTemplateHandwritingMove, startTemplateHandwritingResize, startTemplateQuestionMove,
-  startTemplateQuestionResize, startTemplateAnswerMove, startTemplateAnswerResize,
-  startTemplateDrawingLabelMove, moveTemplateGeometry, finishTemplateGeometry,
-  setTemplateAnswerDrawingKind, cancelTemplateGeometry, templatePageNeedsSave,
-  insertTemplateQuestion, deleteTemplateQuestion, onConfirmTemplate, templateEditorProblems,
-  loadTemplateCorrectionCandidates, toggleQuestionCorrection, openTemplateEditor,
-  onImportTemplateBank, cancelTemplateDialog, resetTemplate, triggerFileUpload, triggerFolderUpload,
+  onTemplateFileChange, applyTemplateRecognitionResult, onRecognizeTemplate,
+  templateCutPageOriginalCount, applyTemplateCutState, loadTemplateCutPreviews,
+  loadTemplateCutState, onRunTemplateCut, templatePreviewQuestionIdentity,
+  templateLayoutConflictNotice, resetTemplateColumns, templateSlotAnswer,
+  correctTemplateSlotPosition, templatePageEditingLocked, templatePreviewPageIndex,
+  templatePreviewPagePosition, selectTemplatePreviewPage, templateGeometryToolLabel,
+  selectTemplateGeometryTarget, templateGeometryHint, setTemplateReferenceEditor,
+  clearTemplateSelection, setTemplateStrokeSelection, armTemplateGeometryTool,
+  startTemplateGeometryCreation, deleteTemplateSelection, startTemplateGeometryGesture,
+  startTemplateDividerMove, startTemplateHandwritingMove, startTemplateHandwritingResize,
+  startTemplateQuestionMove, startTemplateQuestionResize, startTemplateAnswerMove,
+  startTemplateAnswerResize, startTemplateDrawingLabelMove, moveTemplateGeometry,
+  finishTemplateGeometry, setTemplateAnswerDrawingKind, cancelTemplateGeometry,
+  templatePageNeedsSave, insertTemplateQuestion, deleteTemplateQuestion, onConfirmTemplate,
+  templateEditorProblems, toggleQuestionCorrection, openTemplateEditor, onImportTemplateBank,
+  cancelTemplateDialog, resetTemplate, triggerFileUpload, triggerFolderUpload,
   triggerTemplateUpload, processFiles, onFileInputChange, onFolderInputChange, onDrop, resetFiles,
   openPhoneCapture, importPhoneCaptures, openStudentSubmissions, importStudentSubmissions,
   resetOrientationReview, openOrientationReview, rotateOrientationPreview, applyOrientationState,
@@ -3721,7 +3065,7 @@ const {
   batchReportTopErrors, batchReportKnowledgePoints, batchReportTopErrorMax,
   batchReportKnowledgeErrorMax, openCourseware, hasActiveReviewRows, pendingReviewCount,
   resolvedActiveReviewCount, manualDecisionCompactDrafts, manualDecisionSolveDrafts,
-  manualDecisionHasEditableRows, manualDecisionComplete, clearReviewDisplay, openManualDecision,
+  manualDecisionHasEditableRows, manualDecisionComplete, openManualDecision,
   resetManualDecisionImage, changeManualDecisionPage, jumpToManualDecisionPage,
   openManualDecisionImage, saveManualDecision, voidOneReview, voidAllReviews, archiveAllReviews,
   downloadStudentErrors, downloadReviewImage, downloadCurrentReviewImage, downloadAllReviewImages,
