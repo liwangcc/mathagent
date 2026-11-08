@@ -1510,13 +1510,7 @@ import SheetLoader from '@/components/SheetLoader.vue'
 import VerdictSwatch from '@/components/VerdictSwatch.vue'
 import { forgetPhoneCaptureSession, loadPhoneCaptureSession } from '@/utils/phoneCaptureSession'
 import api from '@/api'
-import {
-  countGradablePapers,
-  isExcludedPaper,
-  mergeRecognitionPaper,
-  normalizeBatchReadiness,
-  validateGradeCompletion,
-} from '@/utils/batchReadiness'
+import { countGradablePapers, isExcludedPaper, normalizeBatchReadiness } from '@/utils/batchReadiness'
 import { gradingPhases } from '@/utils/gradingPhases'
 import { formatGradingDuration } from '@/utils/gradingTimer'
 import {
@@ -1524,15 +1518,10 @@ import {
   createSseEventError,
   createSseResponseError,
   isSseRequestCancelled,
-  isSseServiceFault,
   reportSseServiceFault,
   SseTransportError,
 } from '@/utils/sse'
-import {
-  validateUploadList,
-  compressImageFiles,
-  createRotatedOcrReadyFile,
-} from '@/utils/uploadValidation'
+import { validateUploadList, compressImageFiles } from '@/utils/uploadValidation'
 import {
   extractImagesFromDrop,
   extractImagesFromFileList,
@@ -1540,7 +1529,6 @@ import {
   IMPORT_FORMATS,
 } from '@/utils/fileExtraction'
 import { appendDesktopCanonicalCandidates } from '@/utils/desktopTemplateCanonicalization'
-import { appendStudentUploadFiles } from '@/utils/uploadSource'
 import {
   batchReportStatusText,
   batchReportStatusTone,
@@ -1665,13 +1653,12 @@ import {
   paperOcrFailed,
   paperOcrNeedsReview,
   paperOcrSucceeded,
-  canRecoverRecognitionConnection,
   recognitionIncompleteMessage,
   orientationReady,
   orientationReasonText,
-  orientationErrorMessage,
-  reviewErrorMessage,
 } from '@/utils/recognitionStatus'
+import { useRecognitionRun } from './upload/useRecognitionRun.js'
+import { useGrading } from './upload/useGrading.js'
 import { useBatchResume } from './upload/useBatchResume.js'
 import { useBatchReport } from './upload/useBatchReport.js'
 import { useReviewResults } from './upload/useReviewResults.js'
@@ -1735,7 +1722,7 @@ const grading = ref(false)
 // seconds (first paper graded -> now), so client clock skew does not matter.
 const gradingClockStart = ref(0)
 const gradingClockNow = ref(0)
-let gradingClockTimer = null
+
 const gradingElapsedSeconds = computed(() => (
   gradingClockStart.value ? Math.max(0, (gradingClockNow.value - gradingClockStart.value) / 1000) : 0
 ))
@@ -1878,7 +1865,6 @@ const orientationImageError = ref('')
 const orientationQuarterTurns = ref(0)
 const orientationSaving = ref(false)
 const orientationActionId = ref('')
-let orientationImageRequestId = 0
 
 // 批改阶段状态
 const progressList = ref([])
@@ -5123,400 +5109,6 @@ function releasePhoneCaptureSession() {
   api.capture.close(sessionId, { suppressErrorToast: true }).catch(() => {})
 }
 
-function resetOrientationReview() {
-  orientationImageRequestId += 1
-  if (orientationImageUrl.value) URL.revokeObjectURL(orientationImageUrl.value)
-  orientationImageUrl.value = ''
-  orientationImageLoading.value = false
-  orientationImageError.value = ''
-  orientationPaper.value = null
-  orientationQuarterTurns.value = 0
-  orientationActionId.value = ''
-}
-
-async function openOrientationReview(paper) {
-  resetOrientationReview()
-  orientationPaper.value = paper
-  orientationQuarterTurns.value = Number(paper?.manual_quarter_turns || 0) % 4
-  orientationDialogVisible.value = true
-  orientationImageLoading.value = true
-  const requestId = orientationImageRequestId
-  try {
-    const imageUrl = await api.grade.paperImage(batchId.value, paper.paper_id, 'original')
-    if (requestId !== orientationImageRequestId) {
-      URL.revokeObjectURL(imageUrl)
-      return
-    }
-    orientationImageUrl.value = imageUrl
-  } catch (err) {
-    if (requestId === orientationImageRequestId) {
-      orientationImageError.value = orientationErrorMessage(err, '原图加载失败，请刷新后重试')
-    }
-  } finally {
-    if (requestId === orientationImageRequestId) orientationImageLoading.value = false
-  }
-}
-
-function rotateOrientationPreview(delta) {
-  orientationQuarterTurns.value = (orientationQuarterTurns.value + delta + 4) % 4
-  orientationActionId.value = ''
-}
-
-function applyOrientationState(payload, recoveryOptions = {}) {
-  if (!payload?.batch_id) return
-  batchId.value = String(payload.batch_id)
-  papers.value = Array.isArray(payload.papers) ? payload.papers : []
-  form.category = payload.category || form.category || 'daily'
-  form.exam_name = payload.exam_name || ''
-  form.mode = payload.mode || form.mode || 'precise'
-  if (payload.source_mode === 'template' && payload.template_id) {
-    confirmedTemplateId.value = String(payload.template_id)
-    templateTeachingContext.value = payload.teaching_context || {}
-    templateMode.value = normalizeTemplateMode(payload.template_mode, 'marked')
-    templateColumnMode.value = normalizeTemplateColumnMode(payload.column_mode, templateColumnMode.value)
-  }
-  questions.value = payload.questions || []
-  applyRecognitionDone(payload)
-  if (
-    ['recognizing_remaining', 'recognition_interrupted'].includes(payload.status)
-    || (
-      ['failed', 'ocr_partial_failed'].includes(payload.status)
-      && Number(payload.retryable_failed_papers || 0) > 0
-    )
-  ) {
-    recognitionDone.value = false
-    recognitionCanGrade.value = false
-    recognitionError.value = ''
-    currentMessage.value = ''
-  }
-  activeStep.value = 1
-  updateRecognitionRecoveryState(payload, recoveryOptions)
-  if (!recoveryOptions.suppressAutoResume && recognitionRecoveryState.value.status === 'available' && !recognizing.value) {
-    scheduleRetryableOcrAutoResume(batchId.value, payload)
-  }
-  rememberOrientationBatch(batchId.value)
-}
-
-function rememberRecognitionBatch(payload) {
-  if (!payload?.batch_id) return
-  batchId.value = String(payload.batch_id)
-  rememberOrientationBatch(batchId.value)
-}
-
-function upsertRecognitionPaper(payload) {
-  const paperId = String(payload?.paper_id || '')
-  const filename = String(payload?.filename || '')
-  const index = papers.value.findIndex((item) => (
-    (paperId && String(item.paper_id || '') === paperId)
-    || (!paperId && filename && String(item.filename || '') === filename)
-  ))
-  if (index >= 0) papers.value[index] = mergeRecognitionPaper(papers.value[index], payload)
-  else papers.value.push(payload)
-}
-
-async function confirmOrientationAndRetry() {
-  if (!requireRecognitionService()) return
-  const paper = orientationPaper.value
-  if (!batchId.value || !paper?.paper_id || orientationSaving.value) return
-  orientationSaving.value = true
-  orientationImageError.value = ''
-  if (!orientationActionId.value) {
-    orientationActionId.value = globalThis.crypto?.randomUUID?.()
-      || `orientation-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
-  }
-  try {
-    const sourceResponse = await fetch(orientationImageUrl.value)
-    if (!sourceResponse.ok) throw new Error('原图读取失败，请刷新后重试')
-    const sourceBlob = await sourceResponse.blob()
-    const sourceFile = new File(
-      [sourceBlob],
-      String(paper.filename || 'paper').replace(/\.[^.]+$/, '') || 'paper',
-      { type: sourceBlob.type || 'image/jpeg' },
-    )
-    const rotatedFile = await createRotatedOcrReadyFile(
-      sourceFile,
-      orientationQuarterTurns.value,
-    )
-    const formData = new FormData()
-    formData.append('action_id', orientationActionId.value)
-    formData.append('quarter_turns_clockwise', String(orientationQuarterTurns.value))
-    formData.append('file', rotatedFile)
-    const payload = await api.grade.orientationConfirm(
-      batchId.value,
-      paper.paper_id,
-      formData,
-    )
-    applyOrientationState(payload)
-    orientationActionId.value = ''
-    orientationDialogVisible.value = false
-    if (payload.can_grade) {
-      await onConfirmGrade()
-      return
-    }
-    ElMessage.success('该卷方向已确认并完成单卷重识别，请继续处理其余异常试卷')
-  } catch (err) {
-    orientationImageError.value = orientationErrorMessage(err, '方向确认失败，请稍后重试')
-    notifyProcessingError(err, orientationImageError.value)
-  } finally {
-    orientationSaving.value = false
-  }
-}
-
-function canExcludeRecognitionPaper(paper) {
-  if (!paper?.paper_id || !batchId.value || recognizing.value || grading.value) return false
-  if (isExcludedPaper(paper)) return false
-  // Resumable or waiting work goes first; exclusion is only for pages whose
-  // automatic recovery is exhausted.
-  if (['waiting', 'available', 'service_fault'].includes(recognitionRecoveryState.value.status)) return false
-  return paperOcrFailed(paper)
-}
-
-async function excludeRecognitionPaper(paper) {
-  if (!canExcludeRecognitionPaper(paper) || excludingPaperId.value) return false
-  const label = paper.filename || paper.student_name || '该试卷'
-  if (!window.confirm(`确定将“${label}”排除出本批次吗？该卷不会被批阅，也不会写入学生档案；其余试卷可以继续批阅。如需批阅该卷，请重新拍摄后单独上传。`)) return false
-  excludingPaperId.value = String(paper.paper_id)
-  try {
-    const payload = await api.grade.excludePaper(batchId.value, paper.paper_id)
-    applyOrientationState(payload)
-    if (payload?.can_grade) {
-      ElMessage.success('已排除该卷，开始批阅其余试卷')
-      await onConfirmGrade()
-      return true
-    }
-    ElMessage.success('已排除该卷，请继续处理其余未完成试卷')
-    return true
-  } catch (err) {
-    notifyProcessingError(err, reviewErrorMessage(err, '排除失败，请刷新后重试'))
-    return false
-  } finally {
-    excludingPaperId.value = ''
-  }
-}
-
-function reset() {
-  recognitionAutoArmed.value = true
-  clearRecognitionAutoResume({ resetAttempts: true })
-  fileList.value = []
-  forgetOrientationBatch()
-  resetRecognitionCompletionState()
-  gradeError.value = ''
-  // A pending/confirmed template freezes the grading contract; only clear student papers.
-  if (confirmedTemplateId.value || pendingTemplateId.value || templateDialogVisible.value) return
-  form.category = ''
-  form.exam_name = ''
-  form.mode = 'precise'
-  templateMode.value = 'marked'
-  templateColumnMode.value = 'double'
-}
-
-async function continueAfterRecognition() {
-  if (recognizing.value || grading.value) return false
-  if (!recognitionDone.value || !recognitionCanGrade.value) {
-    recognitionError.value ||= '本批次 OCR 尚未完整完成，不能开始批阅。'
-    ElMessage.warning(recognitionError.value)
-    return false
-  }
-  if (!questions.value.length) {
-    recognitionError.value = '识别结果缺少可批阅题目，请重新识别或联系管理员。'
-    ElMessage.warning(recognitionError.value)
-    return false
-  }
-  return onConfirmGrade()
-}
-
-function startNewBatch() {
-  if (recognizing.value || grading.value) return
-  // Only release this page's recovery pointers; durable server batches and
-  // the teacher-confirmed template remain untouched.
-  clearRecognitionAutoResume({ resetAttempts: true })
-  forgetOrientationBatch()
-  activeStep.value = 0
-  questions.value = []
-  papers.value = []
-  batchId.value = ''
-  resetRecognitionCompletionState()
-  gradeError.value = ''
-  resetFiles()
-  forgetReviewBatch()
-  clearReviewDisplay()
-  resetRecognitionRecoveryState()
-  identityResolutions.value = []
-  identityOptionsLoading.value = false
-  identityOptionsError.value = ''
-  recognized.current = 0
-  recognized.total = 0
-  currentMessage.value = ''
-}
-
-// ── 开始识别：先补齐批次信息（后端必需），再进入识别 ──
-function onStartRecognize() {
-  if (!requireRecognitionService()) return
-  if (!fileList.value.length) { ElMessage.warning('请先选择文件'); return }
-  if (!confirmedTemplateId.value) {
-    ElMessage.warning('请先识别并保存本次模板')
-    return
-  }
-  if (templateDialogVisible.value) {
-    ElMessage.warning('请先保存或关闭模板编辑窗口')
-    return
-  }
-  if (!anonymous.value && !auth.currentClassId) {
-    ElMessage.warning('请先在顶部选择或创建班级')
-    return
-  }
-  batchDialogVisible.value = true
-}
-
-function maybeAutoStartRecognition() {
-  // Only the saved answer/geometry contract permits comparison and grading;
-  // finishing template correction or student image preparation does not.
-  if (!recognitionAutoArmed.value || !confirmedTemplateId.value || !fileList.value.length) return
-  if (recognizing.value || grading.value || imagePreprocessing.value || imageExtracting.value) return
-  if (recognitionBlocksNewWork.value || templateDialogVisible.value) return
-  if (!batchConfirmValid.value || (!anonymous.value && !auth.currentClassId)) return
-  recognitionAutoArmed.value = false
-  batchDialogVisible.value = false
-  void runRecognize()
-}
-
-function onBatchConfirm() {
-  if (!requireRecognitionService()) return
-  if (!batchConfirmValid.value) return
-  recognitionAutoArmed.value = false
-  batchDialogVisible.value = false
-  runRecognize()
-}
-
-// ── 阶段一：按已确认模板识别学生试卷 ──
-async function runRecognize() {
-  if (!requireRecognitionService()) return
-  if (recognizing.value) return
-  if (!fileList.value.length) { ElMessage.warning('请先选择文件'); return }
-  if (!form.category) { ElMessage.warning('请选择批次类型'); return }
-
-  const fd = new FormData()
-  appendStudentUploadFiles(fd, fileList.value)
-  fd.append('category', form.category)
-  fd.append('mode', form.mode)
-  if (anonymous.value) fd.append('anonymous', 'true')
-  else if (inheritIdentity.value) fd.append('inherit_identity', 'true')
-  if (form.category === 'exam' && form.exam_name) fd.append('exam_name', form.exam_name)
-  // 学生试卷始终复用已确认模板；服务端拒绝缺少 template_id 的请求。
-  fd.append('template_id', confirmedTemplateId.value)
-
-  recognizing.value = true
-  activeStep.value = 1
-  identityResolutions.value = []
-  identityOptionsLoading.value = false
-  identityOptionsError.value = ''
-  papers.value = []
-  questions.value = []
-  clearRecognitionAutoResume({ resetAttempts: true })
-  // Keep the old durable storage pointer until this request creates a batch,
-  // but never use that older batch to recover a failed new upload.
-  batchId.value = ''
-  resetRecognitionCompletionState()
-  resetRecognitionRecoveryState()
-  gradeError.value = ''
-  recognized.current = 0
-  recognized.total = fileList.value.length
-  progressList.value = []
-  gradeTotal.value = fileList.value.length
-  currentMessage.value = ''
-  recognizeController.value = new AbortController()
-
-  let requestBatchId = ''
-  let doneData = null
-  try {
-    const response = await api.grade.recognize(fd, recognizeController.value.signal)
-    void loadDailyUsage()
-    if (!response.ok) {
-      throw await createSseResponseError(response, '识别请求失败')
-    }
-    await consumeSse(response, (evt, data) => {
-      if (data?.batch_id) {
-        requestBatchId = String(data.batch_id)
-        releasePhoneCaptureSession()
-      }
-      if (evt === 'progress') {
-        rememberRecognitionBatch(data)
-        currentMessage.value = data.message || ''
-        if (typeof data.current === 'number') recognized.current = data.current
-        if (typeof data.total === 'number') recognized.total = data.total
-      } else if (evt === 'paper') {
-        rememberRecognitionBatch(data)
-        upsertRecognitionPaper(data)
-      } else if (evt === 'result') {
-        progressList.value.push(data)
-      } else if (evt === 'done') {
-        rememberRecognitionBatch(data)
-        doneData = data
-        questions.value = data.questions || []
-        clearRecognitionAutoResume({ resetAttempts: true })
-        applyRecognitionDone(data)
-        currentMessage.value = ''
-      } else if (evt === 'error') {
-        rememberRecognitionBatch(data)
-        throw createSseEventError(data, '识别出错')
-      }
-    })
-    if (!recognitionCanGrade.value) {
-      activeStep.value = 1
-      scheduleRetryableOcrAutoResume(requestBatchId, doneData)
-      return
-    }
-    if (!questions.value.length) {
-      throw new Error('未识别到可用于批改的题目，请检查视觉模型服务、网络或试卷图片')
-    }
-    // 模板题干和答案已经由老师确认，识别完成后直接进入批改。
-    activeStep.value = 1
-    await onConfirmGrade()
-  } catch (err) {
-    const signal = recognizeController.value?.signal
-    if (!isSseRequestCancelled(err, signal)) {
-      const failureCode = String(err?.code || '').toUpperCase()
-      const targetBatchId = requestBatchId
-      const connectionRecovery = canRecoverRecognitionConnection(err, signal)
-      const serviceFault = isSseServiceFault(err, { signal })
-      const refreshed = targetBatchId
-        ? await refreshRecognitionStateAfterFailure(targetBatchId, {
-            failureCode, serviceFault: serviceFault && !connectionRecovery,
-            isCurrent: () => !signal?.aborted && targetBatchId === String(batchId.value || ''),
-          })
-        : false
-      if (signal?.aborted) return
-      if (connectionRecovery && await continueRefreshedRecognition(refreshed)) return
-      if (connectionRecovery && recoverRecognitionConnection(targetBatchId, refreshed)) return
-      reportSseServiceFault(
-        err, markServiceFault,
-        '学生试卷识别链路中断，请稍后重试；若持续发生请联系管理员。',
-        { signal },
-      )
-      if (!targetBatchId) updateRecognitionRecoveryState({}, { failureCode, serviceFault })
-      if (!refreshed) recognitionDone.value = false
-      recognitionCanGrade.value = false
-      const rawMessage = String(err?.message || '')
-      recognitionError.value = (
-        err instanceof SseTransportError
-        || rawMessage === 'Failed to fetch'
-        || rawMessage === 'Network Error'
-        || /networkerror/i.test(rawMessage)
-      )
-        ? '识别连接中断：服务器可能正在重启或预处理超时，请勿连续重复提交；稍后重试，若仍失败请联系管理员查看该时段服务日志。'
-        : (rawMessage || '识别失败')
-      currentMessage.value = ''
-      notifyProcessingError(err, recognitionRecoveryState.value.message || recognitionError.value)
-      activeStep.value = 1
-    } else {
-      activeStep.value = 0
-    }
-  } finally {
-    recognizing.value = false
-    recognizeController.value = null
-  }
-}
-
 async function loadDailyUsage() {
   try {
     const data = await api.usage.stats()
@@ -5524,169 +5116,6 @@ async function loadDailyUsage() {
   } catch {
     dailyUsage.value = null
   }
-}
-
-async function onConfirmIdentitiesAndGrade() {
-  if (grading.value) return false
-  if (!identityCanConfirm.value) {
-    ElMessage.warning('请为每张未确认试卷选择名单中的学生；确需例外新建时，请确认姓名和学号')
-    return
-  }
-  identityDialogVisible.value = false
-  await onConfirmGrade(true)
-}
-
-// ── 阶段二：按冻结模板的答案批改 ──
-async function onConfirmGrade(skipIdentityGate = false) {
-  if (grading.value) return false
-  if (!requireBatchService()) {
-    gradeError.value = `批阅未开始：${serviceState.value.message || '批改链路当前不可用，请稍后再试。'}`
-    return false
-  }
-  if (!recognitionDone.value || !recognitionCanGrade.value) {
-    recognitionError.value ||= '本批次 OCR 尚未完整完成，不能开始部分批阅。请重新识别全部试卷。'
-    gradeError.value = `批阅未开始：${recognitionError.value}`
-    activeStep.value = 1
-    ElMessage.warning(recognitionError.value)
-    return false
-  }
-  if (!skipIdentityGate && needsIdentityResolution.value) {
-    identityDialogVisible.value = true
-    if (!identityResolutions.value.length) await prepareIdentityResolutions()
-    return false
-  }
-
-  const payload = {
-    batch_id: batchId.value,
-    mode: form.mode,
-    category: form.category || 'daily',
-    exam_name: form.category === 'exam' ? form.exam_name : '',
-    // The server grades against the batch's frozen template answers.
-    identity_resolutions: identityResolutionPayload(),
-  }
-
-  const expectedGradeTotal = gradablePaperCount.value
-  if (!expectedGradeTotal) {
-    gradeError.value = '当前没有可批阅的试卷，请重新识别全部试卷。'
-    ElMessage.warning(gradeError.value)
-    return false
-  }
-
-  grading.value = true
-  reviewBusy.value = false
-  reviewArchived.value = false
-  reviewRevision.value = 0
-  progressList.value = []
-  gradeTotal.value = expectedGradeTotal
-  gradeError.value = ''
-  summary.value = null
-  reviewRestoredLabel.value = ''
-  coursewareRecommendations.value = []
-  coursewareRecommendationState.value = 'idle'
-  coursewareRecommendationQuery.value = {}
-  coursewareRecommendationKey.value = ''
-  resetBatchReport()
-  currentMessage.value = ''
-  gradeController.value = new AbortController()
-  startGradingClock()
-  let completedSummary = null
-  let completedRevision = 0
-
-  try {
-    const response = await api.grade.confirm(payload, gradeController.value.signal)
-    if (!response.ok) {
-      throw await createSseResponseError(response, '批改请求失败')
-    }
-    await consumeSse(response, (evt, data) => {
-      if (evt === 'progress') {
-        currentMessage.value = data.message || ''
-        if (typeof data.total === 'number') gradeTotal.value = data.total
-        anchorGradingClock(data.grading_elapsed_seconds)
-      } else if (evt === 'result') {
-        progressList.value.push(data)
-        currentMessage.value = ''
-      } else if (evt === 'done') {
-        // `done` is sent only after the server saved this batch's review, so
-        // keep the current batch restorable even if this client rejects the
-        // stream below; an older saved review must not take its place.
-        if (Number(data.total) > 0) rememberReviewBatch(batchId.value)
-        const completion = validateGradeCompletion({
-          expectedTotal: expectedGradeTotal,
-          reportedTotal: data.total,
-          receivedTotal: progressList.value.length,
-        })
-        if (!completion.complete) throw new SseTransportError(completion.message)
-        completedSummary = {
-          total: data.total,
-          avg_score: data.avg_score ?? null,
-          grading_elapsed_seconds: data.grading_elapsed_seconds ?? null,
-        }
-        completedRevision = Number(data.review_revision || 0)
-        currentMessage.value = ''
-      } else if (evt === 'error') {
-        throw createSseEventError(data, '批改出错')
-      }
-    })
-    if (completedSummary) {
-      summary.value = completedSummary
-      reviewRevision.value = completedRevision
-      rememberReviewBatch(batchId.value)
-      forgetOrientationBatch()
-      // SSE rows are progress summaries; reload the authoritative persisted review
-      // so page groups and per-question page references are available immediately.
-      const reviewPayload = await api.grade.reviewGet(batchId.value)
-      if (!hydrateReviewState(reviewPayload)) throw new Error('批阅结果已生成，但审阅工作台恢复失败')
-      startBatchReportPolling()
-      const elapsed = summary.value.grading_elapsed_seconds
-      ElMessage.success(
-        `批改完成：共 ${summary.value.total} ${anonymous.value ? '页' : '张'}`
-        + (elapsed != null ? `，批阅用时 ${formatGradingDuration(elapsed)}` : ''),
-      )
-      // 完成后回到上传步骤，结果保留在进度卡片
-      activeStep.value = 0
-      fileList.value = []
-      return true
-    }
-    throw new SseTransportError('批改连接提前结束')
-  } catch (err) {
-    summary.value = null
-    const signal = gradeController.value?.signal
-    if (!isSseRequestCancelled(err, signal)) {
-      reportSseServiceFault(
-        err,
-        markServiceFault,
-        '批改链路连接中断，已完成结果会保留；请稍后重试。',
-        { signal },
-      )
-      gradeError.value = err.message || '批改失败'
-      notifyProcessingError(err, gradeError.value)
-    }
-  } finally {
-    stopGradingClock()
-    grading.value = false
-    gradeController.value = null
-  }
-  return false
-}
-
-function startGradingClock() {
-  stopGradingClock()
-  gradingClockStart.value = Date.now()
-  gradingClockNow.value = gradingClockStart.value
-  gradingClockTimer = window.setInterval(() => { gradingClockNow.value = Date.now() }, 1000)
-}
-
-function anchorGradingClock(serverElapsedSeconds) {
-  const seconds = Number(serverElapsedSeconds)
-  if (!gradingClockStart.value || serverElapsedSeconds == null || !Number.isFinite(seconds) || seconds < 0) return
-  gradingClockNow.value = Date.now()
-  gradingClockStart.value = gradingClockNow.value - seconds * 1000
-}
-
-function stopGradingClock() {
-  if (gradingClockTimer) window.clearInterval(gradingClockTimer)
-  gradingClockTimer = null
-  gradingClockStart.value = 0
 }
 
 async function refreshAvailability() {
@@ -5793,42 +5222,53 @@ async function refreshAvailability() {
 // The rest of the page lives in one composable per part (views/upload/use*.js). Each one gets ctx,
 // holding what the earlier parts defined; it calls functions of later parts through ctx.
 const ctx = {
-  anonymous, auth, router, REVIEW_BATCH_STORAGE_PREFIX, ORIENTATION_BATCH_STORAGE_PREFIX, fileList,
-  imagePreprocessing, imageExtracting, activeStep, recognizing, grading, availabilityPollTimer,
-  recognitionBlocksNewWork, markServiceFault, recognizingTemplate, confirmedTemplateId,
-  templateDialogVisible, confirmingTemplate, templateCutBusy, form, batchId, recognized,
-  recognitionDone, recognitionCanGrade, recognitionError, recognitionRecoveryState, currentMessage,
-  questions, progressList, gradeTotal, gradeError, summary, reviewRestoredLabel,
-  coursewareRecommendations, coursewareRecommendationState, coursewareRecommendationQuery,
-  coursewareRecommendationKey, batchReport, reviewBusy, reviewImagesDownloading, reviewArchived,
-  reviewRevision, manualDecisionDialogVisible, manualDecisionRow, manualDecisionDrafts,
-  manualDecisionSaving, manualDecisionImageUrl, manualDecisionImageLoading,
-  manualDecisionImageError, manualDecisionPages, manualDecisionPageIndex, manualDecisionShowPaper,
-  templateRecognizeController, templateConfirmController, templateCutController,
-  templateCutRunToken, recognizeController, gradeController, resetRecognitionCompletionState,
-  resetRecognitionRecoveryState, recoverRecognitionConnection, clearRecognitionAutoResume,
-  scheduleRetryableOcrAutoResume, updateRecognitionRecoveryState, applyRecognitionDone,
-  revokeIdentityImageUrls, requireBatchService, resumeTemplateRecognitionCheckpoint,
-  stopTemplateCutPolling, revokeTemplateCutPreviews, resetOrientationReview, applyOrientationState,
-  rememberRecognitionBatch, upsertRecognitionPaper, maybeAutoStartRecognition, loadDailyUsage,
-  onConfirmGrade, stopGradingClock, refreshAvailability,
+  anonymous, auth, router, REVIEW_BATCH_STORAGE_PREFIX, ORIENTATION_BATCH_STORAGE_PREFIX,
+  inheritIdentity, fileList, imagePreprocessing, imageExtracting, batchDialogVisible, activeStep,
+  recognizing, grading, gradingClockStart, gradingClockNow, serviceState, availabilityPollTimer,
+  recognitionBlocksNewWork, markServiceFault, templateMode, templateColumnMode, recognizingTemplate,
+  confirmedTemplateId, templateTeachingContext, templateDialogVisible, confirmingTemplate,
+  templateCutBusy, pendingTemplateId, identityDialogVisible, identityResolutions,
+  identityOptionsLoading, identityOptionsError, form, batchId, papers, recognized, recognitionDone,
+  recognitionAutoArmed, recognitionCanGrade, recognitionError, recognitionRecoveryState,
+  excludingPaperId, currentMessage, questions, orientationDialogVisible, orientationPaper,
+  orientationImageUrl, orientationImageLoading, orientationImageError, orientationQuarterTurns,
+  orientationSaving, orientationActionId, progressList, gradeTotal, gradeError, summary,
+  reviewRestoredLabel, coursewareRecommendations, coursewareRecommendationState,
+  coursewareRecommendationQuery, coursewareRecommendationKey, batchReport, reviewBusy,
+  reviewImagesDownloading, reviewArchived, reviewRevision, manualDecisionDialogVisible,
+  manualDecisionRow, manualDecisionDrafts, manualDecisionSaving, manualDecisionImageUrl,
+  manualDecisionImageLoading, manualDecisionImageError, manualDecisionPages,
+  manualDecisionPageIndex, manualDecisionShowPaper, templateRecognizeController,
+  templateConfirmController, templateCutController, templateCutRunToken, recognizeController,
+  gradeController, gradablePaperCount, needsIdentityResolution, identityCanConfirm,
+  resetRecognitionCompletionState, resetRecognitionRecoveryState, recoverRecognitionConnection,
+  clearRecognitionAutoResume, scheduleRetryableOcrAutoResume, updateRecognitionRecoveryState,
+  applyRecognitionDone, revokeIdentityImageUrls, prepareIdentityResolutions,
+  identityResolutionPayload, batchConfirmValid, requireBatchService, requireRecognitionService,
+  normalizeTemplateMode, normalizeTemplateColumnMode, resumeTemplateRecognitionCheckpoint,
+  stopTemplateCutPolling, revokeTemplateCutPreviews, resetFiles, releasePhoneCaptureSession,
+  loadDailyUsage, refreshAvailability,
 }
+Object.assign(ctx, useRecognitionRun(ctx))
+Object.assign(ctx, useGrading(ctx))
 Object.assign(ctx, useBatchResume(ctx))
 Object.assign(ctx, useBatchReport(ctx))
 Object.assign(ctx, useReviewResults(ctx))
 Object.assign(ctx, useUploadLifecycle(ctx))
 const {
-  rememberOrientationBatch, forgetOrientationBatch, refreshRecognitionStateAfterFailure,
+  resetOrientationReview, openOrientationReview, rotateOrientationPreview, applyOrientationState,
+  confirmOrientationAndRetry, canExcludeRecognitionPaper, excludeRecognitionPaper, reset,
+  continueAfterRecognition, startNewBatch, onStartRecognize, onBatchConfirm, runRecognize,
+  onConfirmIdentitiesAndGrade, onConfirmGrade, refreshRecognitionStateAfterFailure,
   continueRefreshedRecognition, resumeRecognitionBatch, dailyAverageCorrectRate, batchReportStats,
   batchReportTotalQuestions, batchReportNeedsReviewCount, batchReportJudgedCount,
   batchReportErrorTotal, batchReportPrimaryValue, batchReportPrimaryLabel,
   batchReportErrorRatePercent, batchReportDiagnosticErrorRateText, batchReportOutcomeSegments,
   batchReportTopErrors, batchReportKnowledgePoints, batchReportTopErrorMax,
-  batchReportKnowledgeErrorMax, openCourseware, resetBatchReport, startBatchReportPolling,
-  hasActiveReviewRows, pendingReviewCount, resolvedActiveReviewCount, manualDecisionCompactDrafts,
-  manualDecisionSolveDrafts, manualDecisionHasEditableRows, manualDecisionComplete,
-  rememberReviewBatch, forgetReviewBatch, clearReviewDisplay, hydrateReviewState,
-  openManualDecision, resetManualDecisionImage, changeManualDecisionPage, jumpToManualDecisionPage,
+  batchReportKnowledgeErrorMax, openCourseware, hasActiveReviewRows, pendingReviewCount,
+  resolvedActiveReviewCount, manualDecisionCompactDrafts, manualDecisionSolveDrafts,
+  manualDecisionHasEditableRows, manualDecisionComplete, clearReviewDisplay, openManualDecision,
+  resetManualDecisionImage, changeManualDecisionPage, jumpToManualDecisionPage,
   openManualDecisionImage, saveManualDecision, voidOneReview, voidAllReviews, archiveAllReviews,
   downloadStudentErrors, downloadReviewImage, downloadCurrentReviewImage, downloadAllReviewImages,
   downloadAllErrors, downloadReviewSummary,
