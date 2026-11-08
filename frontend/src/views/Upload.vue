@@ -1492,10 +1492,9 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, watch, nextTick, shallowRef } from 'vue'
+import { ref, reactive, computed, watch, shallowRef } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { notifyProcessingError } from '@/utils/errorNotification'
 import { ArrowDown, ArrowRight, UploadFilled } from '@element-plus/icons-vue'
 import { renderAnswerLatex } from '@/utils/latex'
 import AnimatedNumber from '@/components/AnimatedNumber.vue'
@@ -1509,7 +1508,7 @@ import StudentSubmissionDialog from '@/components/StudentSubmissionDialog.vue'
 import SheetLoader from '@/components/SheetLoader.vue'
 import VerdictSwatch from '@/components/VerdictSwatch.vue'
 import api from '@/api'
-import { countGradablePapers, isExcludedPaper, normalizeBatchReadiness } from '@/utils/batchReadiness'
+import { countGradablePapers, isExcludedPaper } from '@/utils/batchReadiness'
 import { gradingPhases } from '@/utils/gradingPhases'
 import { formatGradingDuration } from '@/utils/gradingTimer'
 import { IMPORT_ACCEPT, IMPORT_FORMATS } from '@/utils/fileExtraction'
@@ -1522,30 +1521,18 @@ import {
   reportDistributionPercent,
 } from '@/utils/batchReportView'
 import {
-  buildIdentityResolutionItems,
-  identityResolutionsReady,
-  mergeRosterIntoIdentityItems,
-  serializeIdentityResolutions,
-} from '@/utils/identityResolution'
-import {
-  applyUniformTemplateScore,
   choiceContractValid,
   templateIsPureDrawing,
-  normalizeChoiceAnswer,
   templateAnswerText,
   templateChoiceConflictEntries,
   templateChoiceReviewEntries,
   templateFillAnswerSlots,
   templateMissingAnswerSlots,
   templateMissingAnswerNotice,
-  templateMaxFlagEntries,
   templateMaxFlagNotice,
   keepTemplateMaxFlags,
-  templateRegionSlotsValid,
   templateReviewEntries,
   templateQuestionIdentity,
-  templateQuestionMetadata,
-  templateDrawingReference,
   isTemplateDirectoryLeaf,
 } from '@/utils/templateReview'
 import { templateSlotBoxes, templateSlotLabel } from '@/utils/templateSlots'
@@ -1572,8 +1559,6 @@ import {
   templateRegionCandidateUsable,
 } from '@/utils/templateGeometry'
 import {
-  defaultGradingMethod,
-  toStringList,
   markTemplateQuestionInput,
   markTemplateAnswerManualEdit,
   isCustomFill,
@@ -1598,7 +1583,6 @@ import {
   templateDrawingReferenceRegionsFor,
   markTemplateReferenceImageReady,
   templateDrawingReferenceSummary,
-  templateDrawingReferenceSnapshot,
 } from '@/utils/templateDrawing'
 import {
   requiredHardwareState,
@@ -1608,10 +1592,12 @@ import {
   paperOcrFailed,
   paperOcrNeedsReview,
   paperOcrSucceeded,
-  recognitionIncompleteMessage,
   orientationReady,
   orientationReasonText,
 } from '@/utils/recognitionStatus'
+import { useRecognitionRecovery } from './upload/useRecognitionRecovery.js'
+import { useTemplateReference } from './upload/useTemplateReference.js'
+import { useIdentityResolution } from './upload/useIdentityResolution.js'
 import { useTemplateRecognition } from './upload/useTemplateRecognition.js'
 import { useTemplateCut } from './upload/useTemplateCut.js'
 import { useTemplateGeometry } from './upload/useTemplateGeometry.js'
@@ -1703,10 +1689,7 @@ const OCR_RETRY_AUTO_RESUME_DELAY_MS = 15000
 const availabilityPollTimer = shallowRef(null)
 let availabilityCheckPending = false
 const serviceFaultHoldUntil = shallowRef(0)
-let recognitionAutoResumeTimer = null
-let recognitionAutoResumeAttempts = 0
-let recognitionAutoResumeGeneration = 0
-let recognitionRetryAutoResumedBatchId = ''
+
 const serviceBlocksNewWork = computed(() => (
   ['checking', 'unavailable', 'fault'].includes(serviceState.value.status)
 ))
@@ -2283,564 +2266,6 @@ const templateFillBatchEntryCount = computed(() => templateFillEntries.value.fil
 const templateCustomFillCount = computed(() => templateFillEntries.value.length - templateFillBatchEntryCount.value)
 const templateSolveEntries = computed(() => templateReviewEntries(templatePages.value, 'solve'))
 
-const needsIdentityResolution = computed(() => papers.value.some((paper) => {
-  if (anonymous.value) return false
-  if (paper.error && !paper.requires_manual_review) return false
-  const identity = paper.identity || {}
-  return identity.status !== 'matched' || !identity.student_id
-}))
-const identityCanConfirm = computed(() => identityResolutionsReady(identityResolutions.value))
-
-function resetRecognitionCompletionState() {
-  recognitionDone.value = false
-  recognitionCanGrade.value = false
-  recognitionError.value = ''
-  recognitionStats.value = { uploaded: 0, succeeded: 0, manualReview: 0, failed: 0, excluded: 0, unresolved: 0 }
-}
-
-function resetRecognitionRecoveryState() {
-  recognitionRecoveryState.value = { status: 'none', message: '' }
-}
-
-function recoverRecognitionConnection(targetBatchId, payload) {
-  if (!payload || String(payload.batch_id || '') !== String(targetBatchId || '')
-    || String(batchId.value || '') !== String(targetBatchId || '')
-    || !['recognizing_remaining', 'recognition_interrupted'].includes(payload.status)
-    || recognitionRecoveryState.value.status !== 'available') return false
-  // This owned snapshot proves reachability, not spare model/hardware capacity.
-  serviceFaultHoldUntil.value = 0
-  serviceState.value = { status: 'queued', label: '批次可恢复', message: '已连接服务器，正在恢复已保存的识别进度。' }
-  recognitionError.value = ''
-  currentMessage.value = ''
-  activeStep.value = 1
-  scheduleRecognitionAutoResume(targetBatchId)
-  return true
-}
-
-async function pollRecognitionRecovery(target, generation) {
-  const isCurrent = () => generation === recognitionAutoResumeGeneration
-    && target === String(batchId.value || '') && !recognizing.value && !grading.value
-  if (!isCurrent()) return
-  const payload = await refreshRecognitionStateAfterFailure(target, { isCurrent, suppressAutoResume: true })
-  if (!isCurrent() || !payload) return
-  if (await continueRefreshedRecognition(payload)) return
-  if (recognitionRecoveryState.value.status !== 'available') return
-  // Active batch states still own server work. Only read checkpoints until it
-  // ends; a race acquiring the lock is handled by BATCH_RECOGNITION_BUSY below.
-  if (payload.status === 'recognizing_remaining') {
-    recoverRecognitionConnection(target, payload)
-    return
-  }
-  if (payload.status === 'recognition_interrupted') {
-    await resumeRecognitionBatch(target, { automatic: true })
-  }
-}
-
-function clearRecognitionAutoResume({ resetAttempts = false } = {}) {
-  recognitionAutoResumeGeneration += 1
-  if (recognitionAutoResumeTimer) {
-    window.clearTimeout(recognitionAutoResumeTimer)
-    recognitionAutoResumeTimer = null
-  }
-  if (resetAttempts) recognitionAutoResumeAttempts = 0
-}
-
-function scheduleRecognitionAutoResume(targetBatchId) {
-  const target = String(targetBatchId || '')
-  if (!target || target !== String(batchId.value || '')) return false
-  clearRecognitionAutoResume()
-  if (recognitionAutoResumeAttempts >= ACCELERATOR_AUTO_RESUME_LIMIT) {
-    recognitionRecoveryState.value = {
-      status: 'available',
-      message: '自动恢复检查已达上限。已完成结果仍保留，可稍后点击“继续处理未完成试卷”。',
-    }
-    return false
-  }
-  recognitionAutoResumeAttempts += 1
-  recognitionRecoveryState.value = {
-    status: 'waiting',
-    message: `识别进度已保存，系统将在 ${ACCELERATOR_AUTO_RESUME_DELAY_MS / 1000} 秒后检查并继续；服务器仍在处理时只等待，不重复提交（${recognitionAutoResumeAttempts}/${ACCELERATOR_AUTO_RESUME_LIMIT}）。`,
-  }
-  const generation = recognitionAutoResumeGeneration
-  recognitionAutoResumeTimer = window.setTimeout(() => {
-    recognitionAutoResumeTimer = null
-    void pollRecognitionRecovery(target, generation)
-  }, ACCELERATOR_AUTO_RESUME_DELAY_MS)
-  return true
-}
-
-function scheduleRetryableOcrAutoResume(targetBatchId, payload = {}) {
-  const target = String(targetBatchId || '')
-  if (!target || target !== String(batchId.value || '')) return false
-  if (Number(payload?.retryable_failed_papers || 0) <= 0) return false
-  // The server allows each page one more attempt; spend it once per batch.
-  if (recognitionRetryAutoResumedBatchId === target) return false
-  recognitionRetryAutoResumedBatchId = target
-  clearRecognitionAutoResume()
-  recognitionRecoveryState.value = {
-    status: 'waiting',
-    message: `部分试卷识别暂时失败，系统将在 ${OCR_RETRY_AUTO_RESUME_DELAY_MS / 1000} 秒后自动重试这些试卷；也可立即点击“继续处理未完成试卷”。`,
-  }
-  recognitionAutoResumeTimer = window.setTimeout(() => {
-    recognitionAutoResumeTimer = null
-    if (target === String(batchId.value || '') && !recognizing.value && !grading.value) {
-      void resumeRecognitionBatch(target, { automatic: true })
-    }
-  }, OCR_RETRY_AUTO_RESUME_DELAY_MS)
-  return true
-}
-
-function updateRecognitionRecoveryState(payload = {}, { failureCode = '', serviceFault = false } = {}) {
-  // A fully recovered snapshot wins over historical status/error codes. Keep
-  // the same complete-paper gate as grading, not just the server's boolean.
-  if (payload?.can_grade === true && normalizeBatchReadiness(payload, {
-    expectedTotal: fileList.value.length,
-    papers: papers.value,
-  }).canGrade) {
-    resetRecognitionRecoveryState()
-    return
-  }
-  const code = String(failureCode || '').toUpperCase()
-  if (code === 'OCR_RETRY_EXHAUSTED') {
-    recognitionRecoveryState.value = {
-      status: 'exhausted',
-      message: '识别重试已耗尽，不能再自动恢复。请检查原图；若图片正常，请联系管理员检查模型服务。',
-    }
-    return
-  }
-  if (code === 'OCR_NO_RETRYABLE_FAILURES') {
-    recognitionRecoveryState.value = {
-      status: 'unrecoverable',
-      message: '当前失败试卷不可自动恢复，请检查原图或联系管理员。',
-    }
-    return
-  }
-  if (serviceFault && !payload?.status) {
-    recognitionRecoveryState.value = {
-      status: 'service_fault',
-      message: '批改链路当前故障，服务恢复后可继续处理未完成试卷。',
-    }
-    return
-  }
-
-  const status = String(payload?.status || '')
-  const retryableFailures = Number(payload?.retryable_failed_papers || 0)
-  const unresolved = Number(payload?.unresolved_papers || 0)
-  const failed = Number(payload?.failed_papers || 0)
-  const resumable = (
-    ['recognizing_remaining', 'recognition_interrupted'].includes(status)
-    || retryableFailures > 0
-    || (status === 'failed' && unresolved > 0)
-  )
-  if (resumable) {
-    recognitionRecoveryState.value = serviceFault
-      ? {
-          status: 'service_fault',
-          message: '批改链路当前故障，服务恢复后可继续处理未完成试卷。',
-        }
-      : {
-          status: 'available',
-          message: '本批次仍有未完成或可重试的试卷，可点击“继续处理未完成试卷”。',
-        }
-    return
-  }
-  if (failed > 0 || ['failed', 'ocr_partial_failed'].includes(status)) {
-    recognitionRecoveryState.value = {
-      status: 'unrecoverable',
-      message: '当前失败试卷不可自动恢复，自动重试可能已耗尽。请检查原图或联系管理员。',
-    }
-    return
-  }
-  resetRecognitionRecoveryState()
-}
-
-function applyRecognitionDone(data) {
-  const stats = normalizeBatchReadiness(data, {
-    expectedTotal: fileList.value.length,
-    papers: papers.value,
-  })
-  recognitionStats.value = stats
-  recognitionDone.value = true
-  recognitionCanGrade.value = stats.canGrade
-  recognitionError.value = stats.canGrade ? '' : recognitionIncompleteMessage(stats)
-  // An incomplete `done` must still say what can be done next (resume a
-  // retryable failure, or that a page is unrecoverable), not only that the
-  // batch is incomplete.
-  if (stats.canGrade) resetRecognitionRecoveryState()
-  else updateRecognitionRecoveryState(data)
-  recognized.current = stats.succeeded + stats.manualReview + stats.failed + stats.excluded
-  recognized.total = stats.uploaded || recognized.total
-}
-
-function templateQuestionSignature(pages = templatePages.value) {
-  return JSON.stringify((pages || []).map((page) => ({
-    page_index: Number(page.page_index),
-    questions: (page.questions || []).map((question) => ({
-      question_no: String(question.question_no ?? question.question_number ?? '').trim(),
-      question_text: String(question.question_text ?? question.content ?? '').trim(),
-      question_type: String(question.question_type || '').toLowerCase(),
-      choice_mode: String(question.choice_mode || '').toLowerCase(),
-    })),
-  })))
-}
-
-function templateReferenceQuestionEditBlockReason() {
-  if (templatePages.value.some((page) => (page.questions || []).some((question) => question._drawingReferenceDirty))) {
-    return '有尚未最终保存的作图参考修改，请先核对并最终确认模板保存，再重新打开增删题号；如不保留，请先取消本次模板草稿。'
-  }
-  return ''
-}
-
-function templateDrawingReferenceSaveSnapshot() {
-  return new Map(templatePages.value.flatMap((page) => (page.questions || []).map((question) => [question, templateDrawingReferenceSnapshot(question)])))
-}
-
-function clearSavedTemplateDrawingReferenceChanges(snapshot) {
-  for (const page of templatePages.value) {
-    for (const question of page.questions || []) {
-      if (snapshot.has(question) && snapshot.get(question) === templateDrawingReferenceSnapshot(question)) {
-        question._drawingReferenceDirty = false
-        if (question.drawing_reference) question.drawing_reference.teacher_confirmed = true
-      }
-    }
-  }
-}
-
-function templateDrawingReferenceQuestions(page) {
-  return (templatePages.value.find((item) => Number(item.page_index) === Number(page.pageIndex))?.questions || [])
-    .filter((question) => ['drawing', 'mixed'].includes(question.answer_kind))
-}
-
-function templateReferenceEditors(page) {
-  // 教师标注：每页至少保留一个编辑器宿主——没有作图题的页面也要能看到原图、
-  // 调整题号/作答框/分栏；作图参考控件只在该页存在作图题（q 非空）时出现。
-  const questions = templateDrawingReferenceQuestions(page)
-  return questions.length ? questions : [null]
-}
-
-
-function templateReferenceCanvasVisible(page, question) {
-  // 教师标注：整页只显示一张模板画布——几何模式跟随第一道作图题，
-  // 参考编辑模式跟随当前选中的题目，避免逐题编辑器各带一张一模一样的模板。
-  const questions = templateDrawingReferenceQuestions(page)
-  if (!questions.length) return question === null
-  const activeNumber = String(page.referenceQuestionNumber || '')
-  const editingReference = page.previewEditMode === 'reference'
-    && questions.some((item) => String(item.question_no) === activeNumber)
-  if (!editingReference) return questions[0] === question
-  return String(question.question_no) === activeNumber
-}
-
-function templateReferenceImagesReady(page) {
-  return templateDrawingReferenceQuestions(page).every((question) => page.referenceImageReadyNumbers?.[String(question.question_no)])
-}
-
-function setTemplatePreviewEditMode(page, mode) {
-  if (templatePageEditingLocked(page)) return
-  if (templateCropGesture.value) cancelTemplateGeometry({ pointerId: templateCropGesture.value.pointerId })
-  clearTemplateSelection(page)
-  page.geometryTool = ''
-  page.previewEditMode = mode
-}
-
-function selectTemplateDrawingReference(page, number) {
-  if (templatePageEditingLocked(page)) return
-  page.referenceQuestionNumber = String(number)
-  // Set the active question before switching modes so the visible editor and
-  // its interactive SVG are selected in the same render pass.
-  setTemplatePreviewEditMode(page, 'reference')
-}
-
-function openTemplateDrawingReference(pageIndex, number) {
-  const preview = templateCutPreviewPages.value.find((page) => Number(page.pageIndex) === Number(pageIndex))
-  if (!preview) { ElMessage.warning('模板预览尚未加载，请稍后重试'); return }
-  templateActivePreviewPage.value = Number(preview.pageIndex)
-  selectTemplateDrawingReference(preview, number)
-  document.getElementById(`template-reference-page-${Number(pageIndex)}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-}
-
-
-function answerSpecFields(question) {
-  const questionType = question.question_type || 'solve'
-  const directoryLeaf = isTemplateDirectoryLeaf(question)
-  const typedSlots = Object.hasOwn(question, 'region_kinds') || Object.hasOwn(question, 'slot_ids')
-  const blankCount = typedSlots ? question.blank_count
-    : questionType === 'fill' || directoryLeaf ? Math.min(20, Math.max(1, Number(question.blank_count) || 1)) : 1
-  const subquestionScores = questionType === 'solve'
-    ? (Array.isArray(question.subquestion_scores) ? question.subquestion_scores.map((value) => Math.max(0, Number(value) || 0)) : [])
-    : []
-  const typedGraphic = Array.isArray(question.region_kinds) && question.region_kinds.includes('drawing')
-  const fillScoringMode = !typedGraphic && questionType === 'fill' && blankCount > 1 && form.category === 'exam'
-    ? (['equal', 'all_or_nothing', 'custom'].includes(question.fill_scoring_mode) ? question.fill_scoring_mode : 'equal')
-    : 'equal'
-  const blankScores = fillScoringMode === 'custom'
-    ? (Array.isArray(question.blank_scores) ? question.blank_scores.map((value) => Number(value)) : [])
-    : []
-  // A standard figure needs a drawing position. Region marks decide that, as
-  // on the server; a stale figure on a non-drawing item would block saving.
-  const graphic = Array.isArray(question.region_kinds) && question.region_kinds.length
-    ? typedGraphic : ['drawing', 'mixed'].includes(question.answer_kind)
-  const drawingReference = graphic ? templateDrawingReference(question) : {}
-  return {
-    ...templateQuestionMetadata(question),
-    ...drawingReference,
-    question_type: questionType,
-    choice_mode: questionType === 'choice' && ['single', 'multiple'].includes(question.choice_mode)
-      ? question.choice_mode : 'unknown',
-    answer_variants: toStringList(question.answer_variants_text || question.answer_variants),
-    solution_steps: toStringList(question.solution_steps_text || question.solution_steps),
-    grading_method: question.grading_method || defaultGradingMethod(questionType),
-    max_score: form.category === 'exam' && ['choice', 'fill'].includes(questionType)
-      ? Number(question.max_score || 0)
-      : null,
-    blank_count: blankCount,
-    answer_slots: typedSlots || questionType === 'fill' || directoryLeaf ? templateFillAnswerSlots(question) : [],
-    fill_scoring_mode: fillScoringMode,
-    blank_scores: blankScores,
-    subquestion_count: questionType === 'solve' && !directoryLeaf
-      ? Math.min(20, Math.max(1, Number(question.subquestion_count) || 1))
-      : 1,
-    subquestion_scores: form.category === 'exam' && questionType === 'solve'
-      ? (directoryLeaf ? subquestionScores.slice(0, 1) : subquestionScores) : [],
-  }
-}
-
-function questionScoringValid(question) {
-  const questionType = question.question_type || 'solve'
-  if (!templateRegionSlotsValid(question)) return false
-  if (question.region_kinds?.includes('drawing')
-    && ((question.fill_scoring_mode && question.fill_scoring_mode !== 'equal') || question.blank_scores?.length)) return false
-  if (questionType === 'choice' && !templateIsPureDrawing(question)) {
-    const answer = normalizeChoiceAnswer(question.standard_answer ?? question.answer)
-    if (question.choice_mode === 'single' && answer.length !== 1) return false
-    if (question.choice_mode === 'multiple' && answer.length < 2) return false
-    if (!['single', 'multiple'].includes(question.choice_mode)) return false
-  }
-  if (questionType === 'fill') {
-    const blankCount = Number(question.blank_count) || 1
-    if (blankCount < 1 || blankCount > 20) return false
-    if (!templateIsPureDrawing(question) && !Object.hasOwn(question, 'region_kinds') && blankCount > 1 && toStringList(question.answer_slots_text || question.answer_slots).length !== blankCount) return false
-    if (form.category === 'exam' && question.fill_scoring_mode === 'custom') {
-      const scores = Array.isArray(question.blank_scores) ? question.blank_scores.map((value) => Number(value)) : []
-      if (scores.length !== blankCount || scores.some((value) => !Number.isFinite(value) || value <= 0)) return false
-      if (Math.abs(scores.reduce((sum, value) => sum + value, 0) - Number(question.max_score || 0)) > 0.0001) return false
-    }
-  }
-  if (questionType === 'solve' && form.category !== 'exam') {
-    const count = Number(question.subquestion_count) || 0
-    if (count < 1 || count > 20) return false
-  }
-  if (form.category !== 'exam') return true
-  if (['choice', 'fill'].includes(questionType)) return Number(question.max_score) > 0
-  return Array.isArray(question.subquestion_scores) && question.subquestion_scores.some((value) => Number(value) > 0)
-}
-
-function templateQuestionDomId(pageIndex, questionIndex) {
-  return `template-question-${pageIndex}-${questionIndex}`
-}
-
-function syncTemplateBatchScores() {
-  const firstChoice = templateChoiceReadyEntries.value.find(({ question }) => Number(question.max_score) > 0)
-  const firstFill = templateFillEntries.value.find(({ question }) => !isCustomFill(question) && Number(question.max_score) > 0)
-  templateChoiceScore.value = Number(firstChoice?.question.max_score) || 5
-  templateFillScore.value = Number(firstFill?.question.max_score) || 5
-}
-
-function applyTemplateBatchScores() {
-  if (form.category !== 'exam') return
-  applyUniformTemplateScore(templatePages.value, 'choice', templateChoiceScore.value)
-  applyUniformTemplateScore(templatePages.value, 'fill', templateFillScore.value)
-}
-
-function setTemplateDetailOpen(type, open) {
-  templateReviewEntries(templatePages.value, type).forEach(({ question }) => { question._open = open })
-}
-
-function openTemplateQuestion(entry) {
-  entry.question._open = true
-  nextTick(() => document.getElementById(templateQuestionDomId(entry.pageIndex, entry.questionIndex))?.scrollIntoView({ behavior: 'smooth', block: 'center' }))
-}
-
-const templateMissingAnswerEntries = computed(() => templatePages.value.flatMap((page, pageIndex) =>
-  (page.questions || []).map((question, questionIndex) => ({ pageIndex, questionIndex, question }))
-    .filter(({ question }) => !question._pendingRemoval && templateMissingAnswerSlots(question).length)))
-
-const templateMaxFlagReviewEntries = computed(() => templatePages.value.flatMap((page, pageIndex) =>
-  (page.questions || []).map((question, questionIndex) => ({ pageIndex, questionIndex, question }))
-    .filter(({ question }) => !question._pendingRemoval && templateMaxFlagEntries(question).length)))
-
-const templatePendingRemovalEntries = computed(() => templatePages.value.flatMap((page) =>
-  (page.questions || []).filter((question) => question._pendingRemoval)
-    .map((question) => ({ pageIndex: Number(page.page_index), question }))))
-
-const templateEditorProblemEntries = computed(() => templateEditorProblems())
-// Boxes named in a problem row are highlighted on the page like flagged slots.
-const templateProblemBoxes = computed(() => new Set(templateEditorProblemEntries.value.map((problem) => problem.box).filter(Boolean)))
-
-async function openTemplateProblem(problem) {
-  if (problem.entry) { openTemplateQuestion(problem.entry); return }
-  if (problem.referenceNumber) { openTemplateDrawingReference(problem.pageIndex, problem.referenceNumber); return }
-  const page = templateCutPreviewPages.value.find(item => Number(item.pageIndex) === Number(problem.pageIndex))
-  if (!page) return
-  selectTemplatePreviewPage(page)
-  if (problem.locateSlot && problem.box) locateTemplateReviewSlot(page, problem.box)
-  else if (problem.box && !templatePageEditingLocked(page)) {
-    page.previewEditMode = 'geometry'
-    page.geometryOverlayHidden = false
-    selectTemplateGeometryTarget(page, { kind: problem.kind, target: problem.box })
-  }
-  await nextTick()
-  document.getElementById(`template-reference-page-${page.pageIndex}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' })
-}
-
-async function openTemplateMaxFlags(entry) {
-  const pageIndex = Number(templatePages.value[entry.pageIndex]?.page_index ?? entry.pageIndex)
-  const page = templateCutPreviewPages.value.find(item => Number(item.pageIndex) === pageIndex)
-  const ids = templateMaxFlagEntries(entry.question).map(flag => flag.slot_id).filter(Boolean)
-  const box = page && templateSlotBoxes(page).find(item => ids.includes(item.slot_id)
-    && String(item.question_number) === String(entry.question.question_no))
-  if (!page || !box) { openTemplateQuestion(entry); return }
-  entry.question._open = true
-  selectTemplatePreviewPage(page)
-  locateTemplateReviewSlot(page, box)
-  await nextTick()
-  const root = document.getElementById(`template-reference-page-${pageIndex}`)
-  const target = [...(root?.querySelectorAll('[data-template-slot-id]') || [])]
-    .find(element => element.dataset.templateSlotId === box.slot_id)
-    || [...(root?.querySelectorAll('[data-template-slot-row]') || [])]
-      .find(element => element.dataset.templateSlotRow === box.slot_id)
-  ;(target || root)?.scrollIntoView({ behavior: 'smooth', block: 'center' })
-}
-
-function templateSlotNeedsAnswer(page, box) {
-  const question = templatePages.value.find(item => Number(item.page_index) === Number(page.pageIndex))?.questions
-    ?.find(item => String(item.question_no) === String(box.question_number))
-  return !!question && templateMissingAnswerSlots(question).some(slot => slot.slotId === box.slot_id)
-}
-
-function templateSlotMaxFlagged(page, box) {
-  const question = templatePages.value.find(item => Number(item.page_index) === Number(page.pageIndex))?.questions
-    ?.find(item => String(item.question_no) === String(box.question_number))
-  return !!question && templateMaxFlagEntries(question).some(flag => flag.slot_id === box.slot_id)
-}
-
-function locateTemplateReviewSlot(page, box) {
-  if (templatePageEditingLocked(page)) return
-  page.previewEditMode = 'geometry'
-  page.geometryOverlayHidden = false
-  selectTemplateGeometryTarget(page, { kind: box.region_kind === 'drawing' ? 'drawing' : 'answer', target: box })
-  page.geometryTool = box.bbox.length === 4 ? '' : (box.region_kind || 'answer')
-  page.pendingSlotId = box.bbox.length === 4 ? '' : box.slot_id
-}
-
-async function openTemplateMissingAnswers(entry) {
-  const pageIndex = Number(templatePages.value[entry.pageIndex]?.page_index ?? entry.pageIndex)
-  const page = templateCutPreviewPages.value.find(item => Number(item.pageIndex) === pageIndex)
-  entry.question._open = true
-  if (!page) { openTemplateQuestion(entry); return }
-  const ids = templateMissingAnswerSlots(entry.question).map(slot => slot.slotId)
-  const boxes = templateSlotBoxes(page).filter(box => ids.includes(box.slot_id)
-    && String(box.question_number) === String(entry.question.question_no))
-  selectTemplatePreviewPage(page)
-  if (boxes[0]) locateTemplateReviewSlot(page, boxes[0])
-  await nextTick()
-  const root = document.getElementById(`template-reference-page-${pageIndex}`)
-  const target = [...(root?.querySelectorAll('[data-template-slot-id]') || [])]
-    .find(element => ids.includes(element.dataset.templateSlotId))
-    || [...(root?.querySelectorAll('[data-template-slot-row]') || [])]
-      .find(element => ids.includes(element.dataset.templateSlotRow))
-  ;(target || root)?.scrollIntoView({ behavior: 'smooth', block: 'center' })
-}
-
-function revokeIdentityImageUrls() {
-  identityResolutions.value.forEach((item) => {
-    if (item.image_url) URL.revokeObjectURL(item.image_url)
-  })
-}
-
-async function loadIdentityImages() {
-  await Promise.all(identityResolutions.value.map(async (item) => {
-    try {
-      item.image_url = await api.grade.paperImage(batchId.value, item.paper_id)
-    } catch {
-      item.image_url = ''
-    }
-  }))
-}
-
-function openIdentityImage(item) {
-  if (item.image_url) window.open(item.image_url, '_blank', 'noopener,noreferrer')
-}
-
-async function openRecognizePaperImage(paper, variant = 'active') {
-  const targetBatchId = paper.batch_id || batchId.value
-  if (!targetBatchId || !paper.paper_id) {
-    ElMessage.error('原图标识缺失，请重新上传后再试')
-    return
-  }
-  const imageWindow = window.open('about:blank', '_blank')
-  try {
-    const imageUrl = await api.grade.paperImage(targetBatchId, paper.paper_id, variant)
-    if (imageWindow) {
-      imageWindow.opener = null
-      imageWindow.location.href = imageUrl
-    } else {
-      window.open(imageUrl, '_blank', 'noopener,noreferrer')
-    }
-    window.setTimeout(() => URL.revokeObjectURL(imageUrl), 60_000)
-  } catch (err) {
-    imageWindow?.close()
-    notifyProcessingError(err, err.message || '原图加载失败')
-  }
-}
-
-function identityReasonHint(reason) {
-  const hints = {
-    name_ambiguous: '当前班级存在同名学生，学号线索不足以区分，请确认学生身份。',
-    identity_name_conflict: '图片、文件名或文件夹中的姓名指向不同学生，请结合原图确认，系统不会自动覆盖。',
-    identity_number_conflict: '学号线索对应了多名学生，可能包含重名编号或收集工具后缀，请确认后再归属。',
-    roster_name_ambiguous: 'AI 在当前班级名单中给出了多个相近候选，请结合原图选择。',
-    roster_name_low_confidence: 'AI 只给出了低置信候选，请结合原图确认后再选择。',
-    roster_name_not_found: 'AI 未在当前班级名单中找到可靠候选。正常情况下请先维护名单；确认无误时仍可例外新建。',
-  }
-  return hints[reason] || ''
-}
-
-function identityClueLabel(source) {
-  const labels = { ocr: '图片识别', filename: '图片文件名', folder: '文件夹名' }
-  return String(source || '').split('+').map(key => labels[key]).filter(Boolean).join('、') || '待老师确认'
-}
-
-async function prepareIdentityResolutions() {
-  revokeIdentityImageUrls()
-  identityOptionsError.value = ''
-  identityResolutions.value = buildIdentityResolutionItems(papers.value)
-  await refreshIdentityOptions()
-  loadIdentityImages()
-}
-
-async function refreshIdentityOptions() {
-  if (!batchId.value || !identityResolutions.value.length || identityOptionsLoading.value) return
-  identityOptionsError.value = ''
-  identityOptionsLoading.value = true
-  try {
-    const data = await api.grade.identityOptions(batchId.value)
-    identityResolutions.value = mergeRosterIntoIdentityItems(
-      identityResolutions.value,
-      data.students || [],
-    )
-  } catch (err) {
-    identityOptionsError.value = '未能刷新本批次班级名单，请检查网络后重新加载。'
-  } finally {
-    identityOptionsLoading.value = false
-  }
-}
-
-function identityResolutionPayload() {
-  if (anonymous.value) return []
-  return serializeIdentityResolutions(identityResolutions.value)
-}
-
 // 有模板走确认权威路后，识别阶段锁定模式选择（避免中途切换）
 const templateLocked = computed(() => recognizing.value || grading.value || recognizingTemplate.value || templateDialogVisible.value || !!pendingTemplateId.value)
 
@@ -2987,18 +2412,20 @@ const ctx = {
   TEMPLATE_RECOGNITION_STORAGE_PREFIX, inheritIdentity, fileInputRef, folderInputRef,
   templateInputRef, fileList, phoneCaptureVisible, studentSubmissionVisible, imagePreprocessing,
   imageExtracting, extractionProgress, isDragover, batchDialogVisible, activeStep, recognizing,
-  grading, gradingClockStart, gradingClockNow, serviceState, availabilityPollTimer,
-  recognitionBlocksNewWork, markServiceFault, templateMode, templateColumnMode, templateFiles,
-  templatePreprocessing, recognizingTemplate, templateRecognizeMessage, templateRecognizeError,
-  confirmedTemplateId, templatePageCount, templateTeachingContext, templateDialogVisible,
-  confirmingTemplate, importingTemplateBank, templateBankImported, templatePages,
-  templateCorrectionCandidatesLoading, templateCutBusy, templateCutResult, templateCutProgress,
-  templateCutActionId, templateCutImageType, templateCutPreviewPages, templateCutPreviewError,
-  templateCropGesture, templateReferenceEditorInstances, templateActivePreviewPage,
-  TEMPLATE_GEOMETRY_TOOLS, templateEditorBusy, templateQuestionEditing, templateChoiceScore,
-  templateFillScore, pendingTemplateId, identityDialogVisible, identityResolutions,
-  identityOptionsLoading, identityOptionsError, form, batchId, papers, recognized, recognitionDone,
-  recognitionAutoArmed, recognitionCanGrade, recognitionError, recognitionRecoveryState,
+  grading, gradingClockStart, gradingClockNow, serviceState, ACCELERATOR_AUTO_RESUME_DELAY_MS,
+  ACCELERATOR_AUTO_RESUME_LIMIT, OCR_RETRY_AUTO_RESUME_DELAY_MS, availabilityPollTimer,
+  serviceFaultHoldUntil, recognitionBlocksNewWork, markServiceFault, templateMode,
+  templateColumnMode, templateFiles, templatePreprocessing, recognizingTemplate,
+  templateRecognizeMessage, templateRecognizeError, confirmedTemplateId, templatePageCount,
+  templateTeachingContext, templateDialogVisible, confirmingTemplate, importingTemplateBank,
+  templateBankImported, templatePages, templateCorrectionCandidatesLoading, templateCutBusy,
+  templateCutResult, templateCutProgress, templateCutActionId, templateCutImageType,
+  templateCutPreviewPages, templateCutPreviewError, templateCropGesture,
+  templateReferenceEditorInstances, templateActivePreviewPage, TEMPLATE_GEOMETRY_TOOLS,
+  templateEditorBusy, templateQuestionEditing, templateChoiceScore, templateFillScore,
+  pendingTemplateId, identityDialogVisible, identityResolutions, identityOptionsLoading,
+  identityOptionsError, form, batchId, papers, recognized, recognitionDone, recognitionAutoArmed,
+  recognitionCanGrade, recognitionError, recognitionRecoveryState, recognitionStats,
   excludingPaperId, currentMessage, questions, orientationDialogVisible, orientationPaper,
   orientationImageUrl, orientationImageLoading, orientationImageError, orientationQuarterTurns,
   orientationSaving, orientationActionId, progressList, gradeTotal, gradeError, summary,
@@ -3012,17 +2439,13 @@ const ctx = {
   templateCutRunToken, recognizeController, gradeController, gradablePaperCount,
   templateReviewPendingPageIndexes, templateDiagnosticPendingPageIndexes,
   clearTemplateResolvedGeometryDiagnostics, templateGeometryReview, templateCanConfirm,
-  templateChoiceConflicts, needsIdentityResolution, identityCanConfirm,
-  resetRecognitionCompletionState, resetRecognitionRecoveryState, recoverRecognitionConnection,
-  clearRecognitionAutoResume, scheduleRetryableOcrAutoResume, updateRecognitionRecoveryState,
-  applyRecognitionDone, templateQuestionSignature, templateReferenceQuestionEditBlockReason,
-  templateDrawingReferenceSaveSnapshot, clearSavedTemplateDrawingReferenceChanges,
-  templateDrawingReferenceQuestions, templateReferenceImagesReady, setTemplatePreviewEditMode,
-  answerSpecFields, questionScoringValid, syncTemplateBatchScores, applyTemplateBatchScores,
-  revokeIdentityImageUrls, prepareIdentityResolutions, identityResolutionPayload, batchConfirmValid,
+  templateChoiceReadyEntries, templateChoiceConflicts, templateFillEntries, batchConfirmValid,
   requireBatchService, requireRecognitionService, requireTemplateService, loadDailyUsage,
   refreshAvailability,
 }
+Object.assign(ctx, useRecognitionRecovery(ctx))
+Object.assign(ctx, useTemplateReference(ctx))
+Object.assign(ctx, useIdentityResolution(ctx))
 Object.assign(ctx, useTemplateRecognition(ctx))
 Object.assign(ctx, useTemplateCut(ctx))
 Object.assign(ctx, useTemplateGeometry(ctx))
@@ -3036,6 +2459,15 @@ Object.assign(ctx, useBatchReport(ctx))
 Object.assign(ctx, useReviewResults(ctx))
 Object.assign(ctx, useUploadLifecycle(ctx))
 const {
+  templateReferenceQuestionEditBlockReason, templateDrawingReferenceQuestions,
+  templateReferenceEditors, templateReferenceCanvasVisible, templateReferenceImagesReady,
+  setTemplatePreviewEditMode, selectTemplateDrawingReference, openTemplateDrawingReference,
+  answerSpecFields, questionScoringValid, templateQuestionDomId, setTemplateDetailOpen,
+  openTemplateQuestion, templateMissingAnswerEntries, templateMaxFlagReviewEntries,
+  templatePendingRemovalEntries, templateEditorProblemEntries, templateProblemBoxes,
+  openTemplateProblem, openTemplateMaxFlags, templateSlotNeedsAnswer, templateSlotMaxFlagged,
+  locateTemplateReviewSlot, openTemplateMissingAnswers, identityCanConfirm, openIdentityImage,
+  openRecognizePaperImage, identityReasonHint, identityClueLabel, refreshIdentityOptions,
   onTemplateFileChange, applyTemplateRecognitionResult, onRecognizeTemplate,
   templateCutPageOriginalCount, applyTemplateCutState, loadTemplateCutPreviews,
   loadTemplateCutState, onRunTemplateCut, templatePreviewQuestionIdentity,
@@ -3050,15 +2482,14 @@ const {
   startTemplateAnswerResize, startTemplateDrawingLabelMove, moveTemplateGeometry,
   finishTemplateGeometry, setTemplateAnswerDrawingKind, cancelTemplateGeometry,
   templatePageNeedsSave, insertTemplateQuestion, deleteTemplateQuestion, onConfirmTemplate,
-  templateEditorProblems, toggleQuestionCorrection, openTemplateEditor, onImportTemplateBank,
-  cancelTemplateDialog, resetTemplate, triggerFileUpload, triggerFolderUpload,
-  triggerTemplateUpload, processFiles, onFileInputChange, onFolderInputChange, onDrop, resetFiles,
-  openPhoneCapture, importPhoneCaptures, openStudentSubmissions, importStudentSubmissions,
-  resetOrientationReview, openOrientationReview, rotateOrientationPreview, applyOrientationState,
-  confirmOrientationAndRetry, canExcludeRecognitionPaper, excludeRecognitionPaper, reset,
-  continueAfterRecognition, startNewBatch, onStartRecognize, onBatchConfirm, runRecognize,
-  onConfirmIdentitiesAndGrade, onConfirmGrade, refreshRecognitionStateAfterFailure,
-  continueRefreshedRecognition, resumeRecognitionBatch, dailyAverageCorrectRate, batchReportStats,
+  toggleQuestionCorrection, openTemplateEditor, onImportTemplateBank, cancelTemplateDialog,
+  resetTemplate, triggerFileUpload, triggerFolderUpload, triggerTemplateUpload, processFiles,
+  onFileInputChange, onFolderInputChange, onDrop, resetFiles, openPhoneCapture, importPhoneCaptures,
+  openStudentSubmissions, importStudentSubmissions, resetOrientationReview, openOrientationReview,
+  rotateOrientationPreview, applyOrientationState, confirmOrientationAndRetry,
+  canExcludeRecognitionPaper, excludeRecognitionPaper, reset, continueAfterRecognition,
+  startNewBatch, onStartRecognize, onBatchConfirm, runRecognize, onConfirmIdentitiesAndGrade,
+  onConfirmGrade, resumeRecognitionBatch, dailyAverageCorrectRate, batchReportStats,
   batchReportTotalQuestions, batchReportNeedsReviewCount, batchReportJudgedCount,
   batchReportErrorTotal, batchReportPrimaryValue, batchReportPrimaryLabel,
   batchReportErrorRatePercent, batchReportDiagnosticErrorRateText, batchReportOutcomeSegments,
