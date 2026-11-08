@@ -714,33 +714,20 @@
 </template>
 
 <script setup>
-import { computed, defineComponent, h, ref, shallowRef } from 'vue'
-import { ElMessage } from 'element-plus'
-import { notifyProcessingError } from '@/utils/errorNotification'
+import { computed, ref } from 'vue'
 import GradingProgress from '@/components/GradingProgress.vue'
 import GradingQuickDock from '@/components/GradingQuickDock.vue'
 import SheetLoader from '@/components/SheetLoader.vue'
 import VerdictSwatch from '@/components/VerdictSwatch.vue'
-import { UploadFilled } from '@element-plus/icons-vue'
 import { useRoute } from 'vue-router'
-import api, {
-  mergeHardwareAvailabilityStatus,
-  normalizeHardwareAvailability,
-} from '@/api'
-import { compressImageFiles, validateUploadList } from '@/utils/uploadValidation'
-import { pairFilesByFolder, pairFilesBySide, parseSideFilename, sourceDirectory, studentPageIdentityHint } from '@/utils/answerSheetPairing'
-import { extractImagesFromDrop, extractImagesFromFileList } from '@/utils/fileExtraction'
-import { getUploadSourcePath } from '@/utils/uploadSource'
+import { normalizeHardwareAvailability } from '@/api'
+import { pairFilesByFolder, pairFilesBySide, studentPageIdentityHint } from '@/utils/answerSheetPairing'
 import { useAuthStore } from '@/stores/auth'
 import HelpButton from '@/components/HelpButton.vue'
-import {
-  consumeSse,
-  createSseEventError,
-  createSseResponseError,
-  isSseRequestCancelled,
-  isSseServiceFault,
-  SseTransportError,
-} from '@/utils/sse'
+import { useStudentFileOrder } from './answer-sheet/useStudentFileOrder.js'
+import { useAnswerSheetPickers } from './answer-sheet/useAnswerSheetPickers.js'
+import { useBubbleGrids } from './answer-sheet/useBubbleGrids.js'
+import { useAnswerSheetSession } from './answer-sheet/useAnswerSheetSession.js'
 import { useAnswerSheetSetup } from './answer-sheet/useAnswerSheetSetup.js'
 import { useAnswerSheetStudents } from './answer-sheet/useAnswerSheetStudents.js'
 import { useAnswerSheetLifecycle } from './answer-sheet/useAnswerSheetLifecycle.js'
@@ -775,9 +762,7 @@ const ACCELERATOR_STREAM_ERROR_STATES = {
     message: '加速节点处理发生故障，批改已停止；已完成进度保留在当前会话。',
   },
 }
-const availabilityPollTimer = shallowRef(null)
-let availabilityCheckPending = false
-let serviceFaultHoldUntil = 0
+
 const restoreError = ref('')
 const session = ref(null)
 const activeStage = ref(0)
@@ -829,102 +814,10 @@ const evidenceRecords = ref([])
 const evidencePaperId = ref('')
 const evidenceFileText = ref('')
 const evidenceImageUrl = ref('')
-const bubbleGridRows = computed(() => session.value?.bubble_grids || [])
-const bubbleGridsUnconfirmed = computed(() => bubbleGridRows.value.filter(grid => grid.state !== 'confirmed').length)
 
-function recognitionTagType(answer) {
-  const outcome = String(answer.outcome || '')
-  if (outcome === 'correct') return 'success'
-  if (outcome === 'wrong') return 'danger'
-  if (outcome === 'blank') return 'info'
-  return 'warning'
-}
-
-function addGridCell(grid) {
-  if (!Array.isArray(grid.cells)) grid.cells = []
-  if (grid.cells.length >= 8) return
-  grid.cells.push({ option: '', bbox: [...(grid.grid_bbox || [0, 0, 0, 0])] })
-}
-
-function autoSplitGridCells(grid) {
-  const [x, y, w, h] = (grid.grid_bbox || []).map(Number)
-  const count = Math.min(8, Math.max(2, Number(gridSplitCount.value) || 4))
-  if (!w || !h) {
-    ElMessage.warning('请先填写整格范围')
-    return
-  }
-  const letters = 'ABCDEFGH'
-  grid.cells = Array.from({ length: count }, (_, index) => {
-    const vertical = grid.grid_order === 'top_to_bottom'
-    const cellW = vertical ? w : Math.floor(w / count)
-    const cellH = vertical ? Math.floor(h / count) : h
-    const cellX = vertical ? x : x + Math.floor((w / count) * index)
-    const cellY = vertical ? y + Math.floor((h / count) * index) : y
-    return { option: letters[index] || String(index + 1), bbox: [cellX, cellY, cellW, cellH] }
-  })
-}
-
-async function confirmBubbleGridRow(grid) {
-  const payload = {
-    question_no: String(grid.question_no || ''),
-    subquestion_no: String(grid.subquestion_no || ''),
-    grid_order: grid.grid_order === 'top_to_bottom' ? 'top_to_bottom' : 'left_to_right',
-    cells: (grid.cells || []).map(cell => ({
-      option: String(cell.option || '').slice(0, 1),
-      bbox: (cell.bbox || []).map(value => Math.round(Number(value))),
-    })),
-  }
-  const result = await run(() => api.answerSheet.confirmBubbleGrids(session.value.session_id, [payload]), '涂卡栅格已确认')
-  applySession(result?.session ? result.session : result)
-}
-
-async function discardBubbleGridRow(grid) {
-  const payload = {
-    question_no: String(grid.question_no || ''),
-    subquestion_no: String(grid.subquestion_no || ''),
-  }
-  const result = await run(() => api.answerSheet.discardBubbleGrids(session.value.session_id, [payload]), '涂卡栅格已丢弃')
-  applySession(result?.session ? result.session : result)
-}
-
-async function openEvidenceViewer(paperId) {
-  evidencePaperId.value = paperId
-  evidenceDialogVisible.value = true
-  evidenceLoading.value = true
-  evidenceRecords.value = []
-  evidenceFileText.value = ''
-  if (evidenceImageUrl.value) { URL.revokeObjectURL(evidenceImageUrl.value); evidenceImageUrl.value = '' }
-  try {
-    const data = await api.answerSheet.studentEvidenceIndex(session.value.session_id, paperId)
-    evidenceRecords.value = data?.records || []
-  } catch {
-    evidenceRecords.value = []
-  } finally {
-    evidenceLoading.value = false
-  }
-}
-
-async function openEvidenceFile(record, file) {
-  const questionNo = (record.question_nos || [])[0] || ''
-  try {
-    const value = await api.answerSheet.studentEvidenceFile(session.value.session_id, evidencePaperId.value, questionNo, file.file)
-    if (/\.png$/i.test(file.file)) {
-      if (evidenceImageUrl.value) URL.revokeObjectURL(evidenceImageUrl.value)
-      evidenceFileText.value = ''
-      evidenceImageUrl.value = value
-    } else {
-      if (evidenceImageUrl.value) { URL.revokeObjectURL(evidenceImageUrl.value); evidenceImageUrl.value = '' }
-      evidenceFileText.value = value
-    }
-  } catch {
-    ElMessage.error('证据文件读取失败')
-  }
-}
 const currentReviewPaperId = ref('')
 const studentPageImageUrl = ref('')
 const studentPageImageError = ref('')
-
-const answerSheetStreamController = shallowRef(null)
 
 const stages = [
   { title: '原始试卷', caption: '语义与答案来源' },
@@ -943,298 +836,6 @@ const batchStages = [
 const statusOrder = { draft: 0, source_uploaded: 0, failed: 0, source_recognized: 1, answers_confirmed: 2, layout_draft: 3, frozen: 4, recognizing: 4, review: 4, archived: 4 }
 const statusLabels = { draft: '新建草稿', source_uploaded: '材料已上传', source_recognized: '题目已识别', answers_confirmed: '答案已确认', layout_draft: '版面编辑中', frozen: '版面已冻结', recognizing: '学生答题卡识别中', review: '等待复核', archived: '已归档', failed: '处理失败' }
 const identityLabels = { name: '姓名', student_no: '学号', exam_no_text: '准考证号文字', qr: '二维码', barcode: '条形码', exam_no_marks: '准考证号涂格', page_number: '页码' }
-
-const FilePicker = defineComponent({
-  props: {
-    modelValue: Array,
-    title: String,
-    note: String,
-    disabled: Boolean,
-    autoOrder: Boolean,
-    // Folder, drag-and-drop and ZIP/RAR import through the shared extractor,
-    // which keeps each image's relative path for pairing and identity.
-    importArchives: Boolean,
-    maxFiles: { type: Number, default: 200 },
-  },
-  emits: ['update:modelValue', 'order-detected'],
-  setup(props, { emit }) {
-    const selecting = ref(false)
-    const dragover = ref(false)
-    async function selectFiles(event) {
-      const selected = [...(event.target.files || [])]
-      event.target.value = ''
-      if (selecting.value || props.disabled || !selected.length) return
-      await acceptFiles(selected)
-    }
-    async function importFiles(load) {
-      if (selecting.value || props.disabled) return
-      selecting.value = true
-      fileSelectionProcessingCount.value += 1
-      let extracted
-      try {
-        extracted = await load()
-      } catch (error) {
-        ElMessage.error(error?.message || '文件导入失败')
-        return
-      } finally {
-        fileSelectionProcessingCount.value = Math.max(0, fileSelectionProcessingCount.value - 1)
-        selecting.value = false
-      }
-      if (!extracted.length) {
-        ElMessage.warning('未找到任何图片文件')
-        return
-      }
-      await acceptFiles(extracted)
-    }
-    function importInput(event) {
-      const selected = [...(event.target.files || [])]
-      event.target.value = ''
-      if (selected.length) importFiles(() => extractImagesFromFileList(selected, { maxFiles: props.maxFiles }))
-    }
-    function importDrop(event) {
-      event.preventDefault()
-      dragover.value = false
-      importFiles(() => extractImagesFromDrop(event, { maxFiles: props.maxFiles }))
-    }
-    async function acceptFiles(selected) {
-      if (selected.length > props.maxFiles) {
-        ElMessage.warning(`单次最多选择 ${props.maxFiles} 个文件`)
-      }
-      const supported = selected.slice(0, props.maxFiles).filter((file) => (
-        ['image/jpeg', 'image/png'].includes(String(file?.type || '').toLowerCase())
-      ))
-      if (supported.length < Math.min(selected.length, props.maxFiles)) {
-        ElMessage.warning('仅支持 JPG、JPEG 和 PNG 图片')
-      }
-      const result = validateUploadList(supported, { maxFiles: props.maxFiles })
-      if (result.errors.length) ElMessage.warning(result.errors[0])
-      if (!result.files.length) {
-        emit('update:modelValue', [])
-        return
-      }
-
-      const ordered = props.autoOrder
-        ? sortCaptureFiles(result.files)
-        : { files: result.files, source: 'input_order', label: '选择顺序', message: '' }
-      if (props.autoOrder) {
-        result.files = ordered.files
-        emit('order-detected', ordered)
-      }
-
-      selecting.value = true
-      fileSelectionProcessingCount.value += 1
-      let failedCount = 0
-      try {
-        const processed = await compressImageFiles(result.files, 1920, 0.88, {
-          onFileError: () => { failedCount += 1 },
-        })
-        emit('update:modelValue', processed)
-        if (failedCount) {
-          ElMessage.warning(`${failedCount} 张图片预处理失败，已保留原图；建议重新选择后再试`)
-        }
-      } catch {
-        ElMessage.error('图片预处理未完成，请重新选择')
-      } finally {
-        fileSelectionProcessingCount.value = Math.max(0, fileSelectionProcessingCount.value - 1)
-        selecting.value = false
-      }
-    }
-    return () => props.importArchives ? h('div', {
-      class: ['file-picker', 'file-picker-import', (props.disabled || selecting.value) && 'disabled', selecting.value && 'processing', props.modelValue?.length && 'has-files', dragover.value && 'is-dragover'],
-      'aria-disabled': (props.disabled || selecting.value) ? 'true' : undefined,
-      'aria-busy': selecting.value ? 'true' : undefined,
-      onDragover: (event) => { event.preventDefault(); dragover.value = !props.disabled && !selecting.value },
-      onDragleave: () => { dragover.value = false },
-      onDrop: importDrop,
-    }, [
-      h(UploadFilled, { class: 'file-picker-icon', 'aria-hidden': 'true' }),
-      h('strong', selecting.value ? '正在导入并处理图片' : (props.modelValue?.length ? `已选择 ${props.modelValue.length} 个文件` : props.title)),
-      h('span', selecting.value ? '完成后即可上传' : props.note),
-      h('div', { class: 'file-picker-actions' }, [
-        h('label', { class: 'file-picker-button' }, ['选择文件', h('input', { type: 'file', accept: '.jpg,.jpeg,.png,.zip,.rar', multiple: true, disabled: props.disabled || selecting.value, onChange: importInput })]),
-        h('label', { class: 'file-picker-button' }, ['选择文件夹', h('input', { type: 'file', webkitdirectory: true, disabled: props.disabled || selecting.value, onChange: importInput })]),
-      ]),
-    ]) : h('label', {
-      class: ['file-picker', (props.disabled || selecting.value) && 'disabled', selecting.value && 'processing', props.modelValue?.length && 'has-files'],
-      'aria-disabled': (props.disabled || selecting.value) ? 'true' : undefined,
-      'aria-busy': selecting.value ? 'true' : undefined,
-    }, [
-      h('input', { type: 'file', accept: 'image/jpeg,image/png', multiple: true, disabled: props.disabled || selecting.value, onChange: selectFiles }),
-      h(UploadFilled, { class: 'file-picker-icon', 'aria-hidden': 'true' }),
-      h('strong', selecting.value ? '正在逐张处理图片' : (props.modelValue?.length ? `已选择 ${props.modelValue.length} 个文件` : props.title)),
-      h('span', selecting.value ? '完成后即可上传' : props.note),
-    ])
-  },
-})
-
-function captureFileName(file) {
-  const raw = file?.raw || file
-  return String(raw?.name || file?.name || '')
-}
-
-function captureFileBaseName(file) {
-  return captureFileName(file)
-    .replace(/\\/g, '/')
-    .split('/')
-    .pop()
-    .replace(/\.ocr-ready-v1\.jpg$/i, '')
-    .replace(/\.[^.]+$/, '')
-}
-
-function captureFileTimestamp(file) {
-  const name = captureFileBaseName(file)
-  const match = name.match(/(?:^|[^0-9])(20[0-9]{2})[-_.]?([0-1][0-9])[-_.]?([0-3][0-9])[T _-]?([0-2][0-9])[-_.]?([0-5][0-9])[-_.]?([0-5][0-9])(?:[-_.]([0-9]{1,6}))?(?:[^0-9]|$)/)
-  if (!match) return null
-  const [, year, month, day, hour, minute, second, fraction = ''] = match
-  const date = new Date(Date.UTC(Number(year), Number(month) - 1, Number(day), Number(hour), Number(minute), Number(second)))
-  if (
-    date.getUTCFullYear() !== Number(year)
-    || date.getUTCMonth() !== Number(month) - 1
-    || date.getUTCDate() !== Number(day)
-    || date.getUTCHours() !== Number(hour)
-    || date.getUTCMinutes() !== Number(minute)
-    || date.getUTCSeconds() !== Number(second)
-  ) return null
-  return `${year}${month}${day}${hour}${minute}${second}${fraction.padEnd(6, '0')}`
-}
-
-function captureFileSequence(file) {
-  const name = captureFileBaseName(file)
-  const matches = [...name.matchAll(/[0-9]+/g)]
-  if (!matches.length) return null
-  return matches[matches.length - 1][0]
-}
-
-function compareNumericStrings(left, right) {
-  const a = String(left).replace(/^0+(?=\d)/, '')
-  const b = String(right).replace(/^0+(?=\d)/, '')
-  if (a.length !== b.length) return a.length - b.length
-  return a < b ? -1 : (a > b ? 1 : 0)
-}
-
-function sortByCaptureKey(files, getKey, compareKey) {
-  const entries = files.map((file, index) => ({ file, index, key: getKey(file) }))
-  if (entries.some((entry) => entry.key == null)) return null
-  const keys = entries.map((entry) => String(entry.key))
-  if (new Set(keys).size !== entries.length) return null
-  return entries
-    .sort((left, right) => compareKey(left.key, right.key) || left.index - right.index)
-    .map((entry) => entry.file)
-}
-
-function studentFileSideLabel(file, index) {
-  if (studentPairingMode.value === 'folder') return '按页型区分'
-  if (studentPairingMode.value === 'side') {
-    return parseSideFilename(captureFileName(file))?.side === 'back' ? '背面' : '正面'
-  }
-  return index % 2 ? '背面' : '正面'
-}
-
-// Import path (folder/archive member) for display and identity only.
-function captureSourcePath(file) {
-  try {
-    return getUploadSourcePath(file)
-  } catch {
-    return ''
-  }
-}
-
-function studentFileDisplayPath(file) {
-  return captureSourcePath(file) || captureFileName(file)
-}
-
-function sortCaptureFiles(files) {
-  const byFolder = pairFilesByFolder(files, captureSourcePath)
-  if (byFolder) {
-    return {
-      files: byFolder,
-      source: 'folder_pairs',
-      label: '文件夹配对',
-      message: '系统已按文件夹排序。',
-    }
-  }
-  const byName = pairFilesBySide(files, captureFileName)
-  if (byName) {
-    return {
-      files: byName,
-      source: 'filename_side_pairs',
-      label: '文件名正反面',
-      message: '系统已按文件名中的正面/反面标记排序。',
-    }
-  }
-  if (files.some((file) => sourceDirectory(captureSourcePath(file)))) {
-    const folders = new Map()
-    for (const file of files) {
-      const directory = sourceDirectory(captureSourcePath(file))
-      folders.set(directory, [...(folders.get(directory) || []), file])
-    }
-    return {
-      files: [...folders.keys()]
-        .sort((left, right) => left.localeCompare(right, 'zh-CN', { numeric: true }))
-        .flatMap((directory) => sortFlatCaptureFiles(folders.get(directory)).files),
-      source: 'folder_order',
-      label: '文件夹分组',
-      message: '系统已按文件夹分组，文件夹内按文件序号或时间排序；请核对下面列表。',
-    }
-  }
-  return sortFlatCaptureFiles(files)
-}
-
-function sortFlatCaptureFiles(files) {
-  const byTimestamp = sortByCaptureKey(files, captureFileTimestamp, (left, right) => left < right ? -1 : (left > right ? 1 : 0))
-  if (byTimestamp) {
-    return {
-      files: byTimestamp,
-      source: 'filename_timestamp',
-      label: '文件名时间戳',
-      message: '系统已按文件名中的拍摄时间戳自动排序。',
-    }
-  }
-
-  const bySequence = sortByCaptureKey(files, captureFileSequence, compareNumericStrings)
-  if (bySequence) {
-    return {
-      files: bySequence,
-      source: 'filename_sequence',
-      label: '文件名序号',
-      message: '系统已按文件名中的连续序号自动排序。',
-    }
-  }
-
-  const byModifiedTime = sortByCaptureKey(
-    files,
-    (file) => {
-      const raw = file?.raw || file
-      const value = Number(raw?.lastModified)
-      return Number.isFinite(value) && value > 0 ? String(value).padStart(16, '0') : null
-    },
-    (left, right) => left < right ? -1 : (left > right ? 1 : 0),
-  )
-  if (byModifiedTime) {
-    return {
-      files: byModifiedTime,
-      source: 'file_modified_time',
-      label: '文件时间',
-      message: '系统已按文件修改时间自动排序；如文件被复制或批量导出，请核对下面列表。',
-    }
-  }
-
-  return {
-    files: [...files],
-    source: 'input_order',
-    label: '选择顺序',
-    message: '未找到可靠的文件序号或时间戳，暂保留本次选择顺序；请检查下面列表。',
-  }
-}
-const BboxFields = defineComponent({
-  props: { modelValue: Array, disabled: Boolean }, emits: ['update:modelValue'],
-  setup(props, { emit }) {
-    const labels = ['左', '上', '右', '下']
-    return () => h('div', { class: 'bbox-fields' }, labels.map((label, index) => h('label', [
-      h('span', label), h('input', { type: 'number', min: 0, max: 1000, value: props.modelValue?.[index], disabled: props.disabled, onInput: (event) => { const next = [...props.modelValue]; next[index] = Number(event.target.value); emit('update:modelValue', next) } }),
-    ])))
-  },
-})
 
 const completedStage = computed(() => statusOrder[session.value?.status] ?? 0)
 const isBatch = computed(() => Boolean(session.value?.batch_contract_version))
@@ -1308,233 +909,43 @@ const studentUploadCanProcess = computed(() => studentUploadActive.value && (
   studentUploadProcessing.value || Number(studentUpload.value.uploaded_count || 0) > 0
 ))
 
-function normalizeQuestion(raw) {
-  const steps = Array.isArray(raw.solution_steps) ? raw.solution_steps : []
-  const type = ['choice', 'fill', 'solve'].includes(raw.question_type) ? raw.question_type : 'solve'
-  const choiceMode = type === 'choice' && ['single', 'multiple'].includes(raw.choice_mode) ? raw.choice_mode : 'unknown'
-  return { ...raw, question_no: String(raw.question_no || raw.question_number || ''), question_text: String(raw.question_text || raw.content || ''), question_type: type, choice_mode: choiceMode, standard_answer: String(raw.standard_answer || raw.answer || ''), max_score: raw.max_score ?? null, grading_method: raw.grading_method || ({ choice: 'exact', fill: 'equivalent', solve: '' }[type]), solution_steps_text: steps.join('\n') }
-}
-function applySession(data, { chooseStage = true } = {}) {
-  session.value = data
-  if (data.shared_template_code) templateCodeInput.value = data.shared_template_code
-  answerSource.value = data.answer_source || 'embedded'
-  questionDrafts.value = (data.answer_spec_snapshot?.length ? data.answer_spec_snapshot : data.source_question_drafts || []).map(normalizeQuestion)
-  answerRegions.value = structuredClone(data.answer_regions || [])
-  identityRegions.value = structuredClone(data.identity_regions || [])
-  gradingDrafts.value = structuredClone(data.grouping_decisions || [])
-  activeDraftIndex.value = Math.min(activeDraftIndex.value, Math.max(gradingDrafts.value.length - 1, 0))
-  const draftPages = gradingDrafts.value[activeDraftIndex.value]?.paper_ids || []
-  currentReviewPaperId.value = draftPages.includes(currentReviewPaperId.value) ? currentReviewPaperId.value : (draftPages[0] || '')
-  layoutSummary.value = summarizeLayout()
-  currentPageId.value = currentPageId.value && data.answer_sheet_pages?.some(page => page.page_id === currentPageId.value) ? currentPageId.value : (data.answer_sheet_pages?.[0]?.page_id || '')
-  localStorage.setItem(STORAGE_KEY, data.session_id)
-  if (chooseStage) activeStage.value = completedStage.value
-}
-function summarizeLayout() {
-  const specs = session.value?.answer_spec_snapshot || []
-  const required = new Set(specs.map(item => String(item.question_no)))
-  const bound = new Set(answerRegions.value.filter(item => item.teacher_confirmed).map(item => String(item.question_no)))
-  const conflicts = []
-  for (let i = 0; i < answerRegions.value.length; i += 1) for (let j = i + 1; j < answerRegions.value.length; j += 1) {
-    const a = answerRegions.value[i]; const b = answerRegions.value[j]
-    if (a.page_id !== b.page_id || a.question_no === b.question_no) continue
-    const overlap = Math.max(0, Math.min(a.bbox[2], b.bbox[2]) - Math.max(a.bbox[0], b.bbox[0])) * Math.max(0, Math.min(a.bbox[3], b.bbox[3]) - Math.max(a.bbox[1], b.bbox[1]))
-    if (overlap) conflicts.push([a.region_id, b.region_id])
-  }
-  const missing = [...required].filter(no => !bound.has(no))
-  return { question_count: required.size, bound_count: bound.size, missing_questions: missing, conflicts, identity_region_count: identityRegions.value.length, can_freeze: !missing.length && !conflicts.length && identityRegions.value.length > 0 && identityRegions.value.every(item => item.teacher_confirmed) }
-}
-function canOpenStage(index) { return !!session.value && index <= Math.max(completedStage.value, 0) }
-function openStage(index) { if (canOpenStage(index)) activeStage.value = index }
-function markServiceFault(message) {
-  serviceFaultHoldUntil = Date.now() + SERVICE_FAULT_HOLD_MS
-  serviceState.value = {
-    status: 'fault',
-    label: '链路故障',
-    message: message || '答题卡批阅链路发生故障，已保存内容仍可查看；请稍后重试。',
-  }
-}
-function requireAnswerSheetService() {
-  if (!serviceBlocksNewWork.value) return true
-  ElMessage.error(serviceState.value.message || '答题卡批阅链路当前不可用，请稍后再试。')
-  return false
-}
-function normalizeServiceError(error) {
-  const detail = error?.response?.data?.detail
-  const detailObject = detail && typeof detail === 'object' && !Array.isArray(detail) ? detail : null
-  const axiosCode = String(error?.code || '')
-  const transportFailure = ['ECONNABORTED', 'ETIMEDOUT', 'ERR_NETWORK'].includes(axiosCode)
-  return {
-    message: String(error?.message || ''),
-    status: Number(error?.response?.status || error?.status) || 0,
-    code: String(error?.response?.data?.code || error?.response?.data?.error || detailObject?.code || detailObject?.error || axiosCode),
-    sseFailureKind: transportFailure ? 'transport' : error?.sseFailureKind,
-  }
-}
-function applyAcceleratorStreamError(error) {
-  const acceleratorState = ACCELERATOR_STREAM_ERROR_STATES[String(error?.code || '').trim().toUpperCase()]
-  if (!acceleratorState) return false
-  const serverMessage = String(error?.message || '').trim()
-  const message = serverMessage && !/保存|保留/.test(serverMessage)
-    ? `${serverMessage} 已完成进度保留在当前会话，可在节点恢复后继续处理。`
-    : (serverMessage || acceleratorState.message)
-  hardwareState.value = normalizeHardwareAvailability({
-    hardware: { status: acceleratorState.hardwareStatus, message },
-  })
-  if (acceleratorState.serviceStatus === 'fault') {
-    serviceFaultHoldUntil = Date.now() + SERVICE_FAULT_HOLD_MS
-  }
-  serviceState.value = {
-    status: acceleratorState.serviceStatus,
-    label: acceleratorState.label,
-    message,
-  }
-  if (acceleratorState.serviceStatus === 'queued') ElMessage.warning(message)
-  else notifyProcessingError(error, message)
-  return true
-}
-async function run(task, success) {
-  busy.value = true
-  try {
-    const data = await task()
-    if (success) ElMessage.success(success)
-    return data
-  } catch (error) {
-    if (isSseServiceFault(normalizeServiceError(error))) {
-      markServiceFault('答题卡批阅链路中断，已保存内容仍可查看；请稍后重试，若持续发生请联系管理员。')
-    }
-    throw error
-  } finally {
-    busy.value = false
-  }
-}
-async function runAnswerSheetStream(request, fallbackMessage, successMessage, onProgress) {
-  if (!requireAnswerSheetService()) return null
-  if (busy.value) return null
-  busy.value = true
-  operationMessage.value = fallbackMessage
-  const controller = new AbortController()
-  answerSheetStreamController.value = controller
-  try {
-    const response = await request(controller.signal)
-    if (!response.ok) throw await createSseResponseError(response, fallbackMessage)
-    let completed = null
-    await consumeSse(response, (event, data) => {
-      if (event === 'progress') {
-        const current = Number(data?.current)
-        const total = Number(data?.total)
-        operationMessage.value = data?.message || fallbackMessage
-        operationProgress.value = Number.isFinite(current) && Number.isFinite(total) && total > 0
-          ? { current, total }
-          : null
-        if (onProgress) onProgress(data)
-      } else if (event === 'done') {
-        completed = data
-      } else if (event === 'error') {
-        throw createSseEventError(data, fallbackMessage)
-      }
-    })
-    if (!completed) throw new SseTransportError(`${fallbackMessage}连接已结束，但未收到完成状态`)
-    if (successMessage) ElMessage.success(successMessage)
-    return completed
-  } catch (error) {
-    if (isSseRequestCancelled(error, controller.signal)) return null
-    try {
-      const latest = await api.answerSheet.getSession(session.value.session_id)
-      applySession(latest, { chooseStage: false })
-    } catch {
-      // Keep the last local snapshot if the status endpoint is also unreachable.
-    }
-    const normalizedError = normalizeServiceError(error)
-    const acceleratorHandled = applyAcceleratorStreamError(normalizedError)
-    if (!acceleratorHandled && isSseServiceFault(normalizedError, { signal: controller.signal })) {
-      markServiceFault('答题卡批阅链路中断，已完成进度已保存；请稍后重试，若持续发生请联系管理员。')
-    }
-    if (!acceleratorHandled) notifyProcessingError(error, error?.message || fallbackMessage)
-    return null
-  } finally {
-    if (answerSheetStreamController.value === controller) answerSheetStreamController.value = null
-    operationMessage.value = ''
-    operationProgress.value = null
-    busy.value = false
-  }
-}
-async function refreshAvailability() {
-  if (availabilityCheckPending) return
-  availabilityCheckPending = true
-  try {
-    const state = await api.answerSheet.availability()
-    const hardware = normalizeHardwareAvailability(state)
-    hardwareState.value = hardware
-    const labels = { available: '可用', queued: '需排队', unavailable: '暂不可用', fault: '链路故障' }
-    const messages = {
-      available: '答题卡批阅服务当前可用。',
-      queued: '答题卡批阅当前需排队；可以准备三类材料，提交后系统会等待准入。',
-      unavailable: '答题卡批阅链路当前不可用，请稍后重试或联系管理员。',
-      fault: '答题卡批阅链路发生故障，请稍后重试或联系管理员。',
-    }
-    if (!labels[state?.status]) {
-      markServiceFault('答题卡批阅链路状态响应异常，请稍后重试或联系管理员。')
-      return
-    }
-    const effectiveStatus = mergeHardwareAvailabilityStatus(state.status, hardware.status)
-    const hardwareServiceStatus = mergeHardwareAvailabilityStatus('available', hardware.status)
-    const effectiveMessage = String(hardwareServiceStatus === effectiveStatus
-      ? (hardware.message || state.message || messages[effectiveStatus])
-      : (state.message || hardware.message || messages[effectiveStatus]))
-    if (
-      ['available', 'queued'].includes(effectiveStatus)
-      && serviceState.value.status === 'fault'
-      && Date.now() < serviceFaultHoldUntil
-    ) return
-    if (effectiveStatus === 'fault') {
-      markServiceFault(effectiveMessage || messages.fault)
-      return
-    }
-    serviceState.value = {
-      status: effectiveStatus,
-      label: String(effectiveStatus === state.status ? (state.label || labels[effectiveStatus]) : labels[effectiveStatus]),
-      message: effectiveMessage,
-    }
-  } catch {
-    hardwareState.value = normalizeHardwareAvailability({
-      hardware: { status: 'fault', message: '无法获取本地加速节点状态。' },
-    })
-    markServiceFault('无法获取答题卡批阅链路状态，请检查网络或联系管理员。')
-  } finally {
-    availabilityCheckPending = false
-  }
-}
-
 // The rest of the page lives in one composable per part (views/answer-sheet/use*.js). Each one gets ctx,
 // holding what the earlier parts defined; it calls functions of later parts through ctx.
 const ctx = {
-  STORAGE_KEY, auth, route, busy, operationMessage, operationProgress, availabilityPollTimer,
-  restoreError, session, activeStage, answerSource, sourceFiles, answerFiles, layoutFiles,
-  templateCodeInput, templateCodeHistory, batchSetup, paperTemplates, paperTemplateSources,
-  paperRegistration, batches, studentFiles, studentOrderSource, classStudents, gradingDrafts,
-  questionDrafts, answerRegions, identityRegions, layoutSummary, currentPageId, layoutImageUrl,
-  layoutImageReady, layoutImageError, activeDraftIndex, currentReviewPaperId, studentPageImageUrl,
-  studentPageImageError, answerSheetStreamController, captureSourcePath, answerSpecs, currentPage,
-  visibleAnswerRegions, visibleIdentityRegions, currentDraft, currentDraftPages,
-  currentReviewPageIndex, layoutAccelerationMessage, studentUpload, studentUploadActive,
-  studentUploadProcessing, applySession, summarizeLayout, markServiceFault,
-  requireAnswerSheetService, normalizeServiceError, run, runAnswerSheetStream, refreshAvailability,
+  STORAGE_KEY, auth, route, busy, operationMessage, operationProgress, serviceState, hardwareState,
+  SERVICE_FAULT_HOLD_MS, ACCELERATOR_STREAM_ERROR_STATES, restoreError, session, activeStage,
+  answerSource, sourceFiles, answerFiles, layoutFiles, templateCodeInput, templateCodeHistory,
+  batchSetup, paperTemplates, paperTemplateSources, paperRegistration, batches, studentFiles,
+  studentOrderSource, studentPairingMode, fileSelectionProcessingCount, classStudents,
+  gradingDrafts, questionDrafts, answerRegions, identityRegions, layoutSummary, currentPageId,
+  layoutImageUrl, layoutImageReady, layoutImageError, activeDraftIndex, gridSplitCount,
+  evidenceDialogVisible, evidenceLoading, evidenceRecords, evidencePaperId, evidenceFileText,
+  evidenceImageUrl, currentReviewPaperId, studentPageImageUrl, studentPageImageError,
+  completedStage, serviceBlocksNewWork, answerSpecs, currentPage, visibleAnswerRegions,
+  visibleIdentityRegions, currentDraft, currentDraftPages, currentReviewPageIndex,
+  layoutAccelerationMessage, studentUpload, studentUploadActive, studentUploadProcessing,
 }
+Object.assign(ctx, useStudentFileOrder(ctx))
+Object.assign(ctx, useAnswerSheetPickers(ctx))
+Object.assign(ctx, useBubbleGrids(ctx))
+Object.assign(ctx, useAnswerSheetSession(ctx))
 Object.assign(ctx, useAnswerSheetSetup(ctx))
 Object.assign(ctx, useAnswerSheetStudents(ctx))
 Object.assign(ctx, useAnswerSheetLifecycle(ctx))
 const {
-  formatBatchTime, paperTemplateLabel, paperSourceLabel, registerPaperTemplate, createSession,
-  openBatch, closeSession, uploadSource, recognizeSource, confirmAnswers, templateHistoryLabel,
-  useTemplateCode, locateLayoutRegions, confirmCurrentPageRegions, uploadLayout,
-  processLayoutAcceleration, saveLayout, publishTemplateCode, freezeLayout, copyTemplateCode,
-  removeSession, regionTypeOptions, syncRegionType, addAnswerRegion, addIdentityRegion, bboxStyle,
-  moveStudentFile, removeStudentFile, processStudentUpload, uploadStudents, restartStudentUpload,
-  confirmOrientation, recognizeStudents, confirmStudentReview, buildDraft, saveDraftDecision,
-  archiveDrafts, setActiveDraft, moveReviewPage, openDetailPage, formatBytes, formatDraftMetric,
-  reviewDetailQuestionNo, reviewDetailClass, reviewDetailLabel, reviewDetailAnalysis,
-  renderReviewText,
+  captureFileName, studentFileSideLabel, captureSourcePath, studentFileDisplayPath, FilePicker,
+  BboxFields, bubbleGridRows, bubbleGridsUnconfirmed, recognitionTagType, addGridCell,
+  autoSplitGridCells, confirmBubbleGridRow, discardBubbleGridRow, openEvidenceViewer,
+  openEvidenceFile, canOpenStage, openStage, formatBatchTime, paperTemplateLabel, paperSourceLabel,
+  registerPaperTemplate, createSession, openBatch, closeSession, uploadSource, recognizeSource,
+  confirmAnswers, templateHistoryLabel, useTemplateCode, locateLayoutRegions,
+  confirmCurrentPageRegions, uploadLayout, processLayoutAcceleration, saveLayout,
+  publishTemplateCode, freezeLayout, copyTemplateCode, removeSession, regionTypeOptions,
+  syncRegionType, addAnswerRegion, addIdentityRegion, bboxStyle, moveStudentFile, removeStudentFile,
+  processStudentUpload, uploadStudents, restartStudentUpload, confirmOrientation, recognizeStudents,
+  confirmStudentReview, buildDraft, saveDraftDecision, archiveDrafts, setActiveDraft,
+  moveReviewPage, openDetailPage, formatBytes, formatDraftMetric, reviewDetailQuestionNo,
+  reviewDetailClass, reviewDetailLabel, reviewDetailAnalysis, renderReviewText,
 } = ctx
 </script>
 
