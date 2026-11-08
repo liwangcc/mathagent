@@ -12,7 +12,6 @@
   "frontend/src/views/PhoneCapture.vue": 1122,
   "frontend/src/views/Reports.vue": 1180,
   "frontend/src/views/StudentDetail.vue": 1082,
-  "frontend/src/views/Upload.vue": 992,
   "routers/auth.py": 898,
   "routers/grade_papers.py": 805,
   "routers/grade_pipeline.py": 1267,
