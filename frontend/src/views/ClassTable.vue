@@ -474,7 +474,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, reactive, ref, watch } from 'vue'
+import { computed, onMounted, reactive, ref, watch, shallowRef } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
@@ -549,15 +549,15 @@ const examIssues = computed(() => {
 const heatmapVisible = ref(false)
 const heatmapLoading = ref(false)
 const heatmapTree = ref([])
-let studentsGeneration = 0
-let heatmapGeneration = 0
-let classScopeGeneration = 0
+const studentsGeneration = shallowRef(0)
+const heatmapGeneration = shallowRef(0)
+const classScopeGeneration = shallowRef(0)
 
 function captureClassScope() {
   const scope = profileScope.value
   const classId = activeClassId.value
-  const generation = classScopeGeneration
-  return { classId, current: () => scope === profileScope.value && classId === activeClassId.value && generation === classScopeGeneration }
+  const generation = classScopeGeneration.value
+  return { classId, current: () => scope === profileScope.value && classId === activeClassId.value && generation === classScopeGeneration.value }
 }
 
 const riskFilterOptions = [
@@ -661,8 +661,8 @@ async function loadClassesIfNeeded() {
 async function loadStudents() {
   const scope = profileScope.value
   const classId = activeClassId.value
-  const generation = ++studentsGeneration
-  const current = () => scope === profileScope.value && classId === activeClassId.value && generation === studentsGeneration
+  const generation = ++studentsGeneration.value
+  const current = () => scope === profileScope.value && classId === activeClassId.value && generation === studentsGeneration.value
   resetStudents()
   if (!classId || !auth.token || !educationStage.value) {
     loading.value = false
@@ -766,8 +766,8 @@ function openEditCurrentClass() {
 
 async function saveClass() {
   const scope = profileScope.value
-  const generation = classScopeGeneration
-  const current = () => scope === profileScope.value && generation === classScopeGeneration
+  const generation = classScopeGeneration.value
+  const current = () => scope === profileScope.value && generation === classScopeGeneration.value
   const name = classFormName.value.trim()
   if (!name) {
     ElMessage.warning('请输入班级名称')
@@ -1161,8 +1161,8 @@ async function importExamScores() {
 async function openHeatmap() {
   const scope = profileScope.value
   const classId = activeClassId.value
-  const generation = ++heatmapGeneration
-  const current = () => scope === profileScope.value && classId === activeClassId.value && generation === heatmapGeneration
+  const generation = ++heatmapGeneration.value
+  const current = () => scope === profileScope.value && classId === activeClassId.value && generation === heatmapGeneration.value
   if (!classId || !auth.token || !educationStage.value) return
   heatmapTree.value = []
   heatmapVisible.value = true
@@ -1217,9 +1217,9 @@ watch(() => route.query.add, (value) => {
 })
 
 async function reloadProfileScope() {
-  classScopeGeneration += 1
-  studentsGeneration += 1
-  heatmapGeneration += 1
+  classScopeGeneration.value += 1
+  studentsGeneration.value += 1
+  heatmapGeneration.value += 1
   resetStudents()
   activeClassId.value = null
   loading.value = false
