@@ -714,7 +714,7 @@
 </template>
 
 <script setup>
-import { computed, defineComponent, h, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, defineComponent, h, onBeforeUnmount, onMounted, ref, watch, shallowRef } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { notifyProcessingError } from '@/utils/errorNotification'
 import GradingProgress from '@/components/GradingProgress.vue'
@@ -774,7 +774,7 @@ const ACCELERATOR_STREAM_ERROR_STATES = {
     message: '加速节点处理发生故障，批改已停止；已完成进度保留在当前会话。',
   },
 }
-let availabilityPollTimer = null
+const availabilityPollTimer = shallowRef(null)
 let availabilityCheckPending = false
 let serviceFaultHoldUntil = 0
 const restoreError = ref('')
@@ -922,8 +922,8 @@ async function openEvidenceFile(record, file) {
 const currentReviewPaperId = ref('')
 const studentPageImageUrl = ref('')
 const studentPageImageError = ref('')
-let studentImageRequestId = 0
-let answerSheetStreamController = null
+const studentImageRequestId = shallowRef(0)
+const answerSheetStreamController = shallowRef(null)
 
 const stages = [
   { title: '原始试卷', caption: '语义与答案来源' },
@@ -1413,7 +1413,7 @@ async function runAnswerSheetStream(request, fallbackMessage, successMessage, on
   busy.value = true
   operationMessage.value = fallbackMessage
   const controller = new AbortController()
-  answerSheetStreamController = controller
+  answerSheetStreamController.value = controller
   try {
     const response = await request(controller.signal)
     if (!response.ok) throw await createSseResponseError(response, fallbackMessage)
@@ -1452,7 +1452,7 @@ async function runAnswerSheetStream(request, fallbackMessage, successMessage, on
     if (!acceleratorHandled) notifyProcessingError(error, error?.message || fallbackMessage)
     return null
   } finally {
-    if (answerSheetStreamController === controller) answerSheetStreamController = null
+    if (answerSheetStreamController.value === controller) answerSheetStreamController.value = null
     operationMessage.value = ''
     operationProgress.value = null
     busy.value = false
@@ -1957,27 +1957,27 @@ watch([() => session.value?.session_id, currentPageId, () => currentPage.value?.
   }
 })
 watch([() => session.value?.session_id, currentReviewPaperId], async ([sessionId, paperId]) => {
-  const requestId = ++studentImageRequestId
+  const requestId = ++studentImageRequestId.value
   if (studentPageImageUrl.value) URL.revokeObjectURL(studentPageImageUrl.value)
   studentPageImageUrl.value = ''
   studentPageImageError.value = ''
   if (!sessionId || !paperId) return
   try {
     const nextUrl = await api.answerSheet.studentPageImage(sessionId, paperId)
-    if (requestId !== studentImageRequestId) {
+    if (requestId !== studentImageRequestId.value) {
       URL.revokeObjectURL(nextUrl)
       return
     }
     studentPageImageUrl.value = nextUrl
   } catch {
-    if (requestId === studentImageRequestId) studentPageImageError.value = '当前答题卡页面读取失败，请重试。'
+    if (requestId === studentImageRequestId.value) studentPageImageError.value = '当前答题卡页面读取失败，请重试。'
   }
 })
 onMounted(async () => {
   void refreshAvailability()
   void loadTemplateCodeHistory()
   void loadBatchChoices()
-  availabilityPollTimer = window.setInterval(refreshAvailability, 15000)
+  availabilityPollTimer.value = window.setInterval(refreshAvailability, 15000)
   if (!auth.classes.length) void auth.fetchClasses().catch(() => {})
   const saved = String(route.query.session || localStorage.getItem(STORAGE_KEY) || '')
   if (!saved) return
@@ -1993,9 +1993,9 @@ onMounted(async () => {
   }
 })
 onBeforeUnmount(() => {
-  if (availabilityPollTimer) window.clearInterval(availabilityPollTimer)
-  if (answerSheetStreamController) answerSheetStreamController.abort()
-  studentImageRequestId += 1
+  if (availabilityPollTimer.value) window.clearInterval(availabilityPollTimer.value)
+  if (answerSheetStreamController.value) answerSheetStreamController.value.abort()
+  studentImageRequestId.value += 1
   if (layoutImageUrl.value) URL.revokeObjectURL(layoutImageUrl.value)
   if (studentPageImageUrl.value) URL.revokeObjectURL(studentPageImageUrl.value)
 })
