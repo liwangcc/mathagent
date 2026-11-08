@@ -1542,13 +1542,11 @@ import {
 import { appendDesktopCanonicalCandidates } from '@/utils/desktopTemplateCanonicalization'
 import { appendStudentUploadFiles } from '@/utils/uploadSource'
 import {
-  buildClientBatchReportFallback,
   batchReportStatusText,
   batchReportStatusTone,
   reportPercent,
   reportKnowledgeName,
   reportKnowledgeChapter,
-  nonNegativeReportCount,
   reportDistributionPercent,
 } from '@/utils/batchReportView'
 import {
@@ -1674,6 +1672,8 @@ import {
   orientationErrorMessage,
   reviewErrorMessage,
 } from '@/utils/recognitionStatus'
+import { useBatchResume } from './upload/useBatchResume.js'
+import { useBatchReport } from './upload/useBatchReport.js'
 import { useReviewResults } from './upload/useReviewResults.js'
 import { useUploadLifecycle } from './upload/useUploadLifecycle.js'
 
@@ -1897,8 +1897,7 @@ const batchReport = ref({
   error: '',
   updated_at: '',
 })
-let batchReportPollTimer = null
-let batchReportPollGeneration = 0
+
 const reviewBusy = ref(false)
 const reviewImagesDownloading = ref(false)
 const hasReviewImageRows = computed(() => progressList.value.some((row) => row.disposition !== 'voided' && !row.error))
@@ -2337,65 +2336,6 @@ const templateFillEntries = computed(() => templateReviewEntries(templatePages.v
 const templateFillBatchEntryCount = computed(() => templateFillEntries.value.filter(({ question }) => !isCustomFill(question)).length)
 const templateCustomFillCount = computed(() => templateFillEntries.value.length - templateFillBatchEntryCount.value)
 const templateSolveEntries = computed(() => templateReviewEntries(templatePages.value, 'solve'))
-
-const dailyAverageCorrectRate = computed(() => {
-  const rates = progressList.value
-    .filter((row) => row.disposition === 'active' && Number(row.needs_review || 0) === 0)
-    .map((row) => Number(row.correct_rate))
-    .filter((value) => Number.isFinite(value))
-  return rates.length ? rates.reduce((sum, value) => sum + value, 0) / rates.length : null
-})
-const batchReportStats = computed(() => {
-  const stats = batchReport.value?.stats
-  const normalized = stats && typeof stats === 'object' ? stats : {}
-  if (Number(normalized.question_count) > 0) return normalized
-  const fallback = buildClientBatchReportFallback(progressList.value)
-  return fallback.question_count > 0 ? { ...normalized, ...fallback } : normalized
-})
-const batchReportTotalQuestions = computed(() => nonNegativeReportCount(batchReportStats.value.question_count))
-const batchReportCorrectCount = computed(() => nonNegativeReportCount(batchReportStats.value.correct_count))
-const batchReportPartialCount = computed(() => nonNegativeReportCount(batchReportStats.value.partial_count))
-const batchReportWrongCount = computed(() => nonNegativeReportCount(batchReportStats.value.wrong_count))
-const batchReportNeedsReviewCount = computed(() => nonNegativeReportCount(batchReportStats.value.needs_review_count))
-const batchReportJudgedCount = computed(() => (
-  batchReportCorrectCount.value + batchReportPartialCount.value + batchReportWrongCount.value
-))
-const batchReportErrorTotal = computed(() => batchReportPartialCount.value + batchReportWrongCount.value)
-const batchReportAccuracy = computed(() => {
-  const judged = batchReportJudgedCount.value
-  return judged > 0 ? batchReportCorrectCount.value / judged : null
-})
-const batchReportPrimaryValue = computed(() => {
-  const averageScore = Number(summary.value?.avg_score)
-  if (form.category === 'exam' && summary.value?.avg_score != null && Number.isFinite(averageScore)) {
-    return averageScore.toFixed(averageScore % 1 ? 1 : 0)
-  }
-  return batchReportAccuracy.value == null ? '—' : `${Math.round(batchReportAccuracy.value * 100)}%`
-})
-const batchReportPrimaryLabel = computed(() => (
-  form.category === 'exam' && summary.value?.avg_score != null ? '平均得分' : '已判正确率'
-))
-const batchReportErrorRatePercent = computed(() => {
-  const rate = batchReportStats.value.error_rate
-  return rate == null || !Number.isFinite(Number(rate)) ? null : Number(rate) * 100
-})
-const batchReportDiagnosticErrorRateText = computed(() => reportPercent(batchReportStats.value.diagnostic_error_rate))
-// Judged outcomes only: pending answers are listed beside the donut, never drawn in it.
-const batchReportOutcomeSegments = computed(() => [
-  { key: 'correct', label: '正确', value: batchReportCorrectCount.value },
-  { key: 'partial', label: '部分正确', value: batchReportPartialCount.value },
-  { key: 'wrong', label: '错误', value: batchReportWrongCount.value },
-])
-const batchReportTopErrors = computed(() => (
-  Array.isArray(batchReportStats.value.top_errors) ? batchReportStats.value.top_errors : []
-))
-const batchReportKnowledgePoints = computed(() => (
-  Array.isArray(batchReportStats.value.knowledge_points) ? batchReportStats.value.knowledge_points : []
-))
-// Both lists are ranked by error count, so their bars are scaled to the
-// largest count rather than to the error rate shown alongside.
-const batchReportTopErrorMax = computed(() => Math.max(0, ...batchReportTopErrors.value.map((item) => Number(item.error_count) || 0)))
-const batchReportKnowledgeErrorMax = computed(() => Math.max(0, ...batchReportKnowledgePoints.value.map((item) => Number(item.error_count) || 0)))
 
 const needsIdentityResolution = computed(() => papers.value.some((paper) => {
   if (anonymous.value) return false
@@ -5749,301 +5689,6 @@ function stopGradingClock() {
   gradingClockStart.value = 0
 }
 
-function orientationStorageKey() {
-  const teacherId = auth.user?.id
-  const mode = anonymous.value ? ':anonymous' : ''
-  return teacherId ? `${ORIENTATION_BATCH_STORAGE_PREFIX}${mode}:${teacherId}` : ''
-}
-
-function rememberOrientationBatch(id) {
-  const key = orientationStorageKey()
-  if (!key || !id) return
-  localStorage.setItem(key, String(id))
-  // Grading success clears this pointer, so it only ever names work newer than
-  // the saved review. A review pointer for another batch would otherwise win
-  // on the next mount and hide this unfinished batch.
-  const reviewKey = reviewStorageKey()
-  const savedReview = reviewKey ? localStorage.getItem(reviewKey) : ''
-  if (savedReview && savedReview !== String(id)) localStorage.removeItem(reviewKey)
-}
-
-function forgetOrientationBatch() {
-  const key = orientationStorageKey()
-  if (key) localStorage.removeItem(key)
-}
-
-async function resumeOrientationBatch() {
-  const key = orientationStorageKey()
-  const savedBatchId = key ? localStorage.getItem(key) : ''
-  if (!savedBatchId) return false
-  try {
-    const payload = await api.grade.orientationState(savedBatchId)
-    if (String(payload?.batch_id || '') !== String(savedBatchId) || !Array.isArray(payload.papers) || !payload.papers.length) {
-      throw new Error('方向复核批次没有可恢复内容')
-    }
-    applyOrientationState(payload)
-    if (recognitionCanGrade.value) {
-      await onConfirmGrade()
-    } else if (['recognizing_remaining', 'recognition_interrupted'].includes(payload.status)) {
-      recoverRecognitionConnection(savedBatchId, payload)
-    }
-    return true
-  } catch (err) {
-    const status = Number(err?.response?.status || err?.status || 0)
-    if ([401, 403, 404].includes(status)) forgetOrientationBatch()
-    return false
-  }
-}
-
-async function refreshRecognitionStateAfterFailure(targetBatchId, recoveryOptions) {
-  try {
-    const payload = await api.grade.orientationState(targetBatchId)
-    if (recoveryOptions?.isCurrent && !recoveryOptions.isCurrent()) return false
-    if (String(payload?.batch_id || '') !== String(targetBatchId) || !Array.isArray(payload.papers) || !payload.papers.length) {
-      throw new Error('识别批次状态响应不完整')
-    }
-    applyOrientationState(payload, recoveryOptions)
-    return payload
-  } catch (err) {
-    if (recoveryOptions?.isCurrent && !recoveryOptions.isCurrent()) return false
-    const status = Number(err?.response?.status || err?.status || 0)
-    if ([401, 403, 404].includes(status)) forgetOrientationBatch()
-    const serviceFault = Boolean(recoveryOptions?.serviceFault) || !status || status >= 500 || [408, 429].includes(status)
-    if (serviceFault && !recoveryOptions?.serviceFault) {
-      markServiceFault('无法刷新识别批次状态，请检查网络或联系管理员。')
-    }
-    updateRecognitionRecoveryState({}, { ...recoveryOptions, serviceFault })
-    return false
-  }
-}
-
-async function continueRefreshedRecognition(refreshed) {
-  if (!refreshed || !recognitionDone.value || !recognitionCanGrade.value) return false
-  if (!questions.value.length) {
-    recognitionCanGrade.value = false
-    recognitionError.value = '恢复识别后未得到可批阅题目'
-    return false
-  }
-  clearRecognitionAutoResume({ resetAttempts: true })
-  currentMessage.value = ''
-  // The snapshot is authoritative; transport failure must not erase it or
-  // raise a second recognition error. Keep the existing identity/grade gates.
-  await onConfirmGrade()
-  return true
-}
-
-async function resumeRecognitionBatch(resumeBatchId, { automatic = false } = {}) {
-  // This endpoint resumes an already-created durable batch. It may consume an
-  // artifact that the busy accelerator is about to finish, so the new-work
-  // free-slot gate must not suppress the recovery request.
-  if (!requireBatchService()) return false
-  const targetBatchId = String(resumeBatchId || batchId.value || '')
-  if (!targetBatchId || recognizing.value) return false
-  clearRecognitionAutoResume({ resetAttempts: !automatic })
-
-  recognizing.value = true
-  activeStep.value = 1
-  resetRecognitionCompletionState()
-  resetRecognitionRecoveryState()
-  recognitionError.value = ''
-  currentMessage.value = '正在从已保存进度恢复识别'
-  recognizeController.value = new AbortController()
-  let doneData = null
-  try {
-    const response = await api.grade.recognitionResume(targetBatchId, recognizeController.value.signal)
-    if (!response.ok) {
-      throw await createSseResponseError(response, '恢复识别请求失败')
-    }
-    await consumeSse(response, (evt, data) => {
-      rememberRecognitionBatch(data)
-      if (evt === 'progress') {
-        currentMessage.value = data.message || ''
-        if (typeof data.current === 'number') recognized.current = data.current
-        if (typeof data.total === 'number') recognized.total = data.total
-      } else if (evt === 'paper') {
-        upsertRecognitionPaper(data)
-      } else if (evt === 'done') {
-        doneData = data
-        questions.value = data.questions || []
-        clearRecognitionAutoResume({ resetAttempts: true })
-        applyRecognitionDone(data)
-        currentMessage.value = ''
-      } else if (evt === 'error') {
-        throw createSseEventError(data, '恢复识别出错')
-      }
-    })
-
-    if (!recognitionCanGrade.value) {
-      activeStep.value = 1
-      scheduleRetryableOcrAutoResume(targetBatchId, doneData)
-      return true
-    }
-    if (!questions.value.length) throw new Error('恢复识别后未得到可批阅题目')
-    await onConfirmGrade()
-    return true
-  } catch (err) {
-    const signal = recognizeController.value?.signal
-    if (!isSseRequestCancelled(err, signal)) {
-      const failureCode = String(err?.code || '').toUpperCase()
-      const connectionRecovery = canRecoverRecognitionConnection(err, signal)
-      const serviceFault = isSseServiceFault(err, { signal })
-      const refreshed = await refreshRecognitionStateAfterFailure(targetBatchId, {
-        failureCode, serviceFault: serviceFault && !connectionRecovery,
-        isCurrent: () => !signal?.aborted && targetBatchId === String(batchId.value || ''),
-      })
-      if (signal?.aborted) return false
-      if (connectionRecovery && await continueRefreshedRecognition(refreshed)) return true
-      if (connectionRecovery && recoverRecognitionConnection(targetBatchId, refreshed)) return false
-      reportSseServiceFault(
-        err, markServiceFault,
-        '学生试卷识别恢复链路中断，已完成结果仍会保留；请稍后重试。',
-        { signal },
-      )
-      if (!refreshed) recognitionDone.value = false
-      recognitionCanGrade.value = false
-      recognitionError.value = err.message || '恢复识别失败'
-      currentMessage.value = ''
-      activeStep.value = 1
-      notifyProcessingError(err, recognitionRecoveryState.value.message || recognitionError.value)
-    }
-    return false
-  } finally {
-    recognizing.value = false
-    recognizeController.value = null
-  }
-}
-
-function coursewareStageLabel(stage) {
-  return ({ primary: '小学', junior: '初中', senior: '高中' })[stage] || '当前学段'
-}
-
-async function loadCoursewareRecommendations() {
-  // 推荐合同（内部设计文档 2026-09-13 §9）：精确知识点 > 同章知识点，最多 3 个，
-  // 只含当前教师学段，须显示命中的学段、章节、知识点和原因；无匹配显示“暂无匹配”。
-  const stats = batchReportStats.value
-  // The unclassified bucket is not a knowledge point; never let it win the match.
-  const points = (Array.isArray(stats.knowledge_points) ? stats.knowledge_points : [])
-    .filter((item) => item && (item.topic || item.name) && (item.topic || item.name) !== '未分类')
-    .sort((a, b) => Number(b.error_count || b.count || 0) - Number(a.error_count || a.count || 0))
-  const top = points[0] || {}
-  const query = {
-    chapter: top.chapter === '未分类' ? '' : String(top.chapter || '').trim(),
-    knowledge_point: String(top.topic || top.name || '').trim(),
-  }
-  const key = `${batchId.value || ''}|${query.chapter}|${query.knowledge_point}`
-  coursewareRecommendationKey.value = key
-  coursewareRecommendationQuery.value = query
-  if (!query.chapter && !query.knowledge_point) {
-    coursewareRecommendations.value = []
-    coursewareRecommendationState.value = 'empty'
-    return
-  }
-  coursewareRecommendationState.value = 'loading'
-  try {
-    const data = await api.courseware.recommendations({ ...query, limit: 3 })
-    if (coursewareRecommendationKey.value !== key) return
-    const items = Array.isArray(data?.items) ? data.items : []
-    if (data?.matched === false || !items.length) {
-      coursewareRecommendations.value = []
-      coursewareRecommendationState.value = 'empty'
-      return
-    }
-    coursewareRecommendations.value = items.slice(0, 3).map((item) => ({
-      id: item.id,
-      title: item.title || `${item.chapter || ''}：${item.knowledgePoint || item.knowledge_point || ''}`,
-      chapter: item.chapter || query.chapter,
-      knowledgePoint: item.knowledgePoint || item.knowledge_point || query.knowledge_point,
-      stageLabel: coursewareStageLabel(item.stage || auth.user?.education_stage),
-      reason: item.recommendation_reason || item.recommendationReason || '',
-    }))
-    coursewareRecommendationState.value = 'ready'
-  } catch {
-    if (coursewareRecommendationKey.value !== key) return
-    coursewareRecommendations.value = []
-    coursewareRecommendationState.value = 'error'
-  }
-}
-
-function openCourseware(card) {
-  router.push({
-    path: '/courseware',
-    query: {
-      ...(card.chapter ? { chapter: card.chapter } : {}),
-      ...(card.knowledgePoint ? { knowledge_point: card.knowledgePoint } : {}),
-    },
-  })
-}
-
-function resetBatchReport() {
-  batchReportPollGeneration += 1
-  if (batchReportPollTimer) {
-    window.clearTimeout(batchReportPollTimer)
-    batchReportPollTimer = null
-  }
-  batchReport.value = {
-    status: 'not_started',
-    text: '',
-    stats: {},
-    error: '',
-    updated_at: '',
-  }
-}
-
-function applyBatchReport(payload) {
-  const report = payload?.report || payload || {}
-  batchReport.value = {
-    status: String(report.status || 'not_started'),
-    text: String(report.text || ''),
-    stats: report.stats && typeof report.stats === 'object' ? report.stats : {},
-    error: String(report.error || ''),
-    updated_at: String(report.updated_at || ''),
-  }
-  if (batchReport.value.status === 'ready') void loadCoursewareRecommendations()
-}
-
-function stopBatchReportPolling() {
-  if (batchReportPollTimer) {
-    window.clearTimeout(batchReportPollTimer)
-    batchReportPollTimer = null
-  }
-}
-
-async function pollBatchReport() {
-  const currentBatchId = String(batchId.value || '')
-  const currentGeneration = batchReportPollGeneration
-  if (!currentBatchId) return
-  try {
-    const payload = await api.grade.reportGet(currentBatchId)
-    if (
-      currentGeneration !== batchReportPollGeneration
-      || currentBatchId !== String(batchId.value || '')
-    ) return
-    applyBatchReport(payload)
-    if (['ready', 'failed'].includes(batchReport.value.status)) {
-      stopBatchReportPolling()
-      return
-    }
-  } catch {
-    if (
-      currentGeneration !== batchReportPollGeneration
-      || currentBatchId !== String(batchId.value || '')
-    ) return
-    // Keep the result table usable; the next poll can recover from a brief outage.
-  }
-  if (
-    currentGeneration !== batchReportPollGeneration
-    || currentBatchId !== String(batchId.value || '')
-  ) return
-  stopBatchReportPolling()
-  batchReportPollTimer = window.setTimeout(pollBatchReport, 2500)
-}
-
-function startBatchReportPolling() {
-  batchReportPollGeneration += 1
-  stopBatchReportPolling()
-  void pollBatchReport()
-}
-
 async function refreshAvailability() {
   if (availabilityCheckPending) return
   availabilityCheckPending = true
@@ -6148,28 +5793,41 @@ async function refreshAvailability() {
 // The rest of the page lives in one composable per part (views/upload/use*.js). Each one gets ctx,
 // holding what the earlier parts defined; it calls functions of later parts through ctx.
 const ctx = {
-  anonymous, auth, REVIEW_BATCH_STORAGE_PREFIX, fileList, imagePreprocessing, imageExtracting,
-  activeStep, recognizing, grading, availabilityPollTimer, recognitionBlocksNewWork,
-  recognizingTemplate, confirmedTemplateId, templateDialogVisible, confirmingTemplate,
-  templateCutBusy, form, batchId, progressList, gradeTotal, gradeError, summary,
-  reviewRestoredLabel, coursewareRecommendations, coursewareRecommendationState,
-  coursewareRecommendationQuery, coursewareRecommendationKey, reviewBusy, reviewImagesDownloading,
-  reviewArchived, reviewRevision, manualDecisionDialogVisible, manualDecisionRow,
-  manualDecisionDrafts, manualDecisionSaving, manualDecisionImageUrl, manualDecisionImageLoading,
+  anonymous, auth, router, REVIEW_BATCH_STORAGE_PREFIX, ORIENTATION_BATCH_STORAGE_PREFIX, fileList,
+  imagePreprocessing, imageExtracting, activeStep, recognizing, grading, availabilityPollTimer,
+  recognitionBlocksNewWork, markServiceFault, recognizingTemplate, confirmedTemplateId,
+  templateDialogVisible, confirmingTemplate, templateCutBusy, form, batchId, recognized,
+  recognitionDone, recognitionCanGrade, recognitionError, recognitionRecoveryState, currentMessage,
+  questions, progressList, gradeTotal, gradeError, summary, reviewRestoredLabel,
+  coursewareRecommendations, coursewareRecommendationState, coursewareRecommendationQuery,
+  coursewareRecommendationKey, batchReport, reviewBusy, reviewImagesDownloading, reviewArchived,
+  reviewRevision, manualDecisionDialogVisible, manualDecisionRow, manualDecisionDrafts,
+  manualDecisionSaving, manualDecisionImageUrl, manualDecisionImageLoading,
   manualDecisionImageError, manualDecisionPages, manualDecisionPageIndex, manualDecisionShowPaper,
   templateRecognizeController, templateConfirmController, templateCutController,
-  templateCutRunToken, recognizeController, gradeController, clearRecognitionAutoResume,
-  revokeIdentityImageUrls, resumeTemplateRecognitionCheckpoint, stopTemplateCutPolling,
-  revokeTemplateCutPreviews, resetOrientationReview, maybeAutoStartRecognition, loadDailyUsage,
-  stopGradingClock, rememberOrientationBatch, resumeOrientationBatch, resetBatchReport,
-  applyBatchReport, stopBatchReportPolling, startBatchReportPolling, refreshAvailability,
+  templateCutRunToken, recognizeController, gradeController, resetRecognitionCompletionState,
+  resetRecognitionRecoveryState, recoverRecognitionConnection, clearRecognitionAutoResume,
+  scheduleRetryableOcrAutoResume, updateRecognitionRecoveryState, applyRecognitionDone,
+  revokeIdentityImageUrls, requireBatchService, resumeTemplateRecognitionCheckpoint,
+  stopTemplateCutPolling, revokeTemplateCutPreviews, resetOrientationReview, applyOrientationState,
+  rememberRecognitionBatch, upsertRecognitionPaper, maybeAutoStartRecognition, loadDailyUsage,
+  onConfirmGrade, stopGradingClock, refreshAvailability,
 }
+Object.assign(ctx, useBatchResume(ctx))
+Object.assign(ctx, useBatchReport(ctx))
 Object.assign(ctx, useReviewResults(ctx))
 Object.assign(ctx, useUploadLifecycle(ctx))
 const {
+  rememberOrientationBatch, forgetOrientationBatch, refreshRecognitionStateAfterFailure,
+  continueRefreshedRecognition, resumeRecognitionBatch, dailyAverageCorrectRate, batchReportStats,
+  batchReportTotalQuestions, batchReportNeedsReviewCount, batchReportJudgedCount,
+  batchReportErrorTotal, batchReportPrimaryValue, batchReportPrimaryLabel,
+  batchReportErrorRatePercent, batchReportDiagnosticErrorRateText, batchReportOutcomeSegments,
+  batchReportTopErrors, batchReportKnowledgePoints, batchReportTopErrorMax,
+  batchReportKnowledgeErrorMax, openCourseware, resetBatchReport, startBatchReportPolling,
   hasActiveReviewRows, pendingReviewCount, resolvedActiveReviewCount, manualDecisionCompactDrafts,
   manualDecisionSolveDrafts, manualDecisionHasEditableRows, manualDecisionComplete,
-  reviewStorageKey, rememberReviewBatch, forgetReviewBatch, clearReviewDisplay, hydrateReviewState,
+  rememberReviewBatch, forgetReviewBatch, clearReviewDisplay, hydrateReviewState,
   openManualDecision, resetManualDecisionImage, changeManualDecisionPage, jumpToManualDecisionPage,
   openManualDecisionImage, saveManualDecision, voidOneReview, voidAllReviews, archiveAllReviews,
   downloadStudentErrors, downloadReviewImage, downloadCurrentReviewImage, downloadAllReviewImages,
