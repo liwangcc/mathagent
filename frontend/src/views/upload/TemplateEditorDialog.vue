@@ -572,5 +572,7 @@ const {
 } = inject(UPLOAD_PAGE)
 </script>
 
-<style scoped src="./page.css"></style>
-<style scoped src="./cards.css"></style>
+<style scoped>
+/* No styles of its own: this component shares Upload.vue's scope id (vite.config.js), so the page's
+   scoped styles (upload/page.css, upload/cards.css) apply to it. */
+</style>
