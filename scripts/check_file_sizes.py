@@ -1,35 +1,30 @@
-"""Keep large source files from growing, and new source files from becoming large.
+"""New source files stay within 900 lines; changed legacy files within 1800.
 
-Most of this repository's largest files grew one reasonable change at a time: a
-branch in the nearest function, a helper beside the code that needed it.  This
-check makes each such step visible.
+Count tracked Python files and .vue/.js/.ts files under frontend/src, excluding
+tests. Physical lines include comments and blank lines.
 
-* A source file not listed in ``file_size_baseline.json`` stays within 800
-  lines: put new work in a new module instead.
-* A listed file must not grow past its recorded size.
-* The list must be current.  A listed file that shrank, fell within the limit,
-  moved or was deleted fails until the list is rewritten, so recorded sizes
-  only ever go down.
+* Files not in the committed baseline stay within 900 lines.
+* Existing baseline entries may only shrink or disappear. Compare against a
+  committed reference, not the candidate JSON, so joint edits cannot waive growth.
+* Changed legacy files must be at most 1800 lines at the PR's final revision.
+  Untouched files do not require a drive-by split. The approved roughly 1700-line
+  modules remain valid as-is, but their recorded size still may not increase.
+* Locally --staged allows strictly shrinking intermediate splits; CI with
+  --base-ref requires the final changed file to be within 1800 lines.
+* --update records reductions only. There is no --accept-growth escape hatch.
 
-Source files are the tracked ``*.py`` files and the ``.vue``, ``.js`` and
-``.ts`` files under ``frontend/src``; tests are not counted.
+    python scripts/check_file_sizes.py
+    python scripts/check_file_sizes.py --staged
+    python scripts/check_file_sizes.py --update
+    python scripts/check_file_sizes.py --base-ref <PR-base-sha>
 
-    python scripts/check_file_sizes.py                          # check; exit 1 on any finding
-    python scripts/check_file_sizes.py --staged                 # check what the next commit holds
-    python scripts/check_file_sizes.py --update                 # record sizes after files shrank
-    python scripts/check_file_sizes.py --update --accept-growth
-
-``--update`` refuses to raise a recorded size or to list a new file unless
-``--accept-growth`` is given.  Accept growth only for a fix that has no smaller
-place to live, in the same commit, and say why in the commit message.
-
-``--staged`` reads the files and the baseline from the index instead of the
-working tree, so unstaged edits neither fail nor pass a commit; a pre-commit
-hook runs it.
-
-This is a script, not a test: tests assert behaviour and never the text of
-source files (tests/test_source_text_coupling.py), and splitting a file must not
-fail the test suite.
+The default comparison is HEAD; the hook reads the real candidate index.
+CI supplies the trusted PR base or previous main SHA and fetches its history.
+For untrusted PRs, run the base-branch checker with --base-ref and --head-ref:
+only Git objects are read, never candidate Python, tests or workflow code.
+Missing explicit references fail closed. Stage an updated baseline with the
+corresponding source change. Tests exercise synthetic repositories and hooks,
+not source-text assertions about product behaviour.
 """
 from __future__ import annotations
 
@@ -42,7 +37,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 BASELINE_PATH = "scripts/file_size_baseline.json"
 BASELINE = ROOT / BASELINE_PATH
-LIMIT = 800
+LIMIT = 900
+LEGACY_LIMIT = 1800
 
 _TEST_NAME_ENDINGS = ("_test.py", ".test.js", ".test.ts", ".spec.js", ".spec.ts")
 
@@ -86,6 +82,22 @@ def staged_sizes(root: Path = ROOT) -> dict[str, int]:
         _mode, blob, stage = info.split()
         if stage == "0" and is_source(path):
             blobs[path] = blob
+    return blob_sizes(root, blobs)
+
+
+def revision_sizes(reference: str, root: Path = ROOT) -> dict[str, int]:
+    """Read a candidate tree as Git objects, never checking out or executing it."""
+    blobs = {}
+    for entry in _git(root, "ls-tree", "-rz", reference).stdout.decode("utf-8").split("\0"):
+        if entry:
+            info, path = entry.split("\t", 1)
+            _mode, kind, blob = info.split()
+            if kind == "blob" and is_source(path):
+                blobs[path] = blob
+    return blob_sizes(root, blobs)
+
+
+def blob_sizes(root: Path, blobs: dict[str, str]) -> dict[str, int]:
     request = "".join(blob + "\n" for blob in blobs.values()).encode()
     output = _git(root, "cat-file", "--batch", stdin=request).stdout
     sizes, offset = {}, 0
@@ -148,34 +160,108 @@ def write_baseline(entries: dict[str, int], path: Path = BASELINE) -> None:
         handle.write(json.dumps(dict(sorted(entries.items())), indent=2, ensure_ascii=False) + "\n")
 
 
+def comparison_ref(requested: str | None) -> str | None:
+    """Resolve a trusted commit; a missing explicit ref never disables the check."""
+    if requested is not None and not requested.strip():
+        raise ValueError(f"cannot resolve comparison ref: {requested!r}")
+    result = _git(
+        ROOT, "rev-parse", "--verify", "--end-of-options",
+        (requested if requested is not None else "HEAD") + "^{commit}", check=False,
+    )
+    if result.returncode:
+        if requested is not None:
+            raise ValueError(f"cannot resolve comparison ref: {requested}")
+        return None  # initial repository: no legacy exemptions exist yet
+    return result.stdout.decode("ascii").strip()
+
+
+def reference_baseline(reference: str | None) -> dict[str, int]:
+    if reference is None:
+        return {}
+    shown = _git(ROOT, "show", reference + ":" + BASELINE_PATH, check=False)
+    return json.loads(shown.stdout.decode("utf-8")) if shown.returncode == 0 else {}
+
+
+def hard_limit_findings(
+    sizes: dict[str, int], reference: str | None, *, staged: bool, intermediate: bool,
+    head: str | None = None,
+) -> list[str]:
+    """Enforce the legacy ceiling on changed files, not unrelated existing code."""
+    if reference is None:
+        changed = set(sizes)
+    else:
+        args = ["diff", "--name-only", "-z", "--no-renames"]
+        if staged:
+            args.append("--cached")
+        changed = set(_git(ROOT, *args, reference, *([head] if head else []), "--").stdout.decode("utf-8").split("\0"))
+    found = []
+    for path in sorted(changed & sizes.keys()):
+        now = sizes[path]
+        if now <= LEGACY_LIMIT:
+            continue
+        if intermediate and reference is not None:
+            old = _git(ROOT, "show", reference + ":" + path, check=False)
+            if old.returncode == 0 and now < count_lines(old.stdout):
+                continue  # strictly shrinking staged step, not a completed PR
+        found.append(
+            f"{path}: {now} lines, over the {LEGACY_LIMIT}-line hard limit "
+            "for changed legacy files; finish the split"
+        )
+    return found
+
+
+def history_findings(reference: str, head: str = "HEAD") -> list[str]:
+    """A later commit cannot undo a tightening, even if the final budget shrank."""
+    revisions = _git(ROOT, "rev-list", reference + ".." + head).stdout.decode("ascii").splitlines()
+    found = []
+    for revision in revisions:
+        parent = _git(ROOT, "rev-parse", revision + "^", check=False)
+        before = reference_baseline(parent.stdout.decode("ascii").strip()) if parent.returncode == 0 else {}
+        for growth in raised(reference_baseline(revision), before):
+            found.append(f"{revision[:12]}: committed baseline grew: {growth}")
+    return found
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--staged", action="store_true", help="check the files and baseline staged for the next commit")
-    parser.add_argument("--update", action="store_true", help="rewrite the baseline from the current sizes")
-    parser.add_argument(
-        "--accept-growth", action="store_true",
-        help="with --update: allow raising a recorded size or listing a new file",
-    )
+    parser.add_argument("--update", action="store_true", help="rewrite the baseline after files shrink")
+    parser.add_argument("--base-ref", help="trusted PR base or previous main commit (required in CI)")
+    parser.add_argument("--head-ref", help="read an untrusted PR tree as Git objects; requires --base-ref")
     args = parser.parse_args(argv)
-    if args.accept_growth and not args.update:
-        parser.error("--accept-growth only applies with --update")
     if args.staged and args.update:
         parser.error("--update records the working tree; stage the new baseline afterwards")
+    if args.head_ref is not None and (args.base_ref is None or args.staged or args.update):
+        parser.error("--head-ref requires --base-ref and cannot be combined with --staged/--update")
 
-    sizes = staged_sizes() if args.staged else tracked_sizes()
-    baseline = staged_baseline() if args.staged else load_baseline()
-    if args.update:
-        new = recorded(sizes)
-        growth = raised(new, baseline)
-        if growth and not args.accept_growth:
-            print("\n".join(growth))
-            print("refusing to raise the baseline: split the file, or pass --accept-growth and say why in the commit")
-            return 1
-        write_baseline(new)
-        print(f"{BASELINE.name}: {len(new)} source files over {LIMIT} lines")
-        return 0
+    try:
+        reference = comparison_ref(args.base_ref)
+        previous = reference_baseline(reference)
+        head = comparison_ref(args.head_ref) if args.head_ref is not None else None
+        sizes = revision_sizes(head) if head else (staged_sizes() if args.staged else tracked_sizes())
+        baseline = reference_baseline(head) if head else (staged_baseline() if args.staged else load_baseline())
+        growth = raised(baseline, previous)
+        if args.update:
+            new = recorded(sizes)
+            growth.extend(raised(new, previous))
+            if growth:
+                print("\n".join(dict.fromkeys(growth)))
+                print("refusing to raise the committed baseline: split the file; growth waivers are not allowed")
+                return 1
+            write_baseline(new)
+            print(f"{BASELINE.name}: {len(new)} source files over {LIMIT} lines")
+            return 0
 
-    found = findings(sizes, baseline)
+        found = growth + findings(sizes, baseline)
+        if args.base_ref is not None:
+            found.extend(history_findings(reference, head or "HEAD"))
+        found.extend(hard_limit_findings(
+            sizes, reference, staged=args.staged,
+            intermediate=args.staged and args.base_ref is None, head=head,
+        ))
+    except (ValueError, subprocess.CalledProcessError) as error:
+        print(f"source-size check failed: {error}")
+        return 1
     if found:
         print("\n".join(found))
         print(f"{len(found)} finding(s); the rules and how to update {BASELINE_PATH} are in scripts/check_file_sizes.py")

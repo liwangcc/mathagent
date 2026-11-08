@@ -23,10 +23,33 @@ MathAgent 以 **AGPL-3.0** 开源发布，并以商业双许可提供商用授�
    ```
 4. 改动页面交互时补充或运行 `frontend/tests/*.browser.mjs`（启动方式见脚本头部注释；只用合成数据）。
 5. 提交前运行 `git diff --check`、`git status --short`，确认没有敏感或生成文件。
-6. 运行 `python scripts/check_file_sizes.py`：新文件不超过 800 行，已列入 `scripts/file_size_baseline.json` 的大文件只减不增。文件变小后用 `--update` 记下新行数；确实需要变大时加 `--accept-growth`，并在提交说明里写清原因。
-
-   这道检查有两道硬闸，不只靠记得手动跑：`.githooks/pre-commit` 在每次提交前用 `--staged` 检查这次实际要提交的内容（新克隆后执行一次 `git config core.hooksPath .githooks` 启用，所有工作树共用），CI 的「后端冒烟测试」里也跑同一个脚本。`git commit --no-verify` 能跳过本地钩子，但推到 GitHub 后仍会被 CI 拦下；main 已开分支保护，检查不通过合不进去。
+6. 运行 `python scripts/check_file_sizes.py`，遵守下节的 900/1800 源文件预算。文件缩短后用 `--update` 记录，并与相应源码一起暂存；不得抬高登记额度或使用 `--accept-growth`。
 7. 说明行为变化、实际测试命令、退出状态和未覆盖风险。
+
+## 源文件规模：仓库硬性标准
+
+- **新建或未登记为历史大文件的源文件最多 900 行。** 拆出的每个新模块同样适用。
+- **本次修改的历史源文件，PR 最终版本最多 1800 行。** 已登记的大文件仍只减不增：例如原来 1700 行，可以保持行数修改，不得借新上限继续长到 1800 行。
+- 用户批准保留的六个历史文件保持现状，不作为待拆任务：`experiments/template_ocr_lab/core.py`、`services/question_classification.py`、`desktop/worker/mathagent_worker/handoff.py`、`services/correction_tracking.py`、`services/accelerator_business.py`、`services/model_concurrency.py`。它们符合 1800 上限；保留现状不是增加登记额度的授权。
+- 未触碰的其他旧文件不要求顺手重构。分阶段拆分时，本地 `--staged` 允许超过 1800 的旧文件在中间提交中严格缩短，但 PR 最终态仍须降到 1800 以内。
+- 基线只允许收紧或删除，不能与源码一起抬高、自行新增超限例外，也不能先缩短后在后续提交中涨回。迁移到 900 时，仅移除已在 900 以内的登记，不抬高保留条目的额度。
+- 按职责与单向依赖拆分，保留旧接口和行为测试；不压行、不删注释或放宽测试来凑数字。
+
+统计范围沿用原门禁：Git 跟踪的 Python 源文件，以及 `frontend/src/` 下的 Vue、JavaScript、TypeScript；测试文件不计入。按物理行统计，包含注释、空行和无末尾换行的最后一行；CSS、文档和生成产物不因此新增治理范围。
+
+```bash
+# 新克隆启用本地钩子；各 worktree 使用各自检出的钩子与脚本。
+git config core.hooksPath .githooks
+python scripts/check_file_sizes.py
+# 更新缩短后的基线，再与对应源码一起暂存。
+python scripts/check_file_sizes.py --update
+# 与可信 PR 基点比较最终态，并检查提交历史中的基线收紧。
+python scripts/check_file_sizes.py --base-ref <PR基点SHA>
+```
+
+本地钩子检查真实候选索引并对照 HEAD；普通提交、`commit -a`、`commit <path>` 使用同一入口。普通 CI 获取完整历史，对照 PR 基点或 push 前的提交检查，显式比较 ref 无效时失败，不退成无约束模式。新建 `ci/**` 分支首次 push 的 before 为全零时，工作流改用与 `origin/main` 的共同祖先。
+
+所有面向 main 的 PR（包括其他人的 fork PR）另受「源文件规模硬门禁」约束，并由分支保护设为必需状态。该检查使用 **main 已有的工作流和基点中的可信检查器**，通过 `--base-ref` / `--head-ref` 只读取 PR 的 Git 对象；不检出、安装或执行 PR 中的 Python、测试、工作流和依赖。它只授予源码读取及发布该提交检查状态所需的权限，不使用仓库密钥，也不读取缓存。因此 PR 同时篡改检查器、删除工作流、抬高基线或跳过本地 hook，都不能自行豁免超限代码。检查结果绑定确切的 PR head SHA，未完成或失败不能合入。仓库管理员仍能主动修改保护设置；这是仓库权限边界，不是贡献者可以使用的放行口。
 
 ## 业务底线
 

@@ -20,6 +20,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          # Compare with committed PR/push history, never the candidate JSON alone.
+          fetch-depth: 0
 
       - uses: actions/setup-python@v5
         with:
@@ -35,11 +38,21 @@ jobs:
         run: python -m compileall -q app.py config.py routers services database.py
 
       - name: 源文件行数预算
-        # 新文件不超过 800 行，已登记的大文件只减不增；规则见 scripts/check_file_sizes.py。
-        # CI 检出的工作区就是这次提交，所以不需要 --staged。
+        # 新文件 ≤900；改动的历史文件最终 ≤1800；登记额度只减不增。
+        env:
+          SIZE_POLICY_BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
         run: |
-          python scripts/check_file_sizes.py
-          pytest -q tests/test_check_file_sizes.py
+          base="$SIZE_POLICY_BASE"
+          if [ -z "$base" ]; then
+            printf '%s\n' 'missing source-size comparison base' >&2
+            exit 1
+          fi
+          # First push of a ci/** branch has no previous SHA; use its main fork point.
+          if [ "$base" = "0000000000000000000000000000000000000000" ]; then
+            base=$(git merge-base origin/main HEAD)
+          fi
+          python scripts/check_file_sizes.py --base-ref "$base"
+          pytest -q tests/test_check_file_sizes.py tests/test_file_size_policy.py
 
       - name: 鉴权与安全回归
         # 只跑不依赖外部模型/网络的用例：认证、短信限流、连接测试、安全加固，

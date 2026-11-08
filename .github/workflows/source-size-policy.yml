@@ -1,0 +1,71 @@
+name: trusted-source-size
+
+on:
+  pull_request_target:
+    branches: [main]
+    types: [opened, synchronize, reopened, ready_for_review, edited]
+
+# Never execute PR code with this token. Only the trusted main-branch checker runs.
+permissions:
+  contents: read
+  statuses: write
+
+concurrency:
+  group: trusted-source-size-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  trusted-size:
+    name: 可信源文件规模检查
+    runs-on: ubuntu-latest
+    steps:
+      - name: Mark exact PR head pending
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.repos.createCommitStatus({
+              ...context.repo,
+              sha: context.payload.pull_request.head.sha,
+              context: '源文件规模硬门禁',
+              state: 'pending',
+              description: 'Checking 900/1800 limits with the trusted base-branch policy',
+              target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+            });
+
+      - name: Checkout trusted base only
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Inspect candidate Git objects without checkout
+        id: size
+        env:
+          SIZE_POLICY_BASE: ${{ github.event.pull_request.base.sha }}
+          SIZE_POLICY_HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          git fetch --no-tags origin "$SIZE_POLICY_HEAD"
+          python -I scripts/check_file_sizes.py \
+            --base-ref "$SIZE_POLICY_BASE" --head-ref "$SIZE_POLICY_HEAD"
+
+      - name: Publish exact-head result
+        if: ${{ always() }}
+        uses: actions/github-script@v7
+        env:
+          SIZE_RESULT: ${{ steps.size.outcome }}
+        with:
+          script: |
+            const ok = process.env.SIZE_RESULT === 'success';
+            await github.rest.repos.createCommitStatus({
+              ...context.repo,
+              sha: context.payload.pull_request.head.sha,
+              context: '源文件规模硬门禁',
+              state: ok ? 'success' : 'failure',
+              description: ok ? '900/1800 source-size policy passed' : 'Source-size policy failed or did not complete',
+              target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+            });
