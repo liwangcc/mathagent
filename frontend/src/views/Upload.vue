@@ -1492,7 +1492,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, watch, nextTick, onMounted, onBeforeUnmount } from 'vue'
+import { ref, reactive, computed, watch, nextTick, onMounted, onBeforeUnmount, shallowRef } from 'vue'
 import { onBeforeRouteLeave, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { notifyProcessingError } from '@/utils/errorNotification'
@@ -1744,9 +1744,9 @@ const ACCELERATOR_AUTO_RESUME_LIMIT = 6
 // server-side retry. Spend it automatically after a short cool-down instead of
 // leaving the teacher at an incomplete batch.
 const OCR_RETRY_AUTO_RESUME_DELAY_MS = 15000
-let availabilityPollTimer = null
+const availabilityPollTimer = shallowRef(null)
 let availabilityCheckPending = false
-let serviceFaultHoldUntil = 0
+const serviceFaultHoldUntil = shallowRef(0)
 let recognitionAutoResumeTimer = null
 let recognitionAutoResumeAttempts = 0
 let recognitionAutoResumeGeneration = 0
@@ -1780,7 +1780,7 @@ const recognitionBlocksNewWork = computed(() => (
 ))
 
 function markServiceFault(message) {
-  serviceFaultHoldUntil = Date.now() + SERVICE_FAULT_HOLD_MS
+  serviceFaultHoldUntil.value = Date.now() + SERVICE_FAULT_HOLD_MS
   serviceState.value = {
     status: 'fault',
     label: '链路故障',
@@ -1880,7 +1880,7 @@ const reviewRestoredLabel = ref('')
 const coursewareRecommendations = ref([])
 const coursewareRecommendationState = ref('idle')
 const coursewareRecommendationQuery = ref({})
-let coursewareRecommendationKey = ''
+const coursewareRecommendationKey = shallowRef('')
 const batchReport = ref({
   status: 'not_started',
   text: '',
@@ -1948,18 +1948,18 @@ const manualDecisionPages = ref([])
 const manualDecisionPageIndex = ref(0)
 const manualDecisionShowPaper = ref(true)
 let manualDecisionImageRequestId = 0
-let templateRecognizeController = null
-let templateConfirmController = null
-let templateCutController = null
+const templateRecognizeController = shallowRef(null)
+const templateConfirmController = shallowRef(null)
+const templateCutController = shallowRef(null)
 let templateCutPollTimer = null
 // Run token whose finished state was already applied.  Polling can observe the
 // completion before the POST resolves; rendering it again would rebuild every
 // page preview (refetching images and revoking blobs) on each tick.
-let templateCutCompletedRunToken = null
-let templateCutRunToken = 0
+const templateCutCompletedRunToken = shallowRef(null)
+const templateCutRunToken = shallowRef(0)
 let templateCutPreviewLoadToken = 0
-let recognizeController = null
-let gradeController = null
+const recognizeController = shallowRef(null)
+const gradeController = shallowRef(null)
 
 const recognizeSucceededCount = computed(() => recognitionDone.value
   ? recognitionStats.value.succeeded
@@ -2424,7 +2424,7 @@ function recoverRecognitionConnection(targetBatchId, payload) {
     || !['recognizing_remaining', 'recognition_interrupted'].includes(payload.status)
     || recognitionRecoveryState.value.status !== 'available') return false
   // This owned snapshot proves reachability, not spare model/hardware capacity.
-  serviceFaultHoldUntil = 0
+  serviceFaultHoldUntil.value = 0
   serviceState.value = { status: 'queued', label: '批次可恢复', message: '已连接服务器，正在恢复已保存的识别进度。' }
   recognitionError.value = ''
   currentMessage.value = ''
@@ -3152,10 +3152,10 @@ async function waitForTemplateRecognition(templateId, signal) {
 }
 
 async function applyTemplateRecognitionResult(tid, pages, mode = '', columnMode = '', teachingContext = {}) {
-  const runToken = ++templateCutRunToken
-  templateCutCompletedRunToken = null
-  templateCutController?.abort()
-  templateCutController = null
+  const runToken = ++templateCutRunToken.value
+  templateCutCompletedRunToken.value = null
+  templateCutController.value?.abort()
+  templateCutController.value = null
   stopTemplateCutPolling()
   templateCutBusy.value = false
   revokeTemplateCutPreviews()
@@ -3194,7 +3194,7 @@ async function applyTemplateRecognitionResult(tid, pages, mode = '', columnMode 
   syncTemplateBatchScores()
   templateDialogVisible.value = true
   const existingCut = await api.grade.templateCutCandidatesState(tid).catch(() => null)
-  if (tid !== pendingTemplateId.value || runToken !== templateCutRunToken) return
+  if (tid !== pendingTemplateId.value || runToken !== templateCutRunToken.value) return
   if (existingCut?.status === 'complete') {
     applyTemplateCutState(existingCut, runToken)
   } else {
@@ -3220,11 +3220,11 @@ async function onRecognizeTemplate() {
   recognizingTemplate.value = true
   templateRecognizeError.value = ''
   templateRecognizeMessage.value = '正在上传并准备模板…'
-  templateRecognizeController = new AbortController()
+  templateRecognizeController.value = new AbortController()
   let tid = ''
   try {
     await appendDesktopCanonicalCandidates(fd, templateFiles.value)
-    const response = await api.grade.templateRecognize(fd, templateRecognizeController.signal)
+    const response = await api.grade.templateRecognize(fd, templateRecognizeController.value.signal)
     if (!response.ok) {
       throw await createSseResponseError(response, '模板识别失败')
     }
@@ -3257,7 +3257,7 @@ async function onRecognizeTemplate() {
     }
     await applyTemplateRecognitionResult(tid, pages, templateMode.value, templateColumnMode.value, teachingContext)
   } catch (err) {
-    const signal = templateRecognizeController?.signal
+    const signal = templateRecognizeController.value?.signal
     let failure = err
     const rawFailure = String(failure?.message || '')
     const canRecover = Boolean(tid) && (
@@ -3302,7 +3302,7 @@ async function onRecognizeTemplate() {
   } finally {
     recognizingTemplate.value = false
     templateRecognizeMessage.value = ''
-    templateRecognizeController = null
+    templateRecognizeController.value = null
   }
 }
 
@@ -3321,11 +3321,11 @@ async function resumeTemplateRecognitionCheckpoint() {
   recognizingTemplate.value = true
   templateRecognizeError.value = ''
   templateRecognizeMessage.value = '正在恢复上次未完成的模板识别…'
-  templateRecognizeController = new AbortController()
+  templateRecognizeController.value = new AbortController()
   try {
     const recovered = await waitForTemplateRecognition(
       String(checkpoint.template_id),
-      templateRecognizeController.signal,
+      templateRecognizeController.value.signal,
     )
     const stateCategory = String(recovered.state?.category || '')
     if (['daily', 'exam'].includes(stateCategory)) {
@@ -3354,7 +3354,7 @@ async function resumeTemplateRecognitionCheckpoint() {
       isTerminalTemplateFailure(failure)
       || [401, 403, 404].includes(Number(failure?.status || 0))
     ) forgetTemplateRecognition()
-    const signal = templateRecognizeController?.signal
+    const signal = templateRecognizeController.value?.signal
     if (!isSseRequestCancelled(failure, signal)) {
       reportSseServiceFault(
         failure,
@@ -3369,7 +3369,7 @@ async function resumeTemplateRecognitionCheckpoint() {
   } finally {
     recognizingTemplate.value = false
     templateRecognizeMessage.value = ''
-    templateRecognizeController = null
+    templateRecognizeController.value = null
   }
 }
 
@@ -3387,7 +3387,7 @@ function stopTemplateCutPolling() {
 }
 
 function releaseFinishedTemplateCut(runToken) {
-  if (runToken !== templateCutRunToken) return
+  if (runToken !== templateCutRunToken.value) return
   // The finished run is persisted server-side, so the pending POST no longer
   // owns the editor: holding the lock until it returns locks the teacher out of
   // a template that is already done.
@@ -3395,11 +3395,11 @@ function releaseFinishedTemplateCut(runToken) {
   stopTemplateCutPolling()
 }
 
-function applyTemplateCutState(data, expectedRunToken = templateCutRunToken) {
-  if (!pendingTemplateId.value || expectedRunToken !== templateCutRunToken) return
+function applyTemplateCutState(data, expectedRunToken = templateCutRunToken.value) {
+  if (!pendingTemplateId.value || expectedRunToken !== templateCutRunToken.value) return
   if (!data || (templateCutActionId.value && data.action_id && data.action_id !== templateCutActionId.value)) return
   const finished = ['complete', 'failed'].includes(data.status)
-  if (templateCutCompletedRunToken === expectedRunToken) {
+  if (templateCutCompletedRunToken.value === expectedRunToken) {
     releaseFinishedTemplateCut(expectedRunToken)
     return
   }
@@ -3420,7 +3420,7 @@ function applyTemplateCutState(data, expectedRunToken = templateCutRunToken) {
       }
     })
     if (finished) {
-      templateCutCompletedRunToken = expectedRunToken
+      templateCutCompletedRunToken.value = expectedRunToken
       releaseFinishedTemplateCut(expectedRunToken)
     }
     if (data.status === 'failed') {
@@ -4410,13 +4410,13 @@ function applyTemplateQuestionEdit(res) {
   }
 }
 
-async function loadTemplateCutPreviews(data = templateCutResult.value, expectedRunToken = templateCutRunToken) {
+async function loadTemplateCutPreviews(data = templateCutResult.value, expectedRunToken = templateCutRunToken.value) {
   const templateId = pendingTemplateId.value
-  if (!templateId || expectedRunToken !== templateCutRunToken || data?.status !== 'complete') return
+  if (!templateId || expectedRunToken !== templateCutRunToken.value || data?.status !== 'complete') return
   revokeTemplateCutPreviews()
   const loadToken = templateCutPreviewLoadToken
   const isCurrentLoad = () => templateId === pendingTemplateId.value
-    && expectedRunToken === templateCutRunToken && loadToken === templateCutPreviewLoadToken
+    && expectedRunToken === templateCutRunToken.value && loadToken === templateCutPreviewLoadToken
   const imageUrls = new Set()
   let failed = false
   templateCutPreviewError.value = ''
@@ -4535,26 +4535,26 @@ async function loadTemplateCutPreviews(data = templateCutResult.value, expectedR
   }
 }
 
-async function pollTemplateCutState(templateId, expectedRunToken = templateCutRunToken) {
-  if (!templateCutBusy.value || templateId !== pendingTemplateId.value || expectedRunToken !== templateCutRunToken) return
+async function pollTemplateCutState(templateId, expectedRunToken = templateCutRunToken.value) {
+  if (!templateCutBusy.value || templateId !== pendingTemplateId.value || expectedRunToken !== templateCutRunToken.value) return
   try {
     const state = await api.grade.templateCutCandidatesState(templateId)
-    if (templateId !== pendingTemplateId.value || expectedRunToken !== templateCutRunToken) return
+    if (templateId !== pendingTemplateId.value || expectedRunToken !== templateCutRunToken.value) return
     applyTemplateCutState(state, expectedRunToken)
   } catch {
     // The POST request remains authoritative; transient polling errors stay quiet.
   } finally {
-    if (templateCutBusy.value && templateId === pendingTemplateId.value && expectedRunToken === templateCutRunToken) {
+    if (templateCutBusy.value && templateId === pendingTemplateId.value && expectedRunToken === templateCutRunToken.value) {
       templateCutPollTimer = setTimeout(() => pollTemplateCutState(templateId, expectedRunToken), 800)
     }
   }
 }
 
-async function loadTemplateCutState(templateId, expectedRunToken = templateCutRunToken) {
-  if (!templateId || templateId !== pendingTemplateId.value || expectedRunToken !== templateCutRunToken) return
+async function loadTemplateCutState(templateId, expectedRunToken = templateCutRunToken.value) {
+  if (!templateId || templateId !== pendingTemplateId.value || expectedRunToken !== templateCutRunToken.value) return
   try {
     const state = await api.grade.templateCutCandidatesState(templateId)
-    if (templateId !== pendingTemplateId.value || expectedRunToken !== templateCutRunToken) return
+    if (templateId !== pendingTemplateId.value || expectedRunToken !== templateCutRunToken.value) return
     if (state.status !== 'not_run') {
       templateCutResult.value = state
       templateCutProgress.value = state.progress || templateCutProgress.value
@@ -4577,9 +4577,9 @@ async function onRunTemplateCut({ force = false } = {}) {
   if (!requireTemplateService()) return
   const templateId = pendingTemplateId.value
   if (!templateId || templateCutBusy.value) return
-  const runToken = ++templateCutRunToken
-  templateCutCompletedRunToken = null
-  templateCutController?.abort()
+  const runToken = ++templateCutRunToken.value
+  templateCutCompletedRunToken.value = null
+  templateCutController.value?.abort()
   templateCutPreviewLoadToken += 1
   templateCutPreviewError.value = ''
   if (force) templateCutActionId.value = ''
@@ -4593,7 +4593,7 @@ async function onRunTemplateCut({ force = false } = {}) {
     total: templatePages.value.length,
     remaining: templatePages.value.length,
   }
-  templateCutController = new AbortController()
+  templateCutController.value = new AbortController()
   stopTemplateCutPolling()
   templateCutPollTimer = setTimeout(() => pollTemplateCutState(templateId, runToken), 300)
   try {
@@ -4602,10 +4602,10 @@ async function onRunTemplateCut({ force = false } = {}) {
       cut_types: ['question'],
       image_type: templateCutImageType.value,
       force,
-    }, templateCutController.signal)
+    }, templateCutController.value.signal)
     const data = await response.json().catch(() => ({}))
     if (!response.ok) throw new Error(templateCutErrorMessage(data, `裁题失败 (${response.status})`))
-    if (runToken !== templateCutRunToken || templateId !== pendingTemplateId.value) return
+    if (runToken !== templateCutRunToken.value || templateId !== pendingTemplateId.value) return
     if (!['complete', 'failed'].includes(data.status)
       || (data.action_id && data.action_id !== templateCutActionId.value)) {
       throw new Error('模板裁剪结果不完整或不属于本次任务，请重试。')
@@ -4616,13 +4616,13 @@ async function onRunTemplateCut({ force = false } = {}) {
       ElMessage.success(`模板自动裁剪完成：已生成 ${data.pages?.reduce((total, page) => total + (page.anchor_crop_plan?.blocks?.length || 0), 0) || 0} 个连续裁剪块`)
     }
   } catch (err) {
-    if (runToken !== templateCutRunToken || templateId !== pendingTemplateId.value) return
-    if (templateCutCompletedRunToken === runToken) return
+    if (runToken !== templateCutRunToken.value || templateId !== pendingTemplateId.value) return
+    if (templateCutCompletedRunToken.value === runToken) return
     if (err.name !== 'AbortError') notifyProcessingError(err, err.message || '教师模板裁题失败')
   } finally {
-    if (runToken === templateCutRunToken) {
+    if (runToken === templateCutRunToken.value) {
       templateCutBusy.value = false
-      templateCutController = null
+      templateCutController.value = null
       stopTemplateCutPolling()
     }
   }
@@ -4850,7 +4850,7 @@ async function saveAndConfirmTemplateDraft(templateId) {
   }
   const drawingReferenceSnapshot = templateDrawingReferenceSaveSnapshot()
   const controller = new AbortController()
-  templateConfirmController = controller
+  templateConfirmController.value = controller
   try {
     const res = await api.grade.templateConfirm(payload, controller.signal)
     if (controller.signal.aborted || templateId !== pendingTemplateId.value) return false
@@ -4870,7 +4870,7 @@ async function saveAndConfirmTemplateDraft(templateId) {
     if (templateId === pendingTemplateId.value && err.name !== 'CanceledError' && err.name !== 'AbortError') notifyProcessingError(err, err.message || '模板确认失败，当前修改已保留')
     return false
   } finally {
-    if (templateConfirmController === controller) templateConfirmController = null
+    if (templateConfirmController.value === controller) templateConfirmController.value = null
   }
 }
 
@@ -4958,14 +4958,14 @@ async function onImportTemplateBank() {
 
 function clearTemplateDraft() {
   recognitionAutoArmed.value = true
-  templateCutRunToken += 1
-  templateCutCompletedRunToken = null
-  templateRecognizeController?.abort()
-  templateConfirmController?.abort()
-  templateCutController?.abort()
-  templateRecognizeController = null
-  templateConfirmController = null
-  templateCutController = null
+  templateCutRunToken.value += 1
+  templateCutCompletedRunToken.value = null
+  templateRecognizeController.value?.abort()
+  templateConfirmController.value?.abort()
+  templateCutController.value?.abort()
+  templateRecognizeController.value = null
+  templateConfirmController.value = null
+  templateCutController.value = null
   stopTemplateCutPolling()
   templateCutBusy.value = false
   recognizingTemplate.value = false
@@ -5486,12 +5486,12 @@ async function runRecognize() {
   progressList.value = []
   gradeTotal.value = fileList.value.length
   currentMessage.value = ''
-  recognizeController = new AbortController()
+  recognizeController.value = new AbortController()
 
   let requestBatchId = ''
   let doneData = null
   try {
-    const response = await api.grade.recognize(fd, recognizeController.signal)
+    const response = await api.grade.recognize(fd, recognizeController.value.signal)
     void loadDailyUsage()
     if (!response.ok) {
       throw await createSseResponseError(response, '识别请求失败')
@@ -5535,7 +5535,7 @@ async function runRecognize() {
     activeStep.value = 1
     await onConfirmGrade()
   } catch (err) {
-    const signal = recognizeController?.signal
+    const signal = recognizeController.value?.signal
     if (!isSseRequestCancelled(err, signal)) {
       const failureCode = String(err?.code || '').toUpperCase()
       const targetBatchId = requestBatchId
@@ -5575,7 +5575,7 @@ async function runRecognize() {
     }
   } finally {
     recognizing.value = false
-    recognizeController = null
+    recognizeController.value = null
   }
 }
 
@@ -5646,16 +5646,16 @@ async function onConfirmGrade(skipIdentityGate = false) {
   coursewareRecommendations.value = []
   coursewareRecommendationState.value = 'idle'
   coursewareRecommendationQuery.value = {}
-  coursewareRecommendationKey = ''
+  coursewareRecommendationKey.value = ''
   resetBatchReport()
   currentMessage.value = ''
-  gradeController = new AbortController()
+  gradeController.value = new AbortController()
   startGradingClock()
   let completedSummary = null
   let completedRevision = 0
 
   try {
-    const response = await api.grade.confirm(payload, gradeController.signal)
+    const response = await api.grade.confirm(payload, gradeController.value.signal)
     if (!response.ok) {
       throw await createSseResponseError(response, '批改请求失败')
     }
@@ -5712,7 +5712,7 @@ async function onConfirmGrade(skipIdentityGate = false) {
     throw new SseTransportError('批改连接提前结束')
   } catch (err) {
     summary.value = null
-    const signal = gradeController?.signal
+    const signal = gradeController.value?.signal
     if (!isSseRequestCancelled(err, signal)) {
       reportSseServiceFault(
         err,
@@ -5726,7 +5726,7 @@ async function onConfirmGrade(skipIdentityGate = false) {
   } finally {
     stopGradingClock()
     grading.value = false
-    gradeController = null
+    gradeController.value = null
   }
   return false
 }
@@ -5849,10 +5849,10 @@ async function resumeRecognitionBatch(resumeBatchId, { automatic = false } = {})
   resetRecognitionRecoveryState()
   recognitionError.value = ''
   currentMessage.value = '正在从已保存进度恢复识别'
-  recognizeController = new AbortController()
+  recognizeController.value = new AbortController()
   let doneData = null
   try {
-    const response = await api.grade.recognitionResume(targetBatchId, recognizeController.signal)
+    const response = await api.grade.recognitionResume(targetBatchId, recognizeController.value.signal)
     if (!response.ok) {
       throw await createSseResponseError(response, '恢复识别请求失败')
     }
@@ -5884,7 +5884,7 @@ async function resumeRecognitionBatch(resumeBatchId, { automatic = false } = {})
     await onConfirmGrade()
     return true
   } catch (err) {
-    const signal = recognizeController?.signal
+    const signal = recognizeController.value?.signal
     if (!isSseRequestCancelled(err, signal)) {
       const failureCode = String(err?.code || '').toUpperCase()
       const connectionRecovery = canRecoverRecognitionConnection(err, signal)
@@ -5911,7 +5911,7 @@ async function resumeRecognitionBatch(resumeBatchId, { automatic = false } = {})
     return false
   } finally {
     recognizing.value = false
-    recognizeController = null
+    recognizeController.value = null
   }
 }
 
@@ -5941,7 +5941,7 @@ function clearReviewDisplay() {
   coursewareRecommendations.value = []
   coursewareRecommendationState.value = 'idle'
   coursewareRecommendationQuery.value = {}
-  coursewareRecommendationKey = ''
+  coursewareRecommendationKey.value = ''
   resetBatchReport()
 }
 
@@ -5963,7 +5963,7 @@ async function loadCoursewareRecommendations() {
     knowledge_point: String(top.topic || top.name || '').trim(),
   }
   const key = `${batchId.value || ''}|${query.chapter}|${query.knowledge_point}`
-  coursewareRecommendationKey = key
+  coursewareRecommendationKey.value = key
   coursewareRecommendationQuery.value = query
   if (!query.chapter && !query.knowledge_point) {
     coursewareRecommendations.value = []
@@ -5973,7 +5973,7 @@ async function loadCoursewareRecommendations() {
   coursewareRecommendationState.value = 'loading'
   try {
     const data = await api.courseware.recommendations({ ...query, limit: 3 })
-    if (coursewareRecommendationKey !== key) return
+    if (coursewareRecommendationKey.value !== key) return
     const items = Array.isArray(data?.items) ? data.items : []
     if (data?.matched === false || !items.length) {
       coursewareRecommendations.value = []
@@ -5990,7 +5990,7 @@ async function loadCoursewareRecommendations() {
     }))
     coursewareRecommendationState.value = 'ready'
   } catch {
-    if (coursewareRecommendationKey !== key) return
+    if (coursewareRecommendationKey.value !== key) return
     coursewareRecommendations.value = []
     coursewareRecommendationState.value = 'error'
   }
@@ -6501,14 +6501,14 @@ function onBeforeUnload(event) {
 
 function abortActiveRequests() {
   clearRecognitionAutoResume()
-  templateRecognizeController?.abort()
-  templateConfirmController?.abort()
-  templateCutController?.abort()
+  templateRecognizeController.value?.abort()
+  templateConfirmController.value?.abort()
+  templateCutController.value?.abort()
   stopTemplateCutPolling()
-  templateCutRunToken += 1
+  templateCutRunToken.value += 1
   templateCutBusy.value = false
-  recognizeController?.abort()
-  gradeController?.abort()
+  recognizeController.value?.abort()
+  gradeController.value?.abort()
 }
 
 async function refreshAvailability() {
@@ -6554,7 +6554,7 @@ async function refreshAvailability() {
     if (
       ['available', 'queued'].includes(state.status)
       && serviceState.value.status === 'fault'
-      && Date.now() < serviceFaultHoldUntil
+      && Date.now() < serviceFaultHoldUntil.value
     ) {
       // Keep the recent transport fault visible while still refreshing hardware gates below.
     } else if (state.status === 'fault') {
@@ -6637,7 +6637,7 @@ watch(() => form.category, (category) => {
 onMounted(async () => {
   window.addEventListener('beforeunload', onBeforeUnload)
   await Promise.all([refreshAvailability(), loadDailyUsage()])
-  availabilityPollTimer = window.setInterval(refreshAvailability, 15000)
+  availabilityPollTimer.value = window.setInterval(refreshAvailability, 15000)
   const resumedTemplate = await resumeTemplateRecognitionCheckpoint()
   if (!resumedTemplate) {
     const resumedReview = await resumeReviewBatch()
@@ -6647,7 +6647,7 @@ onMounted(async () => {
 onBeforeUnmount(() => {
   setRouteBusy('upload', false)
   window.removeEventListener('beforeunload', onBeforeUnload)
-  if (availabilityPollTimer) window.clearInterval(availabilityPollTimer)
+  if (availabilityPollTimer.value) window.clearInterval(availabilityPollTimer.value)
   stopGradingClock()
   stopBatchReportPolling()
   revokeIdentityImageUrls()
