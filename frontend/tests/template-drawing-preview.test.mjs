@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import { MElement } from './helpers/memoryDom.js'
 import { cutPage, openTemplateEditor } from './helpers/templateDrawingSlots.js'
+import { updateDrawingReference } from '../src/utils/templateDrawing.js'
 
 // The template editor's shared page canvas: the real Upload page, opened from
 // a recognized template, with its real DrawingReferenceEditor per drawing
@@ -277,7 +278,8 @@ test('reference edit does not mutate the other page', async (t) => {
   assert.deepEqual(v.points(v.editorFor(1, '2.3')), [])
   assert.equal(Object.hasOwn(draftQuestion(editor, '2.3', 1), 'drawing_reference'), false)
   // A canvas without a question (the page's geometry host) owns no figure.
-  assert.doesNotThrow(() => editor.page.setup.updateDrawingReference(null, candidate()))
+  // The template editor dialog passes its drawing-reference events straight to this handler.
+  assert.doesNotThrow(() => updateDrawingReference(null, candidate()))
 })
 
 test('changing editor ownership clears old geometry gesture and cannot switch while generation saves its candidate', async (t) => {
