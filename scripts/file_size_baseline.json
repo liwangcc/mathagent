@@ -4,7 +4,6 @@
   "desktop/worker/mathagent_worker/template_ocr_evidence.py": 1071,
   "experiments/template_ocr_lab/core.py": 1711,
   "frontend/src/api/index.js": 819,
-  "frontend/src/views/AnswerSheet.vue": 952,
   "frontend/src/views/ClassTable.vue": 1797,
   "frontend/src/views/Home.vue": 1001,
   "frontend/src/views/Layout.vue": 945,
