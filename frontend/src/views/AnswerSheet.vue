@@ -714,8 +714,8 @@
 </template>
 
 <script setup>
-import { computed, defineComponent, h, onBeforeUnmount, onMounted, ref, watch, shallowRef } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { computed, defineComponent, h, ref, shallowRef } from 'vue'
+import { ElMessage } from 'element-plus'
 import { notifyProcessingError } from '@/utils/errorNotification'
 import GradingProgress from '@/components/GradingProgress.vue'
 import GradingQuickDock from '@/components/GradingQuickDock.vue'
@@ -727,13 +727,11 @@ import api, {
   mergeHardwareAvailabilityStatus,
   normalizeHardwareAvailability,
 } from '@/api'
-import { appendDesktopCanonicalCandidates } from '@/utils/desktopTemplateCanonicalization'
 import { compressImageFiles, validateUploadList } from '@/utils/uploadValidation'
 import { pairFilesByFolder, pairFilesBySide, parseSideFilename, sourceDirectory, studentPageIdentityHint } from '@/utils/answerSheetPairing'
 import { extractImagesFromDrop, extractImagesFromFileList } from '@/utils/fileExtraction'
 import { getUploadSourcePath } from '@/utils/uploadSource'
 import { useAuthStore } from '@/stores/auth'
-import { renderLatex } from '@/utils/latex'
 import HelpButton from '@/components/HelpButton.vue'
 import {
   consumeSse,
@@ -743,6 +741,9 @@ import {
   isSseServiceFault,
   SseTransportError,
 } from '@/utils/sse'
+import { useAnswerSheetSetup } from './answer-sheet/useAnswerSheetSetup.js'
+import { useAnswerSheetStudents } from './answer-sheet/useAnswerSheetStudents.js'
+import { useAnswerSheetLifecycle } from './answer-sheet/useAnswerSheetLifecycle.js'
 
 const STORAGE_KEY = 'mathagent_answer_sheet_session_id'
 const auth = useAuthStore()
@@ -922,7 +923,7 @@ async function openEvidenceFile(record, file) {
 const currentReviewPaperId = ref('')
 const studentPageImageUrl = ref('')
 const studentPageImageError = ref('')
-const studentImageRequestId = shallowRef(0)
+
 const answerSheetStreamController = shallowRef(null)
 
 const stages = [
@@ -1504,501 +1505,37 @@ async function refreshAvailability() {
     availabilityCheckPending = false
   }
 }
-function formatBatchTime(value) {
-  const date = new Date(value || '')
-  return Number.isNaN(date.getTime()) ? '' : date.toLocaleString('zh-CN', { hour12: false })
-}
-function paperTemplateLabel(item) {
-  const name = String(item?.alias || item?.exam_name || '').trim()
-  return `${name ? `${name}　` : ''}${item.template_code}　${item.question_count}题`
-}
-function paperSourceLabel(item) {
-  const name = String(item?.exam_name || '').trim() || `详细批改模板 ${item.template_id}`
-  const confirmed = formatBatchTime(item?.confirmed_at)
-  return `${name}　${item.question_count}题${confirmed ? `　确认于 ${confirmed}` : ''}`
-}
-async function loadBatchChoices() {
-  const [templates, sources, listed] = await Promise.allSettled([
-    api.answerSheet.paperTemplates(),
-    api.answerSheet.paperTemplateSources(),
-    api.answerSheet.listSessions(),
-  ])
-  const items = (result, key) => (
-    result.status === 'fulfilled' && Array.isArray(result.value?.[key]) ? result.value[key] : []
-  )
-  paperTemplates.value = items(templates, 'templates')
-  paperTemplateSources.value = items(sources, 'sources')
-  batches.value = items(listed, 'batches')
-}
-async function registerPaperTemplate() {
-  if (!requireAnswerSheetService()) return
-  const { template_id: templateId, alias } = paperRegistration.value
-  if (!templateId) return
-  const data = await run(
-    () => api.answerSheet.registerPaperTemplate(templateId, String(alias || '').trim()),
-    '试卷模板已登记，可在多个批次复用',
-  )
-  paperRegistration.value = { template_id: '', alias: '' }
-  await loadBatchChoices()
-  if (data?.template?.template_code) batchSetup.value.paper_template_code = data.template.template_code
-}
-async function createSession() {
-  if (!requireAnswerSheetService()) return
-  // The batch inherits the global current class on the server; there is no
-  // per-batch class or grading-type choice.  Questions and answers come from
-  // the selected frozen paper template.
-  const payload = { paper_template_code: batchSetup.value.paper_template_code }
-  const sheetCode = String(batchSetup.value.answer_sheet_template_code || '').trim().toUpperCase()
-  if (sheetCode) payload.answer_sheet_template_code = sheetCode
-  const data = await run(() => api.answerSheet.createSession(payload), '答题卡批次已创建')
-  batchSetup.value = { paper_template_code: '', answer_sheet_template_code: '' }
-  applySession(data)
-  if (sheetCode) void loadTemplateCodeHistory()
-}
-async function openBatch(sessionId) {
-  const data = await run(() => api.answerSheet.getSession(sessionId))
-  restoreError.value = ''
-  applySession(data)
-}
-function closeSession() {
-  // Only leaves the batch view; the batch stays stored and listed.
-  localStorage.removeItem(STORAGE_KEY)
-  session.value = null
-  activeStage.value = 0
-  restoreError.value = ''
-  void loadBatchChoices()
-}
-async function uploadSource() {
-  if (!requireAnswerSheetService()) return
-  const form = new FormData()
-  sourceFiles.value.forEach(file => form.append('source_files', file))
-  answerFiles.value.forEach(file => form.append('answer_files', file))
-  form.append('answer_source', answerSource.value)
-  applySession(await run(() => api.answerSheet.uploadSource(session.value.session_id, form), '材料已安全保存'))
-}
-async function recognizeSource() {
-  const data = await runAnswerSheetStream(
-    signal => api.answerSheet.recognizeSourceStream(session.value.session_id, signal),
-    '正在识别原始试卷',
-    '识别完成，请教师检查',
-  )
-  if (!data?.session) return
-  applySession(data.session)
-  activeStage.value = 1
-}
-async function confirmAnswers() { const questions = questionDrafts.value.map(({ solution_steps_text, ...item }) => ({ ...item, solution_steps: solution_steps_text.split('\n').map(value => value.trim()).filter(Boolean) })); applySession(await run(() => api.answerSheet.confirmAnswers(session.value.session_id, questions), '题目与答案已确认')); activeStage.value = 2 }
-function templateHistoryLabel(item) {
-  const counts = item?.question_counts || {}
-  const types = [
-    counts.choice ? `选${counts.choice}` : '',
-    counts.fill ? `填${counts.fill}` : '',
-    counts.solve ? `解${counts.solve}` : '',
-  ].filter(Boolean).join(' · ')
-  return `${item.template_code}　${item.page_count}页 / ${item.question_count}题${types ? `　${types}` : ''}`
-}
-async function loadTemplateCodeHistory() {
-  try {
-    const data = await api.answerSheet.templateHistory()
-    templateCodeHistory.value = Array.isArray(data?.templates) ? data.templates : []
-  } catch {
-    templateCodeHistory.value = []
-  }
-}
-async function useTemplateCode() {
-  if (!requireAnswerSheetService()) return
-  const code = String(templateCodeInput.value || '').trim().toUpperCase()
-  if (!code) return
-  const response = await run(
-    () => api.answerSheet.useTemplateCode(session.value.session_id, code),
-    '模板码已套用，无需模型重新定位',
-  )
-  applySession(response.session, { chooseStage: false })
-  templateCodeInput.value = response.template.template_code
-  await loadTemplateCodeHistory()
-  activeStage.value = 3
-}
-async function locateLayoutRegions() {
-  operationMessage.value = 'qwen3.8max 正在粗定位答题区域'
-  try {
-    const response = await run(() => api.answerSheet.locateLayout(session.value.session_id))
-    applySession(response.session, { chooseStage: false })
-    layoutSummary.value = response.summary
-    const missing = response.localization?.missing_questions || []
-    if (missing.length) {
-      ElMessage.warning(`粗定位已完成，仍需手工补充第 ${missing.join('、')} 题`)
-    } else {
-      ElMessage.success('粗定位已完成，请逐项检查并勾选教师已确认')
-    }
-    return response
-  } finally {
-    operationMessage.value = ''
-  }
-}
-function confirmCurrentPageRegions() {
-  for (const region of [...visibleAnswerRegions.value, ...visibleIdentityRegions.value]) {
-    region.teacher_confirmed = true
-  }
-  ElMessage.success('本页定位已确认，保存版面后即可冻结')
-}
-async function uploadLayout() {
-  if (!requireAnswerSheetService()) return
-  const data = await run(async () => {
-    const form = new FormData()
-    layoutFiles.value.forEach(file => form.append('files', file))
-    await appendDesktopCanonicalCandidates(form, layoutFiles.value)
-    return api.answerSheet.uploadLayout(session.value.session_id, form)
-  })
-  if (!data) return
-  applySession(data)
-  if (data.accelerator || data.asset_lifecycle?.layout_acceleration) {
-    ElMessage.warning(data.accelerator?.message || layoutAccelerationMessage.value)
-    activeStage.value = 2
-    return
-  }
-  ElMessage.success('空白答题卡已上传，正在进行粗定位')
-  activeStage.value = 3
-  try {
-    await locateLayoutRegions()
-  } catch {
-    ElMessage.warning('空白页已保留，可稍后重试粗定位或直接手工绑定')
-  }
-}
-async function processLayoutAcceleration() {
-  if (!session.value?.session_id || busy.value) return
-  const data = await run(
-    () => api.answerSheet.processLayout(session.value.session_id),
-  )
-  if (!data) return
-  applySession(data, { chooseStage: false })
-  if (data.accelerator || data.asset_lifecycle?.layout_acceleration) {
-    ElMessage.warning(data.accelerator?.message || layoutAccelerationMessage.value)
-    activeStage.value = 2
-    return
-  }
-  ElMessage.success('空白答题卡页面处理完成，正在进行粗定位')
-  activeStage.value = 3
-  try {
-    await locateLayoutRegions()
-  } catch {
-    ElMessage.warning('空白页已保留，可稍后重试粗定位或直接手工绑定')
-  }
-}
-async function saveLayout() { const response = await run(() => api.answerSheet.saveLayout(session.value.session_id, { answer_regions: answerRegions.value, identity_regions: identityRegions.value }), '版面草稿已保存'); applySession(response.session, { chooseStage: false }); layoutSummary.value = response.summary }
-async function publishTemplateCode(advance = false) {
-  const response = await run(
-    () => api.answerSheet.publishTemplateCode(session.value.session_id),
-    '模板码已生成并加入历史记录',
-  )
-  applySession(response.session, { chooseStage: false })
-  templateCodeInput.value = response.template.template_code
-  await loadTemplateCodeHistory()
-  if (advance) activeStage.value = 4
-  return response
-}
-async function freezeLayout() {
-  applySession(await run(() => api.answerSheet.freezeLayout(session.value.session_id), '版面已冻结'), { chooseStage: false })
-  try {
-    await publishTemplateCode(true)
-  } catch {
-    activeStage.value = 3
-    ElMessage.warning('版面已经冻结，但模板码生成失败；可在当前页面重试')
-  }
-}
-async function copyTemplateCode() {
-  const code = String(session.value?.shared_template_code || '')
-  if (!code) return
-  try {
-    await navigator.clipboard.writeText(code)
-    ElMessage.success('模板码已复制')
-  } catch {
-    ElMessage.warning(`请手动复制：${code}`)
-  }
-}
-function updateStudentUploadProgress(data) {
-  if (data?.session?.session_id) {
-    applySession(data.session, { chooseStage: false })
-    return
-  }
-  if (!session.value || !studentUpload.value.upload_id) return
-  const progress = data?.student_upload && typeof data.student_upload === 'object'
-    ? data.student_upload
-    : data
-  const next = { ...studentUpload.value, status: 'processing' }
-  for (const field of ['uploaded_count', 'processed_count', 'total_bytes']) {
-    const value = Number(progress?.[field])
-    if (Number.isFinite(value) && value >= 0) next[field] = value
-  }
-  if (!Number.isFinite(Number(progress?.processed_count))) {
-    const current = Number(progress?.current)
-    if (Number.isFinite(current) && current >= 0) next.processed_count = current
-  }
-  session.value = { ...session.value, student_upload: next }
-}
-function moveStudentFile(index, offset) {
-  if (studentUploadActive.value) return
-  const nextIndex = index + offset
-  if (index < 0 || nextIndex < 0 || nextIndex >= studentFiles.value.length) return
-  const next = [...studentFiles.value]
-  const [file] = next.splice(index, 1)
-  next.splice(nextIndex, 0, file)
-  studentFiles.value = next
-  studentOrderSource.value = {
-    source: 'manual',
-    label: '手动调整',
-    message: '老师已调整当前列表，系统将按下面的最终顺序上传。',
-  }
-}
-function removeStudentFile(index) {
-  if (studentUploadActive.value || index < 0 || index >= studentFiles.value.length) return
-  studentFiles.value = studentFiles.value.filter((_file, fileIndex) => fileIndex !== index)
-  studentOrderSource.value = {
-    source: 'manual',
-    label: '手动调整',
-    message: '老师已调整当前列表，系统将按下面的最终顺序上传。',
-  }
-}
-async function processStudentUpload(uploadId = studentUpload.value.upload_id) {
-  const durableUploadId = String(uploadId || '')
-  if (!durableUploadId) return
-  const data = await runAnswerSheetStream(
-    signal => api.answerSheet.processStudentUploadStream(session.value.session_id, durableUploadId, signal),
-    '正在处理已上传的学生答题卡',
-    '学生答题卡已完成预处理',
-    updateStudentUploadProgress,
-  )
-  const completedSession = data?.session || (data?.session_id ? data : null)
-  if (completedSession) applySession(completedSession, { chooseStage: false })
-}
-async function uploadStudents() {
-  if (!requireAnswerSheetService()) return
-  if (busy.value) return
-  const files = [...studentFiles.value]
-  if (!files.length || studentUploadProcessing.value) return
-  let durableUploadId = ''
-  busy.value = true
-  operationMessage.value = studentUploadActive.value ? '正在恢复学生答题卡上传' : '正在创建学生答题卡上传批次'
-  try {
-    const started = await api.answerSheet.startStudentUpload(session.value.session_id, false)
-    applySession(started, { chooseStage: false })
-    durableUploadId = String(started?.student_upload?.upload_id || '')
-    if (!durableUploadId) throw new Error('服务器未返回可恢复的上传批次')
-    for (const [index, file] of files.entries()) {
-      operationMessage.value = '正在持久保存学生答题卡'
-      operationProgress.value = { current: index, total: files.length }
-      const latest = await api.answerSheet.uploadStudents(
-        session.value.session_id,
-        durableUploadId,
-        file,
-        captureSourcePath(file),
-      )
-      applySession(latest, { chooseStage: false })
-    }
-    studentFiles.value = []
-    ElMessage.success('学生答题卡已逐页持久保存')
-  } catch (error) {
-    try {
-      const latest = await api.answerSheet.getSession(session.value.session_id)
-      applySession(latest, { chooseStage: false })
-    } catch {
-      // Keep the last page-level checkpoint if the session endpoint is unreachable.
-    }
-    if (isSseServiceFault(normalizeServiceError(error))) {
-      markServiceFault('学生答题卡上传中断，已保存页不会丢失；链路恢复后可继续上传。')
-    }
-    if (!error?.response) notifyProcessingError(error, error?.message || '学生答题卡上传失败')
-    return
-  } finally {
-    operationMessage.value = ''
-    operationProgress.value = null
-    busy.value = false
-  }
-  await processStudentUpload(durableUploadId)
-}
-async function restartStudentUpload() {
-  if (!requireAnswerSheetService()) return
-  await ElMessageBox.confirm(
-    '已持久保存但尚未完成处理的页面将被丢弃，确定重新开始吗？',
-    '重新开始学生答题卡上传',
-    { type: 'warning' },
-  )
-  const restarted = await run(
-    () => api.answerSheet.startStudentUpload(session.value.session_id, true),
-    '已建立新的学生答题卡上传批次',
-  )
-  applySession(restarted, { chooseStage: false })
-}
-async function confirmOrientation(paperId, turns) {
-  if (!requireAnswerSheetService()) return
-  applySession(await run(() => api.answerSheet.confirmOrientation(session.value.session_id, paperId, turns), '方向已确认'), { chooseStage: false })
-}
-async function recognizeStudents() {
-  const data = await runAnswerSheetStream(
-    signal => api.answerSheet.recognizeStudentsStream(session.value.session_id, signal),
-    '正在识别学生答题卡',
-    '识别完成，请处理待复核项',
-  )
-  if (!data?.session) return
-  applySession(data.session, { chooseStage: false })
-  // Identity candidates come from the class the batch inherited at creation,
-  // even if the teacher has since switched the global current class.
-  classStudents.value = await api.classroom.students(session.value.class_id || auth.currentClassId)
-}
-async function confirmStudentReview(page) { const answers = Object.fromEntries((page.answers || []).map(item => [item.question_no, item.answer])); applySession(await run(() => api.answerSheet.confirmStudentReview(session.value.session_id, page.paper_id, { student_id: page.review_student_id || page.identity?.student_id, answers }), '本页已确认'), { chooseStage: false }) }
-async function buildDraft() {
-  const data = await runAnswerSheetStream(
-    signal => api.answerSheet.gradingDraftStream(session.value.session_id, signal),
-    '正在生成批阅草稿',
-    '批阅草稿已生成',
-  )
-  if (!data) return
-  session.value.review_revision = data.review_revision
-  session.value.grouping_decisions = data.drafts || []
-  const lifecycle = { ...(session.value.asset_lifecycle || {}) }
-  delete lifecycle.grading_draft_checkpoint
-  session.value.asset_lifecycle = lifecycle
-  gradingDrafts.value = data.drafts || []
-  setActiveDraft(0)
-}
-async function saveDraftDecision() {
-  const draft = currentDraft.value
-  const details = draft.result?.details || []
-  if (!details.length || details.some(detail => !['correct', 'partial', 'wrong'].includes(detail.result))) {
-    ElMessage.warning('请先为全部题目选择正确、部分正确或错误')
-    return
-  }
-  const payload = {
-    student_id: draft.student_id,
-    review_revision: session.value.review_revision,
-    decisions: details.map((detail, index) => ({
-      question_no: String(reviewDetailQuestionNo(detail, index)),
-      result: detail.result,
-      note: String(detail.teacher_note || ''),
-    })),
-  }
-  try {
-    await run(
-      () => api.answerSheet.gradingDecision(session.value.session_id, payload),
-      '人工判定已保存',
-    )
-  } catch {
-    const latest = await api.answerSheet.getSession(session.value.session_id)
-    applySession(latest, { chooseStage: false })
-    ElMessage.warning('批阅草稿已更新，已载入服务器最新版本')
-    return
-  }
-  const latest = await api.answerSheet.getSession(session.value.session_id)
-  applySession(latest, { chooseStage: false })
-}
-async function archiveDrafts() { await run(() => api.answerSheet.archive(session.value.session_id), '答题卡批阅结果已归档'); applySession(await api.answerSheet.getSession(session.value.session_id), { chooseStage: false }) }
-async function removeSession() { await ElMessageBox.confirm('删除后本次草稿及已上传文件无法恢复，确定继续吗？', '删除答题卡草稿', { type: 'warning' }); await run(() => api.answerSheet.deleteSession(session.value.session_id), '草稿已删除'); localStorage.removeItem(STORAGE_KEY); session.value = null; activeStage.value = 0; void loadBatchChoices() }
-function regionTypeOptions(questionNo) { const type = answerSpecs.value.find(item => String(item.question_no) === String(questionNo))?.question_type; if (type === 'choice') return [{ label: '标准涂卡', value: 'choice_mark' }, { label: '手写字母', value: 'choice_handwritten' }]; if (type === 'fill') return [{ label: '填空', value: 'fill' }]; return [{ label: '解答', value: 'solve' }] }
-function syncRegionType(region) { region.region_type = regionTypeOptions(region.question_no)[0]?.value || 'solve'; const question = answerSpecs.value.find(item => String(item.question_no) === String(region.question_no)); region.allow_multiple = question?.choice_mode === 'multiple' }
-function addAnswerRegion() { const question = answerSpecs.value.find(item => !answerRegions.value.some(region => region.question_no === item.question_no)) || answerSpecs.value[0]; if (!question || !currentPageId.value) return; const region = { region_id: `answer_${Date.now()}`, page_id: currentPageId.value, question_no: String(question.question_no), subquestion_no: '', bbox: [100, 100, 900, 200], region_type: 'solve', reading_order: answerRegions.value.length + 1, required: true, teacher_confirmed: false, choice_options: ['A', 'B', 'C', 'D'], allow_multiple: question.choice_mode === 'multiple' }; syncRegionType(region); answerRegions.value.push(region) }
-function addIdentityRegion() { if (!currentPageId.value) return; identityRegions.value.push({ region_id: `identity_${Date.now()}`, page_id: currentPageId.value, bbox: [50, 30, 450, 100], identity_type: 'name', teacher_confirmed: false, config: {} }) }
-function bboxStyle(bbox) { return { left: `${bbox[0] / 10}%`, top: `${bbox[1] / 10}%`, width: `${(bbox[2] - bbox[0]) / 10}%`, height: `${(bbox[3] - bbox[1]) / 10}%` } }
-function setActiveDraft(index) {
-  activeDraftIndex.value = index
-  currentReviewPaperId.value = gradingDrafts.value[index]?.paper_ids?.[0] || ''
-}
-function moveReviewPage(offset) {
-  const next = currentReviewPageIndex.value + offset
-  if (next >= 0 && next < currentDraftPages.value.length) currentReviewPaperId.value = currentDraftPages.value[next].paper_id
-}
-function openDetailPage(detail) {
-  const paperIds = detail.paper_ids || []
-  if (!paperIds.length || paperIds.includes(currentReviewPaperId.value)) return
-  currentReviewPaperId.value = paperIds[0]
-}
-function formatNumber(value) {
-  const number = Number(value)
-  if (!Number.isFinite(number)) return '—'
-  return Number.isInteger(number) ? String(number) : number.toFixed(1)
-}
-function formatBytes(value) {
-  const bytes = Number(value)
-  if (!Number.isFinite(bytes) || bytes <= 0) return '0 B'
-  if (bytes < 1024) return `${Math.round(bytes)} B`
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
-}
-function formatDraftMetric(result) {
-  if (Number(result?.needs_review_count || 0) > 0) return '待教师复核'
-  if (result?.max_score != null) return `${formatNumber(result?.score)} / ${formatNumber(result?.max_score)} 分`
-  const rate = Number(result?.correct_rate)
-  return Number.isFinite(rate) ? `${Math.round(rate * 100)}%` : '待教师复核'
-}
-function reviewDetailQuestionNo(detail, index) { return detail.question_no || detail.question_number || detail.parent_question_no || index + 1 }
-function reviewDetailClass(detail) { return ['correct', 'partial', 'wrong', 'needs_review'].includes(detail.result) ? detail.result : 'needs_review' }
-function reviewDetailLabel(detail) { return ({ correct: '正确', partial: '部分正确', wrong: '错误', needs_review: '待复核' })[reviewDetailClass(detail)] }
-function reviewDetailAnalysis(detail) { return detail.explanation || detail.hint || '' }
-function renderReviewText(value) {
-  const normalized = String(value || '').replaceAll(String.fromCharCode(13), '')
-  return normalized.split(String.fromCharCode(10)).map(line => renderLatex(line)).join('<br>')
-}
 
-watch([answerRegions, identityRegions], () => { if (session.value?.status === 'layout_draft') layoutSummary.value = summarizeLayout() }, { deep: true })
-watch([() => session.value?.session_id, currentPageId, () => currentPage.value?.working_sha256], async ([sessionId, pageId], _previous, onCleanup) => {
-  let cancelled = false
-  onCleanup(() => { cancelled = true })
-  if (layoutImageUrl.value) URL.revokeObjectURL(layoutImageUrl.value)
-  layoutImageUrl.value = ''
-  layoutImageReady.value = false
-  layoutImageError.value = ''
-  if (!sessionId || !pageId) return
-  try {
-    const nextUrl = await api.answerSheet.layoutPageImage(sessionId, pageId)
-    if (cancelled) {
-      URL.revokeObjectURL(nextUrl)
-      return
-    }
-    layoutImageUrl.value = nextUrl
-  } catch {
-    if (!cancelled) layoutImageError.value = '答题卡图像读取失败，请重新打开当前页。'
-  }
-})
-watch([() => session.value?.session_id, currentReviewPaperId], async ([sessionId, paperId]) => {
-  const requestId = ++studentImageRequestId.value
-  if (studentPageImageUrl.value) URL.revokeObjectURL(studentPageImageUrl.value)
-  studentPageImageUrl.value = ''
-  studentPageImageError.value = ''
-  if (!sessionId || !paperId) return
-  try {
-    const nextUrl = await api.answerSheet.studentPageImage(sessionId, paperId)
-    if (requestId !== studentImageRequestId.value) {
-      URL.revokeObjectURL(nextUrl)
-      return
-    }
-    studentPageImageUrl.value = nextUrl
-  } catch {
-    if (requestId === studentImageRequestId.value) studentPageImageError.value = '当前答题卡页面读取失败，请重试。'
-  }
-})
-onMounted(async () => {
-  void refreshAvailability()
-  void loadTemplateCodeHistory()
-  void loadBatchChoices()
-  availabilityPollTimer.value = window.setInterval(refreshAvailability, 15000)
-  if (!auth.classes.length) void auth.fetchClasses().catch(() => {})
-  const saved = String(route.query.session || localStorage.getItem(STORAGE_KEY) || '')
-  if (!saved) return
-  busy.value = true
-  try {
-    applySession(await api.answerSheet.getSession(saved))
-    restoreError.value = route.query.session ? '已打开该条正式记录关联的答题卡原卷。' : '已恢复上次未完成的答题卡会话。'
-  } catch {
-    if (!route.query.session) localStorage.removeItem(STORAGE_KEY)
-    restoreError.value = '答题卡会话无法恢复，可能已删除或不属于当前账号。'
-  } finally {
-    busy.value = false
-  }
-})
-onBeforeUnmount(() => {
-  if (availabilityPollTimer.value) window.clearInterval(availabilityPollTimer.value)
-  if (answerSheetStreamController.value) answerSheetStreamController.value.abort()
-  studentImageRequestId.value += 1
-  if (layoutImageUrl.value) URL.revokeObjectURL(layoutImageUrl.value)
-  if (studentPageImageUrl.value) URL.revokeObjectURL(studentPageImageUrl.value)
-})
+// The rest of the page lives in one composable per part (views/answer-sheet/use*.js). Each one gets ctx,
+// holding what the earlier parts defined; it calls functions of later parts through ctx.
+const ctx = {
+  STORAGE_KEY, auth, route, busy, operationMessage, operationProgress, availabilityPollTimer,
+  restoreError, session, activeStage, answerSource, sourceFiles, answerFiles, layoutFiles,
+  templateCodeInput, templateCodeHistory, batchSetup, paperTemplates, paperTemplateSources,
+  paperRegistration, batches, studentFiles, studentOrderSource, classStudents, gradingDrafts,
+  questionDrafts, answerRegions, identityRegions, layoutSummary, currentPageId, layoutImageUrl,
+  layoutImageReady, layoutImageError, activeDraftIndex, currentReviewPaperId, studentPageImageUrl,
+  studentPageImageError, answerSheetStreamController, captureSourcePath, answerSpecs, currentPage,
+  visibleAnswerRegions, visibleIdentityRegions, currentDraft, currentDraftPages,
+  currentReviewPageIndex, layoutAccelerationMessage, studentUpload, studentUploadActive,
+  studentUploadProcessing, applySession, summarizeLayout, markServiceFault,
+  requireAnswerSheetService, normalizeServiceError, run, runAnswerSheetStream, refreshAvailability,
+}
+Object.assign(ctx, useAnswerSheetSetup(ctx))
+Object.assign(ctx, useAnswerSheetStudents(ctx))
+Object.assign(ctx, useAnswerSheetLifecycle(ctx))
+const {
+  formatBatchTime, paperTemplateLabel, paperSourceLabel, registerPaperTemplate, createSession,
+  openBatch, closeSession, uploadSource, recognizeSource, confirmAnswers, templateHistoryLabel,
+  useTemplateCode, locateLayoutRegions, confirmCurrentPageRegions, uploadLayout,
+  processLayoutAcceleration, saveLayout, publishTemplateCode, freezeLayout, copyTemplateCode,
+  removeSession, regionTypeOptions, syncRegionType, addAnswerRegion, addIdentityRegion, bboxStyle,
+  moveStudentFile, removeStudentFile, processStudentUpload, uploadStudents, restartStudentUpload,
+  confirmOrientation, recognizeStudents, confirmStudentReview, buildDraft, saveDraftDecision,
+  archiveDrafts, setActiveDraft, moveReviewPage, openDetailPage, formatBytes, formatDraftMetric,
+  reviewDetailQuestionNo, reviewDetailClass, reviewDetailLabel, reviewDetailAnalysis,
+  renderReviewText,
+} = ctx
 </script>
 
 <style scoped src="./answer-sheet/answer-sheet.css"></style>
