@@ -474,7 +474,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, reactive, ref, watch, shallowRef } from 'vue'
+import { computed, reactive, ref, shallowRef } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
@@ -488,6 +488,10 @@ import { compareStudentNumbers } from '@/utils/studentSort'
 import { knowledgeTopicStudents } from '@/utils/knowledgeHeatmap'
 import HelpButton from '@/components/HelpButton.vue'
 import StudentSubmissionDialog from '@/components/StudentSubmissionDialog.vue'
+import { useExamImport } from './class-table/useExamImport.js'
+import { useKnowledgeHeatmap } from './class-table/useKnowledgeHeatmap.js'
+import { useMoreMenu } from './class-table/useMoreMenu.js'
+import { useClassTableLifecycle } from './class-table/useClassTableLifecycle.js'
 
 const route = useRoute()
 const router = useRouter()
@@ -522,16 +526,6 @@ const editStudentVisible = ref(false)
 const editStudentForm = ref({ id: null, name: '', student_no: '', exam_no: '', phone: '' })
 const savingEdit = ref(false)
 const submitPassword = reactive({ studentId: null, set: false, loading: false, saving: false, value: '' })
-const submissionDialogVisible = ref(false)
-
-const examDialogVisible = ref(false)
-const examName = ref('')
-const examFile = ref(null)
-const examDate = ref('')
-const examPreview = ref(null)
-const importingExam = ref(false)
-// A preview only describes the exact file, name and date it was built from.
-watch([examName, examDate], () => { examPreview.value = null })
 
 const COLUMN_LABELS = { no: '学号', exam_no: '准考证号', name: '姓名', phone: '家长手机', score: '成绩', exam: '考试名' }
 function columnText(columns) {
@@ -540,17 +534,9 @@ function columnText(columns) {
     ? entries.map(([key, header]) => `${COLUMN_LABELS[key] || key}←“${header}”`).join('，')
     : '未识别'
 }
-const examIssues = computed(() => {
-  const preview = examPreview.value
-  if (!preview) return []
-  return [...(preview.unmatched || []), ...(preview.skipped || []), ...(preview.duplicates || [])].slice(0, 50)
-})
 
-const heatmapVisible = ref(false)
-const heatmapLoading = ref(false)
-const heatmapTree = ref([])
 const studentsGeneration = shallowRef(0)
-const heatmapGeneration = shallowRef(0)
+
 const classScopeGeneration = shallowRef(0)
 
 function captureClassScope() {
@@ -962,15 +948,6 @@ function riskMeta(row) {
   return riskMap[row.risk_level] || riskMap.stable
 }
 
-function priorityMeta(priority) {
-  const priorityMap = {
-    high: { label: '优先讲评', type: 'danger' },
-    medium: { label: '适时讲评', type: 'warning' },
-    low: { label: '个别辅导', type: 'info' },
-  }
-  return priorityMap[priority] || priorityMap.low
-}
-
 function sortByName(a, b) {
   return String(a.name || '').localeCompare(String(b.name || ''), 'zh-CN')
 }
@@ -999,11 +976,6 @@ function onStudentExcelChange(file) {
 function onStudentImageChange(file) {
   studentImageFile.value = file.raw
   recognizedStudents.value = []
-}
-
-function onExamFileChange(file) {
-  examFile.value = file.raw
-  examPreview.value = null
 }
 
 async function recognizeImage() {
@@ -1109,75 +1081,6 @@ async function removeStudent(row) {
   }
 }
 
-function onMoreCommand(command) {
-  if (command === 'exam') {
-    examDialogVisible.value = true
-  } else if (command === 'heatmap') {
-    openHeatmap()
-  } else if (command === 'reports') {
-    router.push('/reports')
-  } else if (command === 'submissions') {
-    submissionDialogVisible.value = true
-  }
-}
-
-async function importExamScores() {
-  if (!examFile.value) {
-    ElMessage.warning('请先选择成绩 Excel')
-    return
-  }
-  importingExam.value = true
-  const { classId, current } = captureClassScope()
-  try {
-    const fd = new FormData()
-    fd.append('file', examFile.value)
-    if (examName.value.trim()) fd.append('exam_name', examName.value.trim())
-    if (examDate.value) fd.append('exam_date', examDate.value)
-    if (!examPreview.value) {
-      // First pass is a dry run so the teacher can check matches before writing.
-      fd.append('dry_run', 'true')
-      const preview = await api.classroom.importExamScores(classId, fd)
-      if (current()) examPreview.value = preview
-      return
-    }
-    const res = await api.classroom.importExamScores(classId, fd)
-    if (!current()) return
-    const examLabel = (res.exam_names || []).join('、') || res.exam_name || '考试'
-    ElMessage.success(`导入完成：${examLabel} 共 ${res.matched || 0} 人`)
-    showStringList([...(res.unmatched || []), ...(res.skipped || []), ...(res.duplicates || [])], '请核对以下行')
-    examDialogVisible.value = false
-    examFile.value = null
-    examName.value = ''
-    examDate.value = ''
-    examPreview.value = null
-    await loadStudents()
-  } catch {
-    // handled by interceptor
-  } finally {
-    if (current()) importingExam.value = false
-  }
-}
-
-async function openHeatmap() {
-  const scope = profileScope.value
-  const classId = activeClassId.value
-  const generation = ++heatmapGeneration.value
-  const current = () => scope === profileScope.value && classId === activeClassId.value && generation === heatmapGeneration.value
-  if (!classId || !auth.token || !educationStage.value) return
-  heatmapTree.value = []
-  heatmapVisible.value = true
-  heatmapLoading.value = true
-  try {
-    const data = await api.classroom.heatmap(classId, { education_stage: educationStage.value })
-    if (!current()) return
-    heatmapTree.value = data.tree || []
-  } catch {
-    if (current()) heatmapTree.value = []
-  } finally {
-    if (current()) heatmapLoading.value = false
-  }
-}
-
 function showStringList(list, title) {
   if (!Array.isArray(list) || !list.length) return
   ElMessageBox.alert(
@@ -1196,60 +1099,23 @@ function escapeHtml(value) {
     .replace(/'/g, '&#39;')
 }
 
-watch(() => route.params.classId, async () => {
-  const scope = profileScope.value
-  const id = Number(route.params.classId)
-  if (id && id !== activeClassId.value) {
-    activeClassId.value = id
-    await auth.switchClass(id)
-    if (scope !== profileScope.value) return
-    await loadStudents()
-  } else if (!id && route.path === '/students') {
-    activeClassId.value = resolveInitialClass()
-    await loadStudents()
-  }
-})
-
-watch(() => route.query.add, (value) => {
-  if (value === '1') {
-    consumeAddClassQuery()
-  }
-})
-
-async function reloadProfileScope() {
-  classScopeGeneration.value += 1
-  studentsGeneration.value += 1
-  heatmapGeneration.value += 1
-  resetStudents()
-  activeClassId.value = null
-  loading.value = false
-  heatmapTree.value = []
-  heatmapVisible.value = false
-  heatmapLoading.value = false
-  classDialogVisible.value = false
-  studentDialogVisible.value = false
-  editStudentVisible.value = false
-  examDialogVisible.value = false
-  recognizing.value = false
-  savingClass.value = false
-  savingStudents.value = false
-  savingEdit.value = false
-  importingExam.value = false
-  examFile.value = null
-  examName.value = ''
-  resetStudentDialog()
-  const scope = profileScope.value
-  await loadAll()
-  if (scope !== profileScope.value) return
-  consumeAddClassQuery()
+// The rest of the page lives in one composable per part (views/class-table/use*.js). Each one gets ctx,
+// holding what the earlier parts defined; it calls functions of later parts through ctx.
+const ctx = {
+  route, router, auth, educationStage, profileScope, activeClassId, loading, classDialogVisible,
+  savingClass, studentDialogVisible, recognizing, savingStudents, editStudentVisible, savingEdit,
+  studentsGeneration, classScopeGeneration, captureClassScope, resolveInitialClass, loadStudents,
+  loadAll, resetStudents, consumeAddClassQuery, resetStudentDialog, showStringList,
 }
-
-function openCoursewareRecommendation(chapter, knowledgePoint) {
-  router.push({ path: '/courseware', query: { chapter: chapter || undefined, knowledge_point: knowledgePoint || undefined } })
-}
-
-watch(profileScope, reloadProfileScope, { flush: 'sync' })
-onMounted(reloadProfileScope)
+Object.assign(ctx, useExamImport(ctx))
+Object.assign(ctx, useKnowledgeHeatmap(ctx))
+Object.assign(ctx, useMoreMenu(ctx))
+Object.assign(ctx, useClassTableLifecycle(ctx))
+const {
+  examDialogVisible, examName, examFile, examDate, examPreview, importingExam, examIssues,
+  onExamFileChange, importExamScores, heatmapVisible, heatmapLoading, heatmapTree, priorityMeta,
+  openCoursewareRecommendation, submissionDialogVisible, onMoreCommand,
+} = ctx
 </script>
 
 <style scoped src="./class-table/class-table.css"></style>
