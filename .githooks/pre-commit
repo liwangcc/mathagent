@@ -1,5 +1,5 @@
 #!/bin/sh
-# 提交前检查源文件行数：新文件不超过 800 行，已登记的大文件只减不增。
+# 提交前检查源文件行数：新文件不超过 900 行，历史文件最终不超过 1800 行；登记额度只减不增。
 # 规则见 scripts/check_file_sizes.py 开头的说明；只检查这次要提交的内容（--staged）。
 # 启用：在主仓库执行一次 git config core.hooksPath .githooks，所有工作树共用。
 root=$(git rev-parse --show-toplevel) || exit 1
