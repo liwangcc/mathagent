@@ -1492,9 +1492,6 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, watch, shallowRef } from 'vue'
-import { useRouter } from 'vue-router'
-import { ElMessage } from 'element-plus'
 import { ArrowDown, ArrowRight, UploadFilled } from '@element-plus/icons-vue'
 import { renderAnswerLatex } from '@/utils/latex'
 import AnimatedNumber from '@/components/AnimatedNumber.vue'
@@ -1507,9 +1504,7 @@ import PhoneCaptureDialog from '@/components/PhoneCaptureDialog.vue'
 import StudentSubmissionDialog from '@/components/StudentSubmissionDialog.vue'
 import SheetLoader from '@/components/SheetLoader.vue'
 import VerdictSwatch from '@/components/VerdictSwatch.vue'
-import api from '@/api'
-import { countGradablePapers, isExcludedPaper } from '@/utils/batchReadiness'
-import { gradingPhases } from '@/utils/gradingPhases'
+import { isExcludedPaper } from '@/utils/batchReadiness'
 import { formatGradingDuration } from '@/utils/gradingTimer'
 import { IMPORT_ACCEPT, IMPORT_FORMATS } from '@/utils/fileExtraction'
 import {
@@ -1522,42 +1517,21 @@ import {
 } from '@/utils/batchReportView'
 import {
   choiceContractValid,
-  templateIsPureDrawing,
   templateAnswerText,
-  templateChoiceConflictEntries,
-  templateChoiceReviewEntries,
   templateFillAnswerSlots,
   templateMissingAnswerSlots,
   templateMissingAnswerNotice,
   templateMaxFlagNotice,
   keepTemplateMaxFlags,
-  templateReviewEntries,
   templateQuestionIdentity,
   isTemplateDirectoryLeaf,
 } from '@/utils/templateReview'
 import { templateSlotBoxes, templateSlotLabel } from '@/utils/templateSlots'
-import { useAuthStore } from '@/stores/auth'
 import HelpButton from '@/components/HelpButton.vue'
 import DrawingReferenceEditor from '@/components/DrawingReferenceEditor.vue'
 import TemplateGeometryLegend from '@/components/TemplateGeometryLegend.vue'
 import DrawingAssessment from '@/components/DrawingAssessment.vue'
-import {
-  templatePageIndex,
-  templateQuestionNumber,
-  templateConfidenceRisk,
-  templateDiagnosticHasPendingGeometryReview,
-  templateDiagnosticReasonText,
-  TEMPLATE_REVIEW_PENDING_PAGE_KEYS,
-  templatePageReviewPending,
-  templateResolveDiagnosticField,
-  templateBBoxIsValid,
-  templateRegionEntries,
-  templateBoxStyle,
-  templateQuestionAnchorBBox,
-  templateVisibleAnswerBoxes,
-  mergeTemplateAnswerRegionSources,
-  templateRegionCandidateUsable,
-} from '@/utils/templateGeometry'
+import { templateBoxStyle, templateQuestionAnchorBBox, templateVisibleAnswerBoxes } from '@/utils/templateGeometry'
 import {
   markTemplateQuestionInput,
   markTemplateAnswerManualEdit,
@@ -1585,16 +1559,14 @@ import {
   templateDrawingReferenceSummary,
 } from '@/utils/templateDrawing'
 import {
-  requiredHardwareState,
-  ACCELERATOR_UNAVAILABLE_MESSAGE,
   paperOcrPending,
   paperOcrPendingLabel,
-  paperOcrFailed,
-  paperOcrNeedsReview,
-  paperOcrSucceeded,
   orientationReady,
   orientationReasonText,
 } from '@/utils/recognitionStatus'
+import { useUploadState } from './upload/useUploadState.js'
+import { useServiceAvailability } from './upload/useServiceAvailability.js'
+import { useTemplateReviewState } from './upload/useTemplateReviewState.js'
 import { useRecognitionRecovery } from './upload/useRecognitionRecovery.js'
 import { useTemplateReference } from './upload/useTemplateReference.js'
 import { useIdentityResolution } from './upload/useIdentityResolution.js'
@@ -1614,835 +1586,15 @@ import { useUploadLifecycle } from './upload/useUploadLifecycle.js'
 const props = defineProps({
   anonymous: { type: Boolean, default: false },
 })
-const anonymous = computed(() => props.anonymous)
-const auth = useAuthStore()
-const router = useRouter()
-const REVIEW_BATCH_STORAGE_PREFIX = 'mathagent_review_batch_id'
-const ORIENTATION_BATCH_STORAGE_PREFIX = 'mathagent_orientation_batch_id'
-const TEMPLATE_RECOGNITION_STORAGE_PREFIX = 'mathagent_template_recognition'
-const INHERIT_IDENTITY_STORAGE_PREFIX = 'mathagent_inherit_identity'
-
-// Opt-in per batch (frozen by the server at upload); the last choice is a
-// per-teacher browser convenience only.
-const inheritIdentity = ref(false)
-function inheritIdentityStorageKey() {
-  const teacherId = auth.user?.id
-  return teacherId ? `${INHERIT_IDENTITY_STORAGE_PREFIX}:${teacherId}` : ''
-}
-watch(() => auth.user?.id, () => {
-  const key = inheritIdentityStorageKey()
-  try {
-    inheritIdentity.value = Boolean(key) && localStorage.getItem(key) === 'true'
-  } catch {
-    inheritIdentity.value = false
-  }
-}, { immediate: true })
-watch(inheritIdentity, (value) => {
-  const key = inheritIdentityStorageKey()
-  try {
-    if (key) localStorage.setItem(key, value ? 'true' : 'false')
-  } catch {
-    // Storage may be unavailable; the checkbox still applies to this upload.
-  }
-})
-
-const fileInputRef = ref(null)
-const folderInputRef = ref(null)
-const templateInputRef = ref(null)
-const fileList = ref([])
-const phoneCaptureVisible = ref(false)
-const studentSubmissionVisible = ref(false)
-
-const imagePreprocessing = ref(false)
-const imageExtracting = ref(false)
-const extractionProgress = ref({ current: 0, total: 0, message: '' })
-const isDragover = ref(false)
-const showNameGuide = ref(false)
-const batchDialogVisible = ref(false)
-
-// 流程步骤：0 上传 / 1 识别（批改结果展示在独立进度卡片）
-const activeStep = ref(0)
-const recognizing = ref(false)
-const grading = ref(false)
-// Live grading stopwatch. Progress events re-anchor it to the server's elapsed
-// seconds (first paper graded -> now), so client clock skew does not matter.
-const gradingClockStart = ref(0)
-const gradingClockNow = ref(0)
-
-const gradingElapsedSeconds = computed(() => (
-  gradingClockStart.value ? Math.max(0, (gradingClockNow.value - gradingClockStart.value) / 1000) : 0
-))
-const dailyUsage = ref(null)
-const serviceState = ref({
-  status: 'checking',
-  label: '检测中',
-  message: '正在检查视觉识别、数学批改和任务协调链路。',
-})
-const SERVICE_FAULT_HOLD_MS = 60_000
-const TEMPLATE_SERVICE_UNAVAILABLE_MESSAGE = '模板识别链路当前不可用，请稍后再试。'
-const ACCELERATOR_AUTO_RESUME_DELAY_MS = 3000
-const ACCELERATOR_AUTO_RESUME_LIMIT = 6
-// Transient OCR failures (provider capacity, malformed output) keep one durable
-// server-side retry. Spend it automatically after a short cool-down instead of
-// leaving the teacher at an incomplete batch.
-const OCR_RETRY_AUTO_RESUME_DELAY_MS = 15000
-const availabilityPollTimer = shallowRef(null)
-let availabilityCheckPending = false
-const serviceFaultHoldUntil = shallowRef(0)
-
-const serviceBlocksNewWork = computed(() => (
-  ['checking', 'unavailable', 'fault'].includes(serviceState.value.status)
-))
-const templateServiceState = ref({
-  status: 'checking',
-  label: '检测中',
-  message: '正在检查模板版面识别链路。',
-  blocksNewWork: true,
-})
-const templateServiceBlocksNewWork = computed(() => (
-  templateServiceState.value.blocksNewWork !== false
-))
-const registrationHardwareState = ref({
-  status: 'checking',
-  blocksNewWork: true,
-  advisory: false,
-})
-const registrationHardwareBlocksNewWork = computed(() => (
-  // Only the server's explicit instruction blocks: an advisory node state
-  // never blocks, and a missing flag is not a block either.
-  registrationHardwareState.value.advisory !== true
-  && registrationHardwareState.value.blocksNewWork === true
-))
-const recognitionBlocksNewWork = computed(() => (
-  serviceBlocksNewWork.value
-  || registrationHardwareBlocksNewWork.value
-))
-
-function markServiceFault(message) {
-  serviceFaultHoldUntil.value = Date.now() + SERVICE_FAULT_HOLD_MS
-  serviceState.value = {
-    status: 'fault',
-    label: '链路故障',
-    message: message || '批改链路发生故障，请稍后重试。',
-  }
-}
-
-// ── 多页一次性模板（本次批改绝对权威，下次重新导入）──
-const templateMode = ref('marked')      // 统一模板合同：密集手写卷走有痕迹安全路径
-const templateColumnMode = ref('double') // single/double/triple：模板栏布局
-const templateFiles = ref([])           // 待识别的 N 页模板图
-const templatePreprocessing = ref(false)
-const recognizingTemplate = ref(false)
-const templateRecognizeMessage = ref('')
-const templateRecognizeError = ref('')
-const confirmedTemplateId = ref('')     // 已确认模板 id（本次批改权威）
-const templatePageCount = ref(0)
-const templateTeachingContext = ref(null)
-const templateStageLabel = computed(() => {
-  const stage = pendingTemplateId.value || confirmedTemplateId.value
-    ? templateTeachingContext.value?.education_stage
-    : auth.user?.education_stage
-  return stage === 'primary' ? '小学数学' : stage === 'junior' ? '初中数学' : stage === 'senior' ? '高中数学' : '历史模板 · 学段未标记'
-})
-const templateDialogVisible = ref(false) // 模板确认弹窗
-const confirmingTemplate = ref(false)
-const importingTemplateBank = ref(false)
-const templateBankImported = ref(false)
-const templatePages = ref([])            // 弹窗内逐页题目（可编辑）
-const templateCorrectionCandidatesLoading = ref(false)
-
-const templateCutBusy = ref(false)
-const templateCutResult = ref(null)
-const templateCutProgress = ref({ completed: 0, total: 0, remaining: 0 })
-const templateCutActionId = ref('')
-const templateCutImageType = ref('photo')
-const templateCutPreviewPages = ref([])
-const templateCutPreviewError = ref('')
-const templateCropGesture = ref(null)
-const templateReferenceEditorInstances = new Map()
-const templateActivePreviewPage = ref(0)
-const TEMPLATE_GEOMETRY_TOOLS = [
-  { key: 'question', label: '红色题号' },
-  { key: 'answer', label: '蓝色作答框' },
-  { key: 'drawing', label: '绿色画图区' },
-  { key: 'drawing-label', label: '作图题题号' },
-]
-const templateEditorBusy = computed(() => confirmingTemplate.value || importingTemplateBank.value
-  || templateQuestionEditing.value || templateCutBusy.value
-  || templateCutPreviewPages.value.some((page) => page.saving || page.geometryQuestionPrompting))
-const templateQuestionEditing = ref(false)
-const templateChoiceScore = ref(5)       // 考试：选择题统一分值
-const templateFillScore = ref(5)         // 考试：填空题统一分值（多空自定义除外）
-const pendingTemplateId = ref('')        // recognize 返回、待确认的 template_id
-
-// OCR 身份不确定时只收集教师决策；真正建学生延迟到“全部入学生档案”。
-const identityDialogVisible = ref(false)
-const identityResolutions = ref([])
-const identityOptionsLoading = ref(false)
-const identityOptionsError = ref('')
-
-const form = reactive({
-  category: 'daily',
-  exam_name: '',
-  mode: 'precise',
-})
-
-// 识别阶段状态
-const batchId = ref('')
-const papers = ref([])
-const recognized = reactive({ current: 0, total: 0 })
-const recognitionDone = ref(false)
-const recognitionAutoArmed = ref(true)
-const recognitionCanGrade = ref(false)
-const recognitionError = ref('')
-const recognitionRecoveryState = ref({ status: 'none', message: '' })
-const recognitionStats = ref({ uploaded: 0, succeeded: 0, manualReview: 0, failed: 0, excluded: 0, unresolved: 0 })
-const excludingPaperId = ref('')
-const currentMessage = ref('')
-const questions = ref([])
-const orientationDialogVisible = ref(false)
-const orientationPaper = ref(null)
-const orientationImageUrl = ref('')
-const orientationImageLoading = ref(false)
-const orientationImageError = ref('')
-const orientationQuarterTurns = ref(0)
-const orientationSaving = ref(false)
-const orientationActionId = ref('')
-
-// 批改阶段状态
-const progressList = ref([])
-const gradeTotal = ref(0)
-const gradeError = ref('')
-const summary = ref(null)
-const reviewRestoredLabel = ref('')
-const coursewareRecommendations = ref([])
-const coursewareRecommendationState = ref('idle')
-const coursewareRecommendationQuery = ref({})
-const coursewareRecommendationKey = shallowRef('')
-const batchReport = ref({
-  status: 'not_started',
-  text: '',
-  stats: {},
-  error: '',
-  updated_at: '',
-})
-
-const reviewBusy = ref(false)
-const reviewImagesDownloading = ref(false)
-const hasReviewImageRows = computed(() => progressList.value.some((row) => row.disposition !== 'voided' && !row.error))
-const reviewArchived = ref(false)
-// Hero copy follows the current workflow step (display only).
-const gradeHero = computed(() => {
-  const current = workflowSteps.value.findIndex((step) => step.state === 'current')
-  const copy = [
-    ['导入答案依据', '先确认批次类型与试卷栏数，再导入模板；教师确认后的标准答案才是本次批改依据。'],
-    [anonymous.value ? '上传无身份页面' : '上传学生试卷', '支持图片、文件夹与 ZIP / RAR 压缩包；每张图片独立识别，身份不确定时由老师确认。'],
-    ['识别与确认', '逐张核对识别结果，确认无误后开始批改。'],
-    [reviewArchived.value ? '本批审阅已结束' : '审阅批改结果', '逐份查看原卷与逐题判定，先处理待复核题，再把已完成的结果归档。'],
-  ]
-  const [title, lead] = copy[current < 0 ? 3 : current]
-  return { title, lead }
-})
-// Read-only position in the grading flow for the page stepper; derived purely from existing state.
-const workflowSteps = computed(() => {
-  const reviewStarted = grading.value || Boolean(summary.value) || progressList.value.length > 0
-  const confirmStarted = activeStep.value >= 1
-  const current = reviewStarted ? 3 : confirmStarted ? 2 : confirmedTemplateId.value ? 1 : 0
-  return [
-    { key: 'template', label: '答案依据', hint: '导入并确认模板' },
-    { key: 'papers', label: anonymous.value ? '页面上传' : '学生试卷', hint: '选择图片或压缩包' },
-    { key: 'confirm', label: '识别与确认', hint: '核对识别结果' },
-    { key: 'review', label: '批改审阅', hint: '复核、作废或归档' },
-  ].map((step, index) => ({
-    ...step,
-    state: index < current || (index === 3 && reviewArchived.value) ? 'done' : index === current ? 'current' : 'todo',
-  }))
-})
-// The grading card appears once grading starts and stays for the review it produces.
-const progressCardVisible = computed(() => (
-  grading.value || progressList.value.length > 0 || Boolean(summary.value) || Boolean(gradeError.value)
-))
-const gradingPhaseState = computed(() => gradingPhases({
-  anonymous: anonymous.value,
-  identityPending: identityDialogVisible.value,
-  grading: grading.value || Boolean(gradeError.value) || (progressList.value.length > 0 && !summary.value),
-  reviewing: Boolean(summary.value),
-  archived: reviewArchived.value,
-}))
-const dailyUsagePercent = computed(() => {
-  const limit = Number(dailyUsage.value?.limit || 0)
-  return limit > 0 ? Math.min(100, Math.round((Number(dailyUsage.value?.current || 0) / limit) * 100)) : 0
-})
-const reviewRevision = ref(0)
-const manualDecisionDialogVisible = ref(false)
-const manualDecisionRow = ref(null)
-const manualDecisionDrafts = ref([])
-const manualDecisionSaving = ref(false)
-const manualDecisionImageUrl = ref('')
-const manualDecisionImageLoading = ref(false)
-const manualDecisionImageError = ref('')
-const manualDecisionPages = ref([])
-const manualDecisionPageIndex = ref(0)
-const manualDecisionShowPaper = ref(true)
-
-const templateRecognizeController = shallowRef(null)
-const templateConfirmController = shallowRef(null)
-const templateCutController = shallowRef(null)
-
-// Run token whose finished state was already applied.  Polling can observe the
-// completion before the POST resolves; rendering it again would rebuild every
-// page preview (refetching images and revoking blobs) on each tick.
-const templateCutCompletedRunToken = shallowRef(null)
-const templateCutRunToken = shallowRef(0)
-
-const recognizeController = shallowRef(null)
-const gradeController = shallowRef(null)
-
-const recognizeSucceededCount = computed(() => recognitionDone.value
-  ? recognitionStats.value.succeeded
-  : papers.value.filter(paperOcrSucceeded).length)
-const recognizeFailureCount = computed(() => recognitionDone.value
-  ? recognitionStats.value.failed
-  : papers.value.filter(paperOcrFailed).length)
-const recognizeManualReviewCount = computed(() => recognitionDone.value
-  ? recognitionStats.value.manualReview
-  : papers.value.filter(paperOcrNeedsReview).length)
-const recognizeCompletedCount = computed(() => (
-  recognizeSucceededCount.value
-  + recognizeFailureCount.value
-  + recognizeManualReviewCount.value
-  + (recognitionDone.value ? Number(recognitionStats.value.excluded || 0) : papers.value.filter(isExcludedPaper).length)
-))
-const recognizeUnresolvedCount = computed(() => recognitionDone.value
-  ? recognitionStats.value.unresolved
-  : Math.max(0, Number(recognized.total || 0) - recognizeCompletedCount.value))
-const recognitionResumeVisible = computed(() => (
-  ['available', 'service_fault', 'waiting'].includes(recognitionRecoveryState.value.status)
-  && !!batchId.value
-))
-const recognitionRecoveryIsError = computed(() => (
-  ['exhausted', 'unrecoverable', 'service_fault'].includes(recognitionRecoveryState.value.status)
-))
-const gradablePaperCount = computed(() => countGradablePapers(papers.value))
-
-function templateReviewPendingPageIndexes(data = templateCutResult.value) {
-  const pending = new Set()
-  TEMPLATE_REVIEW_PENDING_PAGE_KEYS.forEach((key) => {
-    const pages = data?.[key]
-    if (!Array.isArray(pages)) return
-    pages.map(Number).forEach((value) => {
-      if (Number.isInteger(value) && value >= 0) pending.add(value)
-    })
-  })
-  return pending
-}
-
-function templateDiagnosticPendingPageIndexes() {
-  // A page whose model diagnostics still carry a pending geometry review is an
-  // unsaved teacher decision: the save click must reach the server (which
-  // clears the marker) instead of skipping the page and re-reading stale state.
-  const pending = new Set()
-  templateVisualEvidencePages().forEach((page) => {
-    if (page.diagnostics.some(templateDiagnosticHasPendingGeometryReview)) {
-      pending.add(Number(page.pageIndex))
-    }
-  })
-  return pending
-}
-
-function clearTemplateResolvedGeometryDiagnostics(pageIndex, anchors, handwriting) {
-  const targets = []
-  const addTarget = (target) => {
-    if (target && typeof target === 'object' && !targets.includes(target)) targets.push(target)
-  }
-  ;(templatePages.value || []).forEach((page) => {
-    if (Number(page.page_index ?? page.pageIndex) === Number(pageIndex)) addTarget(page)
-  })
-  ;(templateCutPreviewPages.value || []).forEach((page) => {
-    if (Number(page.pageIndex ?? page.page_index) === Number(pageIndex)) addTarget(page)
-  })
-  ;(templateCutResult.value?.pages || []).forEach((page) => {
-    if (Number(page.page_index ?? page.pageIndex) === Number(pageIndex)) addTarget(page)
-  })
-  targets.forEach((target) => {
-    delete target.question_anchor_candidates
-    delete target.template_handwriting_region_candidates
-    delete target.layout_review_pending
-    delete target.anchor_review_pending
-    delete target.geometry_review_pending
-    target.layoutReviewPending = false
-    target.anchorReviewPending = false
-    target.geometryReviewPending = false
-    templateResolveDiagnosticField(target, 'anchor_diagnostics', anchors, handwriting)
-    templateResolveDiagnosticField(target, 'template_ocr_diagnostics', anchors, handwriting)
-    templateResolveDiagnosticField(target, 'anchorDiagnostics', anchors, handwriting)
-    templateResolveDiagnosticField(target, 'templateOcrDiagnostics', anchors, handwriting)
-    const questionMode = target.modes?.question
-    if (questionMode && typeof questionMode === 'object') {
-      delete questionMode.layout_review_pending
-      delete questionMode.anchor_review_pending
-      delete questionMode.geometry_review_pending
-      templateResolveDiagnosticField(questionMode, 'anchor_diagnostics', anchors, handwriting)
-      templateResolveDiagnosticField(questionMode, 'template_ocr_diagnostics', anchors, handwriting)
-      templateResolveDiagnosticField(questionMode, 'anchorDiagnostics', anchors, handwriting)
-      templateResolveDiagnosticField(questionMode, 'templateOcrDiagnostics', anchors, handwriting)
-      templateResolveDiagnosticField(questionMode, 'diagnostics', anchors, handwriting)
-    }
-  })
-}
-
-function templateVisualEvidencePages() {
-  const byIndex = new Map()
-  const merge = (raw, patch = {}) => {
-    const index = templatePageIndex(raw, patch.pageIndex ?? byIndex.size)
-    const current = byIndex.get(index) || {
-      pageIndex: index,
-      questions: [],
-      anchors: undefined,
-      handwriting: undefined,
-      columns: undefined,
-      layoutReviewPending: false,
-      columnsSource: '',
-      columnsConfirmed: undefined,
-      diagnostics: [],
-      hasVisualEvidence: false,
-    }
-    Object.assign(current, patch)
-    byIndex.set(index, current)
-    return current
-  }
-
-  ;(templatePages.value || []).forEach((page, index) => {
-    const item = merge(page, { pageIndex: templatePageIndex(page, index) })
-    item.questions = Array.isArray(page.questions) ? page.questions : []
-    const reviewPending = templatePageReviewPending(page)
-    if (reviewPending && Array.isArray(page.question_anchor_candidates) && page.question_anchor_candidates.length) item.anchors = page.question_anchor_candidates
-    else if (Array.isArray(page.question_anchors)) item.anchors = page.question_anchors
-    const answerRegions = reviewPending && templateRegionCandidateUsable(page.template_answer_region_candidates)
-      ? page.template_answer_region_candidates : page.template_answer_regions
-    const handwritingRegions = reviewPending && templateRegionCandidateUsable(page.template_handwriting_region_candidates)
-      ? page.template_handwriting_region_candidates : page.template_handwriting_regions
-    const mergedRegions = mergeTemplateAnswerRegionSources(answerRegions, handwritingRegions)
-    if (mergedRegions.length) item.handwriting = mergedRegions
-    item.layoutReviewPending = item.layoutReviewPending || templatePageReviewPending(page)
-    if (page.anchor_diagnostics) item.diagnostics.push(page.anchor_diagnostics)
-    if (page.template_ocr_diagnostics) item.diagnostics.push(page.template_ocr_diagnostics)
-  })
-
-  ;(templateCutResult.value?.pages || []).forEach((page, index) => {
-    const artifact = page?.artifact || page?.page_artifact || {}
-    const questionMode = page?.modes?.question || {}
-    const columns = page?.anchor_crop_plan?.parameters?.columns
-      ?? questionMode?.column_layout?.columns
-    const item = merge(page, { pageIndex: templatePageIndex(page, index) })
-    const reviewPending = templatePageReviewPending(page, questionMode)
-    if (reviewPending && Array.isArray(page?.question_anchor_candidates) && page.question_anchor_candidates.length) item.anchors = page.question_anchor_candidates
-    else if (Array.isArray(page?.question_anchors)) item.anchors = page.question_anchors
-    else if (Array.isArray(artifact?.question_anchors)) item.anchors = artifact.question_anchors
-    const answerRegions = reviewPending && templateRegionCandidateUsable(page?.template_answer_region_candidates)
-      ? page.template_answer_region_candidates
-      : (Array.isArray(page?.template_answer_regions) ? page.template_answer_regions : artifact?.template_answer_regions)
-    const handwritingRegions = reviewPending && templateRegionCandidateUsable(page?.template_handwriting_region_candidates)
-      ? page.template_handwriting_region_candidates
-      : (Array.isArray(page?.template_handwriting_regions) ? page.template_handwriting_regions : artifact?.template_handwriting_regions)
-    const mergedRegions = mergeTemplateAnswerRegionSources(answerRegions, handwritingRegions)
-    if (mergedRegions.length) item.handwriting = mergedRegions
-    if (Array.isArray(columns)) {
-      item.columns = columns
-      item.columnCount = Number(page?.anchor_crop_plan?.parameters?.column_count
-        ?? questionMode?.column_layout?.column_count ?? columns.length)
-      item.hasVisualEvidence = true
-    }
-    item.layoutReviewPending = item.layoutReviewPending || templatePageReviewPending(page, questionMode)
-    item.diagnostics.push(
-      page?.anchor_diagnostics,
-      page?.template_ocr_diagnostics,
-      questionMode?.anchor_diagnostics,
-      questionMode?.diagnostics,
-    )
-  })
-
-  ;(templateCutPreviewPages.value || []).forEach((page, index) => {
-    const item = merge(page, { pageIndex: templatePageIndex(page, index) })
-    if (Array.isArray(page.questionAnchors)) item.anchors = page.questionAnchors
-    if (Array.isArray(page.answerBoxes)) item.handwriting = page.answerBoxes
-    if (Array.isArray(page.columns)) {
-      item.columns = page.columns
-      item.columnCount = Number(page.columnCount ?? page.columns.length)
-      item.hasVisualEvidence = page.columns.length > 0
-    }
-    item.layoutReviewPending = item.layoutReviewPending
-      || page.layoutReviewPending === true
-      || page.layout_review_pending === true
-    item.columnsSource = page.columnsSource || item.columnsSource
-    if (page.columnsConfirmed !== undefined) item.columnsConfirmed = page.columnsConfirmed
-    item.diagnostics.push(page.anchorDiagnostics, page.templateOcrDiagnostics)
-  })
-
-  const pendingPages = templateReviewPendingPageIndexes()
-  byIndex.forEach((page) => {
-    if (pendingPages.has(page.pageIndex)) page.layoutReviewPending = true
-    page.diagnostics = page.diagnostics.filter(Boolean)
-  })
-  return [...byIndex.values()].sort((left, right) => left.pageIndex - right.pageIndex)
-}
-
-function templateGeometryReviewState() {
-  const pages = templateVisualEvidencePages()
-  const expectedOccurrences = new Map()
-  const actualAnchorOccurrences = new Map()
-  const missingQuestionNumbers = []
-  const duplicateQuestionNumbers = []
-  const orphanQuestionNumbers = []
-  const outOfBoundsQuestionNumbers = []
-  const outOfBoundsHandwritingQuestions = []
-  const lowConfidenceQuestionNumbers = []
-  const lowConfidenceHandwritingQuestions = []
-  const invalidColumnPages = []
-  const diagnosticReasons = []
-  const diagnosticReviewDetails = []
-  const pendingPages = templateReviewPendingPageIndexes()
-  const addUnique = (list, value) => {
-    const normalized = String(value ?? '').trim()
-    if (normalized && !list.includes(normalized)) list.push(normalized)
-  }
-  const addPage = (list, value) => {
-    const normalized = Number(value)
-    if (Number.isInteger(normalized) && normalized >= 0 && !list.includes(normalized)) list.push(normalized)
-  }
-
-  pages.forEach((page) => {
-    const pageIndex = page.pageIndex
-    const expected = Array.isArray(page.questions)
-      ? page.questions.map((question) => templateQuestionNumber(question?.question_no ?? question?.question_number)).filter(Boolean)
-      : []
-    expected.forEach((number) => {
-      const entries = expectedOccurrences.get(number) || []
-      entries.push(pageIndex)
-      expectedOccurrences.set(number, entries)
-    })
-
-    if (page.layoutReviewPending || page.columnsSource === 'teacher_draft' || page.columnsConfirmed === false) {
-      pendingPages.add(pageIndex)
-    }
-    if (!Array.isArray(page.columns) || !page.columns.length) {
-      // A missing plan is a review state, never an implicit equal-column result.
-      pendingPages.add(pageIndex)
-    } else {
-      // The teacher may correct one page independently of the upload default,
-      // including deleting a divider. Validate its own saved/draft count.
-      const expectedColumnCount = Number(page.columnCount ?? page.columns.length)
-      if (!Number.isInteger(expectedColumnCount) || expectedColumnCount < 1 || expectedColumnCount > 3
-        || page.columns.length !== expectedColumnCount) addPage(invalidColumnPages, pageIndex)
-      page.columns.forEach((column) => {
-        if (!templateBBoxIsValid([
-          Number(column?.x1_1000), 0, Number(column?.x2_1000), 1000,
-        ])) addPage(invalidColumnPages, pageIndex)
-      })
-    }
-
-    const anchors = Array.isArray(page.anchors) ? page.anchors : []
-    anchors.forEach((anchor) => {
-      const number = templateQuestionNumber(anchor?.question_number ?? anchor?.question_no)
-      if (!number) return
-      const occurrences = actualAnchorOccurrences.get(number) || []
-      occurrences.push(pageIndex)
-      actualAnchorOccurrences.set(number, occurrences)
-      if (templateConfidenceRisk(anchor)) addUnique(lowConfidenceQuestionNumbers, number)
-    })
-
-    const expectedSet = new Set(expected)
-    anchors.forEach((anchor) => {
-      const number = templateQuestionNumber(anchor?.question_number ?? anchor?.question_no)
-      if (number && !expectedSet.has(number)) addUnique(orphanQuestionNumbers, number)
-    })
-    const regions = templateRegionEntries(page.handwriting)
-    regions.forEach(({ item, box, region }) => {
-      const number = templateQuestionNumber(item?.question_number ?? region?.question_number)
-      // Question numbers are ownership keys, not geometry.  Only compare them
-      // when this page actually has a question list; otherwise a cut-preview
-      // page without copied question metadata would falsely look out of bounds.
-      if (number && expected.length && !expectedSet.has(number)) addUnique(orphanQuestionNumbers, number)
-      if (!templateBBoxIsValid(box)) {
-        if (number) addUnique(outOfBoundsHandwritingQuestions, number)
-        return
-      }
-      const provenance = { ...item, ...(region || {}) }
-      if (templateConfidenceRisk(provenance)) addUnique(lowConfidenceHandwritingQuestions, number || `P${pageIndex + 1}`)
-    })
-    page.diagnostics.forEach((diagnostic) => {
-      // Directory-stage diagnostics also cover answer/reference failures.  An
-      // explicit geometry result must not keep a successfully retried reference
-      // behind the geometry gate; legacy diagnostics remain fail-closed.
-      if (templateDiagnosticHasPendingGeometryReview(diagnostic)) {
-        const reasonText = templateDiagnosticReasonText(diagnostic)
-        addUnique(diagnosticReasons, reasonText)
-        addUnique(diagnosticReviewDetails, `第${pageIndex + 1}页：${reasonText.slice(0, 48)}`)
-      }
-      const imageAssociation = diagnostic?.image_association
-      if (imageAssociation?.needs_review === true || imageAssociation?.status === 'needs_review') {
-        addUnique(diagnosticReasons, 'image_association')
-        addUnique(diagnosticReviewDetails, `第${pageIndex + 1}页：image_association`)
-      }
-    })
-  })
-
-  expectedOccurrences.forEach((occurrences, number) => {
-    if (occurrences.length > 1) addUnique(duplicateQuestionNumbers, number)
-    if (!actualAnchorOccurrences.has(number)) addUnique(missingQuestionNumbers, number)
-  })
-  actualAnchorOccurrences.forEach((occurrences, number) => {
-    if (occurrences.length > 1) addUnique(duplicateQuestionNumbers, number)
-  })
-
-  if (!templateCutResult.value && !templateCutPreviewPages.value.length) {
-    pages.forEach((page) => pendingPages.add(page.pageIndex))
-  }
-  invalidColumnPages.forEach((pageIndex) => pendingPages.add(pageIndex))
-  const summaryParts = []
-  if (pendingPages.size) summaryParts.push(`栏边界 ${[...pendingPages].sort((a, b) => a - b).map((value) => `第${value + 1}页`).join('、')}`)
-  if (missingQuestionNumbers.length) summaryParts.push(`缺失题号 ${missingQuestionNumbers.join('、')}`)
-  if (duplicateQuestionNumbers.length) summaryParts.push(`重复题号 ${duplicateQuestionNumbers.join('、')}`)
-  if (orphanQuestionNumbers.length) summaryParts.push(`未绑定题号 ${orphanQuestionNumbers.join('、')}`)
-  if (outOfBoundsHandwritingQuestions.length) summaryParts.push('作答区域框越界')
-  if (lowConfidenceQuestionNumbers.length) summaryParts.push('低置信题目归属')
-  if (lowConfidenceHandwritingQuestions.length) summaryParts.push('低置信作答区域')
-  if (diagnosticReasons.length) {
-    const detail = diagnosticReviewDetails.slice(0, 3).join('；')
-    summaryParts.push(detail ? `模型诊断待复核（${detail}）` : '模型诊断待复核')
-  }
-  return {
-    needsReview: Boolean(
-      pendingPages.size
-      || missingQuestionNumbers.length
-      || duplicateQuestionNumbers.length
-      || orphanQuestionNumbers.length
-      || outOfBoundsQuestionNumbers.length
-      || outOfBoundsHandwritingQuestions.length
-      || lowConfidenceQuestionNumbers.length
-      || lowConfidenceHandwritingQuestions.length
-      || diagnosticReasons.length,
-    ),
-    layoutReviewPendingPages: [...pendingPages].sort((a, b) => a - b),
-    missingQuestionNumbers,
-    duplicateQuestionNumbers,
-    orphanQuestionNumbers,
-    outOfBoundsQuestionNumbers,
-    outOfBoundsHandwritingQuestions,
-    lowConfidenceQuestionNumbers,
-    lowConfidenceHandwritingQuestions,
-    invalidColumnPages,
-    diagnosticReasons: [...new Set(diagnosticReasons)],
-    diagnosticReviewDetails: [...new Set(diagnosticReviewDetails)],
-    summary: summaryParts.join('；'),
-  }
-}
-
-const templateGeometryReview = computed(templateGeometryReviewState)
-const templateCanConfirm = computed(() => {
-  // Keep the server's explicit page list in the gate as well as the merged
-  // review helper.  This makes a newly polled result fail closed immediately,
-  // before the preview-page merge has had a chance to run.
-  const serverPendingPages = templateReviewPendingPageIndexes()
-  return !!form.category && templatePages.value.length > 0
-    && !templateCutPreviewPages.value.some((page) => templateDrawingReferenceQuestions(page).length > 0 && !templateReferenceImagesReady(page))
-    && templateChoiceConflictEntries(templatePages.value).length === 0
-     && serverPendingPages.size === 0
-    && !templateGeometryReview.value.needsReview
-    && templatePages.value.every((page) =>
-      (page.questions || []).length > 0 && page.questions.every((q) =>
-        String(q.question_no ?? '').trim() && ((q.question_type === 'choice' && !templateIsPureDrawing(q)) || (q.question_text || '').trim()) && (templateIsPureDrawing(q) || (q.standard_answer || '').trim()) && questionScoringValid(q)
-      )
-    )
-})
-const templateChoiceEntries = computed(() => templateReviewEntries(templatePages.value, 'choice'))
-const templateChoiceReadyEntries = computed(() => templateChoiceReviewEntries(templatePages.value))
-const templateChoiceConflicts = computed(() => templateChoiceConflictEntries(templatePages.value))
-const templateChoiceSingleCount = computed(() => templateChoiceEntries.value.filter(({ question }) => question.choice_mode === 'single').length)
-const templateChoiceMultipleCount = computed(() => templateChoiceEntries.value.filter(({ question }) => question.choice_mode === 'multiple').length)
-const templateChoicePendingCount = computed(() => templateChoiceEntries.value.filter(({ question }) => !choiceContractValid(question)).length)
-const templateFillEntries = computed(() => templateReviewEntries(templatePages.value, 'fill'))
-const templateFillBatchEntryCount = computed(() => templateFillEntries.value.filter(({ question }) => !isCustomFill(question)).length)
-const templateCustomFillCount = computed(() => templateFillEntries.value.length - templateFillBatchEntryCount.value)
-const templateSolveEntries = computed(() => templateReviewEntries(templatePages.value, 'solve'))
-
-// 有模板走确认权威路后，识别阶段锁定模式选择（避免中途切换）
-const templateLocked = computed(() => recognizing.value || grading.value || recognizingTemplate.value || templateDialogVisible.value || !!pendingTemplateId.value)
-
-// 批次确认弹窗校验：批次类型必填；考试须填名称；模板在前一步已确认
-const batchConfirmValid = computed(() => {
-  if (!form.category) return false
-  if (form.category === 'exam' && !form.exam_name.trim()) return false
-  return Boolean(confirmedTemplateId.value)
-})
-
-function requireBatchService() {
-  if (!serviceBlocksNewWork.value) return true
-  ElMessage.error(serviceState.value.message || '批改链路当前不可用，请稍后再试。')
-  return false
-}
-
-function requireRecognitionService() {
-  if (!requireBatchService()) return false
-  if (!registrationHardwareBlocksNewWork.value) return true
-  ElMessage.error(ACCELERATOR_UNAVAILABLE_MESSAGE)
-  return false
-}
-
-function requireTemplateService() {
-  if (!templateServiceBlocksNewWork.value) return true
-  ElMessage.error(templateServiceState.value.message || '模板识别链路当前不可用，请稍后再试。')
-  return false
-}
-
-async function loadDailyUsage() {
-  try {
-    const data = await api.usage.stats()
-    dailyUsage.value = data?.daily_images || data?.monthly_images || null
-  } catch {
-    dailyUsage.value = null
-  }
-}
-
-async function refreshAvailability() {
-  if (availabilityCheckPending) return
-  availabilityCheckPending = true
-  try {
-    const [stateResult, templateStateResult] = await Promise.allSettled([
-      api.grade.availability(),
-      api.grade.templateAvailability(),
-    ])
-    if (stateResult.status !== 'fulfilled') {
-      markServiceFault('无法获取批改链路状态，请检查网络或联系管理员。')
-      templateServiceState.value = {
-        status: 'fault',
-        label: '模板链路故障',
-        message: TEMPLATE_SERVICE_UNAVAILABLE_MESSAGE,
-        blocksNewWork: true,
-      }
-      registrationHardwareState.value = requiredHardwareState(null)
-      return
-    }
-    const state = stateResult.value
-    const templateState = templateStateResult.status === 'fulfilled'
-      ? templateStateResult.value
-      : null
-    const labels = {
-      available: '可用',
-      queued: '需排队',
-      unavailable: '暂不可用',
-      fault: '链路故障',
-    }
-    if (!labels[state?.status]) {
-      markServiceFault('批改链路状态响应异常，请稍后重试或联系管理员。')
-      templateServiceState.value = {
-        status: 'fault',
-        label: '模板链路故障',
-        message: '批改链路状态响应异常，请稍后重试或联系管理员。',
-        blocksNewWork: true,
-      }
-      registrationHardwareState.value = requiredHardwareState(null)
-      return
-    }
-    if (
-      ['available', 'queued'].includes(state.status)
-      && serviceState.value.status === 'fault'
-      && Date.now() < serviceFaultHoldUntil.value
-    ) {
-      // Keep the recent transport fault visible while still refreshing hardware gates below.
-    } else if (state.status === 'fault') {
-      markServiceFault(state.message || '批改链路发生故障，请稍后重试。')
-    } else {
-      serviceState.value = {
-        status: state.status,
-        label: String(state.label || labels[state.status]),
-        message: String(state.message || ''),
-      }
-    }
-    if (!labels[templateState?.status]) {
-      templateServiceState.value = {
-        status: 'fault',
-        label: '模板链路故障',
-        message: TEMPLATE_SERVICE_UNAVAILABLE_MESSAGE,
-        blocksNewWork: true,
-      }
-      registrationHardwareState.value = requiredHardwareState(null)
-    } else {
-      const registrationHardware = requiredHardwareState(templateState.registration_hardware)
-      registrationHardwareState.value = registrationHardware
-      const templateModelStatus = labels[templateState.service_status]
-        ? templateState.service_status
-        : templateState.status
-      const templateModelBlocks = ['checking', 'unavailable', 'fault'].includes(templateModelStatus)
-      // Template correction and column montage run on the server CPU. Only the
-      // actual model/core service state can block template import; the student
-      // registration accelerator is handled separately below.
-      templateServiceState.value = serviceBlocksNewWork.value
-        ? {
-            status: serviceState.value.status,
-            label: serviceState.value.label,
-            message: serviceState.value.message,
-            blocksNewWork: true,
-          }
-        : {
-            status: templateModelStatus,
-            label: String(templateState.label || labels[templateModelStatus]),
-            message: String(templateState.message || ''),
-            blocksNewWork: templateModelBlocks,
-          }
-    }
-  } catch {
-    markServiceFault('无法获取批改链路状态，请检查网络或联系管理员。')
-    templateServiceState.value = {
-      status: 'fault',
-      label: '模板链路故障',
-      message: TEMPLATE_SERVICE_UNAVAILABLE_MESSAGE,
-      blocksNewWork: true,
-    }
-    registrationHardwareState.value = requiredHardwareState(null)
-  } finally {
-    availabilityCheckPending = false
-  }
-}
 
 // The rest of the page lives in one composable per part (views/upload/use*.js). Each one gets ctx,
 // holding what the earlier parts defined; it calls functions of later parts through ctx.
 const ctx = {
-  anonymous, auth, router, REVIEW_BATCH_STORAGE_PREFIX, ORIENTATION_BATCH_STORAGE_PREFIX,
-  TEMPLATE_RECOGNITION_STORAGE_PREFIX, inheritIdentity, fileInputRef, folderInputRef,
-  templateInputRef, fileList, phoneCaptureVisible, studentSubmissionVisible, imagePreprocessing,
-  imageExtracting, extractionProgress, isDragover, batchDialogVisible, activeStep, recognizing,
-  grading, gradingClockStart, gradingClockNow, serviceState, ACCELERATOR_AUTO_RESUME_DELAY_MS,
-  ACCELERATOR_AUTO_RESUME_LIMIT, OCR_RETRY_AUTO_RESUME_DELAY_MS, availabilityPollTimer,
-  serviceFaultHoldUntil, recognitionBlocksNewWork, markServiceFault, templateMode,
-  templateColumnMode, templateFiles, templatePreprocessing, recognizingTemplate,
-  templateRecognizeMessage, templateRecognizeError, confirmedTemplateId, templatePageCount,
-  templateTeachingContext, templateDialogVisible, confirmingTemplate, importingTemplateBank,
-  templateBankImported, templatePages, templateCorrectionCandidatesLoading, templateCutBusy,
-  templateCutResult, templateCutProgress, templateCutActionId, templateCutImageType,
-  templateCutPreviewPages, templateCutPreviewError, templateCropGesture,
-  templateReferenceEditorInstances, templateActivePreviewPage, TEMPLATE_GEOMETRY_TOOLS,
-  templateEditorBusy, templateQuestionEditing, templateChoiceScore, templateFillScore,
-  pendingTemplateId, identityDialogVisible, identityResolutions, identityOptionsLoading,
-  identityOptionsError, form, batchId, papers, recognized, recognitionDone, recognitionAutoArmed,
-  recognitionCanGrade, recognitionError, recognitionRecoveryState, recognitionStats,
-  excludingPaperId, currentMessage, questions, orientationDialogVisible, orientationPaper,
-  orientationImageUrl, orientationImageLoading, orientationImageError, orientationQuarterTurns,
-  orientationSaving, orientationActionId, progressList, gradeTotal, gradeError, summary,
-  reviewRestoredLabel, coursewareRecommendations, coursewareRecommendationState,
-  coursewareRecommendationQuery, coursewareRecommendationKey, batchReport, reviewBusy,
-  reviewImagesDownloading, reviewArchived, reviewRevision, manualDecisionDialogVisible,
-  manualDecisionRow, manualDecisionDrafts, manualDecisionSaving, manualDecisionImageUrl,
-  manualDecisionImageLoading, manualDecisionImageError, manualDecisionPages,
-  manualDecisionPageIndex, manualDecisionShowPaper, templateRecognizeController,
-  templateConfirmController, templateCutController, templateCutCompletedRunToken,
-  templateCutRunToken, recognizeController, gradeController, gradablePaperCount,
-  templateReviewPendingPageIndexes, templateDiagnosticPendingPageIndexes,
-  clearTemplateResolvedGeometryDiagnostics, templateGeometryReview, templateCanConfirm,
-  templateChoiceReadyEntries, templateChoiceConflicts, templateFillEntries, batchConfirmValid,
-  requireBatchService, requireRecognitionService, requireTemplateService, loadDailyUsage,
-  refreshAvailability,
+  props,
 }
+Object.assign(ctx, useUploadState(ctx))
+Object.assign(ctx, useServiceAvailability(ctx))
+Object.assign(ctx, useTemplateReviewState(ctx))
 Object.assign(ctx, useRecognitionRecovery(ctx))
 Object.assign(ctx, useTemplateReference(ctx))
 Object.assign(ctx, useIdentityResolution(ctx))
@@ -2459,16 +1611,43 @@ Object.assign(ctx, useBatchReport(ctx))
 Object.assign(ctx, useReviewResults(ctx))
 Object.assign(ctx, useUploadLifecycle(ctx))
 const {
-  templateReferenceQuestionEditBlockReason, templateDrawingReferenceQuestions,
-  templateReferenceEditors, templateReferenceCanvasVisible, templateReferenceImagesReady,
-  setTemplatePreviewEditMode, selectTemplateDrawingReference, openTemplateDrawingReference,
-  answerSpecFields, questionScoringValid, templateQuestionDomId, setTemplateDetailOpen,
-  openTemplateQuestion, templateMissingAnswerEntries, templateMaxFlagReviewEntries,
-  templatePendingRemovalEntries, templateEditorProblemEntries, templateProblemBoxes,
-  openTemplateProblem, openTemplateMaxFlags, templateSlotNeedsAnswer, templateSlotMaxFlagged,
-  locateTemplateReviewSlot, openTemplateMissingAnswers, identityCanConfirm, openIdentityImage,
-  openRecognizePaperImage, identityReasonHint, identityClueLabel, refreshIdentityOptions,
-  onTemplateFileChange, applyTemplateRecognitionResult, onRecognizeTemplate,
+  anonymous, auth, inheritIdentity, fileInputRef, folderInputRef, templateInputRef, fileList,
+  phoneCaptureVisible, studentSubmissionVisible, imagePreprocessing, imageExtracting,
+  extractionProgress, isDragover, showNameGuide, batchDialogVisible, activeStep, recognizing,
+  grading, gradingElapsedSeconds, dailyUsage, serviceState, serviceBlocksNewWork,
+  templateServiceState, templateServiceBlocksNewWork, registrationHardwareState,
+  recognitionBlocksNewWork, templateColumnMode, templateFiles, templatePreprocessing,
+  recognizingTemplate, templateRecognizeMessage, templateRecognizeError, confirmedTemplateId,
+  templatePageCount, templateStageLabel, templateDialogVisible, confirmingTemplate,
+  importingTemplateBank, templateBankImported, templatePages, templateCutBusy, templateCutResult,
+  templateCutProgress, templateCutImageType, templateCutPreviewPages, templateCutPreviewError,
+  templateCropGesture, TEMPLATE_GEOMETRY_TOOLS, templateEditorBusy, templateChoiceScore,
+  templateFillScore, pendingTemplateId, identityDialogVisible, identityResolutions,
+  identityOptionsLoading, identityOptionsError, form, batchId, papers, recognized, recognitionDone,
+  recognitionAutoArmed, recognitionCanGrade, recognitionError, recognitionRecoveryState,
+  recognitionStats, excludingPaperId, currentMessage, questions, orientationDialogVisible,
+  orientationPaper, orientationImageUrl, orientationImageLoading, orientationImageError,
+  orientationQuarterTurns, orientationSaving, progressList, gradeTotal, gradeError, summary,
+  reviewRestoredLabel, coursewareRecommendations, coursewareRecommendationState, batchReport,
+  reviewBusy, reviewImagesDownloading, hasReviewImageRows, reviewArchived, gradeHero, workflowSteps,
+  progressCardVisible, gradingPhaseState, dailyUsagePercent, manualDecisionDialogVisible,
+  manualDecisionRow, manualDecisionDrafts, manualDecisionSaving, manualDecisionImageUrl,
+  manualDecisionImageLoading, manualDecisionImageError, manualDecisionPages,
+  manualDecisionPageIndex, manualDecisionShowPaper, templateCutRunToken, recognizeSucceededCount,
+  recognizeFailureCount, recognizeManualReviewCount, recognizeCompletedCount,
+  recognizeUnresolvedCount, recognitionResumeVisible, recognitionRecoveryIsError,
+  gradablePaperCount, templateLocked, batchConfirmValid, templateGeometryReview, templateCanConfirm,
+  templateChoiceEntries, templateChoiceSingleCount, templateChoiceMultipleCount,
+  templateChoicePendingCount, templateFillEntries, templateFillBatchEntryCount,
+  templateCustomFillCount, templateSolveEntries, templateReferenceQuestionEditBlockReason,
+  templateReferenceEditors, templateReferenceCanvasVisible, setTemplatePreviewEditMode,
+  selectTemplateDrawingReference, openTemplateDrawingReference, answerSpecFields,
+  templateQuestionDomId, setTemplateDetailOpen, openTemplateQuestion, templateMissingAnswerEntries,
+  templateMaxFlagReviewEntries, templatePendingRemovalEntries, templateEditorProblemEntries,
+  templateProblemBoxes, openTemplateProblem, openTemplateMaxFlags, templateSlotNeedsAnswer,
+  templateSlotMaxFlagged, locateTemplateReviewSlot, openTemplateMissingAnswers, identityCanConfirm,
+  openIdentityImage, openRecognizePaperImage, identityReasonHint, identityClueLabel,
+  refreshIdentityOptions, onTemplateFileChange, applyTemplateRecognitionResult, onRecognizeTemplate,
   templateCutPageOriginalCount, applyTemplateCutState, loadTemplateCutPreviews,
   loadTemplateCutState, onRunTemplateCut, templatePreviewQuestionIdentity,
   templateLayoutConflictNotice, resetTemplateColumns, templateSlotAnswer,
