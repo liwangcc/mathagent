@@ -1,6 +1,7 @@
 {
   "desktop/worker/mathagent_worker/handoff.py": 1678,
   "desktop/worker/mathagent_worker/template_ocr_evidence.py": 1071,
+  "experiments/source_size_gate_probe.py": 901,
   "experiments/template_ocr_lab/core.py": 1711,
   "frontend/src/views/Home.vue": 1001,
   "frontend/src/views/Layout.vue": 945,
