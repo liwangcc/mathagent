@@ -488,6 +488,9 @@ import { compareStudentNumbers } from '@/utils/studentSort'
 import { knowledgeTopicStudents } from '@/utils/knowledgeHeatmap'
 import HelpButton from '@/components/HelpButton.vue'
 import StudentSubmissionDialog from '@/components/StudentSubmissionDialog.vue'
+import { useClassManagement } from './class-table/useClassManagement.js'
+import { useStudentEditing } from './class-table/useStudentEditing.js'
+import { useStudentImport } from './class-table/useStudentImport.js'
 import { useExamImport } from './class-table/useExamImport.js'
 import { useKnowledgeHeatmap } from './class-table/useKnowledgeHeatmap.js'
 import { useMoreMenu } from './class-table/useMoreMenu.js'
@@ -506,34 +509,6 @@ const coverage = reactive({ class_size: 0, effective_students: 0, observation_st
 const loading = ref(false)
 const keyword = ref('')
 const riskFilter = ref('all')
-
-const classDialogVisible = ref(false)
-const classFormName = ref('')
-const editingClassId = ref(null)
-const savingClass = ref(false)
-
-const studentDialogVisible = ref(false)
-const studentImportMode = ref('manual')
-const manualStudents = ref([{ student_no: '', exam_no: '', name: '', phone: '' }])
-const studentExcelFile = ref(null)
-const studentExcelPreview = ref(null)
-const studentImageFile = ref(null)
-const recognizedStudents = ref([])
-const recognizing = ref(false)
-const savingStudents = ref(false)
-
-const editStudentVisible = ref(false)
-const editStudentForm = ref({ id: null, name: '', student_no: '', exam_no: '', phone: '' })
-const savingEdit = ref(false)
-const submitPassword = reactive({ studentId: null, set: false, loading: false, saving: false, value: '' })
-
-const COLUMN_LABELS = { no: '学号', exam_no: '准考证号', name: '姓名', phone: '家长手机', score: '成绩', exam: '考试名' }
-function columnText(columns) {
-  const entries = Object.entries(columns || {})
-  return entries.length
-    ? entries.map(([key, header]) => `${COLUMN_LABELS[key] || key}←“${header}”`).join('，')
-    : '未识别'
-}
 
 const studentsGeneration = shallowRef(0)
 
@@ -725,193 +700,6 @@ async function toggleObservation(row) {
   }
 }
 
-function openCreateClass() {
-  editingClassId.value = null
-  classFormName.value = ''
-  classDialogVisible.value = true
-}
-
-function consumeAddClassQuery() {
-  if (route.query.add !== '1') return
-  openCreateClass()
-  router.replace({ path: route.path, query: { ...route.query, add: undefined } })
-}
-
-function openEditClass(cls) {
-  editingClassId.value = cls.id
-  classFormName.value = cls.class_name || ''
-  classDialogVisible.value = true
-}
-
-function openEditCurrentClass() {
-  const cls = auth.classes.find((item) => item.id === activeClassId.value)
-  if (cls) {
-    openEditClass(cls)
-  }
-}
-
-async function saveClass() {
-  const scope = profileScope.value
-  const generation = classScopeGeneration.value
-  const current = () => scope === profileScope.value && generation === classScopeGeneration.value
-  const name = classFormName.value.trim()
-  if (!name) {
-    ElMessage.warning('请输入班级名称')
-    return
-  }
-  savingClass.value = true
-  try {
-    if (editingClassId.value) {
-      await auth.updateClass(editingClassId.value, name)
-      if (!current()) return
-      ElMessage.success('班级已保存')
-      if (editingClassId.value === activeClassId.value) {
-        className.value = name
-      }
-    } else {
-      const res = await auth.createClass(name)
-      if (!current()) return
-      ElMessage.success('班级已添加')
-      const createdId = res?.class_id || res?.id || auth.classes.find((c) => c.class_name === name)?.id
-      if (createdId) {
-        activeClassId.value = createdId
-        await auth.switchClass(createdId)
-        if (!current()) return
-        router.replace(`/class/${createdId}/students`)
-        await loadStudents()
-      }
-    }
-    classDialogVisible.value = false
-    await auth.fetchClasses()
-  } catch {
-    // handled by interceptor
-  } finally {
-    if (current()) savingClass.value = false
-  }
-}
-
-async function deleteClass(cls) {
-  const { current } = captureClassScope()
-  try {
-    await auth.deleteClass(cls.id)
-    if (!current()) return
-    ElMessage.success('班级已删除')
-    await auth.fetchClasses()
-    if (!current()) return
-    if (activeClassId.value === cls.id) {
-      activeClassId.value = auth.classes[0]?.id || null
-      if (activeClassId.value) {
-        await auth.switchClass(activeClassId.value)
-        router.replace(`/class/${activeClassId.value}/students`)
-      } else {
-        router.replace('/students')
-      }
-      await loadStudents()
-    }
-  } catch {
-    // handled by interceptor
-  }
-}
-
-async function deleteCurrentClass() {
-  const cls = auth.classes.find((item) => item.id === activeClassId.value)
-  if (cls) {
-    await deleteClass(cls)
-  }
-}
-
-function openStudent(row) {
-  router.push({ path: `/student/${row.id}/detail` })
-}
-
-function editStudent(row) {
-  editStudentForm.value = {
-    id: row.id,
-    name: row.name || '',
-    student_no: row.student_no || '',
-    exam_no: row.exam_no || '',
-    phone: row.phone || '',
-  }
-  editStudentVisible.value = true
-  loadSubmitPassword(row.id)
-}
-
-async function loadSubmitPassword(studentId) {
-  const { classId, current } = captureClassScope()
-  Object.assign(submitPassword, { studentId, set: false, loading: true, saving: false, value: '' })
-  try {
-    const state = await api.submissions.passwordState(classId, studentId)
-    if (current() && submitPassword.studentId === studentId) submitPassword.set = Boolean(state.set)
-  } catch {
-    // The API layer already reported the failure; the field stays usable.
-  } finally {
-    if (submitPassword.studentId === studentId) submitPassword.loading = false
-  }
-}
-
-async function saveSubmitPassword() {
-  const { classId, current } = captureClassScope()
-  const studentId = submitPassword.studentId
-  const password = submitPassword.value.trim()
-  if (password.length < 4) {
-    ElMessage.warning('提交密码至少 4 位')
-    return
-  }
-  submitPassword.saving = true
-  try {
-    await api.submissions.setPassword(classId, studentId, password)
-    if (!current() || submitPassword.studentId !== studentId) return
-    Object.assign(submitPassword, { set: true, value: '' })
-    ElMessage.success('提交密码已设置，请单独告诉该学生')
-  } catch {
-    // The API layer already reported the failure.
-  } finally {
-    submitPassword.saving = false
-  }
-}
-
-async function clearSubmitPassword() {
-  const { classId, current } = captureClassScope()
-  const studentId = submitPassword.studentId
-  submitPassword.saving = true
-  try {
-    await api.submissions.clearPassword(classId, studentId)
-    if (!current() || submitPassword.studentId !== studentId) return
-    Object.assign(submitPassword, { set: false, value: '' })
-    ElMessage.success('已清除提交密码，该学生提交时不再需要密码')
-  } catch {
-    // The API layer already reported the failure.
-  } finally {
-    submitPassword.saving = false
-  }
-}
-
-async function saveEditStudent() {
-  const { classId, current } = captureClassScope()
-  const form = editStudentForm.value
-  if (!form.name.trim()) {
-    ElMessage.warning('姓名不能为空')
-    return
-  }
-  savingEdit.value = true
-  try {
-    await api.classroom.updateStudent(classId, form.id, {
-      name: form.name.trim(),
-      student_no: form.student_no.trim(),
-      exam_no: form.exam_no.trim(),
-      phone: form.phone.trim(),
-    })
-    if (!current()) return
-    ElMessage.success('保存成功')
-    editStudentVisible.value = false
-    await loadStudents()
-  } catch (e) {
-    if (current()) ElMessage.error(e.message || '保存失败')
-  } finally {
-    if (current()) savingEdit.value = false
-  }
-}
-
 function applyRiskFilter(key) {
   riskFilter.value = riskFilter.value === key ? 'all' : key
 }
@@ -968,153 +756,30 @@ function sortByLatestScore(a, b) {
   return Number(a.latest_exam_score ?? -1) - Number(b.latest_exam_score ?? -1)
 }
 
-function onStudentExcelChange(file) {
-  studentExcelFile.value = file.raw
-  studentExcelPreview.value = null
-}
-
-function onStudentImageChange(file) {
-  studentImageFile.value = file.raw
-  recognizedStudents.value = []
-}
-
-async function recognizeImage() {
-  if (recognizing.value) return
-  if (!studentImageFile.value) {
-    ElMessage.warning('请先选择名单图片')
-    return
-  }
-  recognizing.value = true
-  const { classId, current } = captureClassScope()
-  try {
-    const fd = new FormData()
-    fd.append('file', studentImageFile.value)
-    const data = await api.classroom.importStudentsImage(classId, fd)
-    if (!current()) return
-    recognizedStudents.value = data.recognized || []
-    if (!recognizedStudents.value.length) {
-      ElMessage.warning('未识别到学生')
-    }
-  } catch {
-    if (current()) recognizedStudents.value = []
-  } finally {
-    if (current()) recognizing.value = false
-  }
-}
-
-async function saveStudents() {
-  if (!activeClassId.value) return
-  const { classId, current } = captureClassScope()
-  savingStudents.value = true
-  try {
-    if (studentImportMode.value === 'excel') {
-      if (!studentExcelFile.value) {
-        ElMessage.warning('请先选择 Excel 文件')
-        return
-      }
-      const fd = new FormData()
-      fd.append('file', studentExcelFile.value)
-      if (!studentExcelPreview.value) {
-        // First pass is a dry run: show column mapping and per-row results.
-        fd.append('dry_run', 'true')
-        const preview = await api.classroom.importStudentsExcel(classId, fd)
-        if (current()) studentExcelPreview.value = preview
-        return
-      }
-      const res = await api.classroom.importStudentsExcel(classId, fd)
-      if (!current()) return
-      ElMessage.success(`导入完成：新增 ${res.added || 0}，跳过 ${res.skipped || 0}`)
-      showStringList([...(res.errors || []), ...(res.warnings || [])], '导入提示')
-    } else {
-      const list = studentImportMode.value === 'image'
-        ? recognizedStudents.value
-        : manualStudents.value
-      const clean = list
-        .map((item) => ({
-          student_no: item.student_no?.trim() || undefined,
-          exam_no: item.exam_no?.trim() || undefined,
-          name: item.name?.trim(),
-          phone: item.phone?.trim() || undefined,
-        }))
-        .filter((item) => item.name)  // 只要求姓名，学号选填
-      if (!clean.length) {
-        ElMessage.warning('请至少填写一个学生的姓名')
-        return
-      }
-      const res = await api.classroom.addStudents(classId, clean)
-      if (!current()) return
-      ElMessage.success(`保存完成：新增 ${res.added || 0}，跳过 ${res.skipped || 0}`)
-      showStringList(res.errors, '保存错误')
-    }
-    studentDialogVisible.value = false
-    resetStudentDialog()
-    await auth.fetchClasses()
-    if (!current()) return
-    await loadStudents()
-  } catch {
-    // handled by interceptor
-  } finally {
-    if (current()) savingStudents.value = false
-  }
-}
-
-function resetStudentDialog() {
-  studentImportMode.value = 'manual'
-  manualStudents.value = [{ student_no: '', exam_no: '', name: '', phone: '' }]
-  studentExcelFile.value = null
-  studentExcelPreview.value = null
-  studentImageFile.value = null
-  recognizedStudents.value = []
-}
-
-async function removeStudent(row) {
-  const { classId, current } = captureClassScope()
-  try {
-    await api.classroom.removeStudent(classId, row.id)
-    if (!current()) return
-    ElMessage.success('已移出班级')
-    await auth.fetchClasses()
-    if (!current()) return
-    await loadStudents()
-  } catch {
-    // handled by interceptor
-  }
-}
-
-function showStringList(list, title) {
-  if (!Array.isArray(list) || !list.length) return
-  ElMessageBox.alert(
-    `<div class="message-list">${list.map((item) => `<p>${escapeHtml(item)}</p>`).join('')}</div>`,
-    title,
-    { dangerouslyUseHTMLString: true, type: 'warning', confirmButtonText: '知道了' }
-  )
-}
-
-function escapeHtml(value) {
-  return String(value)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;')
-}
-
 // The rest of the page lives in one composable per part (views/class-table/use*.js). Each one gets ctx,
 // holding what the earlier parts defined; it calls functions of later parts through ctx.
 const ctx = {
-  route, router, auth, educationStage, profileScope, activeClassId, loading, classDialogVisible,
-  savingClass, studentDialogVisible, recognizing, savingStudents, editStudentVisible, savingEdit,
+  route, router, auth, educationStage, profileScope, activeClassId, className, loading,
   studentsGeneration, classScopeGeneration, captureClassScope, resolveInitialClass, loadStudents,
-  loadAll, resetStudents, consumeAddClassQuery, resetStudentDialog, showStringList,
+  loadAll, resetStudents,
 }
+Object.assign(ctx, useClassManagement(ctx))
+Object.assign(ctx, useStudentEditing(ctx))
+Object.assign(ctx, useStudentImport(ctx))
 Object.assign(ctx, useExamImport(ctx))
 Object.assign(ctx, useKnowledgeHeatmap(ctx))
 Object.assign(ctx, useMoreMenu(ctx))
 Object.assign(ctx, useClassTableLifecycle(ctx))
 const {
-  examDialogVisible, examName, examFile, examDate, examPreview, importingExam, examIssues,
-  onExamFileChange, importExamScores, heatmapVisible, heatmapLoading, heatmapTree, priorityMeta,
-  openCoursewareRecommendation, submissionDialogVisible, onMoreCommand,
+  classDialogVisible, classFormName, editingClassId, savingClass, openCreateClass,
+  openEditCurrentClass, saveClass, deleteCurrentClass, editStudentVisible, editStudentForm,
+  savingEdit, submitPassword, openStudent, editStudent, saveSubmitPassword, clearSubmitPassword,
+  saveEditStudent, removeStudent, studentDialogVisible, studentImportMode, manualStudents,
+  studentExcelFile, studentExcelPreview, studentImageFile, recognizedStudents, recognizing,
+  savingStudents, columnText, onStudentExcelChange, onStudentImageChange, recognizeImage,
+  saveStudents, examDialogVisible, examName, examFile, examDate, examPreview, importingExam,
+  examIssues, onExamFileChange, importExamScores, heatmapVisible, heatmapLoading, heatmapTree,
+  priorityMeta, openCoursewareRecommendation, submissionDialogVisible, onMoreCommand,
 } = ctx
 </script>
 
