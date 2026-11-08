@@ -474,20 +474,16 @@
 </template>
 
 <script setup>
-import { computed, reactive, ref, shallowRef } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   ArrowDown, Camera, DataAnalysis, Delete, Document, Edit, Link, MoreFilled,
   Plus, Refresh, Search, TrendCharts, UploadFilled,
 } from '@element-plus/icons-vue'
-import api from '@/api'
-import { normalizeEducationStage, historyStageLabel } from '@/utils/educationStage'
-import { useAuthStore } from '@/stores/auth'
-import { compareStudentNumbers } from '@/utils/studentSort'
+import { historyStageLabel } from '@/utils/educationStage'
 import { knowledgeTopicStudents } from '@/utils/knowledgeHeatmap'
 import HelpButton from '@/components/HelpButton.vue'
 import StudentSubmissionDialog from '@/components/StudentSubmissionDialog.vue'
+import { useClassRoster } from './class-table/useClassRoster.js'
+import { useStudentRiskView } from './class-table/useStudentRiskView.js'
 import { useClassManagement } from './class-table/useClassManagement.js'
 import { useStudentEditing } from './class-table/useStudentEditing.js'
 import { useStudentImport } from './class-table/useStudentImport.js'
@@ -496,273 +492,11 @@ import { useKnowledgeHeatmap } from './class-table/useKnowledgeHeatmap.js'
 import { useMoreMenu } from './class-table/useMoreMenu.js'
 import { useClassTableLifecycle } from './class-table/useClassTableLifecycle.js'
 
-const route = useRoute()
-const router = useRouter()
-const auth = useAuthStore()
-const educationStage = computed(() => normalizeEducationStage(auth.user?.education_stage))
-const profileScope = computed(() => JSON.stringify([auth.user?.id, auth.token, educationStage.value]))
-
-const activeClassId = ref(null)
-const className = ref('未选择班级')
-const students = ref([])
-const coverage = reactive({ class_size: 0, effective_students: 0, observation_students: 0 })
-const loading = ref(false)
-const keyword = ref('')
-const riskFilter = ref('all')
-
-const studentsGeneration = shallowRef(0)
-
-const classScopeGeneration = shallowRef(0)
-
-function captureClassScope() {
-  const scope = profileScope.value
-  const classId = activeClassId.value
-  const generation = classScopeGeneration.value
-  return { classId, current: () => scope === profileScope.value && classId === activeClassId.value && generation === classScopeGeneration.value }
-}
-
-const riskFilterOptions = [
-  { label: '全部', value: 'all' },
-  { label: '观察模式', value: 'observation' },
-  { label: '重点关注', value: 'attention' },
-  { label: '持续跟进', value: 'watch' },
-  { label: '表现良好', value: 'stable' },
-  { label: '暂无数据', value: 'no_data' },
-]
-
-const studentsWithRisk = computed(() =>
-  students.value.map((student) => ({
-    ...student,
-    _risk: riskMeta(student),
-  }))
-)
-
-const filteredStudents = computed(() => {
-  const q = keyword.value.trim().toLowerCase()
-  return studentsWithRisk.value.filter((s) => {
-    const matchesRisk = riskFilter.value === 'all' || s._risk.key === riskFilter.value
-    const matchesKeyword = !q ||
-      String(s.name || '').toLowerCase().includes(q) ||
-      String(s.student_no || '').toLowerCase().includes(q) ||
-      String(s.exam_no || '').toLowerCase().includes(q)
-    return matchesRisk && matchesKeyword
-  })
-})
-
-const riskGroups = computed(() => {
-  const groups = [
-    {
-      key: 'observation',
-      label: '观察模式',
-      description: '继续批阅，但不参与正式风险与统计判断',
-      className: 'risk-observation',
-    },
-    {
-      key: 'attention',
-      label: '重点关注',
-      description: '错题率高或未纠正薄弱点较多',
-      className: 'risk-danger',
-    },
-    {
-      key: 'watch',
-      label: '持续跟进',
-      description: '有薄弱点，但整体仍可控',
-      className: 'risk-warn',
-    },
-    {
-      key: 'stable',
-      label: '表现良好',
-      description: '纠错推进较好，近期风险较低',
-      className: 'risk-good',
-    },
-    {
-      key: 'no_data',
-      label: '暂无数据',
-      description: '还没有已归档的批阅，暂不判断风险',
-      className: 'risk-neutral',
-    },
-  ]
-  return groups.map((group) => {
-    const groupStudents = studentsWithRisk.value.filter((student) => student._risk.key === group.key)
-    const names = groupStudents.slice(0, 3).map((student) => student.name).filter(Boolean)
-    return {
-      ...group,
-      students: groupStudents,
-      preview: names.length ? names.join('、') : '暂无学生',
-    }
-  }).filter((group) => group.key !== 'no_data' || group.students.length)
-})
-
-const tableSubtitle = computed(() => {
-  const active = riskFilterOptions.find((item) => item.value === riskFilter.value)?.label || '全部'
-  return `${active} · 最近批改窗口、纠错率和薄弱点`
-})
-
-function resolveInitialClass() {
-  const routeClassId = Number(route.params.classId)
-  if (routeClassId) return routeClassId
-  if (auth.currentClassId) return auth.currentClassId
-  return auth.classes[0]?.id || null
-}
-
-async function loadClassesIfNeeded() {
-  const scope = profileScope.value
-  if (!auth.classes.length) {
-    await auth.fetchClasses()
-  }
-  if (scope !== profileScope.value) return
-  if (!activeClassId.value) {
-    activeClassId.value = resolveInitialClass()
-  }
-  if (activeClassId.value && auth.currentClassId !== activeClassId.value) {
-    await auth.switchClass(activeClassId.value)
-  }
-}
-
-async function loadStudents() {
-  const scope = profileScope.value
-  const classId = activeClassId.value
-  const generation = ++studentsGeneration.value
-  const current = () => scope === profileScope.value && classId === activeClassId.value && generation === studentsGeneration.value
-  resetStudents()
-  if (!classId || !auth.token || !educationStage.value) {
-    loading.value = false
-    return
-  }
-  loading.value = true
-  try {
-    const stage = educationStage.value
-    const data = await api.classroom.students(classId, { education_stage: stage })
-    if (!current()) return
-    students.value = data.students || []
-    Object.assign(coverage, data.coverage || {
-      class_size: students.value.length,
-      effective_students: students.value.filter((item) => !item.observation_mode).length,
-      observation_students: students.value.filter((item) => item.observation_mode).length,
-    })
-    className.value = data.class_name || auth.classes.find((c) => c.id === classId)?.class_name || '当前班级'
-  } catch {
-    if (current()) resetStudents()
-  } finally {
-    if (current()) loading.value = false
-  }
-}
-
-async function loadAll() {
-  const scope = profileScope.value
-  if (!auth.token || !educationStage.value) return
-  await loadClassesIfNeeded()
-  if (scope !== profileScope.value) return
-  await loadStudents()
-}
-
-function resetStudents() {
-  students.value = []
-  className.value = '未选择班级'
-  Object.assign(coverage, { class_size: 0, effective_students: 0, observation_students: 0 })
-}
-
-async function toggleObservation(row) {
-  const { classId, current } = captureClassScope()
-  try {
-    if (row.observation_mode) {
-      await ElMessageBox.confirm(
-        '恢复后仅新产生的数据重新纳入统计，历史观察期数据不会回填。',
-        `恢复 ${row.name} 的统计`,
-        { type: 'warning', confirmButtonText: '确认恢复' },
-      )
-      if (!current()) return
-      await api.classroom.setObservation(classId, row.id, {
-        enabled: false,
-        reason: row.observation_reason || '教师结束观察',
-        note: '教师从班级表恢复统计',
-      })
-      if (!current()) return
-      ElMessage.success('已恢复；后续新数据重新纳入统计')
-    } else {
-      const { value } = await ElMessageBox.prompt(
-        '观察期仍正常批阅并保留结果，但不进入班级统计、待订正队列或家长报告。请输入原因。',
-        `将 ${row.name} 设为观察模式`,
-        { inputPattern: /\S+/, inputErrorMessage: '必须填写原因', confirmButtonText: '启用观察' },
-      )
-      if (!current()) return
-      await api.classroom.setObservation(classId, row.id, {
-        enabled: true,
-        reason: value.trim(),
-        note: '教师从班级表启用',
-      })
-      if (!current()) return
-      ElMessage.success('观察模式已启用')
-    }
-    await loadStudents()
-  } catch (error) {
-    if (error !== 'cancel' && error !== 'close') throw error
-  }
-}
-
-function applyRiskFilter(key) {
-  riskFilter.value = riskFilter.value === key ? 'all' : key
-}
-
-function toPercent(value) {
-  const n = Number(value || 0)
-  return Math.max(0, Math.min(100, Math.round(n * 1000) / 10))
-}
-
-function formatRate(value) {
-  return `${toPercent(value).toFixed(1)}%`
-}
-
-function rateColor(value, badHigh) {
-  const n = Number(value || 0)
-  if (badHigh) {
-    if (n >= 0.35) return 'var(--danger)'
-    if (n >= 0.18) return 'var(--warning)'
-    return 'var(--success)'
-  }
-  if (n >= 0.7) return 'var(--success)'
-  if (n >= 0.4) return 'var(--warning)'
-  return 'var(--danger)'
-}
-
-function riskMeta(row) {
-  const riskMap = {
-    observation: { key: 'observation', label: '观察模式', tagType: 'info' },
-    attention: { key: 'attention', label: '重点关注', tagType: 'danger' },
-    watch: { key: 'watch', label: '持续跟进', tagType: 'warning' },
-    stable: { key: 'stable', label: '表现良好', tagType: 'success' },
-    no_data: { key: 'no_data', label: '暂无数据', tagType: 'info' },
-  }
-  return riskMap[row.risk_level] || riskMap.stable
-}
-
-function sortByName(a, b) {
-  return String(a.name || '').localeCompare(String(b.name || ''), 'zh-CN')
-}
-
-function sortByStudentNo(a, b) {
-  return compareStudentNumbers(a.student_no, b.student_no)
-}
-
-function sortByWrongRate(a, b) {
-  return Number(a.wrong_rate || 0) - Number(b.wrong_rate || 0)
-}
-
-function sortByCorrectionRate(a, b) {
-  return Number(a.correction_rate || 0) - Number(b.correction_rate || 0)
-}
-
-function sortByLatestScore(a, b) {
-  return Number(a.latest_exam_score ?? -1) - Number(b.latest_exam_score ?? -1)
-}
-
 // The rest of the page lives in one composable per part (views/class-table/use*.js). Each one gets ctx,
 // holding what the earlier parts defined; it calls functions of later parts through ctx.
-const ctx = {
-  route, router, auth, educationStage, profileScope, activeClassId, className, loading,
-  studentsGeneration, classScopeGeneration, captureClassScope, resolveInitialClass, loadStudents,
-  loadAll, resetStudents,
-}
+const ctx = {}
+Object.assign(ctx, useClassRoster(ctx))
+Object.assign(ctx, useStudentRiskView(ctx))
 Object.assign(ctx, useClassManagement(ctx))
 Object.assign(ctx, useStudentEditing(ctx))
 Object.assign(ctx, useStudentImport(ctx))
@@ -771,15 +505,19 @@ Object.assign(ctx, useKnowledgeHeatmap(ctx))
 Object.assign(ctx, useMoreMenu(ctx))
 Object.assign(ctx, useClassTableLifecycle(ctx))
 const {
-  classDialogVisible, classFormName, editingClassId, savingClass, openCreateClass,
-  openEditCurrentClass, saveClass, deleteCurrentClass, editStudentVisible, editStudentForm,
-  savingEdit, submitPassword, openStudent, editStudent, saveSubmitPassword, clearSubmitPassword,
-  saveEditStudent, removeStudent, studentDialogVisible, studentImportMode, manualStudents,
-  studentExcelFile, studentExcelPreview, studentImageFile, recognizedStudents, recognizing,
-  savingStudents, columnText, onStudentExcelChange, onStudentImageChange, recognizeImage,
-  saveStudents, examDialogVisible, examName, examFile, examDate, examPreview, importingExam,
-  examIssues, onExamFileChange, importExamScores, heatmapVisible, heatmapLoading, heatmapTree,
-  priorityMeta, openCoursewareRecommendation, submissionDialogVisible, onMoreCommand,
+  auth, educationStage, activeClassId, className, students, coverage, loading, loadAll,
+  toggleObservation, keyword, riskFilter, riskFilterOptions, filteredStudents, riskGroups,
+  tableSubtitle, applyRiskFilter, toPercent, formatRate, rateColor, sortByName, sortByStudentNo,
+  sortByWrongRate, sortByCorrectionRate, sortByLatestScore, classDialogVisible, classFormName,
+  editingClassId, savingClass, openCreateClass, openEditCurrentClass, saveClass, deleteCurrentClass,
+  editStudentVisible, editStudentForm, savingEdit, submitPassword, openStudent, editStudent,
+  saveSubmitPassword, clearSubmitPassword, saveEditStudent, removeStudent, studentDialogVisible,
+  studentImportMode, manualStudents, studentExcelFile, studentExcelPreview, studentImageFile,
+  recognizedStudents, recognizing, savingStudents, columnText, onStudentExcelChange,
+  onStudentImageChange, recognizeImage, saveStudents, examDialogVisible, examName, examFile,
+  examDate, examPreview, importingExam, examIssues, onExamFileChange, importExamScores,
+  heatmapVisible, heatmapLoading, heatmapTree, priorityMeta, openCoursewareRecommendation,
+  submissionDialogVisible, onMoreCommand,
 } = ctx
 </script>
 
