@@ -258,6 +258,10 @@ OCR_TEMPLATE_QWEN_FALLBACK_MAX_RPM = 0.0
 OCR_TEMPLATE_GPT_FALLBACK_HARD_IN_FLIGHT = int(
     os.environ.get("OCR_TEMPLATE_GPT_FALLBACK_HARD_IN_FLIGHT", "4")
 )
+# 模板 Max 整页解题按题组拆成几路并行（1 = 不拆，与拆分前相同）。每路带同一组图片和
+# 同一段目录提示（前缀可命中缓存），只输出自己负责的题；实际路数不超过题组数，
+# 也不超过上面的在途上限减去定位占用的 1 路。
+OCR_TEMPLATE_SOLVER_SHARDS = int(os.environ.get("OCR_TEMPLATE_SOLVER_SHARDS", "2"))
 OCR_TEMPLATE_GPT_FALLBACK_FIRST_EVENT_TIMEOUT_S = float(
     os.environ.get("OCR_TEMPLATE_GPT_FALLBACK_FIRST_EVENT_TIMEOUT_S", "60")
 )
@@ -373,6 +377,8 @@ if OCR_TEMPLATE_GPT_REASONING_EFFORT not in {
     )
 if not 1 <= OCR_TEMPLATE_GPT_FALLBACK_HARD_IN_FLIGHT <= 8:
     raise RuntimeError("OCR_TEMPLATE_GPT_FALLBACK_HARD_IN_FLIGHT 必须在 1 到 8 之间（Token Plan 最高档 Pro 为 6–8）")
+if not 1 <= OCR_TEMPLATE_SOLVER_SHARDS <= 4:
+    raise RuntimeError("OCR_TEMPLATE_SOLVER_SHARDS 必须在 1 到 4 之间")
 if OCR_TEACHER_WAVE_SIZE < 1 or OCR_ACTIVE_TEACHER_LIMIT < 1:
     raise RuntimeError("OCR 教师波次与活跃教师上限必须为正数")
 if OCR_PER_TEACHER_LIMIT < 1:

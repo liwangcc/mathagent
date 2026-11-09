@@ -25,6 +25,7 @@ from services.ocr_service import call_gpt_vision, set_vision_phase_key, reset_vi
 from services.processing_errors import describe_failure, processing_stage, report_failure
 from services.teaching_context import current_teaching_context
 from services import template_one_three as one_three
+from services import template_solver_shards as solver_shards
 
 
 logger = logging.getLogger(__name__)
@@ -64,12 +65,21 @@ async def _request(
     pool_route: str = "fallback",
     output_adapter=None,
     expected_ids=(),
+    prompt_first: bool = True,
+    stage_key: str | None = None,
 ):
-    """Keep transport admission and execution inside one shared import budget."""
+    """Keep transport admission and execution inside one shared import budget.
+
+    ``stage_key`` names the progress record when one phase runs as several
+    parallel requests (solver shards); it defaults to the phase.
+    """
     if phase not in _REQUEST_PHASES:
         raise ValueError("unknown template model phase")
     if output_adapter is not None and phase != one_three.TRANSCRIBE_PHASE:
         raise ValueError("template envelope adaptation is transcription-only")
+    if not prompt_first and phase != one_three.SOLVE_PHASE:
+        raise ValueError("image-first ordering is solver-only")
+    stage_key = stage_key or phase
     loop = asyncio.get_running_loop()
     started = loop.time()
     context = _import_context.get()
@@ -81,9 +91,9 @@ async def _request(
               "started_at": datetime.now(timezone.utc).isoformat(), "finished_at": None,
               "elapsed_s": 0.0, "remaining_s": max(0.0, deadline_at - started) if deadline_at is not None else None}
     if context is not None:
-        context[1]["stages"][phase] = record
+        context[1]["stages"][stage_key] = record
     logger.info("Template model stage started trace_id=%s phase=%s remaining_s=%s",
-                trace_id, phase, record["remaining_s"])
+                trace_id, stage_key, record["remaining_s"])
     token = set_vision_phase_key(phase)
     strict_phase = phase in {one_three.SOLVE_PHASE, one_three.TRANSCRIBE_PHASE, "template-hierarchy-v1", "template-coarse-locator-v1", "template-directory-v1"}
     parse_response = one_three.parse_json if strict_phase else parse_llm_json
@@ -158,7 +168,7 @@ async def _request(
                 with processing_stage(stage, model="qwen3.8-max", route=pool_route, phase=phase):
                     raw = await call_gpt_vision(
                         images, prompt, max_tokens=max_tokens, pool_route=pool_route,
-                        reasoning_effort=reasoning_effort, prompt_first=True,
+                        reasoning_effort=reasoning_effort, prompt_first=prompt_first,
                         json_object=strict_phase,
                         response_validator=validate_output,
                         cancel_on_waiter_cancel=True,
@@ -192,7 +202,7 @@ async def _request(
         record.update(finished_at=datetime.now(timezone.utc).isoformat(), elapsed_s=round(finished - started, 3),
                       remaining_s=max(0.0, deadline_at - finished) if deadline_at is not None else None)
         logger.info("Template model stage finished trace_id=%s phase=%s status=%s elapsed_s=%s remaining_s=%s",
-                    trace_id, phase, record["status"], record["elapsed_s"], record["remaining_s"])
+                    trace_id, stage_key, record["status"], record["elapsed_s"], record["remaining_s"])
         reset_vision_phase_key(token)
 
 
@@ -732,14 +742,23 @@ async def recognize_directory_template(image_path: str, *, template_mode: str, l
             max_tokens=one_three.MAX_TOKENS, reasoning_effort="high",
             expected_ids=tuple(hierarchy["leaf_ids"]),
         ), name="template-qwen-max-locator")
-        solver_task = asyncio.create_task(_request(
+        # One owner per question, fixed before any Max call; one shard keeps
+        # the single full-solve request unchanged.
+        solver_plan = solver_shards.plan_shards(one_three.question_contract(hierarchy),
+                                                solver_shards.configured_shard_count(hierarchy))
+        solver_report = []
+        solver_call = (solver_shards.solve_in_shards(
+            _request, detailed_images, solver_prompt, one_three.question_contract(hierarchy), solver_plan,
+            phase=one_three.SOLVE_PHASE, max_tokens=one_three.MAX_TOKENS, report=solver_report,
+        ) if len(solver_plan) > 1 else _request(
             detailed_images, solver_prompt, one_three.SOLVE_PHASE,
             lambda raw: (one_three.max_owned.receive_solver_candidates(raw, one_three.question_contract(hierarchy))
                          if hierarchy.get("question_identity_version") == 4
                          else one_three.receive_solver(raw, hierarchy)),
             max_tokens=one_three.MAX_TOKENS, reasoning_effort="high",
             expected_ids=tuple("Q" + number for number in hierarchy["leaf_ids"]),
-        ), name="template-qwen-max-fullsolve")
+        ))
+        solver_task = asyncio.create_task(solver_call, name="template-qwen-max-fullsolve")
         # Transcription starts with the same immutable hierarchy and coarse
         # evidence instead of waiting for Max geometry. Its result can be
         # cached while Max is still solving; merge_branches later binds it to
@@ -821,7 +840,9 @@ async def recognize_directory_template(image_path: str, *, template_mode: str, l
             pending.append(leaf["question_number"])
     diagnostics = {"strategy": one_three.STRATEGY, "education_stage": stage,
                    "model": "qwen3.8-max", "hierarchy_model": "qwen3.8-flash",
-                   "coarse_locator_model": "qwen3.8-flash", "request_count": 5,
+                   "coarse_locator_model": "qwen3.8-flash", "request_count": 4 + len(solver_plan),
+                   "solver_shards": len(solver_plan), "solver_shard_plan": solver_plan,
+                   "solver_shard_report": solver_report,
                    "hierarchy_contract_version": hierarchy.get("question_identity_version"),
                    "slot_source": locator.get("slot_source", "legacy"),
                    "transcription_model": "qwen3.8-flash", "solver_model": "qwen3.8-max",

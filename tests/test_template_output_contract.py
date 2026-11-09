@@ -151,8 +151,11 @@ def test_slot_capacity_is_aligned_without_truncation():
         max_owned.receive_solver(branches[contract.SOLVE_PHASE], too_large_manifest)
 
 
+@pytest.mark.parametrize("solver_shards", [1, 2])
 @pytest.mark.parametrize("shape", ["rows", "singleton"])
-def test_real_pipeline_to_transport_to_merge_has_five_calls_no_retry(shape, monkeypatch, tmp_path):
+def test_real_pipeline_to_transport_to_merge_has_one_call_per_request_no_retry(shape, monkeypatch, tmp_path, solver_shards):
+    import config
+    monkeypatch.setattr(config, "OCR_TEMPLATE_SOLVER_SHARDS", solver_shards)
     source = tmp_path / "page.png"
     Image.new("RGB", (300, 400), "white").save(source)
     raw, branches = v4_payloads(counts=(1, 1))
@@ -184,7 +187,10 @@ def test_real_pipeline_to_transport_to_merge_has_five_calls_no_retry(shape, monk
     assert "error" not in result and len(result["questions"]) == 2
     assert [q["question_text"] for q in result["questions"]] == ["印刷题干1", "印刷题干2"]
     assert [q["slot_ids"] for q in result["questions"]] == [["1[1]"], ["2[1]"]]
-    assert len(calls) == 5 and sum(name == "flash" for name, _ in calls) == 3
+    assert len(calls) == 4 + solver_shards and sum(name == "flash" for name, _ in calls) == 3
+    # A single solve keeps prompt-first; shards send images first for a shared prefix.
+    assert [payload["prompt_first"] for name, payload in calls if name == contract.SOLVE_PHASE] == (
+        [solver_shards == 1] * solver_shards)
     for name, payload in calls:
         if name == "flash":
             assert payload["response_format"] == {"type": "json_object"}
