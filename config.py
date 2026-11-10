@@ -262,6 +262,10 @@ OCR_TEMPLATE_GPT_FALLBACK_HARD_IN_FLIGHT = int(
 # 同一段目录提示（前缀可命中缓存），只输出自己负责的题；实际路数不超过题组数，
 # 也不超过上面的在途上限减去定位占用的 1 路。
 OCR_TEMPLATE_SOLVER_SHARDS = int(os.environ.get("OCR_TEMPLATE_SOLVER_SHARDS", "2"))
+# 模板 Max 定位按题分块：每块最多几道题（0 = 不分块，整页一次请求，与分块前相同）。
+# 每块是一张带独立 0–1000 网格的裁图，模型报本图坐标，后端换算回整页后按题号拼接。
+# 各块并行占用上面的 Max 在途名额，块数多于名额时排队。
+OCR_TEMPLATE_LOCATOR_TILE_QUESTIONS = int(os.environ.get("OCR_TEMPLATE_LOCATOR_TILE_QUESTIONS", "0"))
 OCR_TEMPLATE_GPT_FALLBACK_FIRST_EVENT_TIMEOUT_S = float(
     os.environ.get("OCR_TEMPLATE_GPT_FALLBACK_FIRST_EVENT_TIMEOUT_S", "60")
 )
@@ -379,6 +383,8 @@ if not 1 <= OCR_TEMPLATE_GPT_FALLBACK_HARD_IN_FLIGHT <= 8:
     raise RuntimeError("OCR_TEMPLATE_GPT_FALLBACK_HARD_IN_FLIGHT 必须在 1 到 8 之间（Token Plan 最高档 Pro 为 6–8）")
 if not 1 <= OCR_TEMPLATE_SOLVER_SHARDS <= 4:
     raise RuntimeError("OCR_TEMPLATE_SOLVER_SHARDS 必须在 1 到 4 之间")
+if OCR_TEMPLATE_LOCATOR_TILE_QUESTIONS != 0 and not 2 <= OCR_TEMPLATE_LOCATOR_TILE_QUESTIONS <= 20:
+    raise RuntimeError("OCR_TEMPLATE_LOCATOR_TILE_QUESTIONS 必须为 0（不分块）或 2 到 20")
 if OCR_TEACHER_WAVE_SIZE < 1 or OCR_ACTIVE_TEACHER_LIMIT < 1:
     raise RuntimeError("OCR 教师波次与活跃教师上限必须为正数")
 if OCR_PER_TEACHER_LIMIT < 1:

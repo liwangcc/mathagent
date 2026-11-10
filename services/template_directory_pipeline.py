@@ -25,6 +25,7 @@ from services.ocr_service import call_gpt_vision, set_vision_phase_key, reset_vi
 from services.processing_errors import describe_failure, processing_stage, report_failure
 from services.teaching_context import current_teaching_context
 from services import template_one_three as one_three
+from services import template_locator_tiles as locator_tiles
 from services import template_solver_shards as solver_shards
 
 
@@ -734,14 +735,24 @@ async def recognize_directory_template(image_path: str, *, template_mode: str, l
         # additional visual evidence for the Max solver and Flash transcription.
         # Max remains the sole owner of final geometry and answer binding.
         detailed_images = [image_path] + coarse_paths
-        locator_task = asyncio.create_task(_request(
+        # Tiles are fixed from the coarse boxes before any Max call; without
+        # a plan the single page request stays exactly as it was.
+        locator_plan = locator_tiles.plan_tiles(
+            one_three.question_contract(hierarchy), coarse, columns, width=width, height=height,
+            max_questions=locator_tiles.configured_tile_questions(hierarchy))
+        locator_report = []
+        locator_call = (locator_tiles.locate_in_tiles(
+            _request, page, temp, one_three.question_contract(hierarchy), coarse, locator_plan,
+            phase="template-directory-v1", max_tokens=one_three.MAX_TOKENS, report=locator_report,
+        ) if locator_plan else _request(
             image_paths, locator_prompt, "template-directory-v1",
             lambda raw: (one_three.max_owned.receive_locator_candidates(raw, one_three.question_contract(hierarchy))
                          if hierarchy.get("question_identity_version") == 4
                          else _validate_one_three_locator(raw, hierarchy)),
             max_tokens=one_three.MAX_TOKENS, reasoning_effort="high",
             expected_ids=tuple(hierarchy["leaf_ids"]),
-        ), name="template-qwen-max-locator")
+        ))
+        locator_task = asyncio.create_task(locator_call, name="template-qwen-max-locator")
         # One owner per question, fixed before any Max call; one shard keeps
         # the single full-solve request unchanged.
         solver_plan = solver_shards.plan_shards(one_three.question_contract(hierarchy),
@@ -840,7 +851,8 @@ async def recognize_directory_template(image_path: str, *, template_mode: str, l
             pending.append(leaf["question_number"])
     diagnostics = {"strategy": one_three.STRATEGY, "education_stage": stage,
                    "model": "qwen3.8-max", "hierarchy_model": "qwen3.8-flash",
-                   "coarse_locator_model": "qwen3.8-flash", "request_count": 4 + len(solver_plan),
+                   "coarse_locator_model": "qwen3.8-flash", "request_count": 3 + len(solver_plan) + (sum(tile["attempts"] for tile in locator_report) or 1),
+                   "locator_tiles": len(locator_plan), "locator_tile_report": locator_report,
                    "solver_shards": len(solver_plan), "solver_shard_plan": solver_plan,
                    "solver_shard_report": solver_report,
                    "hierarchy_contract_version": hierarchy.get("question_identity_version"),
