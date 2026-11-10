@@ -39,24 +39,46 @@ _COARSE_NOTE = ("\n以下是按量 Flash 的非权威粗定位提示（已换算
                 "不得照抄其边界，必须重新核对原图、题号、作答框和作图区，并按本合同返回最终权威坐标：")
 
 
-def configured_tile_questions(hierarchy: dict) -> int:
-    """Largest number of questions per locator tile; 0 keeps one page request."""
+def configured_limits(hierarchy: dict) -> dict:
+    """The two tile limits as ``plan_tiles`` keywords; 0 questions keeps one page request."""
     import config
-    if hierarchy.get("question_identity_version") != 4:
-        return 0
-    return config.OCR_TEMPLATE_LOCATOR_TILE_QUESTIONS
+    shared = hierarchy.get("question_identity_version") == 4
+    return {"max_questions": config.OCR_TEMPLATE_LOCATOR_TILE_QUESTIONS if shared else 0,
+            "max_span": float(config.OCR_TEMPLATE_LOCATOR_TILE_SPAN)}
 
 
-def _chunks(numbers: list[str], limit: int) -> list[list[str]]:
-    """Consecutive runs of near-equal size, none longer than ``limit``."""
-    count = math.ceil(len(numbers) / limit)
-    base, extra = divmod(len(numbers), count)
-    result, start = [], 0
-    for index in range(count):
-        size = base + (1 if index < extra else 0)
-        result.append(numbers[start:start + size])
-        start += size
-    return result
+def _runs(numbers: list[str], boxes: dict, limit: int, max_span: float) -> list[list[str]]:
+    """Fewest consecutive runs within both limits, then the most even ones.
+
+    A run's load is the larger of its share of ``limit`` questions and its
+    share of ``max_span`` page height (0 = no height limit). The slowest tile
+    sets the wait of the whole locate, so among the splits with the fewest
+    runs the one with the smallest largest load wins. A single question taller
+    than ``max_span`` cannot be split and keeps a run of its own.
+    """
+    def load(start: int, stop: int) -> float:
+        owned = [boxes[number] for number in numbers[start:stop]]
+        span = max(box[3] for box in owned) - min(box[1] for box in owned)
+        weight = max((stop - start) / limit, span / max_span if max_span else 0.0)
+        return min(weight, 1.0) if stop - start == 1 else weight
+
+    total = len(numbers)
+    # best[j]: (largest load, spread, negated cuts) over splits of the first j
+    # questions. Negated cuts break exact ties towards the longer first run.
+    best: list = [(0.0, 0.0, ())] + [None] * total
+    for count in range(1, total + 1):
+        step: list = [None] * (total + 1)
+        for stop in range(count, total + 1):
+            step[stop] = min(
+                (max(best[start][0], weight), round(best[start][1] + weight * weight, 9),
+                 best[start][2] + (-stop,))
+                for start in range(count - 1, stop) if best[start] is not None
+                for weight in [load(start, stop)])
+        best = step
+        if best[total][0] <= 1.0 + 1e-9 or count == total:
+            break
+    cuts = [0] + [-cut for cut in best[total][2]]
+    return [numbers[start:stop] for start, stop in zip(cuts, cuts[1:])]
 
 
 def _tile_box(boxes: list[list[float]], column: dict, *, width: int, height: int) -> list[int]:
@@ -76,8 +98,12 @@ def _tile_box(boxes: list[list[float]], column: dict, *, width: int, height: int
             min(width, math.ceil(x2 * width / 1000)), min(height, math.ceil(y2 * height / 1000))]
 
 
-def plan_tiles(manifest, coarse, columns, *, width: int, height: int, max_questions: int) -> list[dict]:
+def plan_tiles(manifest, coarse, columns, *, width: int, height: int, max_questions: int,
+               max_span: float = 0.0) -> list[dict]:
     """Assign every question to one tile: by column, then in reading-order runs.
+
+    A run holds at most ``max_questions`` questions and, when ``max_span`` is
+    set, at most that much page-normalized height of coarse boxes.
 
     Returns ``[]`` (keep the single page request) when tiling is off, the
     coarse boxes are missing or do not name exactly the directory questions,
@@ -97,7 +123,8 @@ def plan_tiles(manifest, coarse, columns, *, width: int, height: int, max_questi
         by_column.setdefault(index, []).append(number)
     tiles = [{"numbers": owned,
               "box": _tile_box([boxes[n] for n in owned], columns[index], width=width, height=height)}
-             for index in sorted(by_column) for owned in _chunks(by_column[index], max_questions)]
+             for index in sorted(by_column)
+             for owned in _runs(by_column[index], boxes, max_questions, max_span)]
     return tiles if len(tiles) > 1 else []
 
 

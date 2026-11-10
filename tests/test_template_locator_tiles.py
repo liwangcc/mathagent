@@ -157,12 +157,44 @@ def test_no_plan_keeps_the_single_page_request(case):
     assert tiles.plan_tiles(manifest, coarse, COLUMNS, width=1000, height=1500, max_questions=limit) == []
 
 
+def uneven_column(heights):
+    """One column of single-slot questions stacked with the given heights."""
+    tops = [sum(heights[:index]) for index in range(len(heights))]
+    coarse = {"coordinate_space": "normalized_1000_v1", "questions": [
+        {"question_number": str(index + 1), "bbox": [20, top, 480, top + high]}
+        for index, (top, high) in enumerate(zip(tops, heights))]}
+    return v4_contract((1,) * len(heights)), coarse
+
+
+def test_a_tall_run_is_split_even_when_it_is_within_the_question_limit():
+    # Five tall questions then ten short ones: by count alone the first tile
+    # would carry most of the page height.
+    manifest, coarse = uneven_column([100] * 5 + [30] * 10)
+    column = [{"column_index": 1, "x1_1000": 0.0, "x2_1000": 1000.0}]
+    plan = lambda **limits: [len(tile["numbers"]) for tile in tiles.plan_tiles(  # noqa: E731
+        manifest, coarse, column, width=1000, height=1000, **limits)]
+    assert plan(max_questions=8) == [8, 7]
+    # 800 of height needs three runs of at most 300. Heights 300 / 290 / 210:
+    # of the splits that fit, this one leaves the two later tiles most even.
+    assert plan(max_questions=8, max_span=300) == [3, 5, 7]
+    # The height limit alone is enough to split; the question limit still holds.
+    assert plan(max_questions=20, max_span=450) == [4, 11]
+
+
+def test_a_question_taller_than_the_span_limit_keeps_a_tile_of_its_own():
+    manifest, coarse = uneven_column([600, 100, 100])
+    column = [{"column_index": 1, "x1_1000": 0.0, "x2_1000": 1000.0}]
+    plan = tiles.plan_tiles(manifest, coarse, column, width=1000, height=1000, max_questions=8, max_span=250)
+    assert [tile["numbers"] for tile in plan] == [["1"], ["2", "3"]]
+
+
 def test_tiling_is_configured_per_page_and_only_for_shared_slots(monkeypatch):
     monkeypatch.setattr(config, "OCR_TEMPLATE_LOCATOR_TILE_QUESTIONS", 8)
-    assert tiles.configured_tile_questions({"question_identity_version": 4}) == 8
-    assert tiles.configured_tile_questions({"question_identity_version": 3}) == 0
+    monkeypatch.setattr(config, "OCR_TEMPLATE_LOCATOR_TILE_SPAN", 400)
+    assert tiles.configured_limits({"question_identity_version": 4}) == {"max_questions": 8, "max_span": 400.0}
+    assert tiles.configured_limits({"question_identity_version": 3})["max_questions"] == 0
     monkeypatch.setattr(config, "OCR_TEMPLATE_LOCATOR_TILE_QUESTIONS", 0)
-    assert tiles.configured_tile_questions({"question_identity_version": 4}) == 0
+    assert tiles.configured_limits({"question_identity_version": 4})["max_questions"] == 0
 
 
 def located_row(number, box, regions, *, drawing=(), anchor=None):
@@ -325,6 +357,9 @@ def run_pipeline_with(tmp_path, monkeypatch, tile_questions):
     """Real _request, receivers and grid; only the Flash and Max transports are faked."""
     from services import analyzer
     monkeypatch.setattr(config, "OCR_TEMPLATE_LOCATOR_TILE_QUESTIONS", tile_questions)
+    # Tiles by question count only: the drawn boxes are placed clear of these
+    # tiles' grid lines, which the colour-matching fake cannot see through.
+    monkeypatch.setattr(config, "OCR_TEMPLATE_LOCATOR_TILE_SPAN", 0)
     monkeypatch.setattr(config, "OCR_TEMPLATE_SOLVER_SHARDS", 1)
     source = tmp_path / f"paper-{tile_questions}.png"
     draw_page(source)
@@ -459,15 +494,18 @@ def test_without_coarse_boxes_the_page_is_located_in_one_request(tmp_path, monke
     assert result["template_ocr_diagnostics"]["locator_tiles"] == 0
 
 
-@pytest.mark.parametrize("value", ["1", "21", "-1"])
-def test_config_rejects_tile_sizes_other_than_off_or_two_to_twenty(tmp_path, value):
+@pytest.mark.parametrize("name,value", [
+    ("OCR_TEMPLATE_LOCATOR_TILE_QUESTIONS", "1"), ("OCR_TEMPLATE_LOCATOR_TILE_QUESTIONS", "21"),
+    ("OCR_TEMPLATE_LOCATOR_TILE_QUESTIONS", "-1"),
+    ("OCR_TEMPLATE_LOCATOR_TILE_SPAN", "149"), ("OCR_TEMPLATE_LOCATOR_TILE_SPAN", "1001")])
+def test_config_rejects_tile_limits_outside_their_ranges(tmp_path, name, value):
     project_root = Path(__file__).resolve().parents[1]
     env = os.environ.copy()
-    env["OCR_TEMPLATE_LOCATOR_TILE_QUESTIONS"] = value
+    env[name] = value
     env["PYTHON_DOTENV_DISABLED"] = "1"
     env["JWT_SECRET"] = "test-only-jwt-secret-with-at-least-32-characters"
     env["PYTHONPATH"] = str(project_root)
     completed = subprocess.run([sys.executable, "-c", "import config"], cwd=tmp_path, env=env,
                                text=True, capture_output=True)
     assert completed.returncode != 0
-    assert "OCR_TEMPLATE_LOCATOR_TILE_QUESTIONS" in completed.stderr
+    assert name in completed.stderr

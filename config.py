@@ -266,6 +266,9 @@ OCR_TEMPLATE_SOLVER_SHARDS = int(os.environ.get("OCR_TEMPLATE_SOLVER_SHARDS", "2
 # 每块是一张带独立 0–1000 网格的裁图，模型报本图坐标，后端换算回整页后按题号拼接。
 # 各块并行占用上面的 Max 在途名额，块数多于名额时排队。
 OCR_TEMPLATE_LOCATOR_TILE_QUESTIONS = int(os.environ.get("OCR_TEMPLATE_LOCATOR_TILE_QUESTIONS", "0"))
+# 分块开启时，每块所含题目的粗定位框在整页 0–1000 高度上最多跨多少；0 表示不限高度，只按题数切。
+# 整体等待时间由最慢的一块决定，所以切块同时受题数和高度约束，并在块数最少的切法里取最均衡的一种。
+OCR_TEMPLATE_LOCATOR_TILE_SPAN = int(os.environ.get("OCR_TEMPLATE_LOCATOR_TILE_SPAN", "350"))
 OCR_TEMPLATE_GPT_FALLBACK_FIRST_EVENT_TIMEOUT_S = float(
     os.environ.get("OCR_TEMPLATE_GPT_FALLBACK_FIRST_EVENT_TIMEOUT_S", "60")
 )
@@ -385,6 +388,8 @@ if not 1 <= OCR_TEMPLATE_SOLVER_SHARDS <= 4:
     raise RuntimeError("OCR_TEMPLATE_SOLVER_SHARDS 必须在 1 到 4 之间")
 if OCR_TEMPLATE_LOCATOR_TILE_QUESTIONS != 0 and not 2 <= OCR_TEMPLATE_LOCATOR_TILE_QUESTIONS <= 20:
     raise RuntimeError("OCR_TEMPLATE_LOCATOR_TILE_QUESTIONS 必须为 0（不分块）或 2 到 20")
+if OCR_TEMPLATE_LOCATOR_TILE_SPAN != 0 and not 150 <= OCR_TEMPLATE_LOCATOR_TILE_SPAN <= 1000:
+    raise RuntimeError("OCR_TEMPLATE_LOCATOR_TILE_SPAN 必须为 0（不限高度）或 150 到 1000")
 if OCR_TEACHER_WAVE_SIZE < 1 or OCR_ACTIVE_TEACHER_LIMIT < 1:
     raise RuntimeError("OCR 教师波次与活跃教师上限必须为正数")
 if OCR_PER_TEACHER_LIMIT < 1:

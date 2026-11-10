@@ -739,7 +739,7 @@ async def recognize_directory_template(image_path: str, *, template_mode: str, l
         # a plan the single page request stays exactly as it was.
         locator_plan = locator_tiles.plan_tiles(
             one_three.question_contract(hierarchy), coarse, columns, width=width, height=height,
-            max_questions=locator_tiles.configured_tile_questions(hierarchy))
+            **locator_tiles.configured_limits(hierarchy))
         locator_report = []
         locator_call = (locator_tiles.locate_in_tiles(
             _request, page, temp, one_three.question_contract(hierarchy), coarse, locator_plan,
