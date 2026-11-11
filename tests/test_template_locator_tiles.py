@@ -269,7 +269,9 @@ def run_two_tiles(tmp_path, answer_boxes_for_tile_one, fail_tile=None):
 
     async def run():
         return await asyncio.wait_for(tiles.locate_in_tiles(
-            request, page, tmp_path, manifest, coarse, plan, phase=PHASE, max_tokens=100, report=report), 10)
+            request, page, tmp_path, manifest, coarse, plan,
+            columns=[{"column_index": 1, "x1_1000": 0.0, "x2_1000": 1000.0}],
+            phase=PHASE, max_tokens=100, report=report), 10)
 
     try:
         return asyncio.run(run()), calls, report, cancelled
@@ -283,7 +285,8 @@ def test_a_box_at_a_cut_edge_is_asked_again_on_a_wider_tile(tmp_path):
     first = [call for call in calls if call["expected_ids"] == ("1",)]
     assert [call["stage_key"] for call in first] == [f"{PHASE}#1", f"{PHASE}#1-wide"]
     assert [call["size"] for call in first] == [(400, 300), (400, 372)]
-    assert "整页400×300" in first[0]["prompt"] and "整页400×372" in first[1]["prompt"]
+    # Each request is told the crop it actually carries: 300 and then 372 of the page's 900 px.
+    assert "纵向0%–33%" in first[0]["prompt"] and "纵向0%–41%" in first[1]["prompt"]
     assert report[0] == {"question_numbers": ["1"], "box_px": [0, 0, 400, 372], "attempts": 2, "edge_contact": {}}
     assert report[1]["attempts"] == 1
     assert result["needs_review"] == []
@@ -308,13 +311,11 @@ def test_one_failed_tile_cancels_the_others_and_fails_the_locate(tmp_path):
     assert cancelled == [f"{PHASE}#2"]
 
 
-def test_tile_prompt_is_the_single_column_page_prompt_for_its_own_questions():
+def test_tile_prompt_lists_its_own_questions_with_hints_and_columns_in_tile_coordinates():
     manifest = v4_contract(COUNTS)
     owned = manifest[9:12]
-    prompt = tiles.tile_prompt(owned, coarse_payload(), [470, 660, 1000, 1500], width=1000, height=1500)
-    base = contract.max_owned.locator_prompt(
-        owned, width=530, height=840, columns=[{"column_index": 1, "x1_1000": 0.0, "x2_1000": 1000.0}])
-    assert prompt.startswith(base)
+    prompt = tiles.tile_prompt(owned, coarse_payload(), [470, 660, 1000, 1500], columns=COLUMNS,
+                               width=1000, height=1500)
     assert [row["q_id"] for row in json.loads(re.search(r"\n目录：(.*)\n返回", prompt).group(1))] == ["Q10", "Q11", "Q12"]
     hints = json.loads(prompt.rsplit("：", 1)[1])
     # Page boxes [500, 500.., 1000, 666..] etc. re-expressed in the tile's own 0..1000.
@@ -322,6 +323,14 @@ def test_tile_prompt_is_the_single_column_page_prompt_for_its_own_questions():
         {"question_number": "10", "bbox": [57, 107, 1000, 405]},
         {"question_number": "11", "bbox": [57, 405, 1000, 702]},
         {"question_number": "12", "bbox": [57, 702, 1000, 1000]}]}
+    # The page's column cut at 500 is where the hints start: the padding left of it shows the other column.
+    assert json.loads(re.search(r"\n分栏（本图坐标）：(.*)\n目录", prompt).group(1)) == [
+        {"column_index": 1, "x1_1000": 0, "x2_1000": 57}, {"column_index": 2, "x1_1000": 57, "x2_1000": 1000}]
+    # A column the tile does not show is not listed.
+    left = tiles.tile_prompt(manifest[0:3], coarse_payload(), [0, 0, 480, 840], columns=COLUMNS,
+                             width=1000, height=1500)
+    assert json.loads(re.search(r"\n分栏（本图坐标）：(.*)\n目录", left).group(1)) == [
+        {"column_index": 1, "x1_1000": 0, "x2_1000": 1000}]
 
 
 def test_merge_rebuilds_directory_order_and_rejects_gaps_or_overlap():
@@ -436,10 +445,11 @@ def test_tiled_locate_produces_the_single_request_template(tmp_path, monkeypatch
         {"question_numbers": ["4", "5", "6"], "box_px": [0, 660, 530, 1500], "attempts": 1, "edge_contact": {}},
         {"question_numbers": ["7", "8", "9"], "box_px": [470, 0, 1000, 840], "attempts": 1, "edge_contact": {}},
         {"question_numbers": ["10", "11", "12"], "box_px": [470, 660, 1000, 1500], "attempts": 1, "edge_contact": {}}]
-    # One image per request, described as that image; no page size, no column list of the page.
+    # One image per request, described in its own coordinates: no pixel size of the crop
+    # or the page, and the page's columns only as they fall inside the crop.
     assert sorted(call["sizes"] for call in calls) == [[(530, 840)]] * 4
-    assert all("整页530×840" in call["prompt"] and "1000×1500" not in call["prompt"] for call in calls)
-    assert all('"x2_1000":500' not in call["prompt"] for call in calls)
+    assert not any(re.search(r"\d+×\d+", call["prompt"]) for call in calls)
+    assert all("分栏（本图坐标）" in call["prompt"] and '"x2_1000":500' not in call["prompt"] for call in calls)
     owned = sorted([row["q_id"] for row in json.loads(re.search(r"\n目录：(.*)\n返回", call["prompt"]).group(1))]
                    for call in calls)
     assert owned == sorted([f"Q{n}" for n in numbers] for numbers in (range(1, 4), range(4, 7), range(7, 10), range(10, 13)))

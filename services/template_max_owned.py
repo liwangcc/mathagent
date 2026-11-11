@@ -10,6 +10,7 @@ import json
 import math
 import re
 import unicodedata
+from typing import NamedTuple
 
 SLOT_SOURCE = "max_locator_v3"
 SHARED_SLOT_SOURCE = "flash_slots_v4"
@@ -102,25 +103,40 @@ def _box(raw):
     return [float(v) for v in raw]
 
 
+class LocatorFrame(NamedTuple):
+    """How one locator request names the picture it carries and that picture's coordinates."""
+    image: str       # what the contract calls the picture
+    space: str       # what it calls a coordinate of that picture
+    columns: str     # label of the column list
+    definition: str  # the sentence that fixes origin, extent and grid
+
+
 def locator_prompt(manifest, *, width, height, columns):
+    """The whole-page prompt: one grid stamped on the page, page coordinates throughout."""
+    return framed_locator_prompt(manifest, columns, LocatorFrame(
+        image="原图", space="整页坐标", columns="分栏",
+        definition=f"整页{width}×{height}，坐标normalized_1000_v1，网格使用整页坐标。"))
+
+
+def framed_locator_prompt(manifest, columns, frame):
+    """The locator contract worded for ``frame``; what must be returned does not depend on it."""
     shared = _shared_mode(manifest)
     placement = ("每个slots项对应一个regions项，slot_id沿用目录，区域包含该项完整作答位置及已有笔迹。"
                  if shared else "每个独立填写位置一个框；一题中并列的多道计算式逐式框选；连续演算区一个框。框包含完整作答位置及其中已有笔迹。")
     binding = (SHARED_GUIDE if shared else KEY_GUIDE + "drawing区域的answer_key为null。")
     region_example = ('{"slot_id":"1[1]","kind":"answer","bbox":[100,200,400,300]}'
                       if shared else '{"kind":"answer","bbox":[100,200,400,300],"answer_key":{"part":"","anchor":"","blank_index":0}}')
-    return (
-        f"按目录在原图中定位学生需要完成的作答区域。整页{width}×{height}，坐标normalized_1000_v1，网格使用整页坐标。"
+    rules = (
+        "按目录在原图中定位学生需要完成的作答区域。" + frame.definition +
         "按目录逐项返回整题：question_number取q_id去掉Q后的编号；原图中该题号下的作答位置列在regions内。"
         "每题完整返回题型、印刷题号框、choice_mode和按阅读顺序排列的regions。"
         "question_type取choice、fill、solve或drawing，choice_mode取single、multiple或unknown。每题regions为1至20项，逐项沿用作答位，不截断。"
         "kind=answer表示文字、数字或选项填写区域，kind=drawing表示学生需新增绘制、涂色或标注的区域。"
         + placement +
         "结合题目目标和底图已有内容确定学生还需新增笔迹的作图任务；已表达题意的印刷示意属于题干条件。"
-        "作图框保留完成判定所需的底图和参照。label_anchor为作图题的题号标记点[x,y]，必须是有效整页坐标，且x不得大于第一个作图框的左边界；允许贴左边界，不允许落入作图区内部。涂色和图文混合题也遵守此规则；无作图时为null。不得移动或缩小作图框来迎合锚点要求；无法确定时列入needs_review。"
-        + binding +
-        f"\n分栏：{json.dumps(columns, ensure_ascii=False, separators=(',', ':'))}"
-        f"\n目录：{json.dumps(manifest, ensure_ascii=False, separators=(',', ':'))}"
+        "作图框保留完成判定所需的底图和参照。label_anchor为作图题的题号标记点[x,y]，必须是有效" + frame.space + "，且x不得大于第一个作图框的左边界；允许贴左边界，不允许落入作图区内部。涂色和图文混合题也遵守此规则；无作图时为null。不得移动或缩小作图框来迎合锚点要求；无法确定时列入needs_review。"
+        + binding)
+    reply = (
         '\n返回一个JSON对象，结构示例（坐标须按原图实测）：{"coordinate_space":"normalized_1000_v1","questions":['
         '{"question_number":"1","question_number_bbox":[50,180,80,210],'
         '"question_type":"fill","choice_mode":"unknown",'
@@ -133,6 +149,13 @@ def locator_prompt(manifest, *, width, height, columns):
            + UNMARKED_POSITION_GUIDE
            if shared else "")
     )
+    # The contract text says 原图 for the request's picture; a frame may call it otherwise.
+    # Only the wording is renamed, never the directory or the column list.
+    rules, reply = (part.replace("原图", frame.image) for part in (rules, reply))
+    return (rules
+            + f"\n{frame.columns}：{json.dumps(columns, ensure_ascii=False, separators=(',', ':'))}"
+            + f"\n目录：{json.dumps(manifest, ensure_ascii=False, separators=(',', ':'))}"
+            + reply)
 
 
 def build_prompts(manifest, *, education_stage, locator=None):

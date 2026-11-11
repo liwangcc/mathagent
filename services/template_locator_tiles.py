@@ -3,7 +3,9 @@
 One Max locator request for a whole page is slow, and a crop of a page-stamped
 grid loses the axis labels of the other edge. Here every request sees exactly
 one crop that carries its own complete 0..1000 grid, so the model reports the
-coordinates of the image it is looking at. The backend then maps each box back
+coordinates of the image it is looking at. Its prompt names that frame and no
+other: hints and columns are converted into it, and no pixel size or page
+coordinate appears beside it. The backend then maps each box back
 to the page with fixed arithmetic and joins the tiles by question number: the
 result has the shape and coordinate space of the single-request locator, so
 template saving and later grading read it unchanged.
@@ -33,10 +35,9 @@ _EDGE = 2.0
 # Extra page-normalized room given to a clipped side before the single retry.
 _WIDEN = 80.0
 _SIDES = ("left", "top", "right", "bottom")
-_TILE_NOTE = ("\n本图是试卷的局部裁图，整页即指本图，坐标与网格均以本图为准。"
-              "只定位目录所列题目；图中露出的其他题目不属于本请求，不返回。")
+_TILE_NOTE = "\n只定位目录所列题目；本图中露出的其他题目不属于本请求，不返回。"
 _COARSE_NOTE = ("\n以下是按量 Flash 的非权威粗定位提示（已换算为本图坐标），仅用于帮助你快速找到题目；"
-                "不得照抄其边界，必须重新核对原图、题号、作答框和作图区，并按本合同返回最终权威坐标：")
+                "不得照抄其边界，必须重新核对本图、题号、作答框和作图区，并按本合同返回最终权威坐标：")
 
 
 def configured_limits(hierarchy: dict) -> dict:
@@ -199,12 +200,38 @@ def widen(tile_box, sides, *, width: int, height: int) -> list[int]:
             min(height, bottom + dy) if "bottom" in sides else bottom]
 
 
-def tile_prompt(owned, coarse, tile_box, *, width: int, height: int) -> str:
-    """The single-column page prompt, addressed to this tile and its questions."""
+def _frame(tile_box, *, width: int, height: int) -> max_owned.LocatorFrame:
+    """The one frame a tile request names: the crop's own 0..1000.
+
+    No pixel size is stated. A coordinate read off the grid is final; a width
+    in pixels beside it invites normalizing the reading once more, which is
+    how a whole tile's boxes came back shrunk towards its left edge. The
+    crop's place on the page is given in percent, a unit no coordinate uses.
+    """
     left, top, right, bottom = tile_box
-    prompt = max_owned.locator_prompt(
-        owned, width=right - left, height=bottom - top,
-        columns=[{"column_index": 1, "x1_1000": 0.0, "x2_1000": 1000.0}]) + _TILE_NOTE
+    share = lambda value, size: round(value * 100 / size)  # noqa: E731
+    return max_owned.LocatorFrame(
+        image="本图", space="本图坐标", columns="分栏（本图坐标）",
+        definition=(
+            "坐标normalized_1000_v1，一律以本图为准：本图左上角为(0,0)，右下角为(1000,1000)，"
+            "x按本图宽度、y按本图高度归一；图上网格的刻度就是要返回的坐标，按刻度直接读数，不再做任何换算。"
+            f"本图是试卷整页的局部裁图，取自整页横向{share(left, width)}%–{share(right, width)}%、"
+            f"纵向{share(top, height)}%–{share(bottom, height)}%的部分；此位置只供了解版面，不参与坐标。"))
+
+
+def _columns_in_tile(columns, tile_box, *, width: int, height: int) -> list[dict]:
+    """The page columns that show in the tile, in the tile's own 0..1000."""
+    spans = [(column, _to_tile([float(column["x1_1000"]), 0.0, float(column["x2_1000"]), 1000.0],
+                               tile_box, width=width, height=height)) for column in columns]
+    return [{"column_index": column["column_index"], "x1_1000": span[0], "x2_1000": span[2]}
+            for column, span in spans if span[2] > span[0]]
+
+
+def tile_prompt(owned, coarse, tile_box, *, columns, width: int, height: int) -> str:
+    """The locator prompt for one tile; every coordinate it names is the tile's own."""
+    prompt = max_owned.framed_locator_prompt(
+        owned, _columns_in_tile(columns, tile_box, width=width, height=height),
+        _frame(tile_box, width=width, height=height)) + _TILE_NOTE
     numbers = {row["q_id"][1:] for row in owned}
     hints = [{"question_number": row["question_number"],
               "bbox": _to_tile(row["bbox"], tile_box, width=width, height=height)}
@@ -252,7 +279,7 @@ def open_report(plan, report: list) -> None:
 
 
 async def locate_tile(request, page, directory, manifest, coarse, plan, index: int, *,
-                      phase: str, max_tokens: int, report: list) -> dict:
+                      columns, phase: str, max_tokens: int, report: list) -> dict:
     """Locate tile ``index`` of ``plan`` in page space and update ``report[index]``.
 
     A tile whose answer reaches a cut edge is asked once more with that side
@@ -267,7 +294,7 @@ async def locate_tile(request, page, directory, manifest, coarse, plan, index: i
     for attempt in (1, 2):
         path = _save_tile(page, box, directory, f"{index + 1}-{attempt}")
         located = await request(
-            [path], tile_prompt(owned, coarse, box, width=width, height=height), phase,
+            [path], tile_prompt(owned, coarse, box, columns=columns, width=width, height=height), phase,
             lambda raw: max_owned.receive_locator_candidates(raw, owned),
             max_tokens=max_tokens, reasoning_effort="high", expected_ids=tuple(tile["numbers"]),
             stage_key=f"{phase}#{index + 1}" + ("" if attempt == 1 else "-wide"))
@@ -295,15 +322,16 @@ async def gather_tiles(tasks: list) -> list:
 
 
 async def locate_in_tiles(request, page, directory, manifest, coarse, plan, *,
-                          phase: str, max_tokens: int, report: list) -> dict:
+                          columns, phase: str, max_tokens: int, report: list) -> dict:
     """Run one ``request`` per tile concurrently and stitch the page result.
 
     One failed tile cancels the others and fails the locate, exactly like a
-    failed single request. ``report`` receives one entry per tile.
+    failed single request. ``report`` receives one entry per tile; ``columns``
+    are the page's, each tile is told the part of them it shows.
     """
     open_report(plan, report)
     parts = await gather_tiles([
-        asyncio.create_task(locate_tile(request, page, directory, manifest, coarse, plan, index,
+        asyncio.create_task(locate_tile(request, page, directory, manifest, coarse, plan, index, columns=columns,
                                         phase=phase, max_tokens=max_tokens, report=report),
                             name=f"template-qwen-max-locator-{index + 1}")
         for index in range(len(plan))])

@@ -743,7 +743,7 @@ async def recognize_directory_template(image_path: str, *, template_mode: str, l
         locator_report = []
         locator_call = (locator_tiles.locate_in_tiles(
             _request, page, temp, one_three.question_contract(hierarchy), coarse, locator_plan,
-            phase="template-directory-v1", max_tokens=one_three.MAX_TOKENS, report=locator_report,
+            columns=columns, phase="template-directory-v1", max_tokens=one_three.MAX_TOKENS, report=locator_report,
         ) if locator_plan else _request(
             image_paths, locator_prompt, "template-directory-v1",
             lambda raw: (one_three.max_owned.receive_locator_candidates(raw, one_three.question_contract(hierarchy))

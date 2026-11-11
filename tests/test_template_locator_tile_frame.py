@@ -92,7 +92,8 @@ def locate_page(directory, reader=read_exactly):
         return validator(reader(images, prompt))
 
     return asyncio.run(tiles.locate_in_tiles(
-        request, drawn_page(), directory, manifest, COARSE, plan, phase=PHASE, max_tokens=100, report=[]))
+        request, drawn_page(), directory, manifest, COARSE, plan, columns=COLUMNS,
+        phase=PHASE, max_tokens=100, report=[]))
 
 
 def worst_offset_px(result):
@@ -193,3 +194,73 @@ def test_a_tile_mapped_from_any_other_origin_or_size_misses_the_drawn_boxes(tmp_
     """The pixel check above is sensitive to each way a tile's frame can be mistaken."""
     fault(monkeypatch)
     assert worst_offset_px(locate_page(tmp_path)) > 10.0
+
+
+def drifted_tile_prompt():
+    manifest = v4_contract((1,) * 25)
+    return tiles.tile_prompt(manifest[5:10], COARSE, MEASURED_TILES[1][1], columns=COLUMNS,
+                             width=PAGE[0], height=PAGE[1])
+
+
+def test_the_tile_prompt_names_the_tiles_own_coordinates_and_no_other():
+    prompt = drifted_tile_prompt()
+    # The wording alone: without the column list, the directory and the hints.
+    wording = re.sub(r"\n分栏（本图坐标）：.*\n目录：.*\n返回", "\n返回", prompt).rsplit("：", 1)[0]
+    assert "本图左上角为(0,0)，右下角为(1000,1000)" in wording
+    assert not re.search(r"\d+×\d+", wording)  # no pixel size, of the crop or of the page
+    assert "原图" not in wording and "整页坐标" not in wording
+    # The page is mentioned once, to say where the crop [0, 907, 1342, 1564] lies on it, in percent.
+    assert wording.count("整页") == 2 and "取自整页横向0%–65%、纵向58%–100%的部分" in wording
+    # Columns and hints are in the tile's 0..1000 as well: the page's cut at 514 falls at 791 of 1342 px.
+    assert json.loads(re.search(r"\n分栏（本图坐标）：(.*)\n目录", prompt).group(1)) == [
+        {"column_index": 1, "x1_1000": 0, "x2_1000": 791}, {"column_index": 2, "x1_1000": 791, "x2_1000": 1000}]
+    assert json.loads(prompt.rsplit("：", 1)[1])["questions"][0] == {"question_number": "6", "bbox": [62, 143, 954, 298]}
+
+
+# Left edges of the answer boxes of questions 6-10 in the drifted run, page pixels.
+DRIFTED_LEFT = {"6": 322, "7": 382, "8": 342, "9": 369, "10": 396}
+
+
+def read_then_normalize_by_a_stated_width(image_paths, prompt):
+    """The reader the drifted run behaved like.
+
+    It reads the grid correctly, then takes a pixel size stated in the prompt
+    for the unit of that reading and normalizes once more. Only x of a crop
+    wider than 1000 px can be mistaken so: a reading of up to 1000 is a
+    possible pixel column of 1342, but not a possible pixel row of 657.
+    """
+    located = read_exactly(image_paths, prompt)
+    stated = re.search(r"(\d+)×(\d+)", prompt)
+    if stated and int(stated.group(1)) > 1000:
+        shrink = 1000 / int(stated.group(1))
+        for question in located["questions"]:
+            boxes = [question["question_number_bbox"]] + [region["bbox"] for region in question["regions"]]
+            for box in boxes:
+                box[0], box[2] = box[0] * shrink, box[2] * shrink
+    return located
+
+
+def told_the_crop_size(reader):
+    """Put back the opening tile prompts had on 2026-11-11: the crop's pixel size as the page's."""
+    def read(image_paths, prompt):
+        with Image.open(image_paths[0]) as image:
+            width, height = image.size
+        return reader(image_paths, f"整页{width}×{height}，坐标normalized_1000_v1，网格使用整页坐标。" + prompt)
+    return read
+
+
+def answer_left_px(result):
+    return {question["question_number"]: question["regions"][0][0] * PAGE[0] / 1000
+            for question in result["questions"] if question["question_number"] in DRIFTED_LEFT}
+
+
+def test_a_reader_that_normalizes_by_a_stated_pixel_width_finds_none_in_the_tile_prompt(tmp_path):
+    (tmp_path / "then").mkdir()
+    (tmp_path / "now").mkdir()
+    # Told the crop's pixel size, this reader lands where the drifted run did, a few pixels apart.
+    then = answer_left_px(locate_page(tmp_path / "then", told_the_crop_size(read_then_normalize_by_a_stated_width)))
+    assert then == pytest.approx(DRIFTED_LEFT, abs=6)
+    # The tile prompt states no pixel size, so the same reader has nothing to divide by.
+    now = locate_page(tmp_path / "now", read_then_normalize_by_a_stated_width)
+    assert worst_offset_px(now) <= ONE_PIXEL
+    assert answer_left_px(now) == pytest.approx({number: left for number, (left, _) in REFERENCE.items()}, abs=ONE_PIXEL)
