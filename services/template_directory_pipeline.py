@@ -754,9 +754,9 @@ async def recognize_directory_template(image_path: str, *, template_mode: str, l
         ))
         locator_task = asyncio.create_task(locator_call, name="template-qwen-max-locator")
         # One owner per question, fixed before any Max call; one shard keeps
-        # the single full-solve request unchanged.
+        # the single full-solve request unchanged. The solver takes the Max permits the locator's requests leave free.
         solver_plan = solver_shards.plan_shards(one_three.question_contract(hierarchy),
-                                                solver_shards.configured_shard_count(hierarchy))
+                                                solver_shards.configured_shard_count(hierarchy, len(locator_plan)))
         solver_report = []
         solver_call = (solver_shards.solve_in_shards(
             _request, detailed_images, solver_prompt, one_three.question_contract(hierarchy), solver_plan,

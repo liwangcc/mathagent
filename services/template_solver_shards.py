@@ -59,14 +59,19 @@ def plan_shards(manifest, shard_count: int) -> list[list[str]]:
                   key=lambda shard: position[shard[0]])
 
 
-def configured_shard_count(hierarchy: dict) -> int:
-    """Configured shards, bounded by the Max in-flight gate the locator shares."""
+def configured_shard_count(hierarchy: dict, locator_requests: int = 1) -> int:
+    """Configured shards, bounded by the Max permits the locator leaves free.
+
+    Locator and solver start together behind one in-flight gate. The locator
+    holds one permit per tile (one for a single page request); the solver gets
+    what is left, up to the configured number, and never fewer than one. A
+    shard beyond the free permits would only wait behind the others.
+    """
     import config
     if hierarchy.get("question_identity_version") != 4:
         return 1
-    # The locator holds one Max permit; more shards than the rest would queue.
-    return max(1, min(config.OCR_TEMPLATE_SOLVER_SHARDS,
-                      config.OCR_TEMPLATE_GPT_FALLBACK_HARD_IN_FLIGHT - 1))
+    free = config.OCR_TEMPLATE_GPT_FALLBACK_HARD_IN_FLIGHT - max(1, int(locator_requests))
+    return max(1, min(config.OCR_TEMPLATE_SOLVER_SHARDS, free))
 
 
 def shard_prompt(prompt: str, owned) -> str:

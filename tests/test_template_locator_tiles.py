@@ -362,14 +362,16 @@ def rounded(value):
     return [rounded(item) for item in value] if isinstance(value, list) else value
 
 
-def run_pipeline_with(tmp_path, monkeypatch, tile_questions):
+def run_pipeline_with(tmp_path, monkeypatch, tile_questions, *, solver_shards=1, in_flight=None):
     """Real _request, receivers and grid; only the Flash and Max transports are faked."""
     from services import analyzer
     monkeypatch.setattr(config, "OCR_TEMPLATE_LOCATOR_TILE_QUESTIONS", tile_questions)
     # Tiles by question count only: the drawn boxes are placed clear of these
     # tiles' grid lines, which the colour-matching fake cannot see through.
     monkeypatch.setattr(config, "OCR_TEMPLATE_LOCATOR_TILE_SPAN", 0)
-    monkeypatch.setattr(config, "OCR_TEMPLATE_SOLVER_SHARDS", 1)
+    monkeypatch.setattr(config, "OCR_TEMPLATE_SOLVER_SHARDS", solver_shards)
+    if in_flight is not None:
+        monkeypatch.setattr(config, "OCR_TEMPLATE_GPT_FALLBACK_HARD_IN_FLIGHT", in_flight)
     source = tmp_path / f"paper-{tile_questions}.png"
     draw_page(source)
     raw_hierarchy, payloads = v4_payloads(COUNTS)
@@ -456,6 +458,26 @@ def test_tiled_locate_produces_the_single_request_template(tmp_path, monkeypatch
     stage_keys = {f"{PHASE}#{index}" for index in range(1, 5)}
     assert stage_keys <= set(progress["stages"]) and PHASE not in progress["stages"]
     assert all(progress["stages"][key]["status"] == "completed" for key in stage_keys)
+
+
+@pytest.mark.parametrize("tile_questions, in_flight, tiles, shards", [
+    (3, 8, 4, 4),   # four tiles leave four of eight permits: the solver takes all four
+    (3, 7, 4, 3),
+    (3, 6, 4, 2),
+    (3, 4, 4, 1),   # the tiles alone fill the gate: the solve stays one request
+    (2, 8, 6, 2),
+    (0, 8, 0, 4),   # one page request holds one permit; the configured four shards fit
+])
+def test_the_solver_takes_the_max_permits_the_locator_tiles_leave_free(
+        tmp_path, monkeypatch, tile_questions, in_flight, tiles, shards):
+    result, calls, _ = run_pipeline_with(tmp_path, monkeypatch, tile_questions, solver_shards=4, in_flight=in_flight)
+    assert "error" not in result
+    diagnostics = result["template_ocr_diagnostics"]
+    assert (diagnostics["locator_tiles"], diagnostics["solver_shards"]) == (tiles, shards)
+    assert len(calls) == max(1, tiles)
+    # Hierarchy, coarse locator and transcription, then the Max requests of both branches.
+    assert diagnostics["request_count"] == 3 + max(1, tiles) + shards
+    assert max(1, tiles) + shards <= max(in_flight, max(1, tiles) + 1)
 
 
 def test_without_coarse_boxes_the_page_is_located_in_one_request(tmp_path, monkeypatch):

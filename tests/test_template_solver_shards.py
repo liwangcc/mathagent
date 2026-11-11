@@ -66,6 +66,21 @@ def test_shard_count_leaves_one_max_permit_for_the_locator(monkeypatch, configur
     assert shards.configured_shard_count({"question_identity_version": 3}) == 1
 
 
+@pytest.mark.parametrize("configured, in_flight, tiles, expected", [
+    (4, 8, 5, 3),   # five tiles leave three permits: all three solve
+    (4, 8, 2, 4),   # never more than configured
+    (2, 8, 5, 2),
+    (4, 8, 7, 1), (4, 8, 8, 1), (4, 8, 12, 1),   # the solver always keeps one request
+    (4, 4, 5, 1),
+    (4, 8, 0, 4), (4, 8, 1, 4),   # no tiles: the single page request holds one permit
+])
+def test_shard_count_is_what_the_locator_tiles_leave_free(monkeypatch, configured, in_flight, tiles, expected):
+    monkeypatch.setattr(config, "OCR_TEMPLATE_SOLVER_SHARDS", configured)
+    monkeypatch.setattr(config, "OCR_TEMPLATE_GPT_FALLBACK_HARD_IN_FLIGHT", in_flight)
+    assert shards.configured_shard_count({"question_identity_version": 4}, tiles) == expected
+    assert shards.configured_shard_count({"question_identity_version": 3}, tiles) == 1
+
+
 def v4_contract(counts):
     raw, branches = v4_payloads(counts)
     return contract.question_contract(contract.receive_hierarchy(raw)), branches
