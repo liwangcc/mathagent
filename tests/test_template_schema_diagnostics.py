@@ -80,7 +80,7 @@ def test_unknowable_geometry_keeps_failing_closed(changes, rule):
 
 def test_prompt_matches_frozen_left_boundary_contract():
     _, manifest = locator([249, 205])
-    prompt = locator_prompt(manifest, width=1000, height=1000, columns=[])
+    prompt = locator_prompt(manifest, columns=[])
     assert "x不得大于第一个作图框的左边界" in prompt
     assert "涂色和图文混合题也遵守" in prompt
     assert "不以它相对作图区" not in prompt

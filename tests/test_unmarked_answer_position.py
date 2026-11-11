@@ -32,7 +32,7 @@ def locate(first_extra=None, second_extra=None):
 
 
 def test_locator_prompt_asks_for_the_optional_hint_only_in_shared_mode():
-    prompt = owned.locator_prompt(MANIFEST, width=1000, height=1400, columns=[])
+    prompt = owned.locator_prompt(MANIFEST, columns=[])
     assert prompt.count('"answer_position":"unmarked"') == 1
     assert owned.UNMARKED_POSITION_GUIDE in prompt
 

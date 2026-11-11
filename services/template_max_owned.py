@@ -16,6 +16,9 @@ SLOT_SOURCE = "max_locator_v3"
 SHARED_SLOT_SOURCE = "flash_slots_v4"
 SLOT_SOURCES = {SLOT_SOURCE, SHARED_SLOT_SOURCE}
 MAX_SLOTS_PER_QUESTION = 20
+# Spacing of the coordinate grid stamped on locator images, as the whole-page
+# prompt states it (the renderer is template_recognition._render_coordinate_grid).
+GRID_STEP = 100
 SHARED_GUIDE = "目录slots是共同作答位清单，逐项原样返回slot_id；cue只用于在原图中指认该处，内容以原图印刷为准。"
 # Optional hint; absence keeps the printed-position behaviour.
 UNMARKED_POSITION_GUIDE = (
@@ -127,11 +130,24 @@ class LocatorFrame(NamedTuple):
     definition: str  # the sentence that fixes origin, extent and grid
 
 
-def locator_prompt(manifest, *, width, height, columns):
-    """The whole-page prompt: one grid stamped on the page, page coordinates throughout."""
+def locator_prompt(manifest, *, columns):
+    """The whole-page prompt: one grid stamped on the page, page coordinates throughout.
+
+    The request carries one image per column, each cut from the stamped page.
+    The prompt says so, says how the grid lines are numbered (the row labels
+    are printed at the page's left edge, so only the first image shows them),
+    and gives no pixel size: a size next to a 0..1000 grid invites the model to
+    normalize a grid reading once more.
+    """
     return framed_locator_prompt(manifest, columns, LocatorFrame(
         image="原图", space="整页坐标", columns="分栏",
-        definition=f"整页{width}×{height}，坐标normalized_1000_v1，网格使用整页坐标。"))
+        definition=(
+            "坐标normalized_1000_v1，一律以整页为准：整页左上角为(0,0)，右下角为(1000,1000)。"
+            "输入的每张图是同一整页按分栏裁出的一栏，按分栏顺序排列；图上网格是整页的坐标网格，"
+            "各图共用同一套刻度，不按单张图重新归一。"
+            f"网格每{GRID_STEP}一条线：竖线顶端标有x刻度；横线自上而下依次为y=0（上边缘）、{GRID_STEP}、{2 * GRID_STEP}……，"
+            "下边缘为y=1000，y刻度只印在第一张图的左侧，其余各图的横线与之逐条对应。"
+            "网格刻度就是要返回的坐标，按刻度直接读数，不再做任何换算。")))
 
 
 def framed_locator_prompt(manifest, columns, frame):

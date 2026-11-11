@@ -116,7 +116,7 @@ def test_every_active_prompt_example_passes_its_real_receiver():
     one_raw, _ = v4_payloads(counts=(1,))
     h = contract.receive_hierarchy(one_raw, version=4)
     manifest = contract.question_contract(h)
-    loc = max_owned.locator_prompt(manifest, width=1000, height=1000, columns=[])
+    loc = max_owned.locator_prompt(manifest, columns=[])
     solve, text = contract.build_prompts(h, education_stage="primary")
     received_loc = max_owned.receive_locator(output_example(loc), manifest)
     received_solve = contract.receive_solver(output_example(solve), h)

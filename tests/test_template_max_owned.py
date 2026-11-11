@@ -265,7 +265,7 @@ def test_manifest_carries_no_flash_slot_counts_in_any_branch():
         blob = json.dumps(rows, ensure_ascii=False, separators=(",", ":"))
         assert not any(token in blob for token in forbidden)
         columns = [{"column_index": 0, "x1_1000": 0, "x2_1000": 1000}]
-        locator_prompt = owned.locator_prompt(rows, width=1000, height=1000, columns=columns)
+        locator_prompt = owned.locator_prompt(rows, columns=columns)
         solve_prompt, text_prompt = owned.build_prompts(rows, education_stage="junior")
         for prompt in (locator_prompt, solve_prompt, text_prompt):
             assert blob in prompt
@@ -281,7 +281,7 @@ def test_v3_seams_delegate_to_max_owned():
     assert pipeline._validate_one_three_locator(raw, h) == owned.receive_locator(raw, m)
     columns = [{"column_index": 0, "x1_1000": 0, "x2_1000": 1000}]
     assert pipeline._parallel_template_prompts(h, width=1000, height=1000, columns=columns) == (
-        owned.locator_prompt(m, width=1000, height=1000, columns=columns), "")
+        owned.locator_prompt(m, columns=columns), "")
     assert one_three.build_prompts(h, education_stage="junior") == owned.build_prompts(m, education_stage="junior")
     payload = solver_payload(m, {"Q1": ("x=3", [(key(), "3")])})
     solver = one_three.receive_solver(copy.deepcopy(payload), h)

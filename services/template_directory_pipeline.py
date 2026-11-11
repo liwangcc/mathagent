@@ -548,7 +548,7 @@ def _template_manifest(hierarchy: dict) -> str:
 
 def _parallel_template_prompts(hierarchy: dict, *, width: int, height: int, columns: list[dict]) -> tuple[str, str]:
     if hierarchy.get("question_identity_version") in {3, 4}:
-        return one_three.max_owned.locator_prompt(one_three.question_contract(hierarchy), width=width, height=height, columns=columns), ""
+        return one_three.max_owned.locator_prompt(one_three.question_contract(hierarchy), columns=columns), ""
     manifest = _template_manifest(hierarchy)
     column_hint = json.dumps(columns, ensure_ascii=False, separators=(",", ":"))
     slot_schema = ',"slot_ids":["1[1]"]' if hierarchy.get("region_count_contract") else ""
