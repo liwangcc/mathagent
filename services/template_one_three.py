@@ -18,10 +18,32 @@ MAX_TOKENS = 32768
 FLASH_TOKENS = 8000
 # Frozen AnswerSpec and visual evidence both accept at most 20 slots per question.
 MAX_SLOTS_PER_QUESTION = max_owned.MAX_SLOTS_PER_QUESTION
+# How a contract row names a page's first question when it carries no printed
+# label: the rest of a question that began on the previous page. It is shown
+# to the models only; the hierarchy keeps that question's printed label unknown.
+CONTINUED_FROM_PREVIOUS_PAGE = "接上页（本页未印题号）"
+
+
+def _names_printed_number(label: object, path: list[str]) -> bool:
+    """Whether ``label`` is a number printed in ``path``: ``17`` in ``17.`` or ``第17题``, not in ``117.``."""
+    return (isinstance(label, str) and label.isascii() and label.isdigit()
+            and any(re.search(rf"(?<![0-9]){label}(?![0-9])", part) for part in path))
 
 
 def receive_hierarchy(payload: object, *, version: int | None = None) -> dict:
-    """Receive shared slot inventory v4, or explicit historical identity v3."""
+    """Receive shared slot inventory v4, or explicit historical identity v3.
+
+    A question's identity on its page is its position: the returned ids are
+    ``"1".."n"`` in row order. On real exam pages Flash v4 strays from that
+    numbering in two ways, and both are the same rows under another name:
+
+    - it writes a row's printed number (``"17"``, slots ``17[1]``) instead of
+      the position. Accepted only when that row's own ``printed_path`` shows
+      the number, so a gap in page numbering (``1, 2, 4``) is still rejected;
+    - a page that opens with the rest of a question from the previous page
+      has no printed label for it. The first row may therefore have an empty
+      ``printed_path``; it stays empty (unknown), never a made-up label.
+    """
     if (not isinstance(payload, dict) or set(payload) != {"contract_version", "questions"}
             or type(payload["contract_version"]) is not int or payload["contract_version"] not in {3, 4}
             or (version is not None and payload["contract_version"] != version)):
@@ -33,10 +55,9 @@ def receive_hierarchy(payload: object, *, version: int | None = None) -> dict:
     nodes = []
     for index, row in enumerate(rows, 1):
         if (not isinstance(row, dict)
-                or set(row) != ({"question_number", "printed_path", "slots"} if shared else {"question_number", "printed_path"})
-                or row["question_number"] != str(index)):
+                or set(row) != ({"question_number", "printed_path", "slots"} if shared else {"question_number", "printed_path"})):
             raise ValueError("题目层级字段或连续编号无效")
-        path = row["printed_path"]
+        label, path = row["question_number"], row["printed_path"]
         if (not isinstance(path, list) or len(path) > 8
                 or any(not isinstance(v, str) or len(v) > 128
                        or any(ord(ch) < 32 for ch in v) for v in path)):
@@ -47,33 +68,58 @@ def receive_hierarchy(payload: object, *, version: int | None = None) -> dict:
         # that unambiguous form and keep all other path components non-empty.
         if path and path[-1] == "":
             path = path[:-1]
-        if not path or any(not value.strip() for value in path):
+        continued = shared and index == 1 and not path
+        if (not path and not continued) or any(not value.strip() for value in path):
             raise ValueError("题目层级标记无效")
-        nodes.append({"id": row["question_number"], "parent_id": None,
+        printed = shared and (_names_printed_number(label, path)
+                              or (continued and isinstance(label, str) and label.isascii() and label.isdigit()))
+        if label != str(index) and not printed:
+            raise ValueError("题目层级字段或连续编号无效")
+        nodes.append({"id": str(index), "parent_id": None,
                       "raw_label": path[-1] if path else "", "source_path": list(path)})
         if shared:
             slots = row["slots"]
             if not isinstance(slots, list) or not 1 <= len(slots) <= MAX_SLOTS_PER_QUESTION:
                 raise ValueError("Flash 作答位清单无效")
-            for slot_index, slot in enumerate(slots, 1):
+            for slot in slots:
                 if (not isinstance(slot, dict) or set(slot) != {"slot_id", "cue"}
-                        or slot["slot_id"] != f"{index}[{slot_index}]"
                         or not isinstance(slot["cue"], str) or not slot["cue"].strip()
                         or len(slot["cue"]) > 2000):
                     raise ValueError("Flash 作答位编号或说明无效")
-            nodes[-1].update(slots=copy.deepcopy(slots), answer_slot_count=len(slots),
-                             slot_ids=[slot["slot_id"] for slot in slots])
+            slot_ids = [f"{index}[{slot_index}]" for slot_index in range(1, len(slots) + 1)]
+            # Slots are numbered under the same name as their question, whichever of the two it used.
+            if [slot["slot_id"] for slot in slots] not in (
+                    slot_ids, [f"{label}[{slot_index}]" for slot_index in range(1, len(slots) + 1)]):
+                raise ValueError("Flash 作答位编号或说明无效")
+            nodes[-1].update(slots=[{**slot, "slot_id": slot_id} for slot_id, slot in zip(slot_ids, slots)],
+                             answer_slot_count=len(slots), slot_ids=slot_ids)
     return {"nodes": nodes, "leaf_ids": [n["id"] for n in nodes],
             "needs_review": [], "canonicalized": True,
             "question_identity_version": payload["contract_version"], "region_count_contract": shared,
             "typed_region_contract": False}
 
 
+def coarse_follows_hierarchy(labels: list[str], hierarchy: dict) -> bool:
+    """Whether the coarse locator's rows are the hierarchy's questions, in the same order.
+
+    The two Flash requests number a page's questions independently. A coarse
+    row numbered by its position is taken on trust, as it always was; a row
+    that carries a printed number instead must name the number the hierarchy
+    read at that position (anything goes for a first question whose label the
+    page does not show).
+    """
+    nodes = {node["id"]: node for node in hierarchy["nodes"]}
+    paths = [list(nodes[number].get("source_path") or []) for number in hierarchy["leaf_ids"]]
+    return len(labels) == len(paths) and all(
+        label == str(index) or _names_printed_number(label, path) or (index == 1 and not path)
+        for index, (label, path) in enumerate(zip(labels, paths), 1))
+
+
 def question_contract(hierarchy: dict) -> list[dict]:
     """Shared identity/inventory; geometry and types remain locator-owned."""
     nodes = {node["id"]: node for node in hierarchy["nodes"]}
     return [{"q_id": "Q" + number,
-             "printed_path": list(nodes[number].get("source_path") or []),
+             "printed_path": list(nodes[number].get("source_path") or []) or [CONTINUED_FROM_PREVIOUS_PAGE],
              **({"slots": copy.deepcopy(nodes[number]["slots"])}
                 if hierarchy.get("question_identity_version") == 4 else {})}
             for number in hierarchy["leaf_ids"]]

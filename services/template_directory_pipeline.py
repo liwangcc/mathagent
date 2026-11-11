@@ -197,14 +197,14 @@ async def _request(
 
 
 _HIERARCHY_PROMPT = """按试卷阅读顺序建立题目与作答位清单：分栏先左后右，栏内从上到下。
-每道独立题用question_number从1连续编号；printed_path记录已看见的所属分区与原题号，没有单独印刷题号时仅包含已看见的非空上级路径，路径项均为非空文字。同题多个作答位列在slots内：每个独立填空或计算式一项，连续演算区一项，需学生完成的作图位置也一项。
+每道独立题用question_number编号：它是本页内的顺序号，页面上第一道题为1，逐题加1，与印刷题号无关（本页第一道题印的是17，question_number仍是"1"，其作答位是"1[1]"）。printed_path记录已看见的所属分区与原题号，印刷题号只写在这里；没有单独印刷题号时仅包含已看见的非空上级路径，路径项均为非空文字。页面开头若是上一页某题的后续内容、本页看不到它的题号，也作为第1题列出，printed_path为空数组[]。同题多个作答位列在slots内：每个独立填空或计算式一项，连续演算区一项，需学生完成的作图位置也一项。
 印刷示意图、坐标图、几何图、统计图、观察图属于题干条件；“看图回答”不等于需要作图。只有题干明确要求学生新增画图、补画、作图、描点、连线、涂色、标注或补全图形，才建立作图槽位；不明确时不要猜成作图题。
-slot_id按题内阅读顺序编号为题号[序号]；cue引用该位置的印刷小问号、算式或简短位置说明，供后续模型认同一处。题数取questions长度，每题作答位数取slots长度，每题1至20项；超出时不截断、不合并或遗漏真实作答位，由系统拒收并报告。
-完整响应是单个JSON对象：{"contract_version":4,"questions":[{"question_number":"1","printed_path":["基础练习","1."],"slots":[{"slot_id":"1[1]","cue":"第一个填空"},{"slot_id":"1[2]","cue":"第二个填空"}]}]}"""
+slot_id按题内阅读顺序编号为question_number[序号]；cue引用该位置的印刷小问号、算式或简短位置说明，供后续模型认同一处。题数取questions长度，每题作答位数取slots长度，每题1至20项；超出时不截断、不合并或遗漏真实作答位，由系统拒收并报告。
+完整响应是单个JSON对象：{"contract_version":4,"questions":[{"question_number":"1","printed_path":["基础练习","5."],"slots":[{"slot_id":"1[1]","cue":"第一个填空"},{"slot_id":"1[2]","cue":"第二个填空"}]}]}"""
 
 _COARSE_LOCATOR_PROMPT = """按试卷阅读顺序粗定位每道独立题。只识别题目整体边界，不判断答案、题型或作图属性。
 坐标为整页 normalized_1000_v1；输入若为分栏图，各栏沿用整页坐标，不重新归一化。框必须同时覆盖完整题干、图形和该题作答区域，宁可适度留白，不可裁掉小刻度或印刷条件。
-只返回一个JSON对象，结构示例（坐标须按原图实测）：{"coordinate_space":"normalized_1000_v1","questions":[{"question_number":"1","bbox":[100,200,900,800]}]}。题号从1连续编号；有歧义时仍返回可见候选，后续由服务端校验，不能推测标准答案。"""
+只返回一个JSON对象，结构示例（坐标须按原图实测）：{"coordinate_space":"normalized_1000_v1","questions":[{"question_number":"1","bbox":[100,200,900,800]}]}。question_number是本页内的顺序号：页面上第一道题为1，逐题加1，与印刷题号无关（第一道题印的是17也写"1"）；页面开头若是上一页某题的后续内容，也作为第1题框出；有歧义时仍返回可见候选，后续由服务端校验，不能推测标准答案。"""
 
 
 # Must agree with the base rule (choice question_text is "") and merge_branches,
@@ -216,8 +216,12 @@ _PARALLEL_TRANSCRIPTION_NOTE = (
 )
 
 
-def _receive_coarse_locator(payload: object, *, width: int, height: int) -> dict:
-    """Receive independent Flash crop hints without making them authoritative."""
+def _receive_coarse_locator(payload: object, *, width: int, height: int, labels: list | None = None) -> dict:
+    """Receive independent Flash crop hints without making them authoritative.
+
+    Rows are renumbered by position. Flash may have written printed numbers
+    instead; ``labels`` receives what it wrote, for the check against the hierarchy.
+    """
     if (not isinstance(payload, dict) or set(payload) != {"coordinate_space", "questions"}
             or payload["coordinate_space"] != "normalized_1000_v1"
             or not isinstance(payload["questions"], list)
@@ -225,8 +229,9 @@ def _receive_coarse_locator(payload: object, *, width: int, height: int) -> dict
         raise ValueError("Flash 粗定位合同无效")
     rows = []
     for index, row in enumerate(payload["questions"], 1):
-        if (not isinstance(row, dict) or set(row) != {"question_number", "bbox"}
-                or row["question_number"] != str(index)):
+        label = row.get("question_number") if isinstance(row, dict) else None
+        if (not isinstance(row, dict) or set(row) != {"question_number", "bbox"} or not isinstance(label, str)
+                or not (label == str(index) or (label.isascii() and label.isdigit()))):
             raise ValueError("Flash 粗定位题号无效")
         bbox = _box_or_empty(row["bbox"], "Flash 粗定位 bbox", allow_empty=False)
         # Image dimensions are bound before transport so a syntactically valid
@@ -235,6 +240,11 @@ def _receive_coarse_locator(payload: object, *, width: int, height: int) -> dict
         if round(x2 * width / 1000) <= round(x1 * width / 1000) or round(y2 * height / 1000) <= round(y1 * height / 1000):
             raise ValueError("Flash 粗定位裁图为空")
         rows.append({"question_number": str(index), "bbox": bbox})
+    seen = [row["question_number"] for row in payload["questions"]]
+    if len(set(seen)) != len(seen):
+        raise ValueError("Flash 粗定位题号无效")
+    if labels is not None:
+        labels[:] = seen
     return {"coordinate_space": "normalized_1000_v1", "questions": rows}
 
 
@@ -639,9 +649,10 @@ async def recognize_directory_template(image_path: str, *, template_mode: str, l
             lambda raw: one_three.receive_hierarchy(raw, version=4),
             max_tokens=8000, reasoning_effort="low",
         ), name="template-flash-hierarchy")
+        coarse_labels: list[str] = []
         coarse_task = asyncio.create_task(_request(
             image_paths, _COARSE_LOCATOR_PROMPT, "template-coarse-locator-v1",
-            lambda raw: _receive_coarse_locator(raw, width=width, height=height),
+            lambda raw: _receive_coarse_locator(raw, width=width, height=height, labels=coarse_labels),
             max_tokens=_COARSE_LOCATOR_MAX_TOKENS, reasoning_effort="low", pool_route="payg",
         ), name="template-flash-coarse-locator")
         try:
@@ -681,8 +692,9 @@ async def recognize_directory_template(image_path: str, *, template_mode: str, l
                 phase="template-coarse-locator-v1",
             )
             logger.warning("Flash 粗定位失败，继续使用 Max 权威定位: %s", exc)
-        if coarse and len(coarse["questions"]) != len(hierarchy["leaf_ids"]):
-            exc = ValueError("Flash 粗定位题数与层级目录不一致")
+        if coarse and not one_three.coarse_follows_hierarchy(
+                coarse_labels or [row["question_number"] for row in coarse["questions"]], hierarchy):
+            exc = ValueError("Flash 粗定位题数或题号与层级目录不一致")
             coarse = None
             coarse_failure_info = describe_failure(
                 exc,
@@ -691,7 +703,7 @@ async def recognize_directory_template(image_path: str, *, template_mode: str, l
                 route="payg",
                 phase="template-coarse-locator-v1",
             )
-            logger.warning("Flash 粗定位题数与层级不一致，继续使用 Max 权威定位")
+            logger.warning("Flash 粗定位题数或题号与层级不一致，继续使用 Max 权威定位")
         coarse_paths = []
         if coarse:
             try:

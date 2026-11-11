@@ -17,7 +17,10 @@ def test_flash_hierarchy_prompt_requests_direct_two_level_contract():
     # frozen AnswerSpec/evidence ceiling (previously receivers capped at 20 but
     # the prompt let the model emit up to 64). Add semantic pins so a future
     # edit cannot silently drop the cap again.
-    assert hashlib.sha256(pipeline._HIERARCHY_PROMPT.encode()).hexdigest() == "a6b21149085ed57d9fd4decbb629d497110aaae838d63aee73e1f6b2abee3df0"
+    # Snapshot moved 2026-11-11: question_number is stated as the position on the
+    # page (real exam pages made Flash write printed numbers), and a page may open
+    # with the unlabelled rest of the previous page's question.
+    assert hashlib.sha256(pipeline._HIERARCHY_PROMPT.encode()).hexdigest() == "ffcdb25d6d72a33892be576a93784a4b2daa778b43d614e11ae1e32d979ea561"
     assert "printed_path" in pipeline._HIERARCHY_PROMPT
     assert "每题1至20项" in pipeline._HIERARCHY_PROMPT
     assert "subquestions" not in pipeline._HIERARCHY_PROMPT
