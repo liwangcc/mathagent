@@ -107,9 +107,24 @@ def worst_offset_px(result):
     return worst
 
 
+def planned(**limits):
+    plan = tiles.plan_tiles(v4_contract((1,) * 25), COARSE, COLUMNS, width=PAGE[0], height=PAGE[1], **limits)
+    return [([tile["numbers"][0], tile["numbers"][-1]], tile["box"]) for tile in plan]
+
+
 def test_the_replayed_page_plans_into_the_five_measured_tiles():
-    plan = tiles.plan_tiles(v4_contract((1,) * 25), COARSE, COLUMNS, width=PAGE[0], height=PAGE[1], **LIMITS)
-    assert [([tile["numbers"][0], tile["numbers"][-1]], tile["box"]) for tile in plan] == MEASURED_TILES
+    # Same questions per tile as measured. Question 6 starts 15 px below the coarse box of
+    # question 5, and the first tile now reaches down to that start: 1095 instead of 1080.
+    assert planned(**LIMITS) == [
+        (owned, [0, 367, 1755, 1095] if owned == ["1", "5"] else box) for owned, box in MEASURED_TILES]
+
+
+def test_capped_at_four_tiles_the_replayed_page_keeps_the_left_column_and_halves_the_right():
+    capped = planned(**LIMITS, max_tiles=4)
+    assert capped[:2] == planned(**LIMITS)[:2]
+    # Fifteen questions in two tiles: the cut balances question count against height,
+    # and both tiles are past the limits that the uncapped plan keeps.
+    assert capped[2:] == [(["11", "16"], [998, 86, 2064, 908]), (["17", "25"], [998, 719, 2064, 1400])]
 
 
 def coded_page():

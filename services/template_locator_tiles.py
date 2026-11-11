@@ -10,7 +10,8 @@ to the page with fixed arithmetic and joins the tiles by question number: the
 result has the shape and coordinate space of the single-request locator, so
 template saving and later grading read it unchanged.
 
-Tiles are planned from the Flash coarse boxes before any Max call. Every
+Tiles are planned from the Flash coarse boxes before any Max call, using
+only what Flash places well: the rough start of each printed question. Every
 question has exactly one owner; the merge never chooses between two boxes.
 """
 from __future__ import annotations
@@ -22,6 +23,7 @@ import math
 from pathlib import Path
 
 from services import template_max_owned as max_owned
+from services.template_solver_shards import question_groups
 
 # Page-normalized padding around the coarse boxes a tile owns. Coarse boxes are
 # hints and can be tight; handwriting also runs past the printed column.
@@ -41,32 +43,51 @@ _COARSE_NOTE = ("\n以下是按量 Flash 的非权威粗定位提示（已换算
 
 
 def configured_limits(hierarchy: dict) -> dict:
-    """The two tile limits as ``plan_tiles`` keywords; 0 questions keeps one page request."""
+    """The tile limits as ``plan_tiles`` keywords; 0 questions keeps one page request."""
     import config
     shared = hierarchy.get("question_identity_version") == 4
     return {"max_questions": config.OCR_TEMPLATE_LOCATOR_TILE_QUESTIONS if shared else 0,
-            "max_span": float(config.OCR_TEMPLATE_LOCATOR_TILE_SPAN)}
+            "max_span": float(config.OCR_TEMPLATE_LOCATOR_TILE_SPAN),
+            "max_tiles": config.OCR_TEMPLATE_LOCATOR_TILES}
 
 
-def _runs(numbers: list[str], boxes: dict, limit: int, max_span: float) -> list[list[str]]:
-    """Fewest consecutive runs within both limits, then the most even ones.
+def _reach_down(boxes: dict, order: list[str]) -> dict:
+    """One column's coarse boxes, each reaching down to where the next question starts.
 
-    A run's load is the larger of its share of ``limit`` questions and its
-    share of ``max_span`` page height (0 = no height limit). The slowest tile
-    sets the wait of the whole locate, so among the splits with the fewest
-    runs the one with the smallest largest load wins. A single question taller
-    than ``max_span`` cannot be split and keeps a run of its own.
+    Flash places the start of a printed question far better than the extent of
+    its answer area. Whatever lies between two starts belongs to the upper
+    question, so a box that stops short of the next start is extended to it;
+    the last question of the column keeps its own bottom.
+    """
+    reached = {}
+    for number, following in zip(order, order[1:] + [None]):
+        x1, y1, x2, y2 = boxes[number]
+        reached[number] = [x1, y1, x2, max(y2, boxes[following][1]) if following else y2]
+    return reached
+
+
+def _splits(units: list[list[str]], boxes: dict, limit: int, max_span: float) -> list[tuple[float, list]]:
+    """The most even split of a column into 1, 2, ... runs, up to the first that fits both limits.
+
+    Entry ``k - 1`` is ``(largest load, runs)`` for ``k`` consecutive runs of
+    units. A unit is one printed question (its sub-question leaves stay
+    together). A run's load is the larger of its share of ``limit`` questions
+    and its share of ``max_span`` page height (0 = no height limit). The
+    slowest tile sets the wait of the whole locate, so for every run count the
+    split with the smallest largest load wins. A single unit over a limit
+    cannot be split and keeps a run of its own.
     """
     def load(start: int, stop: int) -> float:
-        owned = [boxes[number] for number in numbers[start:stop]]
+        owned = [boxes[number] for unit in units[start:stop] for number in unit]
         span = max(box[3] for box in owned) - min(box[1] for box in owned)
-        weight = max((stop - start) / limit, span / max_span if max_span else 0.0)
+        weight = max(len(owned) / limit, span / max_span if max_span else 0.0)
         return min(weight, 1.0) if stop - start == 1 else weight
 
-    total = len(numbers)
+    total = len(units)
     # best[j]: (largest load, spread, negated cuts) over splits of the first j
-    # questions. Negated cuts break exact ties towards the longer first run.
+    # units. Negated cuts break exact ties towards the longer first run.
     best: list = [(0.0, 0.0, ())] + [None] * total
+    found = []
     for count in range(1, total + 1):
         step: list = [None] * (total + 1)
         for stop in range(count, total + 1):
@@ -76,10 +97,29 @@ def _runs(numbers: list[str], boxes: dict, limit: int, max_span: float) -> list[
                 for start in range(count - 1, stop) if best[start] is not None
                 for weight in [load(start, stop)])
         best = step
-        if best[total][0] <= 1.0 + 1e-9 or count == total:
+        cuts = [0] + [-cut for cut in best[total][2]]
+        found.append((best[total][0], [units[start:stop] for start, stop in zip(cuts, cuts[1:])]))
+        if best[total][0] <= 1.0 + 1e-9:
             break
-    cuts = [0] + [-cut for cut in best[total][2]]
-    return [numbers[start:stop] for start, stop in zip(cuts, cuts[1:])]
+    return found
+
+
+def _tile_counts(loads: dict[int, list[float]], max_tiles: int) -> dict[int, int]:
+    """Tiles per column: what the limits ask for, or the most even use of ``max_tiles``.
+
+    ``loads[column][k - 1]`` is the largest load of that column cut into ``k``
+    tiles. Under the cap every column keeps one tile and each further tile
+    goes to the column whose heaviest tile is heaviest.
+    """
+    wanted = {column: len(options) for column, options in loads.items()}
+    if not max_tiles or sum(wanted.values()) <= max_tiles:
+        return wanted
+    counts = dict.fromkeys(loads, 1)
+    for _ in range(max_tiles - len(counts)):
+        open_columns = [column for column in sorted(loads) if counts[column] < wanted[column]]
+        heaviest = max(open_columns, key=lambda column: loads[column][counts[column] - 1])
+        counts[heaviest] += 1
+    return counts
 
 
 def _tile_box(boxes: list[list[float]], column: dict, *, width: int, height: int) -> list[int]:
@@ -100,11 +140,19 @@ def _tile_box(boxes: list[list[float]], column: dict, *, width: int, height: int
 
 
 def plan_tiles(manifest, coarse, columns, *, width: int, height: int, max_questions: int,
-               max_span: float = 0.0) -> list[dict]:
+               max_span: float = 0.0, max_tiles: int = 0) -> list[dict]:
     """Assign every question to one tile: by column, then in reading-order runs.
 
     A run holds at most ``max_questions`` questions and, when ``max_span`` is
-    set, at most that much page-normalized height of coarse boxes.
+    set, at most that much page-normalized height. The page gets at most
+    ``max_tiles`` tiles (0 = no cap, and never fewer than one per column):
+    when the two limits ask for more, the tiles are spread as evenly as the
+    cap allows and a tile may then exceed them.
+
+    The coarse boxes are trusted only for what Flash does well, the rough
+    start of each printed question: the leaves of one printed question never
+    leave their tile, and a tile reaches down to the start of the next
+    question below it (``_reach_down``) whatever the boxes say about extents.
 
     Returns ``[]`` (keep the single page request) when tiling is off, the
     coarse boxes are missing or do not name exactly the directory questions,
@@ -116,16 +164,21 @@ def plan_tiles(manifest, coarse, columns, *, width: int, height: int, max_questi
     boxes = {row["question_number"]: row["bbox"] for row in coarse["questions"]}
     if len(boxes) != len(coarse["questions"]) or set(boxes) != set(numbers):
         return []
-    by_column: dict[int, list[str]] = {}
-    for number in numbers:
-        centre = (boxes[number][0] + boxes[number][2]) / 2
+    by_column: dict[int, list[list[str]]] = {}
+    for group in question_groups(manifest):
+        unit = [q_id[1:] for q_id in group]
+        centre = (min(boxes[n][0] for n in unit) + max(boxes[n][2] for n in unit)) / 2
         index = next((i for i, column in enumerate(columns)
                       if float(column["x1_1000"]) <= centre < float(column["x2_1000"])), len(columns) - 1)
-        by_column.setdefault(index, []).append(number)
+        by_column.setdefault(index, []).append(unit)
+    reach = {index: _reach_down(boxes, [n for unit in units for n in unit]) for index, units in by_column.items()}
+    options = {index: _splits(units, reach[index], max_questions, max_span) for index, units in by_column.items()}
+    counts = _tile_counts({index: [load for load, _ in found] for index, found in options.items()}, max_tiles)
     tiles = [{"numbers": owned,
-              "box": _tile_box([boxes[n] for n in owned], columns[index], width=width, height=height)}
+              "box": _tile_box([reach[index][n] for n in owned], columns[index], width=width, height=height)}
              for index in sorted(by_column)
-             for owned in _runs(by_column[index], boxes, max_questions, max_span)]
+             for run in options[index][counts[index] - 1][1]
+             for owned in [[n for unit in run for n in unit]]]
     return tiles if len(tiles) > 1 else []
 
 

@@ -133,9 +133,10 @@ def test_a_tile_holds_a_coarse_box_that_leaves_its_column_and_is_never_too_short
     plan = tiles.plan_tiles(manifest, coarse, COLUMNS, width=2000, height=1000, max_questions=1)
     assert [tile["numbers"] for tile in plan] == [["1"], ["2"], ["3"]]
     assert plan[1]["box"][2] == 1460  # (700 + 30) of 1000, on a 2000 px page
-    # A 40-high hint still gets a quarter of the page, kept inside it.
-    assert [tile["box"][3] - tile["box"][1] for tile in plan] == [250, 250, 250]
-    assert plan[0]["box"][1] == 0 and plan[1]["box"][3] == 1000
+    # A 40-high hint still gets a quarter of the page, kept inside it. Question 1 is
+    # followed by question 2 in its column, so its tile reaches down to where that one starts.
+    assert [tile["box"][3] - tile["box"][1] for tile in plan] == [920, 250, 250]
+    assert plan[0]["box"][1::2] == [40, 960] and plan[1]["box"][3] == 1000 and plan[2]["box"][1] == 0
 
 
 @pytest.mark.parametrize("case", ["off", "no_coarse", "one_tile", "wrong_numbers", "duplicate_numbers"])
@@ -188,10 +189,71 @@ def test_a_question_taller_than_the_span_limit_keeps_a_tile_of_its_own():
     assert [tile["numbers"] for tile in plan] == [["1"], ["2", "3"]]
 
 
+def stems(tops, paths=None):
+    """One column whose coarse boxes cover only a 40-high stem at each top; printed paths as given."""
+    paths = paths or [[f"{index}."] for index in range(1, len(tops) + 1)]
+    manifest = [{"q_id": f"Q{index}", "printed_path": path} for index, path in enumerate(paths, 1)]
+    coarse = {"coordinate_space": "normalized_1000_v1", "questions": [
+        {"question_number": str(index), "bbox": [20, top, 480, top + 40]} for index, top in enumerate(tops, 1)]}
+    return manifest, coarse, [{"column_index": 1, "x1_1000": 0.0, "x2_1000": 1000.0}]
+
+
+def test_a_tile_reaches_down_to_the_start_of_the_next_question_in_its_column():
+    # Flash boxed the printed stems only; each answer area is the blank below its stem.
+    manifest, coarse, column = stems([50, 300, 550, 800])
+    plan = tiles.plan_tiles(manifest, coarse, column, width=1000, height=1000, max_questions=2)
+    assert [tile["numbers"] for tile in plan] == [["1", "2"], ["3", "4"]]
+    # Question 2's box ends at 340, question 3 starts at 550: the first tile holds everything
+    # down to that start plus the padding. The column's last question keeps its own bottom.
+    assert [tile["box"][1::2] for tile in plan] == [[0, 610], [490, 900]]
+
+
+def test_the_parts_of_one_printed_question_never_leave_its_tile():
+    paths = [["1."], ["2."], ["3.", "(1)"], ["3.", "(2)"], ["3.", "(3)"], ["4."]]
+    manifest, coarse, column = stems([0, 150, 300, 450, 600, 750], paths)
+    owned = lambda limit: [tile["numbers"] for tile in tiles.plan_tiles(  # noqa: E731
+        manifest, coarse, column, width=1000, height=1000, max_questions=limit)]
+    # Three leaves per tile would cut question 3 after its first part.
+    assert owned(3) == [["1", "2"], ["3", "4", "5"], ["6"]]
+    # A printed question with more leaves than the limit still stays whole.
+    assert owned(2) == [["1", "2"], ["3", "4", "5"], ["6"]]
+    assert owned(4) == [["1", "2"], ["3", "4", "5", "6"]]
+
+
+@pytest.mark.parametrize("max_tiles, expected", [
+    (0, [2, 2, 2, 2, 2, 2]), (8, [2, 2, 2, 2, 2, 2]), (6, [2, 2, 2, 2, 2, 2]),
+    (5, [2, 2, 2, 3, 3]),   # the spare tile goes to the first of two equally loaded columns
+    (4, [3, 3, 3, 3]), (3, [3, 3, 6]), (2, [6, 6]),
+    (1, [6, 6]),            # never fewer than one tile per column
+])
+def test_the_page_gets_at_most_the_capped_number_of_tiles_spread_evenly(max_tiles, expected):
+    manifest = v4_contract(COUNTS)
+    plan = tiles.plan_tiles(manifest, coarse_payload(), COLUMNS, width=1000, height=1500,
+                            max_questions=2, max_tiles=max_tiles)
+    assert [len(tile["numbers"]) for tile in plan] == expected
+    assert [n for tile in plan for n in tile["numbers"]] == [str(n) for n in range(1, 13)]
+
+
+def test_under_the_cap_the_heavier_column_gets_the_extra_tiles():
+    # Four questions on the left, eight on the right; two per tile would need two and four tiles.
+    manifest = v4_contract((1,) * 12)
+    rows = lambda left, count: [[left, index * 1000 / count, left + 480, (index + 1) * 1000 / count]  # noqa: E731
+                                for index in range(count)]
+    coarse = {"coordinate_space": "normalized_1000_v1", "questions": [
+        {"question_number": str(index), "bbox": box} for index, box in enumerate(rows(10, 4) + rows(510, 8), 1)]}
+    sizes = lambda max_tiles: [len(tile["numbers"]) for tile in tiles.plan_tiles(  # noqa: E731
+        manifest, coarse, COLUMNS, width=1000, height=1500, max_questions=2, max_tiles=max_tiles)]
+    assert sizes(3) == [4, 4, 4]        # the one spare tile halves the right column
+    assert sizes(4) == [2, 2, 4, 4]     # then both columns carry the same load per tile
+    assert sizes(5) == [2, 2, 3, 3, 2]
+
+
 def test_tiling_is_configured_per_page_and_only_for_shared_slots(monkeypatch):
     monkeypatch.setattr(config, "OCR_TEMPLATE_LOCATOR_TILE_QUESTIONS", 8)
     monkeypatch.setattr(config, "OCR_TEMPLATE_LOCATOR_TILE_SPAN", 400)
-    assert tiles.configured_limits({"question_identity_version": 4}) == {"max_questions": 8, "max_span": 400.0}
+    monkeypatch.setattr(config, "OCR_TEMPLATE_LOCATOR_TILES", 5)
+    assert tiles.configured_limits({"question_identity_version": 4}) == {
+        "max_questions": 8, "max_span": 400.0, "max_tiles": 5}
     assert tiles.configured_limits({"question_identity_version": 3})["max_questions"] == 0
     monkeypatch.setattr(config, "OCR_TEMPLATE_LOCATOR_TILE_QUESTIONS", 0)
     assert tiles.configured_limits({"question_identity_version": 4})["max_questions"] == 0
@@ -362,13 +424,14 @@ def rounded(value):
     return [rounded(item) for item in value] if isinstance(value, list) else value
 
 
-def run_pipeline_with(tmp_path, monkeypatch, tile_questions, *, solver_shards=1, in_flight=None):
+def run_pipeline_with(tmp_path, monkeypatch, tile_questions, *, solver_shards=1, in_flight=None, max_tiles=8):
     """Real _request, receivers and grid; only the Flash and Max transports are faked."""
     from services import analyzer
     monkeypatch.setattr(config, "OCR_TEMPLATE_LOCATOR_TILE_QUESTIONS", tile_questions)
     # Tiles by question count only: the drawn boxes are placed clear of these
     # tiles' grid lines, which the colour-matching fake cannot see through.
     monkeypatch.setattr(config, "OCR_TEMPLATE_LOCATOR_TILE_SPAN", 0)
+    monkeypatch.setattr(config, "OCR_TEMPLATE_LOCATOR_TILES", max_tiles)
     monkeypatch.setattr(config, "OCR_TEMPLATE_SOLVER_SHARDS", solver_shards)
     if in_flight is not None:
         monkeypatch.setattr(config, "OCR_TEMPLATE_GPT_FALLBACK_HARD_IN_FLIGHT", in_flight)
@@ -460,17 +523,19 @@ def test_tiled_locate_produces_the_single_request_template(tmp_path, monkeypatch
     assert all(progress["stages"][key]["status"] == "completed" for key in stage_keys)
 
 
-@pytest.mark.parametrize("tile_questions, in_flight, tiles, shards", [
-    (3, 8, 4, 4),   # four tiles leave four of eight permits: the solver takes all four
-    (3, 7, 4, 3),
-    (3, 6, 4, 2),
-    (3, 4, 4, 1),   # the tiles alone fill the gate: the solve stays one request
-    (2, 8, 6, 2),
-    (0, 8, 0, 4),   # one page request holds one permit; the configured four shards fit
+@pytest.mark.parametrize("tile_questions, in_flight, max_tiles, tiles, shards", [
+    (3, 8, 8, 4, 4),   # four tiles leave four of eight permits: the solver takes all four
+    (3, 7, 8, 4, 3),
+    (3, 6, 8, 4, 2),
+    (3, 4, 8, 4, 1),   # the tiles alone fill the gate: the solve stays one request
+    (2, 8, 8, 6, 2),
+    (2, 8, 4, 4, 4),   # six tiles wanted, four allowed: the solver gets the other four
+    (0, 8, 4, 0, 4),   # one page request holds one permit; the configured four shards fit
 ])
 def test_the_solver_takes_the_max_permits_the_locator_tiles_leave_free(
-        tmp_path, monkeypatch, tile_questions, in_flight, tiles, shards):
-    result, calls, _ = run_pipeline_with(tmp_path, monkeypatch, tile_questions, solver_shards=4, in_flight=in_flight)
+        tmp_path, monkeypatch, tile_questions, in_flight, max_tiles, tiles, shards):
+    result, calls, _ = run_pipeline_with(tmp_path, monkeypatch, tile_questions, solver_shards=4,
+                                         in_flight=in_flight, max_tiles=max_tiles)
     assert "error" not in result
     diagnostics = result["template_ocr_diagnostics"]
     assert (diagnostics["locator_tiles"], diagnostics["solver_shards"]) == (tiles, shards)
@@ -529,7 +594,8 @@ def test_without_coarse_boxes_the_page_is_located_in_one_request(tmp_path, monke
 @pytest.mark.parametrize("name,value", [
     ("OCR_TEMPLATE_LOCATOR_TILE_QUESTIONS", "1"), ("OCR_TEMPLATE_LOCATOR_TILE_QUESTIONS", "21"),
     ("OCR_TEMPLATE_LOCATOR_TILE_QUESTIONS", "-1"),
-    ("OCR_TEMPLATE_LOCATOR_TILE_SPAN", "149"), ("OCR_TEMPLATE_LOCATOR_TILE_SPAN", "1001")])
+    ("OCR_TEMPLATE_LOCATOR_TILE_SPAN", "149"), ("OCR_TEMPLATE_LOCATOR_TILE_SPAN", "1001"),
+    ("OCR_TEMPLATE_LOCATOR_TILES", "1"), ("OCR_TEMPLATE_LOCATOR_TILES", "9")])
 def test_config_rejects_tile_limits_outside_their_ranges(tmp_path, name, value):
     project_root = Path(__file__).resolve().parents[1]
     env = os.environ.copy()
