@@ -245,49 +245,66 @@ def _save_tile(page, tile_box, directory, name: str) -> str:
     return str(path)
 
 
-async def locate_in_tiles(request, page, directory, manifest, coarse, plan, *,
-                          phase: str, max_tokens: int, report: list) -> dict:
-    """Run one ``request`` per tile concurrently and stitch the page result.
-
-    A tile whose answer reaches a cut edge is asked once more with that side
-    widened; if it still does, the questions go to teacher review instead of
-    being saved as possibly clipped boxes. One failed tile cancels the others
-    and fails the locate, exactly like a failed single request. ``report``
-    receives one entry per tile.
-    """
-    width, height = page.size
-    rows = {row["q_id"][1:]: row for row in manifest}
+def open_report(plan, report: list) -> None:
+    """One report entry per planned tile, filled in as its requests return."""
     report.extend({"question_numbers": list(tile["numbers"]), "box_px": list(tile["box"]),
                    "attempts": 0, "edge_contact": {}} for tile in plan)
 
-    async def locate(index, tile):
-        owned = [rows[number] for number in tile["numbers"]]
-        box = list(tile["box"])
-        for attempt in (1, 2):
-            path = _save_tile(page, box, directory, f"{index + 1}-{attempt}")
-            located = await request(
-                [path], tile_prompt(owned, coarse, box, width=width, height=height), phase,
-                lambda raw: max_owned.receive_locator_candidates(raw, owned),
-                max_tokens=max_tokens, reasoning_effort="high", expected_ids=tuple(tile["numbers"]),
-                stage_key=f"{phase}#{index + 1}" + ("" if attempt == 1 else "-wide"))
-            contact = edge_contact(located, box, width=width, height=height)
-            report[index].update(box_px=list(box), attempts=attempt, edge_contact=contact)
-            if not contact or attempt == 2:
-                break
-            box = widen(box, contact, width=width, height=height)
-        result = to_page(located, box, width=width, height=height)
-        for number in sorted({n for numbers in contact.values() for n in numbers}, key=tile["numbers"].index):
-            result["needs_review"].append(f"第{number}题的框贴近定位裁图边缘，可能未框全，请核对")
-        return result
 
-    tasks = [asyncio.create_task(locate(index, tile), name=f"template-qwen-max-locator-{index + 1}")
-             for index, tile in enumerate(plan)]
+async def locate_tile(request, page, directory, manifest, coarse, plan, index: int, *,
+                      phase: str, max_tokens: int, report: list) -> dict:
+    """Locate tile ``index`` of ``plan`` in page space and update ``report[index]``.
+
+    A tile whose answer reaches a cut edge is asked once more with that side
+    widened; if it still does, the questions go to teacher review instead of
+    being saved as possibly clipped boxes.
+    """
+    width, height = page.size
+    tile = plan[index]
+    rows = {row["q_id"][1:]: row for row in manifest}
+    owned = [rows[number] for number in tile["numbers"]]
+    box = list(tile["box"])
+    for attempt in (1, 2):
+        path = _save_tile(page, box, directory, f"{index + 1}-{attempt}")
+        located = await request(
+            [path], tile_prompt(owned, coarse, box, width=width, height=height), phase,
+            lambda raw: max_owned.receive_locator_candidates(raw, owned),
+            max_tokens=max_tokens, reasoning_effort="high", expected_ids=tuple(tile["numbers"]),
+            stage_key=f"{phase}#{index + 1}" + ("" if attempt == 1 else "-wide"))
+        contact = edge_contact(located, box, width=width, height=height)
+        report[index].update(box_px=list(box), attempts=attempt, edge_contact=contact)
+        if not contact or attempt == 2:
+            break
+        box = widen(box, contact, width=width, height=height)
+    result = to_page(located, box, width=width, height=height)
+    for number in sorted({n for numbers in contact.values() for n in numbers}, key=tile["numbers"].index):
+        result["needs_review"].append(f"第{number}题的框贴近定位裁图边缘，可能未框全，请核对")
+    return result
+
+
+async def gather_tiles(tasks: list) -> list:
+    """Await per-tile tasks; one failure cancels the rest and is re-raised."""
     try:
-        parts = await asyncio.gather(*tasks)
+        return await asyncio.gather(*tasks)
     except BaseException:
         for task in tasks:
             if not task.done():
                 task.cancel()
         await asyncio.gather(*tasks, return_exceptions=True)
         raise
+
+
+async def locate_in_tiles(request, page, directory, manifest, coarse, plan, *,
+                          phase: str, max_tokens: int, report: list) -> dict:
+    """Run one ``request`` per tile concurrently and stitch the page result.
+
+    One failed tile cancels the others and fails the locate, exactly like a
+    failed single request. ``report`` receives one entry per tile.
+    """
+    open_report(plan, report)
+    parts = await gather_tiles([
+        asyncio.create_task(locate_tile(request, page, directory, manifest, coarse, plan, index,
+                                        phase=phase, max_tokens=max_tokens, report=report),
+                            name=f"template-qwen-max-locator-{index + 1}")
+        for index in range(len(plan))])
     return merge_tiles(parts, manifest)
