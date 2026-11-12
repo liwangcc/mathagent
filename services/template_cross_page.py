@@ -30,8 +30,9 @@ logger = logging.getLogger(__name__)
 # prints questions. An answer sheet, or the page after a cover, has none to find.
 _ANSWERED_ON = "answer_page"
 _PRINTS_QUESTIONS = frozenset({"answer_page", "question_only"})
-# Page-normalized room kept left of, right of and above the tail.
-_PAD = 30.0
+# Page-normalized room kept left of, right of and above the tail. On a real exam page
+# 30 kept a whole line of the question above the stem; 15 keeps the stem and not that line.
+_PAD = 15.0
 # The tail never shrinks to a sliver of the page.
 _MIN_HEIGHT = 100.0
 _TAIL, _WHOLE_PAGE = "上一页的尾部", "上一页整页"

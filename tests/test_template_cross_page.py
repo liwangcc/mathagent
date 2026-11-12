@@ -40,7 +40,7 @@ TAIL_NAME = "previous-page-tail.png"
 # The previous page is 300 x 400; its last question's printed number sits at 70% of the height.
 PREVIOUS_SIZE = (300, 400)
 LAST_NUMBER = [60, 700, 100, 730]
-TAIL = [0, 268, 300, 400]
+TAIL = [0, 274, 300, 400]
 
 
 def painted(path, size=PREVIOUS_SIZE) -> str:
@@ -157,7 +157,7 @@ def test_only_the_solver_request_that_owns_the_carried_over_question_and_the_tra
     assert len(calls) - len(bound) == 2 + 1 + shards - 1
     # Both keep their page and crops, in order; the tail comes last, cut from the last question's number down.
     for key in bound:
-        assert calls[key]["images"] == before[key]["images"] + [(TAIL_NAME, (300, 132))]
+        assert calls[key]["images"] == before[key]["images"] + [(TAIL_NAME, (300, 126))]
         assert calls[key]["last_cut"] == TAIL
         assert calls[key]["options"] == before[key]["options"]
         assert "Q1" in calls[key]["options"]["expected_ids"]
@@ -255,10 +255,10 @@ def test_a_previous_page_that_cannot_be_read_leaves_the_page_as_it_was(tmp_path,
 @pytest.mark.parametrize("result, box", [
     pytest.param(recognized(), TAIL, id="single_column"),
     pytest.param(recognized([560, 700, 600, 730], [{"x1_1000": 0, "x2_1000": 500}, {"x1_1000": 500, "x2_1000": 1000}]),
-                 [141, 268, 300, 400], id="last_question_in_the_last_column"),
+                 [145, 274, 300, 400], id="last_question_in_the_last_column"),
     pytest.param(recognized([560, 700, 600, 730], [{"x1_1000": 500, "x2_1000": 1000}, {"x1_1000": 0, "x2_1000": 500}]),
-                 [141, 268, 300, 400], id="columns_listed_right_to_left"),
-    pytest.param(recognized([60, 20, 100, 50]), [0, 0, 300, 400], id="number_at_the_top_keeps_the_page_height"),
+                 [145, 274, 300, 400], id="columns_listed_right_to_left"),
+    pytest.param(recognized([60, 10, 100, 40]), [0, 0, 300, 400], id="number_at_the_top_keeps_the_page_height"),
     pytest.param(recognized([60, 980, 100, 995]), [0, 360, 300, 400], id="never_a_sliver"),
     pytest.param(recognized([60, 700, 100, 730], [{"x1_1000": 0, "x2_1000": 500}, {"x1_1000": 500, "x2_1000": 1000}]),
                  None, id="last_question_not_in_the_last_column"),
@@ -425,7 +425,7 @@ def test_the_import_hands_each_page_the_page_uploaded_before_it(monkeypatch, tmp
     for page, before in ((second, first), (third, second)):
         with Image.open(before["page"]) as rectified:
             width, height = rectified.size
-            box = [0, (320 - 30) * height // 1000, width, height]
+            box = [0, (320 - 15) * height // 1000, width, height]
             tail = rectified.convert("RGB").crop(tuple(box)).tobytes()
         assert page["report"] == {"view": "上一页的尾部", "box_px": box, "requests": [SOLVE]}
         assert [path for path, _ in page["shown"]][0] == page["page"] and page["shown"][-1][1] == tail
