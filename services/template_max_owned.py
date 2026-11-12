@@ -38,6 +38,22 @@ def _shared_mode(manifest):
     return bool(flags) and all(flags)
 
 
+# A page can open with the rest of the previous page's last question. That
+# question has no printed number here and its stem is on the other page; its
+# directory row says so and carries the handling every model must follow.
+CONTINUED_FROM_PREVIOUS_PAGE = "接上页（本页未印题号）"
+CONTINUED_NOTE = (
+    "本题接上页：题干在上一页，本页没有它的印刷题号。定位时question_number_bbox返回null，regions照常按本页内容定位；"
+    "解题时只依据本页可见内容，本页看不到的已知条件不得自行补设或凭记忆补入，"
+    "依赖这些条件的作答位answer留空，并在uncertain写明缺少的条件。")
+CONTINUED_REVIEW_REASON = "本题接上页，题干不在本页，标准答案只依据本页内容得出，请对照上一页核对"
+
+
+def continues_previous_page(row) -> bool:
+    """Whether this directory row is the unlabelled rest of the previous page's question."""
+    return row.get("printed_path") == [CONTINUED_FROM_PREVIOUS_PAGE]
+
+
 KEY_GUIDE = (
     "答案位置用answer_key标识：part为该目录题目内原图印刷的小问编号（无则空字符串）；"
     "每块连续解答区用anchor为空字符串、blank_index=0，区内多个量写在同一个答案项中。"
@@ -293,7 +309,10 @@ def receive_locator(payload, manifest):
                     and question_type in {"choice", "fill"})
         normalized.append({"question_number": number,
                            **({"answer_position": "unmarked"} if unmarked else {}),
-                           "question_number_bbox": _box(row["question_number_bbox"]),
+                           # Nothing is printed to box for a question carried over from the previous page.
+                           "question_number_bbox": (None if row["question_number_bbox"] is None
+                                                    and continues_previous_page(identities[number])
+                                                    else _box(row["question_number_bbox"])),
                            "question_type": question_type, "choice_mode": row["choice_mode"],
                            "regions": boxes, "region_kinds": kinds, "region_keys": keys,
                            "drawing_regions": drawing, "label_anchor": copy.deepcopy(anchor),
@@ -346,7 +365,10 @@ def receive_solver(payload, manifest):
         answers.append({"q_id": qid, "standard_answer": _text(row["standard_answer"], empty=shared),
                         "answer_items": parsed, **({"slot_ids": expected_ids} if shared else {}),
                         "solution_steps": _strings(row["solution_steps"]),
-                        "answer_variants": [], "answer_review_reasons": _strings(row["uncertain"]),
+                        "answer_variants": [],
+                        # Its stem is on another page: whatever the model says, a teacher checks it.
+                        "answer_review_reasons": ([CONTINUED_REVIEW_REASON] if continues_previous_page(identities[qid])
+                                                  else []) + _strings(row["uncertain"]),
                         "solve_visual_context": {"facts": _strings(row["visual_facts"]), "relations": [],
                                                  "uncertain": _strings(row["uncertain"])}})
     return {"answers": answers, "directory_issues": [],
@@ -584,6 +606,27 @@ def _merged_flags(*sources):
     return merged
 
 
+# A printed question number is one text line high. Measured on real worksheets,
+# the answer areas of solve questions were 3.2 to 6.3 such lines; on an exam
+# page with no answer space the locator returned strips of 1.6 to 2.4.
+SOLVE_AREA_MIN_LINES = 2.8
+
+
+def solve_area_too_low(geometry) -> bool:
+    """Whether a solve question's every answer area is too low to work in.
+
+    Heights are compared with the question's own printed number box. Both are
+    fractions of the page height, so the ratio needs no page size. A question
+    without a number box or without a located answer area is not judged.
+    """
+    label = geometry.get("question_number_bbox")
+    areas = [box for box, kind in zip(geometry["regions"], geometry["region_kinds"]) if kind == "answer" and box]
+    if geometry["question_type"] != "solve" or not label or not areas:
+        return False
+    line = label[3] - label[1]
+    return all(box[3] - box[1] < SOLVE_AREA_MIN_LINES * line for box in areas)
+
+
 def reconcile_slot_candidates(locator, solver, manifest):
     """Merge parallel proposals by identity, preserving disagreement for review.
 
@@ -644,6 +687,10 @@ def reconcile_slot_candidates(locator, solver, manifest):
             geometry["label_anchor"] = None
         geometry["answer_area_count"] = kinds.count("answer")
         geometry["answer_kind"] = ("mixed" if "answer" in kinds else "drawing") if "drawing" in kinds else "non_graphic"
+        if solve_area_too_low(geometry):
+            # The model had to return a box; a strip is what it returns where the page leaves no room.
+            answer["answer_review_reasons"].append(
+                f"第 {number} 题是解答题，但作答区不足三行高，可能没有框到完整的作答空白，请核对或重画")
         answer["answer_items"] = [by_id.get(sid, {"slot_id": sid, "answer": ""}) for sid in ids]
         # Preserve explicit answers outside the selected inventory for the
         # existing unbound-items review record. Never shift them into blanks.
