@@ -23,7 +23,7 @@ export function useUploadLifecycle(ctx) {
     resumeTemplateRecognitionCheckpoint, stopTemplateCutPolling, revokeTemplateCutPreviews,
     resetOrientationReview, maybeAutoStartRecognition, loadDailyUsage, stopGradingClock,
     resumeOrientationBatch, stopBatchReportPolling, resumeReviewBatch, resetManualDecisionImage,
-    refreshAvailability,
+    refreshAvailability, stopFollowingTemplateAnswers,
   } = ctx
 
   // Leaving now would abort an in-flight request (guard below); the usage tour
@@ -52,6 +52,7 @@ export function useUploadLifecycle(ctx) {
     templateConfirmController.value?.abort()
     templateCutController.value?.abort()
     stopTemplateCutPolling()
+    stopFollowingTemplateAnswers()
     templateCutRunToken.value += 1
     templateCutBusy.value = false
     recognizeController.value?.abort()

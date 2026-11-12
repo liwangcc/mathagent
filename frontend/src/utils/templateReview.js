@@ -257,9 +257,20 @@ export function templateRegionSlotsValid(question = {}) {
       && (kind === 'drawing' ? !slots[index].trim() : kind === 'answer' && Boolean(slots[index].trim())))
 }
 
+/** The server is still generating this question's standard answer; it arrives by itself. */
+export const templateAnswerPending = (question) => question?.answer_pending === true
+
+/** One sentence naming the questions (entries of { question }) whose standard answer is still being generated. */
+export function templatePendingAnswersNotice(entries = []) {
+  const numbers = entries.map(({ question }) => String(question?.question_no ?? question?.question_number ?? '')).filter(Boolean)
+  if (!numbers.length) return ''
+  return `第 ${numbers.join('、')} 题的标准答案正在生成，完成后自动填入；生成完成后才能保存模板。`
+}
+
 /** Derive missing text answers from the live draft, preserving empty positions. */
 export function templateMissingAnswerSlots(question = {}) {
-  if (!Array.isArray(question.slot_ids)) return []
+  // An answer on its way is not one the teacher has to supply.
+  if (templateAnswerPending(question) || !Array.isArray(question.slot_ids)) return []
   const answers = templateFillAnswerSlots(question)
   return question.slot_ids.flatMap((slotId, index) => {
     if (question.region_kinds?.[index] === 'drawing') return []

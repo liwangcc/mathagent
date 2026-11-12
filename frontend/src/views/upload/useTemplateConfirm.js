@@ -16,6 +16,7 @@ import api from '@/api'
 import {
   templateIsPureDrawing,
   templateChoiceConflictReason,
+  templateAnswerPending,
   templateMissingAnswerNotice,
   templateMaxFlagNotice,
   templateBoxSizeProblems,
@@ -44,7 +45,7 @@ export function useTemplateConfirm(ctx) {
     applyTemplateBatchScores, normalizeTemplateMode, normalizeTemplateColumnMode,
     forgetTemplateRecognition, stopTemplateCutPolling, revokeTemplateCutPreviews,
     templateLayoutConflictNotice, templateAnswerQuestion, templatePageNeedsSave,
-    saveAllTemplateLayoutPages, loadTemplateCutState,
+    saveAllTemplateLayoutPages, loadTemplateCutState, stopFollowingTemplateAnswers,
   } = ctx
 
   let templateCorrectionCandidatesGeneration = 0
@@ -130,8 +131,8 @@ export function useTemplateConfirm(ctx) {
         const messages = []
         if (!number) messages.push(`${location}缺少题号`)
         if ((question.question_type !== 'choice' || templateIsPureDrawing(question)) && !String(question.question_text || '').trim()) messages.push(`${location}缺少题干，请在题目内容中补齐`)
-        // Missing slot answers already have their own row.
-        if (!templateIsPureDrawing(question) && !String(question.standard_answer || '').trim() && !templateMissingAnswerNotice(question)) messages.push(`${location}缺少标准答案，请在答案编辑区填写`)
+        // Missing slot answers already have their own row; an answer still being generated is not missing.
+        if (!templateIsPureDrawing(question) && !templateAnswerPending(question) && !String(question.standard_answer || '').trim() && !templateMissingAnswerNotice(question)) messages.push(`${location}缺少标准答案，请在答案编辑区填写`)
         messages.push(...templateChoiceConflictReasons(question))
         messages.forEach((message, index) => problems.push({
           key: `question-${page.page_index}-${questionIndex}-${index}`, pageIndex: Number(page.page_index),
@@ -388,6 +389,7 @@ export function useTemplateConfirm(ctx) {
     templateConfirmController.value = null
     templateCutController.value = null
     stopTemplateCutPolling()
+    stopFollowingTemplateAnswers()
     templateCutBusy.value = false
     recognizingTemplate.value = false
     confirmingTemplate.value = false

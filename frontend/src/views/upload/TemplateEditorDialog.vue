@@ -32,6 +32,13 @@
       </div>
     </section>
 
+    <section v-if="templatePendingAnswerEntries.length" class="tpl-answer-review" aria-label="标准答案生成中" role="status">
+      <div class="tpl-layout-review-alert tpl-answer-review-row">
+        <strong>{{ templatePendingAnswersNotice(templatePendingAnswerEntries) }}</strong>
+        <button type="button" class="btn btn-ghost" @click="openTemplateQuestion(templatePendingAnswerEntries[0])">去查看</button>
+      </div>
+    </section>
+
     <section v-if="templateMissingAnswerEntries.length" class="tpl-answer-review" aria-label="待补充标准答案" role="status">
       <div v-for="entry in templateMissingAnswerEntries" :key="`${entry.pageIndex}-${entry.questionIndex}`" class="tpl-layout-review-alert tpl-answer-review-row">
         <strong>{{ templateMissingAnswerNotice(entry.question) }}</strong>
@@ -347,6 +354,8 @@
             <span v-if="q.question_type === 'choice'" class="tpl-choice-mode-badge tpl-q-mode-badge" :class="{ 'is-pending': q.choice_mode === 'unknown' }">
               {{ choiceModeLabel(q.choice_mode) }}
             </span>
+            <span v-if="templateAnswerPending(q)" class="tag-pending">标准答案生成中</span>
+            <span v-else-if="q.answer_failed" class="tag-pending" :title="q.answer_failed">标准答案未生成，请填写</span>
             <span v-if="q.correction_candidates?.length" class="correction-discovery-badge" :class="{ 'is-excluded': q.correction_excluded }">
               {{ q.correction_excluded ? '已排除纠错' : `可纠错 ${q.correction_candidates.length} 项` }}
             </span>
@@ -488,8 +497,8 @@
       <button class="btn btn-ghost" @click="onImportTemplateBank" :disabled="confirmingTemplate || importingTemplateBank || templateCutBusy || templateBankImported || !templateCanConfirm">
         {{ templateBankImported ? '已写入私库' : (importingTemplateBank ? '入库中...' : '写入私库（一次）') }}
       </button>
-      <button class="btn btn-primary" @click="onConfirmTemplate" :disabled="confirmingTemplate || importingTemplateBank || templateCutBusy">
-        {{ confirmingTemplate ? '保存中...' : '保存模板（全部页）' }}
+      <button class="btn btn-primary" @click="onConfirmTemplate" :disabled="confirmingTemplate || importingTemplateBank || templateCutBusy || templateAnswersPending" :title="templateAnswersPending ? '标准答案生成完成后才能保存' : null">
+        {{ confirmingTemplate ? '保存中...' : (templateAnswersPending ? '标准答案生成中…' : '保存模板（全部页）') }}
       </button>
     </template>
   </el-dialog>
@@ -506,6 +515,8 @@ import {
   templateFillAnswerSlots,
   templateMissingAnswerSlots,
   templateMissingAnswerNotice,
+  templateAnswerPending,
+  templatePendingAnswersNotice,
   templateMaxFlagNotice,
   keepTemplateMaxFlags,
   templateQuestionIdentity,
@@ -568,7 +579,7 @@ const {
   setTemplateAnswerDrawingKind, openTemplateDrawingReference, toggleQuestionCorrection,
   templatePreviewPagePosition, selectTemplatePreviewPage, confirmingTemplate, cancelTemplateDialog,
   onImportTemplateBank, importingTemplateBank, templateBankImported, templateCanConfirm,
-  onConfirmTemplate,
+  onConfirmTemplate, templatePendingAnswerEntries, templateAnswersPending,
 } = inject(UPLOAD_PAGE)
 </script>
 

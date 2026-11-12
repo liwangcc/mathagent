@@ -252,6 +252,7 @@ import TemplateCard from './upload/TemplateCard.vue'
 import StudentPapersCard from './upload/StudentPapersCard.vue'
 import { useUploadState } from './upload/useUploadState.js'
 import { useServiceAvailability } from './upload/useServiceAvailability.js'
+import { useTemplateLateAnswers } from './upload/useTemplateLateAnswers.js'
 import { useTemplateReviewState } from './upload/useTemplateReviewState.js'
 import { useRecognitionRecovery } from './upload/useRecognitionRecovery.js'
 import { useTemplateReference } from './upload/useTemplateReference.js'
@@ -281,6 +282,7 @@ const ctx = {
 }
 Object.assign(ctx, useUploadState(ctx))
 Object.assign(ctx, useServiceAvailability(ctx))
+Object.assign(ctx, useTemplateLateAnswers(ctx))
 Object.assign(ctx, useTemplateReviewState(ctx))
 Object.assign(ctx, useRecognitionRecovery(ctx))
 Object.assign(ctx, useTemplateReference(ctx))
@@ -311,7 +313,8 @@ const {
   orientationImageUrl, orientationImageLoading, orientationImageError, orientationQuarterTurns,
   orientationSaving, progressList, gradeError, summary, gradeHero, workflowSteps, dailyUsagePercent,
   templateCutRunToken, gradablePaperCount, batchConfirmValid, templateGeometryReview,
-  templateCanConfirm, setTemplatePreviewEditMode, answerSpecFields, identityCanConfirm,
+  templateCanConfirm, templateAnswersPending, setTemplatePreviewEditMode, answerSpecFields,
+  identityCanConfirm,
   openIdentityImage, openRecognizePaperImage, identityReasonHint, identityClueLabel,
   refreshIdentityOptions, applyTemplateRecognitionResult, onRecognizeTemplate,
   applyTemplateCutState, loadTemplateCutPreviews, loadTemplateCutState, onRunTemplateCut,
