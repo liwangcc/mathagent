@@ -561,6 +561,27 @@ def _merged_flags(*sources):
     return merged
 
 
+# A printed question number is one text line high. Measured on real worksheets,
+# the answer areas of solve questions were 3.2 to 6.3 such lines; on an exam
+# page with no answer space the locator returned strips of 1.6 to 2.4.
+SOLVE_AREA_MIN_LINES = 2.8
+
+
+def solve_area_too_low(geometry) -> bool:
+    """Whether a solve question's every answer area is too low to work in.
+
+    Heights are compared with the question's own printed number box. Both are
+    fractions of the page height, so the ratio needs no page size. A question
+    without a number box or without a located answer area is not judged.
+    """
+    label = geometry.get("question_number_bbox")
+    areas = [box for box, kind in zip(geometry["regions"], geometry["region_kinds"]) if kind == "answer" and box]
+    if geometry["question_type"] != "solve" or not label or not areas:
+        return False
+    line = label[3] - label[1]
+    return all(box[3] - box[1] < SOLVE_AREA_MIN_LINES * line for box in areas)
+
+
 def reconcile_slot_candidates(locator, solver, manifest):
     """Merge parallel proposals by identity, preserving disagreement for review.
 
@@ -621,6 +642,10 @@ def reconcile_slot_candidates(locator, solver, manifest):
             geometry["label_anchor"] = None
         geometry["answer_area_count"] = kinds.count("answer")
         geometry["answer_kind"] = ("mixed" if "answer" in kinds else "drawing") if "drawing" in kinds else "non_graphic"
+        if solve_area_too_low(geometry):
+            # The model had to return a box; a strip is what it returns where the page leaves no room.
+            answer["answer_review_reasons"].append(
+                f"第 {number} 题是解答题，但作答区不足三行高，可能没有框到完整的作答空白，请核对或重画")
         answer["answer_items"] = [by_id.get(sid, {"slot_id": sid, "answer": ""}) for sid in ids]
         # Preserve explicit answers outside the selected inventory for the
         # existing unbound-items review record. Never shift them into blanks.
