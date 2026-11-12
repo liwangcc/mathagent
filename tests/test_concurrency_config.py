@@ -356,7 +356,8 @@ def test_retired_template_answer_and_deepseek_settings_do_not_block_startup(tmp_
     assert completed.returncode == 0, completed.stderr
 
 
-def test_template_qwen_route_uses_pinned_model_with_endpoint_credentials(tmp_path):
+def test_template_qwen_route_model_comes_from_the_environment(tmp_path):
+    """Unset keeps qwen3.8-max, a set name is used as sent, empty turns the route off."""
     project_root = Path(__file__).resolve().parents[1]
     env = os.environ.copy()
     for name in (
@@ -379,50 +380,47 @@ def test_template_qwen_route_uses_pinned_model_with_endpoint_credentials(tmp_pat
     env["OCR_TEMPLATE_GPT_FALLBACK_BASE_URL"] = "https://qwen.example.invalid/v1"
     env["OCR_TEMPLATE_GPT_FALLBACK_API_KEY"] = "qwen-test-key"
 
-    partial = subprocess.run(
-        [
-            sys.executable,
-            "-c",
-            (
-                "from config import OCR_TEMPLATE_GPT_FALLBACK_ENABLED, "
-                "OCR_TEMPLATE_GPT_FALLBACK_MODEL, OCR_TEMPLATE_GPT_FALLBACK_HARD_IN_FLIGHT; "
-                "print(OCR_TEMPLATE_GPT_FALLBACK_ENABLED, "
-                "OCR_TEMPLATE_GPT_FALLBACK_MODEL, "
-                "OCR_TEMPLATE_GPT_FALLBACK_HARD_IN_FLIGHT)"
-            ),
-        ],
-        cwd=tmp_path,
-        env=env,
-        text=True,
-        capture_output=True,
-        check=False,
-    )
+    def route(model=None):
+        run_env = dict(env)
+        if model is not None:
+            run_env["OCR_TEMPLATE_GPT_FALLBACK_MODEL"] = model
+        return subprocess.run(
+            [
+                sys.executable,
+                "-X",
+                "utf8",
+                "-c",
+                (
+                    "from config import OCR_TEMPLATE_GPT_FALLBACK_ENABLED, "
+                    "OCR_TEMPLATE_GPT_FALLBACK_MODEL, OCR_TEMPLATE_GPT_FALLBACK_HARD_IN_FLIGHT; "
+                    "print(repr((OCR_TEMPLATE_GPT_FALLBACK_ENABLED, "
+                    "OCR_TEMPLATE_GPT_FALLBACK_MODEL, "
+                    "OCR_TEMPLATE_GPT_FALLBACK_HARD_IN_FLIGHT)))"
+                ),
+            ],
+            cwd=tmp_path,
+            env=run_env,
+            text=True,
+            encoding="utf-8",
+            capture_output=True,
+            check=False,
+        )
 
-    assert partial.returncode == 0, partial.stderr
-    assert partial.stdout.strip() == "True qwen3.8-max 4"
+    for model, expected in (
+        (None, "(True, 'qwen3.8-max', 4)"),
+        ("qwen4-max-preview", "(True, 'qwen4-max-preview', 4)"),
+        ("  qwen4-max-preview  ", "(True, 'qwen4-max-preview', 4)"),
+        ("", "(False, '', 4)"),
+    ):
+        completed = route(model)
+        assert completed.returncode == 0, completed.stderr
+        assert completed.stdout.strip() == expected, model
 
-    env["OCR_TEMPLATE_GPT_FALLBACK_MODEL"] = "qwen3.8max"
-    complete = subprocess.run(
-        [
-            sys.executable,
-            "-c",
-            (
-                "from config import OCR_TEMPLATE_GPT_FALLBACK_ENABLED, "
-                "OCR_TEMPLATE_GPT_FALLBACK_MODEL, OCR_TEMPLATE_GPT_FALLBACK_HARD_IN_FLIGHT; "
-                "print(OCR_TEMPLATE_GPT_FALLBACK_ENABLED, "
-                "OCR_TEMPLATE_GPT_FALLBACK_MODEL, "
-                "OCR_TEMPLATE_GPT_FALLBACK_HARD_IN_FLIGHT)"
-            ),
-        ],
-        cwd=tmp_path,
-        env=env,
-        text=True,
-        capture_output=True,
-        check=False,
-    )
-
-    assert complete.returncode == 0, complete.stderr
-    assert complete.stdout.strip() == "True qwen3.8-max 4"
+    # A leftover non-Qwen name (e.g. from the retired GPT route) stops startup
+    # instead of being sent with parameters that model does not take.
+    rejected = route("gpt-5.4")
+    assert rejected.returncode != 0
+    assert "OCR_TEMPLATE_GPT_FALLBACK_MODEL" in rejected.stderr
 
 
 def test_legacy_wave_settings_remain_loadable_without_driving_flash_dispatch(tmp_path):

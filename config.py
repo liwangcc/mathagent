@@ -240,13 +240,16 @@ OCR_TEMPLATE_GPT_FALLBACK_BASE_URL = os.environ.get(
 OCR_TEMPLATE_GPT_FALLBACK_API_KEY = os.environ.get(
     "OCR_TEMPLATE_GPT_FALLBACK_API_KEY", ""
 ).strip()
-# This route is an application dependency, not an operator-selectable model.
-# Existing deployments may still carry the retired model variable; it is
-# intentionally ignored so every request uses the current stable contract.
-OCR_TEMPLATE_GPT_FALLBACK_MODEL = "qwen3.8-max"
+# 模板 Max 路线（定位与解题）发给服务商的模型请求名，由部署决定，例如 qwen4-max-preview；
+# 不设时为 qwen3.8-max，设为空值则路线关闭。请求按 Qwen 的 Chat Completions 合同发
+# enable_thinking / reasoning_effort / response_format，所以只接受 qwen 开头的模型名。
+OCR_TEMPLATE_GPT_FALLBACK_MODEL = os.environ.get(
+    "OCR_TEMPLATE_GPT_FALLBACK_MODEL", "qwen3.8-max"
+).strip()
 OCR_TEMPLATE_GPT_FALLBACK_ENABLED = all((
     OCR_TEMPLATE_GPT_FALLBACK_BASE_URL,
     OCR_TEMPLATE_GPT_FALLBACK_API_KEY,
+    OCR_TEMPLATE_GPT_FALLBACK_MODEL,
 ))
 # 备注（模板 Max 路线）：qwen3.8-max 走阿里云百炼 Token Plan 订阅（Standard 档），
 # 按 Credits 计费，没有 RPM/TPM 限额；唯一限制是档位并发（Lite 1–2、Essential 2–3、
@@ -385,6 +388,8 @@ if OCR_TEMPLATE_GPT_REASONING_EFFORT not in {
     raise RuntimeError(
         "OCR_TEMPLATE_GPT_REASONING_EFFORT 必须为 none、minimal、low、medium、high、xhigh 或 max"
     )
+if OCR_TEMPLATE_GPT_FALLBACK_MODEL and not OCR_TEMPLATE_GPT_FALLBACK_MODEL.lower().startswith("qwen"):
+    raise RuntimeError("OCR_TEMPLATE_GPT_FALLBACK_MODEL 必须是 qwen 开头的模型名（该路线按 Qwen 合同发送思考参数）")
 if not 1 <= OCR_TEMPLATE_GPT_FALLBACK_HARD_IN_FLIGHT <= 8:
     raise RuntimeError("OCR_TEMPLATE_GPT_FALLBACK_HARD_IN_FLIGHT 必须在 1 到 8 之间（Token Plan 最高档 Pro 为 6–8）")
 if not 1 <= OCR_TEMPLATE_SOLVER_SHARDS <= 4:
