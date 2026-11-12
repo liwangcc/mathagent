@@ -86,7 +86,11 @@ def test_parallel_original_images_attachment_and_solver_status(tmp_path, monkeyp
     assert question["needs_review"] is (status == "needs_review")
     assert question["answer_slots"] == ["25.8℃", "24℃"]
     assert question["solve_visual_context"]["facts"] == ["原图事实"]
-    assert [kwargs["reasoning_effort"] for _, kwargs in calls] == ["low", "low", "high", "high", "high"]
+    # Flash hierarchy and coarse boxes low, Max locator low, Max solver medium, Flash transcription high.
+    assert {phase: kwargs["reasoning_effort"] for phase, kwargs in calls} == {
+        "template-hierarchy-v1": "low", "template-coarse-locator-v1": "low", "template-directory-v1": "low",
+        contract.SOLVE_PHASE: "medium", contract.TRANSCRIBE_PHASE: "high"}
+    assert len(calls) == 5
     assert result["template_ocr_diagnostics"]["transcription_reasoning_effort"] == "high"
     page = TemplateSession.make_page(0, result["questions"])
     restored = AnswerSpec.model_validate(page["questions"][0]).model_dump()

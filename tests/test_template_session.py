@@ -3376,7 +3376,8 @@ def test_current_one_three_import_confirm_and_reopen(monkeypatch, tmp_path, solv
         return {"model": "qwen3.8-flash", "content": json.dumps(payload), "receipt": {}}
 
     async def max_call(images, prompt, **kwargs):
-        assert kwargs["reasoning_effort"] == "high" and kwargs["max_tokens"] == 32768
+        assert kwargs["max_tokens"] == 32768
+        assert kwargs["reasoning_effort"] == ("low" if "normalized_1000_v1" in prompt else "medium")
         if "normalized_1000_v1" in prompt:
             phases.append("locator")
             rows = [

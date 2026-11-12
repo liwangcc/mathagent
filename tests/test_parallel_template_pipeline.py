@@ -202,8 +202,8 @@ def test_parallel_pipeline_sends_all_columns_and_two_max_calls(tmp_path, monkeyp
     }
     assert phases.count(("template-hierarchy-v1", 2, 8000, "low")) == 1
     assert phases.count(("template-coarse-locator-v1", 2, 4096, "low")) == 1
-    assert phases.count(("template-directory-v1", 2, 32768, "high")) == 1
-    assert phases.count(("template-max-fullsolve-v1", 2, 32768, "high")) == 1
+    assert phases.count(("template-directory-v1", 2, 32768, "low")) == 1
+    assert phases.count(("template-max-fullsolve-v1", 2, 32768, "medium")) == 1
     assert phases.count(("template-flash-transcribe-v1", 2, 8000, "high")) == 1
     assert result["questions"][0]["question_text"] == ""
     assert result["template_ocr_diagnostics"]["request_count"] == 5
@@ -286,7 +286,8 @@ def test_key_handoff_through_transports_starts_solver_before_transcription_and_r
         async def max_call(images, prompt, **kwargs):
             assert kwargs["pool_route"] == "fallback"
             assert kwargs["max_tokens"] == 32768
-            assert kwargs["reasoning_effort"] == "high"
+            # Default tiers: the locator thinks at low, the solver at medium.
+            assert kwargs["reasoning_effort"] == ("low" if "normalized_1000_v1" in prompt else "medium")
             expected_count = 1 if "normalized_1000_v1" in prompt else 6
             assert len(images) == expected_count
             with Image.open(images[0]) as image:

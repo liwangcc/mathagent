@@ -1117,8 +1117,9 @@ def test_v4_pipeline_freezes_inventory_then_runs_one_to_three(tmp_path, monkeypa
     efforts = {phase: effort for phase, effort, _, _ in calls}
     assert efforts[HIERARCHY_PHASE] == "low"
     assert efforts["template-coarse-locator-v1"] == "low"
-    assert efforts[LOCATOR_PHASE] == "high"
-    assert efforts[one_three.SOLVE_PHASE] == "high"
+    # Default Max tiers: the locator thinks at low, the solver at medium.
+    assert efforts[LOCATOR_PHASE] == "low"
+    assert efforts[one_three.SOLVE_PHASE] == "medium"
     assert efforts[one_three.TRANSCRIBE_PHASE] == "high"
     tokens = {phase: budget for phase, _, budget, _ in calls}
     assert tokens[LOCATOR_PHASE] == one_three.MAX_TOKENS

@@ -122,7 +122,7 @@ def merge_shard_results(results, manifest) -> dict:
 
 
 def start_shards(request, images, prompt: str, manifest, plan, *,
-                 phase: str, max_tokens: int, report: list) -> list:
+                 phase: str, max_tokens: int, reasoning_effort: str, report: list) -> list:
     """Start one ``request`` task per shard, in plan order.
 
     Images go before the prompt so every shard shares the same cacheable
@@ -139,20 +139,20 @@ def start_shards(request, images, prompt: str, manifest, plan, *,
 
     return [asyncio.create_task(request(
         images, shard_prompt(prompt, owned), phase, validator_for(index, owned),
-        max_tokens=max_tokens, reasoning_effort="high", expected_ids=tuple(owned),
+        max_tokens=max_tokens, reasoning_effort=reasoning_effort, expected_ids=tuple(owned),
         prompt_first=False, stage_key=f"{phase}#{index + 1}",
     ), name=f"template-qwen-max-fullsolve-{index + 1}") for index, owned in enumerate(plan)]
 
 
 async def solve_in_shards(request, images, prompt: str, manifest, plan, *,
-                          phase: str, max_tokens: int, report: list) -> dict:
+                          phase: str, max_tokens: int, reasoning_effort: str, report: list) -> dict:
     """Run one ``request`` per shard concurrently and merge the answers.
 
     One failed shard cancels the others and fails the solve, exactly like a
     failed single request.
     """
-    tasks = start_shards(request, images, prompt, manifest, plan,
-                         phase=phase, max_tokens=max_tokens, report=report)
+    tasks = start_shards(request, images, prompt, manifest, plan, phase=phase, max_tokens=max_tokens,
+                         reasoning_effort=reasoning_effort, report=report)
     try:
         results = await asyncio.gather(*tasks)
     except BaseException:

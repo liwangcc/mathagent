@@ -196,7 +196,9 @@ def test_real_pipeline_to_transport_to_merge_has_one_call_per_request_no_retry(s
             assert payload["response_format"] == {"type": "json_object"}
             assert payload["enable_thinking"] is True
         else:
-            assert payload["json_object"] is True and payload["reasoning_effort"] == "high"
+            # Default tiers: the locator thinks at low, the solver at medium.
+            assert payload["json_object"] is True
+            assert payload["reasoning_effort"] == ("medium" if name == contract.SOLVE_PHASE else "low")
     # Serialization does not strip adapted text or identity before persistence.
     saved = tmp_path / "roundtrip.json"
     saved.write_text(json.dumps(result, ensure_ascii=False), encoding="utf-8")

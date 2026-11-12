@@ -251,6 +251,16 @@ OCR_TEMPLATE_GPT_FALLBACK_ENABLED = all((
     OCR_TEMPLATE_GPT_FALLBACK_API_KEY,
     OCR_TEMPLATE_GPT_FALLBACK_MODEL,
 ))
+# 模板 Max 定位与解题各自的思考强度：定位含整页定位与各定位分块，解题含整页解题与各解题分片；
+# Flash 层级、粗定位与转录的强度不受这两项影响。默认值按 qwen4-max-preview 实测定为定位 low、
+# 解题 medium（2026-11-12）；哪一阶段不合格只调那一项。仍用 qwen3.8-max 的部署要把两项都设为
+# high：qwen3.8-max 的定位降档实测不可用，medium 解题也做错过压轴题。
+OCR_TEMPLATE_LOCATOR_REASONING_EFFORT = os.environ.get(
+    "OCR_TEMPLATE_LOCATOR_REASONING_EFFORT", "low"
+).strip().lower()
+OCR_TEMPLATE_SOLVER_REASONING_EFFORT = os.environ.get(
+    "OCR_TEMPLATE_SOLVER_REASONING_EFFORT", "medium"
+).strip().lower()
 # 备注（模板 Max 路线）：qwen3.8-max 走阿里云百炼 Token Plan 订阅（Standard 档），
 # 按 Credits 计费，没有 RPM/TPM 限额；唯一限制是档位并发（Lite 1–2、Essential 2–3、
 # Standard 3–4、Pro 6–8），且平台按整体负载动态下调，超出时返回
@@ -386,6 +396,12 @@ if OCR_TEMPLATE_GPT_REASONING_EFFORT not in REASONING_EFFORTS:
     raise RuntimeError(
         "OCR_TEMPLATE_GPT_REASONING_EFFORT 必须为 none、minimal、low、medium、high、xhigh 或 max"
     )
+for _effort_setting, _effort in (
+    ("OCR_TEMPLATE_LOCATOR_REASONING_EFFORT", OCR_TEMPLATE_LOCATOR_REASONING_EFFORT),
+    ("OCR_TEMPLATE_SOLVER_REASONING_EFFORT", OCR_TEMPLATE_SOLVER_REASONING_EFFORT),
+):
+    if _effort not in REASONING_EFFORTS:
+        raise RuntimeError(f"{_effort_setting} 必须为 none、minimal、low、medium、high、xhigh 或 max")
 if OCR_TEMPLATE_GPT_FALLBACK_MODEL and not OCR_TEMPLATE_GPT_FALLBACK_MODEL.lower().startswith("qwen"):
     raise RuntimeError("OCR_TEMPLATE_GPT_FALLBACK_MODEL 必须是 qwen 开头的模型名（该路线按 Qwen 合同发送思考参数）")
 if not 1 <= OCR_TEMPLATE_GPT_FALLBACK_HARD_IN_FLIGHT <= 8:

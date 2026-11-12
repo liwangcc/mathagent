@@ -332,7 +332,7 @@ def open_report(plan, report: list) -> None:
 
 
 async def locate_tile(request, page, directory, manifest, coarse, plan, index: int, *,
-                      columns, phase: str, max_tokens: int, report: list) -> dict:
+                      columns, phase: str, max_tokens: int, reasoning_effort: str, report: list) -> dict:
     """Locate tile ``index`` of ``plan`` in page space and update ``report[index]``.
 
     A tile whose answer reaches a cut edge is asked once more with that side
@@ -349,7 +349,7 @@ async def locate_tile(request, page, directory, manifest, coarse, plan, index: i
         located = await request(
             [path], tile_prompt(owned, coarse, box, columns=columns, width=width, height=height), phase,
             lambda raw: max_owned.receive_locator_candidates(raw, owned),
-            max_tokens=max_tokens, reasoning_effort="high", expected_ids=tuple(tile["numbers"]),
+            max_tokens=max_tokens, reasoning_effort=reasoning_effort, expected_ids=tuple(tile["numbers"]),
             stage_key=f"{phase}#{index + 1}" + ("" if attempt == 1 else "-wide"))
         contact = edge_contact(located, box, width=width, height=height)
         report[index].update(box_px=list(box), attempts=attempt, edge_contact=contact)
@@ -375,7 +375,7 @@ async def gather_tiles(tasks: list) -> list:
 
 
 async def locate_in_tiles(request, page, directory, manifest, coarse, plan, *,
-                          columns, phase: str, max_tokens: int, report: list) -> dict:
+                          columns, phase: str, max_tokens: int, reasoning_effort: str, report: list) -> dict:
     """Run one ``request`` per tile concurrently and stitch the page result.
 
     One failed tile cancels the others and fails the locate, exactly like a
@@ -385,7 +385,8 @@ async def locate_in_tiles(request, page, directory, manifest, coarse, plan, *,
     open_report(plan, report)
     parts = await gather_tiles([
         asyncio.create_task(locate_tile(request, page, directory, manifest, coarse, plan, index, columns=columns,
-                                        phase=phase, max_tokens=max_tokens, report=report),
+                                        phase=phase, max_tokens=max_tokens, reasoning_effort=reasoning_effort,
+                                        report=report),
                             name=f"template-qwen-max-locator-{index + 1}")
         for index in range(len(plan))])
     return merge_tiles(parts, manifest)

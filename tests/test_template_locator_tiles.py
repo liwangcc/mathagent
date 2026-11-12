@@ -333,7 +333,7 @@ def run_two_tiles(tmp_path, answer_boxes_for_tile_one, fail_tile=None):
         return await asyncio.wait_for(tiles.locate_in_tiles(
             request, page, tmp_path, manifest, coarse, plan,
             columns=[{"column_index": 1, "x1_1000": 0.0, "x2_1000": 1000.0}],
-            phase=PHASE, max_tokens=100, report=report), 10)
+            phase=PHASE, max_tokens=100, reasoning_effort="low", report=report), 10)
 
     try:
         return asyncio.run(run()), calls, report, cancelled

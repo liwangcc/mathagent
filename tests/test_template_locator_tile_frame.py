@@ -93,7 +93,7 @@ def locate_page(directory, reader=read_exactly):
 
     return asyncio.run(tiles.locate_in_tiles(
         request, drawn_page(), directory, manifest, COARSE, plan, columns=COLUMNS,
-        phase=PHASE, max_tokens=100, report=[]))
+        phase=PHASE, max_tokens=100, reasoning_effort="low", report=[]))
 
 
 def worst_offset_px(result):

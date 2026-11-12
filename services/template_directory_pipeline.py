@@ -759,15 +759,18 @@ async def recognize_directory_template(image_path: str, *, template_mode: str, l
             one_three.question_contract(hierarchy), coarse, columns, width=width, height=height,
             **locator_tiles.configured_limits(hierarchy))
         locator_report = []
+        # Each Max branch thinks at the deployment's tier for it, read once so every tile or shard and the diagnostics agree.
+        locator_effort, solver_effort = config.OCR_TEMPLATE_LOCATOR_REASONING_EFFORT, config.OCR_TEMPLATE_SOLVER_REASONING_EFFORT
         locator_call = (locator_tiles.locate_in_tiles(
             _request, page, temp, one_three.question_contract(hierarchy), coarse, locator_plan,
-            columns=columns, phase="template-directory-v1", max_tokens=one_three.MAX_TOKENS, report=locator_report,
+            columns=columns, phase="template-directory-v1", max_tokens=one_three.MAX_TOKENS,
+            reasoning_effort=locator_effort, report=locator_report,
         ) if locator_plan else _request(
             image_paths, locator_prompt, "template-directory-v1",
             lambda raw: (one_three.max_owned.receive_locator_candidates(raw, one_three.question_contract(hierarchy))
                          if hierarchy.get("question_identity_version") == 4
                          else _validate_one_three_locator(raw, hierarchy)),
-            max_tokens=one_three.MAX_TOKENS, reasoning_effort="high",
+            max_tokens=one_three.MAX_TOKENS, reasoning_effort=locator_effort,
             expected_ids=tuple(hierarchy["leaf_ids"]),
         ))
         locator_task = asyncio.create_task(locator_call, name="template-qwen-max-locator")
@@ -785,13 +788,14 @@ async def recognize_directory_template(image_path: str, *, template_mode: str, l
             return (start(
                 solver_shards.start_shards, page_request, detailed_images, solver_prompt,
                 one_three.question_contract(hierarchy), solver_plan,
-                phase=one_three.SOLVE_PHASE, max_tokens=one_three.MAX_TOKENS, report=solver_report,
+                phase=one_three.SOLVE_PHASE, max_tokens=one_three.MAX_TOKENS, reasoning_effort=solver_effort,
+                report=solver_report,
             ) if len(solver_plan) > 1 else [start(asyncio.create_task, page_request(
                 detailed_images, solver_prompt, one_three.SOLVE_PHASE,
                 lambda raw: (one_three.max_owned.receive_solver_candidates(raw, one_three.question_contract(hierarchy))
                              if hierarchy.get("question_identity_version") == 4
                              else one_three.receive_solver(raw, hierarchy)),
-                max_tokens=one_three.MAX_TOKENS, reasoning_effort="high",
+                max_tokens=one_three.MAX_TOKENS, reasoning_effort=solver_effort,
                 expected_ids=tuple("Q" + number for number in hierarchy["leaf_ids"]),
             ), name="template-qwen-max-fullsolve-1")])
 
@@ -858,7 +862,8 @@ async def recognize_directory_template(image_path: str, *, template_mode: str, l
                        "coarse_locator_tokens": _COARSE_LOCATOR_MAX_TOKENS,
                        "max_locator_tokens": one_three.MAX_TOKENS, "max_transcription_tokens": one_three.FLASH_TOKENS,
                        "max_solver_tokens": one_three.MAX_TOKENS,
-                       "max_reasoning_effort": "high", "transcription_reasoning_effort": "high", "solver_reasoning_effort": "high",
+                       "max_reasoning_effort": locator_effort, "transcription_reasoning_effort": "high",
+                       "solver_reasoning_effort": solver_effort,
                        "transcription_thinking": True, "transcription_route": "payg",
                        "full_page_baseline": True, "separate_transcription_request": True,
                        "hierarchy_thinking": True, "hierarchy_reasoning_effort": "low", "hierarchy_route": "payg",
