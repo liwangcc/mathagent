@@ -299,3 +299,24 @@ def test_a_page_without_a_carried_over_question_is_told_nothing_about_one(tmp_pa
     assert "error" not in result and result["requires_teacher_confirmation"] == []
     assert not any("接上页" in prompts[phase]
                    for phase in ("template-directory-v1", contract.SOLVE_PHASE, contract.TRANSCRIBE_PHASE))
+
+
+def test_a_question_of_an_older_hierarchy_that_carries_no_printed_path_is_not_taken_for_a_carried_over_one():
+    hierarchy = contract.receive_hierarchy(copy.deepcopy(CONTINUED_PAGE), version=4)
+    assert contract.continued_question(hierarchy) == "1"
+    pathless = copy.deepcopy(hierarchy)
+    for node in pathless["nodes"]:
+        node.pop("source_path")
+    historical = contract.receive_hierarchy(page(row("1", ["17."]), row("2", ["18."]), version=3), version=3)
+    for node in historical["nodes"]:
+        node["source_path"] = []
+
+    printed = contract.receive_hierarchy(copy.deepcopy(SOLVE_PAGE_BY_POSITION), version=4)
+    later = copy.deepcopy(printed)
+    later["nodes"][1]["source_path"] = []
+
+    for other in (pathless, historical, printed, later):
+        assert contract.continued_question(other) is None
+        rows = contract.question_contract(other)
+        assert not any("note" in row or owned.continues_previous_page(row) for row in rows)
+    assert [row["printed_path"] for row in contract.question_contract(pathless)] == [[], [], []]

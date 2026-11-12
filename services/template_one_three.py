@@ -115,12 +115,26 @@ def coarse_follows_hierarchy(labels: list[str], hierarchy: dict) -> bool:
         for index, (label, path) in enumerate(zip(labels, paths), 1))
 
 
+def continued_question(hierarchy: dict) -> str | None:
+    """The page's first question when it is the unlabelled rest of the previous page's question.
+
+    Only the shared (v4) hierarchy can hold one, only as its first question,
+    and only with a printed path that was received empty. A node of an older
+    hierarchy that simply carries no path is not one.
+    """
+    if hierarchy.get("question_identity_version") != 4 or not hierarchy.get("leaf_ids"):
+        return None
+    first = hierarchy["leaf_ids"][0]
+    return first if any(node["id"] == first and node.get("source_path") == [] for node in hierarchy["nodes"]) else None
+
+
 def question_contract(hierarchy: dict) -> list[dict]:
     """Shared identity/inventory; geometry and types remain locator-owned."""
     nodes = {node["id"]: node for node in hierarchy["nodes"]}
+    continued = continued_question(hierarchy)
     return [{"q_id": "Q" + number,
-             **({"printed_path": list(nodes[number]["source_path"])} if nodes[number].get("source_path") else
-                {"printed_path": [CONTINUED_FROM_PREVIOUS_PAGE], "note": max_owned.CONTINUED_NOTE}),
+             **({"printed_path": [CONTINUED_FROM_PREVIOUS_PAGE], "note": max_owned.CONTINUED_NOTE} if number == continued
+                else {"printed_path": list(nodes[number].get("source_path") or [])}),
              **({"slots": copy.deepcopy(nodes[number]["slots"])}
                 if hierarchy.get("question_identity_version") == 4 else {})}
             for number in hierarchy["leaf_ids"]]
