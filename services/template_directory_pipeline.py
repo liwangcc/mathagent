@@ -19,6 +19,7 @@ from pathlib import Path
 
 from PIL import Image
 
+import config
 from services.analyzer import parse_llm_json
 from services.ocr_service import call_gpt_vision, set_vision_phase_key, reset_vision_phase_key
 from services.processing_errors import describe_failure, processing_stage, report_failure
@@ -103,7 +104,7 @@ async def _request(
     diagnostic_context = {
         "stage": "solve" if phase == one_three.SOLVE_PHASE else (
             "transcription" if phase == one_three.TRANSCRIBE_PHASE else "template"),
-        "model": "qwen3.8-flash" if phase in {"template-hierarchy-v1", "template-coarse-locator-v1", one_three.TRANSCRIBE_PHASE} else "qwen3.8-max",
+        "model": "qwen3.8-flash" if phase in {"template-hierarchy-v1", "template-coarse-locator-v1", one_three.TRANSCRIBE_PHASE} else config.OCR_TEMPLATE_GPT_FALLBACK_MODEL,
         "route": "payg" if phase in {"template-hierarchy-v1", "template-coarse-locator-v1", one_three.TRANSCRIBE_PHASE} else pool_route,
         "phase": phase, "reasoning_effort": reasoning_effort,
     }
@@ -168,7 +169,7 @@ async def _request(
                                   enable_thinking=flash_thinking, max_tokens=max_tokens, route="payg")
             else:
                 stage = "solve" if phase == one_three.SOLVE_PHASE else "template"
-                with processing_stage(stage, model="qwen3.8-max", route=pool_route, phase=phase):
+                with processing_stage(stage, model=config.OCR_TEMPLATE_GPT_FALLBACK_MODEL, route=pool_route, phase=phase):
                     raw = await call_gpt_vision(
                         images, prompt, max_tokens=max_tokens, pool_route=pool_route,
                         reasoning_effort=reasoning_effort, prompt_first=prompt_first,
@@ -176,7 +177,8 @@ async def _request(
                         response_validator=validate_output,
                         cancel_on_waiter_cancel=True,
                     )
-                record.update(model="qwen3.8-max", reasoning_effort=reasoning_effort, max_tokens=max_tokens)
+                record.update(model=config.OCR_TEMPLATE_GPT_FALLBACK_MODEL, reasoning_effort=reasoning_effort,
+                              max_tokens=max_tokens)
             parsed = parse_response(raw)
             result = validator(parsed)
         record["status"] = "completed"
@@ -845,14 +847,14 @@ async def recognize_directory_template(image_path: str, *, template_mode: str, l
         directory = _directory_from_hierarchy(hierarchy, locator)
         questions, anchors, answer_regions, handwriting_regions, pending = page_questions.assemble(directory, locator, solver)
         diagnostics = {"strategy": one_three.STRATEGY, "education_stage": stage,
-                       "model": "qwen3.8-max", "hierarchy_model": "qwen3.8-flash",
+                       "model": config.OCR_TEMPLATE_GPT_FALLBACK_MODEL, "hierarchy_model": "qwen3.8-flash",
                        "coarse_locator_model": "qwen3.8-flash", "request_count": 3 + len(solver_plan) + (sum(tile["attempts"] for tile in locator_report) or 1),
                        "locator_tiles": len(locator_plan), "locator_tile_report": locator_report,
                        "solver_shards": len(solver_plan), "solver_shard_plan": solver_plan,
                        "solver_shard_report": solver_report,
                        "hierarchy_contract_version": hierarchy.get("question_identity_version"),
                        "slot_source": locator.get("slot_source", "legacy"),
-                       "transcription_model": "qwen3.8-flash", "solver_model": "qwen3.8-max",
+                       "transcription_model": "qwen3.8-flash", "solver_model": config.OCR_TEMPLATE_GPT_FALLBACK_MODEL,
                        "coarse_locator_tokens": _COARSE_LOCATOR_MAX_TOKENS,
                        "max_locator_tokens": one_three.MAX_TOKENS, "max_transcription_tokens": one_three.FLASH_TOKENS,
                        "max_solver_tokens": one_three.MAX_TOKENS,
