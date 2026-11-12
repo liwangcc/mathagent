@@ -96,9 +96,12 @@ def test_parallel_original_images_attachment_and_solver_status(tmp_path, monkeyp
 
 @pytest.mark.parametrize("phase,requested,expected", [
     ("template-directory-v1", "high", "high"),
-    ("template-merged-v1", "low", "high"),
+    ("template-directory-v1", "low", "low"),
+    ("template-max-fullsolve-v1", "medium", "medium"),
+    ("template-merged-v1", "low", "low"),
 ])
-def test_qwen_effort_reaches_wire_without_weakening_fallback(tmp_path, monkeypatch, phase, requested, expected):
+def test_qwen_effort_reaches_wire_as_requested(tmp_path, monkeypatch, phase, requested, expected):
+    """The route used to send high whatever was asked; the caller's tier is now the one on the wire."""
     from dataclasses import replace
     from tests.test_ocr_pool_scheduler import _configure_template_scheduler_for_test, _install_chat_transport
     from services.ocr_pool_scheduler import OcrPoolScheduler

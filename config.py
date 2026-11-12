@@ -124,12 +124,12 @@ if GRADING_PROVIDER != "qwen3.8-flash":
 # 全高栏学生卷固定先做视觉转录，再交给独立判分模型；旧的联合判分开关已移除。
 # 已验证的模板题号定位参数。活动 GPT 路由的 reasoning effort 在下方按
 # canonical 模板变量设置；学生卷转录仍单独使用 Qwen 合同。
+# 所有思考强度设置与模型请求共用的合法档位（Qwen 合同里 minimal 发送时记作 low）。
+REASONING_EFFORTS = ("none", "minimal", "low", "medium", "high", "xhigh", "max")
 OCR_TRANSCRIPTION_REASONING_EFFORT = os.environ.get(
     "OCR_TRANSCRIPTION_REASONING_EFFORT", "none"
 ).strip().lower()
-if OCR_TRANSCRIPTION_REASONING_EFFORT not in {
-    "none", "minimal", "low", "medium", "high", "xhigh", "max"
-}:
+if OCR_TRANSCRIPTION_REASONING_EFFORT not in REASONING_EFFORTS:
     raise RuntimeError(
         "OCR_TRANSCRIPTION_REASONING_EFFORT 必须为 none、minimal、low、medium、high、xhigh 或 max"
     )
@@ -382,9 +382,7 @@ if _invalid_ocr_float_settings:
         "OCR floating-point settings must be finite and positive: "
         + ", ".join(_invalid_ocr_float_settings)
     )
-if OCR_TEMPLATE_GPT_REASONING_EFFORT not in {
-    "none", "minimal", "low", "medium", "high", "xhigh", "max"
-}:
+if OCR_TEMPLATE_GPT_REASONING_EFFORT not in REASONING_EFFORTS:
     raise RuntimeError(
         "OCR_TEMPLATE_GPT_REASONING_EFFORT 必须为 none、minimal、low、medium、high、xhigh 或 max"
     )

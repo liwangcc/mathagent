@@ -13,7 +13,7 @@ def _payload(**overrides):
     return {"input": [{"role": "user", "content": [{"type": "input_text", "text": "Q"}]}], **overrides}
 
 
-@pytest.mark.parametrize("model", ["qwen3.8-max", "qwen3.8-flash"])
+@pytest.mark.parametrize("model", ["qwen3.8-max", "qwen3.8-flash", "qwen4-max-preview"])
 @pytest.mark.parametrize("phase", [
     "template-directory-v1", "template-directory-solve-v1",
     "template-directory-drawing-v1", "template-drawing-reference-v1",
@@ -39,24 +39,27 @@ def test_qwen_template_effort_is_mapped_without_prompt_substring(monkeypatch, mo
     assert payload["model_reasoning_effort"] == "high"
 
 
+@pytest.mark.parametrize("model", ["qwen3.8-max", "qwen4-max-preview"])
 @pytest.mark.parametrize("effort,expected,thinking", [
     ("none", "none", False), ("minimal", "low", True),
     ("low", "low", True), ("medium", "medium", True),
     ("high", "high", True), ("xhigh", "xhigh", True), ("max", "max", True),
 ])
-def test_qwen_effort_levels_map_to_documented_provider_contract(monkeypatch, effort, expected, thinking):
+def test_qwen_effort_levels_map_to_documented_provider_contract(monkeypatch, model, effort, expected, thinking):
     captured = {}
     _install_chat_transport(monkeypatch, [
         {"choices": [{"delta": {"content": "OK"}, "finish_reason": "stop"}]},
     ], captured)
     scheduler = _scheduler(None)
-    pool = replace(scheduler.accelerator, model="qwen3.8-max", api_protocol="chat_completions")
+    pool = replace(scheduler.accelerator, model=model, api_protocol="chat_completions")
     asyncio.run(scheduler._send_stream(pool, _payload(model_reasoning_effort=effort), "levels"))
+    assert captured["body"]["model"] == model
     assert captured["body"]["reasoning_effort"] == expected
     assert captured["body"]["enable_thinking"] is thinking
 
 
 def test_qwen37_transcription_disables_thinking_without_internal_field(monkeypatch):
+    """Every Qwen generation gets the effort itself; the internal field never leaves."""
     captured = {}
     _install_chat_transport(monkeypatch, [
         {"choices": [{"delta": {"content": "OK"}, "finish_reason": "stop"}]},
@@ -66,7 +69,7 @@ def test_qwen37_transcription_disables_thinking_without_internal_field(monkeypat
     asyncio.run(scheduler._send_stream(pool, _payload(model_reasoning_effort="none"), "ocr"))
     assert captured["body"]["enable_thinking"] is False
     assert "model_reasoning_effort" not in captured["body"]
-    assert "reasoning_effort" not in captured["body"]
+    assert captured["body"]["reasoning_effort"] == "none"
 
 
 @pytest.mark.parametrize("finish,expected,retryable", [

@@ -350,10 +350,12 @@ class _SchedulerRequestsMixin:
         whose stream died before an answer is sent once more inside the same
         in-flight slot; the caller's own deadline still bounds both sends.
         """
+        from config import REASONING_EFFORTS
+
         if not request_key:
             raise ValueError("request_key is required")
-        if reasoning_effort not in {"low", "high"}:
-            raise ValueError("template Qwen reasoning must be low or high")
+        if reasoning_effort not in REASONING_EFFORTS:
+            raise ValueError("template Qwen reasoning must be one of " + ", ".join(REASONING_EFFORTS))
         fallback_pool = self.template_fallback_pool
         if fallback_pool is None:
             raise OcrPoolError(
