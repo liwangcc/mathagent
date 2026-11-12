@@ -21,7 +21,7 @@ MAX_SLOTS_PER_QUESTION = max_owned.MAX_SLOTS_PER_QUESTION
 # How a contract row names a page's first question when it carries no printed
 # label: the rest of a question that began on the previous page. It is shown
 # to the models only; the hierarchy keeps that question's printed label unknown.
-CONTINUED_FROM_PREVIOUS_PAGE = "接上页（本页未印题号）"
+CONTINUED_FROM_PREVIOUS_PAGE = max_owned.CONTINUED_FROM_PREVIOUS_PAGE
 
 
 def _names_printed_number(label: object, path: list[str]) -> bool:
@@ -119,7 +119,8 @@ def question_contract(hierarchy: dict) -> list[dict]:
     """Shared identity/inventory; geometry and types remain locator-owned."""
     nodes = {node["id"]: node for node in hierarchy["nodes"]}
     return [{"q_id": "Q" + number,
-             "printed_path": list(nodes[number].get("source_path") or []) or [CONTINUED_FROM_PREVIOUS_PAGE],
+             **({"printed_path": list(nodes[number]["source_path"])} if nodes[number].get("source_path") else
+                {"printed_path": [CONTINUED_FROM_PREVIOUS_PAGE], "note": max_owned.CONTINUED_NOTE}),
              **({"slots": copy.deepcopy(nodes[number]["slots"])}
                 if hierarchy.get("question_identity_version") == 4 else {})}
             for number in hierarchy["leaf_ids"]]

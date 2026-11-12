@@ -14,6 +14,7 @@ import pytest
 from PIL import Image
 
 from services import template_directory_pipeline as pipeline
+from services import template_max_owned as owned
 from services import template_one_three as contract
 from services.teaching_context import make_teaching_context, use_teaching_context
 from tests.test_template_one_three import v4_payloads
@@ -132,11 +133,24 @@ def test_coarse_rows_must_be_the_hierarchys_questions_in_the_same_order(wire, la
     assert contract.coarse_follows_hierarchy(labels, hierarchy) is follows
 
 
-def recognize(tmp_path, monkeypatch, hierarchy_wire, coarse_numbers):
-    """The real pipeline on a blank page; Flash answers as scripted, Max answers the canonical directory."""
+def max_answers(hierarchy_wire):
+    """The directory Max is given for this page and its canonical locator and solver answers."""
+    _, branches = v4_payloads(tuple(len(item["slots"]) for item in hierarchy_wire["questions"]))
+    manifest = contract.question_contract(contract.receive_hierarchy(copy.deepcopy(hierarchy_wire), version=4))
+    return manifest, branches["template-directory-v1"], branches[contract.SOLVE_PHASE]
+
+
+def recognize(tmp_path, monkeypatch, hierarchy_wire, coarse_numbers, *, number_boxes=None):
+    """The real pipeline on a blank page; Flash answers as scripted, Max answers the canonical directory.
+
+    ``number_boxes`` replaces the printed-number box Max returns for those question numbers.
+    """
     source = tmp_path / "paper.png"
     Image.new("RGB", (600, 800), "white").save(source)
     _, branches = v4_payloads(tuple(len(item["slots"]) for item in hierarchy_wire["questions"]))
+    for located in branches["template-directory-v1"]["questions"]:
+        if located["question_number"] in (number_boxes or {}):
+            located["question_number_bbox"] = number_boxes[located["question_number"]]
     prompts = {}
 
     async def request(images, prompt, phase, validator, **kwargs):
@@ -205,3 +219,83 @@ def test_both_flash_prompts_number_by_position_and_count_an_opening_fragment():
     assert "printed_path为空数组[]" in pipeline._HIERARCHY_PROMPT
     # The example shows a printed number that differs from the position.
     assert '"question_number":"1","printed_path":["基础练习","5."]' in pipeline._HIERARCHY_PROMPT
+
+
+def test_the_question_carried_over_from_the_previous_page_needs_no_printed_number_box():
+    manifest, located, _ = max_answers(CONTINUED_PAGE)
+    printed_box = located["questions"][1]["question_number_bbox"]
+    located["questions"][0]["question_number_bbox"] = None
+
+    received = owned.receive_locator_candidates(located, manifest)
+
+    assert [question["question_number_bbox"] is None for question in received["questions"]] == [True, False, False]
+    assert received["questions"][1]["question_number_bbox"] == [float(value) for value in printed_box]
+    # Its answer areas are located like any other question's.
+    assert all(len(box) == 4 for box in received["questions"][0]["regions"])
+
+
+def test_a_box_max_still_draws_for_the_carried_over_question_is_kept():
+    manifest, located, _ = max_answers(CONTINUED_PAGE)
+
+    received = owned.receive_locator_candidates(copy.deepcopy(located), manifest)
+
+    assert received["questions"][0]["question_number_bbox"] == [
+        float(value) for value in located["questions"][0]["question_number_bbox"]]
+
+
+@pytest.mark.parametrize("hierarchy_wire, position", [
+    pytest.param(CONTINUED_PAGE, 1, id="a_later_question_of_a_continued_page"),
+    pytest.param(SOLVE_PAGE_BY_POSITION, 0, id="the_first_question_of_a_page_that_prints_its_number"),
+])
+def test_a_question_whose_number_is_printed_on_the_page_still_needs_its_box(hierarchy_wire, position):
+    manifest, located, _ = max_answers(hierarchy_wire)
+    located["questions"][position]["question_number_bbox"] = None
+
+    with pytest.raises(ValueError, match="Max 作答框坐标无效"):
+        owned.receive_locator_candidates(located, manifest)
+
+
+def test_the_carried_over_question_goes_to_the_teacher_whatever_the_solver_says():
+    manifest, _, solved = max_answers(CONTINUED_PAGE)
+    assert all(answer["uncertain"] == [] for answer in solved["answers"])
+
+    confident = owned.receive_solver_candidates(copy.deepcopy(solved), manifest)
+    solved["answers"][0]["uncertain"] = ["结果依赖未显示的条件"]
+    hedged = owned.receive_solver_candidates(solved, manifest)
+
+    assert [answer["answer_review_reasons"] for answer in confident["answers"]] == [
+        [owned.CONTINUED_REVIEW_REASON], [], []]
+    assert hedged["answers"][0]["answer_review_reasons"] == [owned.CONTINUED_REVIEW_REASON, "结果依赖未显示的条件"]
+
+
+def test_only_the_carried_over_row_of_the_directory_carries_the_handling_note():
+    continued, _, _ = max_answers(CONTINUED_PAGE)
+    printed, _, _ = max_answers(SOLVE_PAGE_BY_POSITION)
+
+    assert continued[0]["note"] == owned.CONTINUED_NOTE and owned.continues_previous_page(continued[0])
+    assert all(set(row) == {"q_id", "printed_path", "slots"} for row in continued[1:] + printed)
+    assert not any(owned.continues_previous_page(row) for row in continued[1:] + printed)
+
+
+def test_a_continued_page_is_recognized_without_a_number_box_and_only_its_first_question_awaits_the_teacher(
+        tmp_path, monkeypatch):
+    result, prompts = recognize(tmp_path, monkeypatch, CONTINUED_PAGE, ["1", "2", "3"], number_boxes={"1": None})
+
+    assert "error" not in result
+    first, *rest = result["questions"]
+    assert first["answer_status"] == "needs_review" and owned.CONTINUED_REVIEW_REASON in first["directory_issues"]
+    assert [question["answer_status"] for question in rest] == ["ready", "ready"]
+    assert result["requires_teacher_confirmation"] == ["1"]
+    assert ["question_number_bbox" in anchor for anchor in result["question_anchors"]] == [False, True, True]
+    assert all(box for box in first["answer_bboxes"])
+    # Locator, solver and transcription all read the same row, note included.
+    assert all(owned.CONTINUED_NOTE in prompts[phase]
+               for phase in ("template-directory-v1", contract.SOLVE_PHASE, contract.TRANSCRIBE_PHASE))
+
+
+def test_a_page_without_a_carried_over_question_is_told_nothing_about_one(tmp_path, monkeypatch):
+    result, prompts = recognize(tmp_path, monkeypatch, SOLVE_PAGE_BY_POSITION, ["1", "2", "3", "4"])
+
+    assert "error" not in result and result["requires_teacher_confirmation"] == []
+    assert not any("接上页" in prompts[phase]
+                   for phase in ("template-directory-v1", contract.SOLVE_PHASE, contract.TRANSCRIBE_PHASE))
