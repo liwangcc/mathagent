@@ -1,0 +1,145 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 770" width="1200" height="770" role="img" aria-labelledby="t d">
+<title id="t">MathAgent 系统拓扑</title>
+<desc id="d">Vue 3 前端与可选桌面预处理节点连接单实例 FastAPI；FastAPI 内的核心批阅链为教师确认模板、差分只剩笔迹、转录只看笔迹、判分只收文本；数据落在 SQLite 与 uploads，Redis 只存易失状态，模型走兼容端点。</desc>
+<defs>
+  <marker id="ag" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#57606a"/></marker>
+  <marker id="ab" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#2457a6"/></marker>
+</defs>
+<style>
+text{font-family:'PingFang SC','Hiragino Sans GB','Microsoft YaHei','Noto Sans CJK SC','Source Han Sans SC',sans-serif;fill:#1f2328}
+.t{font-size:22px;font-weight:700}
+.h{font-size:16px;font-weight:700}
+.hb{font-size:16px;font-weight:700;fill:#1d4a8c}
+.b{font-size:14px}
+.bb{font-size:14px;font-weight:700}
+.s{font-size:12.5px;fill:#57606a}
+.g{font-size:12.5px;font-weight:700;fill:#b43c0c}
+.m{font-family:Consolas,'SFMono-Regular',Menlo,monospace}
+.box{fill:#f6f8fa;stroke:#8c959f;stroke-width:1.2}
+.opt{fill:#ffffff;stroke:#8c959f;stroke-width:1.2;stroke-dasharray:6 4}
+.core{fill:#e8f0fb;stroke:#2457a6;stroke-width:1.6}
+.gate{fill:#fdf0e8;stroke:#c2410c;stroke-width:1.2}
+.lg{stroke:#57606a;stroke-width:1.4;fill:none}
+.lb{stroke:#2457a6;stroke-width:2;fill:none}
+</style>
+
+<rect x="0.5" y="0.5" width="1199" height="769" rx="14" fill="#ffffff" stroke="#d0d7de"/>
+<text x="40" y="50" class="t">MathAgent 系统拓扑</text>
+<text x="40" y="76" class="s">一台服务器 = 一个学校；数据只落本机，模型只经兼容端点调用</text>
+
+<!-- legend -->
+<rect x="792" y="40" width="14" height="14" rx="3" class="core"/>
+<text x="812" y="52" class="s">核心批阅链</text>
+<rect x="912" y="40" width="14" height="14" rx="3" class="gate"/>
+<text x="932" y="52" class="s">防「改答案」的三道闸</text>
+<rect x="1072" y="40" width="14" height="14" rx="3" class="opt"/>
+<text x="1092" y="52" class="s">可选组件</text>
+
+<!-- clients -->
+<rect x="40" y="100" width="380" height="72" rx="10" class="box"/>
+<text x="60" y="129" class="h">浏览器 · Vue 3 前端</text>
+<text x="60" y="155" class="s"><tspan class="m">frontend/</tspan> · 开发端口 5173，生产由后端服务 <tspan class="m">dist/</tspan></text>
+
+<rect x="780" y="100" width="380" height="72" rx="10" class="opt"/>
+<text x="800" y="129" class="h">桌面预处理节点（可选）</text>
+<text x="800" y="155" class="s"><tspan class="m">desktop/ · worker/</tspan>：只做图像预处理</text>
+
+<line x1="230" y1="172" x2="230" y2="212" class="lg" marker-end="url(#ag)"/>
+<text x="242" y="198" class="s m">/api · /uploads</text>
+<line x1="970" y1="172" x2="970" y2="212" class="lg" stroke-dasharray="5 4" marker-end="url(#ag)"/>
+<text x="958" y="198" class="s" text-anchor="end">只出站 HTTPS；节点结果只是候选，服务器复核后才入库</text>
+
+<!-- FastAPI container -->
+<rect x="40" y="215" width="1120" height="335" rx="12" fill="#ffffff" stroke="#57606a" stroke-width="1.5"/>
+<text x="60" y="244" class="h m">FastAPI · app.py</text>
+<text x="222" y="244" class="s">单实例部署，默认监听 <tspan class="m">127.0.0.1:8080</tspan></text>
+
+<rect x="60" y="258" width="1080" height="34" rx="6" fill="#f6f8fa" stroke="#d0d7de"/>
+<text x="76" y="280" class="bb m">routers/</text>
+<text x="160" y="280" class="s">/api 接口：认证与教师归属校验 · 上传 · 模板 · 批阅 · 复核 · 报告 · 设置 · 预处理节点协议</text>
+
+<text x="60" y="324" class="bb m">services/</text>
+<text x="146" y="324" class="s">核心批阅链：每一步只把下一步需要的东西交出去</text>
+
+<!-- core chain -->
+<rect x="60" y="336" width="240" height="90" rx="10" class="core"/>
+<text x="76" y="364" class="hb">① 教师确认模板</text>
+<text x="76" y="389" class="s">题目、作答位、几何经教师确认</text>
+<text x="76" y="410" class="s">才能进入学生批阅</text>
+
+<rect x="340" y="336" width="240" height="90" rx="10" class="core"/>
+<text x="356" y="364" class="hb">② 差分只剩笔迹</text>
+<text x="356" y="389" class="s m">template_evidence</text>
+<text x="356" y="410" class="s">OpenCV 对齐 → 减掉印刷题干</text>
+
+<rect x="620" y="336" width="240" height="90" rx="10" class="core"/>
+<text x="636" y="364" class="hb">③ 转录只看笔迹</text>
+<text x="636" y="389" class="s"><tspan class="m">ocr_service</tspan> · Qwen Flash</text>
+<text x="636" y="410" class="s">输入是差分图，不是原图</text>
+
+<rect x="900" y="336" width="240" height="90" rx="10" class="core"/>
+<text x="916" y="364" class="hb">④ 判分只收文本</text>
+<text x="916" y="389" class="s"><tspan class="m">flash_grading</tspan> · Qwen Flash</text>
+<text x="916" y="410" class="s"><tspan class="m">text</tspan> 阶段显式拒绝图片</text>
+
+<line x1="300" y1="381" x2="337" y2="381" class="lb" marker-end="url(#ab)"/>
+<line x1="580" y1="381" x2="617" y2="381" class="lb" marker-end="url(#ab)"/>
+<line x1="860" y1="381" x2="897" y2="381" class="lb" marker-end="url(#ab)"/>
+
+<!-- gates -->
+<rect x="346" y="436" width="110" height="24" rx="12" class="gate"/>
+<text x="401" y="453" class="g" text-anchor="middle">闸1 差分图输入</text>
+<rect x="464" y="436" width="110" height="24" rx="12" class="gate"/>
+<text x="519" y="453" class="g" text-anchor="middle">闸2 抹残留虚线</text>
+<rect x="958" y="436" width="124" height="24" rx="12" class="gate"/>
+<text x="1020" y="453" class="g" text-anchor="middle">闸3 判分只收文本</text>
+
+<!-- supporting services -->
+<rect x="60" y="474" width="240" height="60" rx="8" class="box"/>
+<text x="76" y="498" class="bb">模板识别（生成草稿）</text>
+<text x="76" y="520" class="s">Flash 粗定位 · Max 定位与解题</text>
+<line x1="180" y1="474" x2="180" y2="429" class="lg" marker-end="url(#ag)"/>
+<text x="190" y="456" class="s">草稿交教师确认</text>
+
+<rect x="340" y="474" width="240" height="60" rx="8" class="box"/>
+<text x="356" y="498" class="bb">限流 · 并发闸 · 预算</text>
+<text x="356" y="520" class="s">Max 在途上限 · Flash 共用预算</text>
+
+<rect x="620" y="474" width="240" height="60" rx="8" class="box"/>
+<text x="636" y="498" class="bb">教学与学情</text>
+<text x="636" y="520" class="s">班级 · 题库 · 课件 · 教师助手</text>
+
+<rect x="900" y="474" width="240" height="60" rx="8" class="box"/>
+<text x="916" y="498" class="bb">教师复核 → 成绩 · 报告</text>
+<text x="916" y="520" class="s">证据不确定时转教师确认</text>
+<line x1="1110" y1="426" x2="1110" y2="471" class="lg" marker-end="url(#ag)"/>
+
+<!-- storage & external -->
+<line x1="190" y1="550" x2="190" y2="593" class="lg" marker-end="url(#ag)"/>
+<line x1="470" y1="550" x2="470" y2="593" class="lg" marker-end="url(#ag)"/>
+<line x1="730" y1="550" x2="730" y2="593" class="lg" marker-end="url(#ag)"/>
+<line x1="1020" y1="550" x2="1020" y2="593" class="lg" marker-end="url(#ag)"/>
+
+<rect x="40" y="596" width="300" height="94" rx="10" class="box"/>
+<text x="56" y="623" class="h">SQLite · 唯一事实源</text>
+<text x="56" y="648" class="s m">data/mathagent.db（本机磁盘）</text>
+<text x="56" y="670" class="s">验证码票据另存 <tspan class="m">auth_tickets.db</tspan></text>
+
+<rect x="360" y="596" width="220" height="94" rx="10" class="box"/>
+<text x="376" y="623" class="h m">uploads/</text>
+<text x="376" y="648" class="s">学生卷图片（本机磁盘）</text>
+<text x="376" y="670" class="s">与 <tspan class="m">data/</tspan> 一起备份</text>
+
+<rect x="600" y="596" width="260" height="94" rx="10" class="box"/>
+<text x="616" y="623" class="h">Redis · 只存易失状态</text>
+<text x="616" y="648" class="s">限流计数、进行中的租约</text>
+<text x="616" y="670" class="s">全丢只影响进行中的操作</text>
+
+<rect x="880" y="596" width="280" height="94" rx="10" class="box"/>
+<text x="896" y="623" class="h">模型兼容端点</text>
+<text x="896" y="648" class="s">Qwen Flash（DashScope 按量）</text>
+<text x="896" y="670" class="s">Qwen Max（Token Plan）· <tspan class="m">TEACHER_LLM_*</tspan></text>
+
+<text x="40" y="728" class="s">硬约束：单实例，不并行运行第二个应用容器、不 <tspan class="m">--scale</tspan>。备份 = <tspan class="m">data/</tspan>（含 <tspan class="m">.model_key_master</tspan>）+ <tspan class="m">uploads/</tspan>；Redis 数据可随时丢弃。</text>
+<text x="40" y="750" class="s">桌面节点只做预处理：模型凭据、最终校验和成绩写入仍在服务器。</text>
+</svg>

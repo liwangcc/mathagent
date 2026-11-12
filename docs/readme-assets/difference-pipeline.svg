@@ -1,0 +1,180 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 1200 660" width="1200" height="660" role="img" aria-labelledby="t d">
+<title id="t">差分原理：让印刷题干在输入阶段就不存在</title>
+<desc id="d">教师冻结模板与学生卷照片经 OpenCV 对齐后相减，印刷题干被减掉，再抹掉残留印刷虚线，只留学生笔迹；转录只看差分图，判分只收文本。三道闸分别是差分图输入、抹残留虚线、判分只收文本。</desc>
+<defs>
+  <marker id="ag" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#57606a"/></marker>
+  <!-- thumbnails share one 120x96 sheet space: three rows = number, printed stem, answer blank -->
+  <symbol id="stems" viewBox="0 0 120 96">
+    <rect x="8" y="16" width="8" height="5" rx="1" fill="#aab1b8"/><rect x="20" y="16" width="50" height="5" rx="1" fill="#c4c9cf"/>
+    <rect x="8" y="46" width="8" height="5" rx="1" fill="#aab1b8"/><rect x="20" y="46" width="44" height="5" rx="1" fill="#c4c9cf"/>
+    <rect x="8" y="76" width="8" height="5" rx="1" fill="#aab1b8"/><rect x="20" y="76" width="52" height="5" rx="1" fill="#c4c9cf"/>
+  </symbol>
+  <symbol id="dashes" viewBox="0 0 120 96">
+    <path d="M76 22 H112 M70 52 H112 M78 82 H112" stroke="#8c959f" stroke-width="1.4" stroke-dasharray="3 2" fill="none"/>
+  </symbol>
+  <symbol id="dashes-dark" viewBox="0 0 120 96">
+    <path d="M76 22 H112 M70 52 H112 M78 82 H112" stroke="#4b535c" stroke-width="1.6" stroke-dasharray="3 2" fill="none"/>
+  </symbol>
+  <symbol id="ink" viewBox="0 0 120 96">
+    <path d="M80 20 C82 10 86 10 87 19 S91 23 93 14 S97 9 99 18 S104 22 108 12" stroke="#1f2328" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M76 50 C79 41 82 42 83 49 S88 53 90 44 S95 40 98 48" stroke="#1f2328" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M82 80 C84 71 88 71 89 79 S94 83 96 74 S100 70 103 78" stroke="#1f2328" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  </symbol>
+  <symbol id="qtags" viewBox="0 0 120 96">
+    <rect x="54" y="13" width="16" height="10" rx="1.5" fill="#ffffff" stroke="#2457a6" stroke-width="1.2"/>
+    <rect x="50" y="43" width="16" height="10" rx="1.5" fill="#ffffff" stroke="#2457a6" stroke-width="1.2"/>
+    <rect x="56" y="73" width="16" height="10" rx="1.5" fill="#ffffff" stroke="#2457a6" stroke-width="1.2"/>
+  </symbol>
+</defs>
+<style>
+text{font-family:'PingFang SC','Hiragino Sans GB','Microsoft YaHei','Noto Sans CJK SC','Source Han Sans SC',sans-serif;fill:#1f2328}
+.t{font-size:22px;font-weight:700}
+.h{font-size:15px;font-weight:700}
+.bb{font-size:14px;font-weight:700}
+.b{font-size:14px}
+.s{font-size:12.5px;fill:#57606a}
+.o{font-size:12.5px;fill:#b43c0c}
+.ob{font-size:13px;font-weight:700;fill:#b43c0c}
+.g{font-size:12.5px;font-weight:700;fill:#b43c0c}
+.m{font-family:Consolas,'SFMono-Regular',Menlo,monospace}
+.big-o{font-size:40px;font-weight:700;fill:#b43c0c}
+.big-b{font-size:40px;font-weight:700;fill:#2457a6}
+.col{fill:#ffffff;stroke:#d0d7de;stroke-width:1.2}
+.sheet{fill:#ffffff;stroke:#8c959f;stroke-width:1}
+.gate{fill:#fdf0e8;stroke:#c2410c;stroke-width:1.2}
+.lg{stroke:#57606a;stroke-width:1.4;fill:none}
+</style>
+
+<rect x="0.5" y="0.5" width="1199" height="659" rx="14" fill="#ffffff" stroke="#d0d7de"/>
+<text x="40" y="50" class="t">差分原理：让印刷题干在输入阶段就不存在</text>
+<text x="40" y="76" class="s">模型读到印刷题干，会自己算出正确答案，再把学生的错答「顺手改对」。所以不靠提示词求它别看，而是让它看不到。</text>
+
+<!-- column 0: inputs -->
+<rect x="40" y="100" width="200" height="230" rx="10" fill="#f6f8fa" stroke="#d0d7de"/>
+<text x="56" y="126" class="h">输入</text>
+<rect x="52" y="146" width="88" height="70" rx="3" class="sheet"/>
+<use href="#stems" xlink:href="#stems" x="52" y="146" width="88" height="70"/>
+<use href="#dashes" xlink:href="#dashes" x="52" y="146" width="88" height="70"/>
+<g transform="rotate(-4 192 181)">
+  <rect x="148" y="146" width="88" height="70" rx="3" class="sheet"/>
+  <use href="#stems" xlink:href="#stems" x="148" y="146" width="88" height="70"/>
+  <use href="#dashes" xlink:href="#dashes" x="148" y="146" width="88" height="70"/>
+  <use href="#ink" xlink:href="#ink" x="148" y="146" width="88" height="70"/>
+  <rect x="151" y="152" width="53" height="58" rx="3" fill="none" stroke="#c2410c" stroke-width="1.6" stroke-dasharray="4 3"/>
+</g>
+<text x="96" y="240" class="s" text-anchor="middle">教师冻结模板</text>
+<text x="192" y="240" class="s" text-anchor="middle">学生卷照片</text>
+<text x="140" y="272" class="ob" text-anchor="middle">印刷题干 = 污染来源</text>
+<text x="140" y="294" class="s" text-anchor="middle">模型据此算出正确答案</text>
+<text x="140" y="314" class="s" text-anchor="middle">再把错答「顺手改对」</text>
+<line x1="240" y1="188" x2="277" y2="188" class="lg" marker-end="url(#ag)"/>
+
+<!-- column 1: align -->
+<rect x="280" y="100" width="144" height="230" rx="10" class="col"/>
+<text x="292" y="126" class="h">OpenCV 对齐</text>
+<rect x="292" y="140" width="120" height="96" rx="3" fill="none" stroke="#aab1b8" stroke-dasharray="4 3" transform="rotate(-5 352 188)"/>
+<rect x="292" y="140" width="120" height="96" rx="3" class="sheet"/>
+<use href="#stems" xlink:href="#stems" x="292" y="140" width="120" height="96"/>
+<use href="#dashes" xlink:href="#dashes" x="292" y="140" width="120" height="96"/>
+<use href="#ink" xlink:href="#ink" x="292" y="140" width="120" height="96"/>
+<g fill="#2457a6"><circle cx="300" cy="148" r="2.6"/><circle cx="404" cy="148" r="2.6"/><circle cx="300" cy="228" r="2.6"/><circle cx="404" cy="228" r="2.6"/><circle cx="330" cy="188" r="2.6"/></g>
+<text x="292" y="262" class="s">SIFT 特征匹配</text>
+<text x="292" y="282" class="s">RANSAC 单应矩阵</text>
+<text x="292" y="302" class="s">透视对齐到模板坐标</text>
+<line x1="424" y1="188" x2="461" y2="188" class="lg" marker-end="url(#ag)"/>
+
+<!-- column 2: subtract -->
+<rect x="464" y="100" width="144" height="230" rx="10" class="col"/>
+<text x="476" y="126" class="h">差分减掉印刷</text>
+<rect x="476" y="140" width="120" height="96" rx="3" class="sheet"/>
+<use href="#dashes-dark" xlink:href="#dashes-dark" x="476" y="140" width="120" height="96"/>
+<use href="#ink" xlink:href="#ink" x="476" y="140" width="120" height="96"/>
+<rect x="482" y="150" width="62" height="80" rx="3" fill="none" stroke="#aab1b8" stroke-dasharray="4 3"/>
+<text x="513" y="194" class="s" text-anchor="middle">已减掉</text>
+<text x="476" y="262" class="s">与模板逐像素相减</text>
+<text x="476" y="282" class="s">题干、选项、页眉</text>
+<text x="476" y="302" class="s">整幅被减掉</text>
+<rect x="552" y="89" width="50" height="22" rx="11" class="gate"/>
+<text x="577" y="105" class="g" text-anchor="middle">闸1</text>
+<line x1="608" y1="188" x2="645" y2="188" class="lg" marker-end="url(#ag)"/>
+
+<!-- column 3: remove residual dashes -->
+<rect x="648" y="100" width="144" height="230" rx="10" class="col"/>
+<text x="660" y="126" class="h">抹残留虚线</text>
+<rect x="660" y="140" width="120" height="96" rx="3" class="sheet"/>
+<use href="#ink" xlink:href="#ink" x="660" y="140" width="120" height="96"/>
+<use href="#qtags" xlink:href="#qtags" x="660" y="140" width="120" height="96"/>
+<text x="660" y="262" class="s">残留印刷虚线抹掉</text>
+<text x="660" y="282" class="s">不误伤压线笔迹</text>
+<text x="660" y="302" class="s">只剩笔迹 + Q 题号</text>
+<rect x="736" y="89" width="50" height="22" rx="11" class="gate"/>
+<text x="761" y="105" class="g" text-anchor="middle">闸2</text>
+<line x1="792" y1="188" x2="829" y2="188" class="lg" marker-end="url(#ag)"/>
+
+<!-- column 4: transcribe -->
+<rect x="832" y="100" width="144" height="230" rx="10" class="col"/>
+<text x="844" y="126" class="h">转录只看笔迹</text>
+<rect x="844" y="140" width="120" height="96" rx="3" fill="#f6f8fa" stroke="#d0d7de"/>
+<text x="856" y="168" class="b m">Q21: 4√5</text>
+<text x="856" y="194" class="b m">Q22: 4</text>
+<text x="856" y="220" class="b m">Q23: -1</text>
+<text x="844" y="262" class="s">Qwen Flash</text>
+<text x="844" y="282" class="s">输入只有差分图</text>
+<text x="844" y="302" class="s">无题干可借，只能认字</text>
+<line x1="976" y1="188" x2="1013" y2="188" class="lg" marker-end="url(#ag)"/>
+
+<!-- column 5: grade text only -->
+<rect x="1016" y="100" width="144" height="230" rx="10" class="col"/>
+<text x="1028" y="126" class="h">判分只收文本</text>
+<rect x="1028" y="140" width="120" height="96" rx="3" fill="#f6f8fa" stroke="#d0d7de"/>
+<text x="1038" y="166" class="b m">4√5 ≠ 4/5</text>
+<text x="1038" y="192" class="bb" fill="#b43c0c" style="fill:#b43c0c">判错</text>
+<g transform="translate(1104 202)">
+  <rect x="0" y="0" width="34" height="26" rx="3" fill="#ffffff" stroke="#8c959f"/>
+  <path d="M4 22 L13 11 L20 18 L25 13 L31 22 Z" fill="#c4c9cf"/>
+  <line x1="-3" y1="29" x2="37" y2="-3" stroke="#c2410c" stroke-width="2.2"/>
+</g>
+<text x="1028" y="262" class="s">只接收转录文本</text>
+<text x="1028" y="282" class="s"><tspan class="m">text</tspan> 阶段显式</text>
+<text x="1028" y="302" class="s">拒绝任何图片输入</text>
+<rect x="1104" y="89" width="50" height="22" rx="11" class="gate"/>
+<text x="1129" y="105" class="g" text-anchor="middle">闸3</text>
+
+<!-- gate cards -->
+<rect x="40" y="356" width="360" height="90" rx="10" fill="#fffaf6" stroke="#e3b9a3"/>
+<rect x="56" y="370" width="44" height="22" rx="11" class="gate"/>
+<text x="78" y="386" class="g" text-anchor="middle">闸1</text>
+<text x="110" y="387" class="bb">差分图输入</text>
+<text x="56" y="414" class="s">转录输入用差分图而不是原图，</text>
+<text x="56" y="434" class="s">印刷题干在输入阶段就不存在。</text>
+
+<rect x="420" y="356" width="360" height="90" rx="10" fill="#fffaf6" stroke="#e3b9a3"/>
+<rect x="436" y="370" width="44" height="22" rx="11" class="gate"/>
+<text x="458" y="386" class="g" text-anchor="middle">闸2</text>
+<text x="490" y="387" class="bb">抹残留虚线</text>
+<text x="436" y="414" class="s">残留线条同样会提供可借用的上下文，</text>
+<text x="436" y="434" class="s">实测会把连写的 ab 拆成 a,b。</text>
+
+<rect x="800" y="356" width="360" height="90" rx="10" fill="#fffaf6" stroke="#e3b9a3"/>
+<rect x="816" y="370" width="44" height="22" rx="11" class="gate"/>
+<text x="838" y="386" class="g" text-anchor="middle">闸3</text>
+<text x="870" y="387" class="bb">判分只收文本</text>
+<text x="816" y="414" class="s"><tspan class="m">flash_grading</tspan> 的 <tspan class="m">text</tspan> 阶段显式拒绝任何</text>
+<text x="816" y="434" class="s">图片输入，判分模型看不到原始笔迹。</text>
+
+<!-- outcome -->
+<rect x="40" y="470" width="550" height="124" rx="10" fill="#fdf0e8" stroke="#e3b9a3"/>
+<text x="60" y="498" class="bb">原图（含印刷题干）+「转录这份试卷。」</text>
+<text x="60" y="562" class="big-o">46 / 50</text>
+<text x="238" y="540" class="b">把学生的错答 4√5 改写成正确答案 4/5</text>
+<text x="238" y="564" class="s">如实转录 0 次</text>
+
+<rect x="610" y="470" width="550" height="124" rx="10" fill="#e8f0fb" stroke="#a9c1e6"/>
+<text x="630" y="498" class="bb">差分图（题干已被减掉）+ 同一句提示词</text>
+<text x="630" y="562" class="big-b">0 / 50</text>
+<text x="790" y="540" class="b">改写 0 次</text>
+<text x="790" y="564" class="s">50 / 50 如实只抄 4√5</text>
+
+<text x="40" y="622" class="s">同一张卷、同一道题（Q21）、同一模型，每组 50 次（evidence/03）。Fisher 单侧 p≈1×10⁻²⁹；单卷单题小样本，0/50 的 95% 置信上限约 5.8%，</text>
+<text x="40" y="642" class="s">只能说这道题上没再出现。闸1、闸3 是代码与输入约束，不是统计结论。</text>
+</svg>
