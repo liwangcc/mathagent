@@ -14,7 +14,7 @@ import httpx
 import pytest
 
 from services.ocr_pool_scheduler import OcrPoolError
-from tests.test_ocr_pool_scheduler import _AsyncSseStream, _pool, _scheduler
+from tests.test_ocr_pool_scheduler import _AsyncSseStream, _DelayedAsyncSseStream, _pool, _scheduler
 
 ANSWER = '{"ok":true}'
 REASONING_ONLY = [{"choices": [{"delta": {"reasoning_content": "thinking"}}]} for _ in range(3)]
@@ -93,6 +93,66 @@ def test_a_stream_that_gives_no_answer_is_followed_by_one_resend_of_the_same_req
 
     assert answer == ANSWER
     assert len(bodies) == 2 and bodies[0] == bodies[1]
+
+
+def max_scheduler():
+    """A real scheduler whose Max pool speaks the provider's chat protocol over the default transport."""
+    scheduler = _scheduler(None)
+    scheduler.template_fallback_pool = replace(_pool("max", ttl=30.0), model="qwen3.8-max", api_protocol="chat_completions")
+    return scheduler
+
+
+def test_the_call_every_template_max_request_makes_resends_a_dead_stream(tmp_path, monkeypatch, caplog):
+    """Nothing between the pipeline's Max call and the wire drops the resend.
+
+    Measured stream: HTTP 200, reasoning chunks only, then a clean end with no
+    ``finish_reason`` and no ``[DONE]``.
+    """
+    import services.ocr_pool_scheduler as scheduler_module
+    from PIL import Image
+    from services import ocr_service
+
+    image = tmp_path / "tile.png"
+    Image.new("RGB", (40, 40), "white").save(image)
+    bodies = serve_streams(monkeypatch, [_AsyncSseStream(REASONING_ONLY * 500), _AsyncSseStream(ANSWERED)])
+    scheduler = max_scheduler()
+    monkeypatch.setattr(scheduler_module, "get_template_ocr_pool_scheduler", lambda *, pool_route=None: scheduler)
+    validated, diagnostics = [], {}
+
+    with caplog.at_level("WARNING", logger="services.ocr_pool_scheduler"):
+        answer = asyncio.run(ocr_service.call_gpt_vision(
+            str(image), "定位", response_validator=validated.append, json_object=True, route_diagnostics=diagnostics))
+
+    assert answer == ANSWER and validated == [ANSWER]
+    assert len(bodies) == 2 and bodies[0] == bodies[1]
+    assert diagnostics["resent_after"] == "incomplete_stream"
+    assert "Template request is sent once more after incomplete_stream" in caplog.text
+
+
+def test_a_request_cancelled_while_still_reasoning_is_closed_and_not_resent(monkeypatch):
+    """A sibling's failure cancels the requests beside it; on the wire that is also a 200 with reasoning only."""
+    slow = _DelayedAsyncSseStream([(0.0, REASONING_ONLY[0])] + [(0.2, event) for event in REASONING_ONLY * 100])
+    bodies = serve_streams(monkeypatch, [slow, _AsyncSseStream(ANSWERED)])
+    scheduler = max_scheduler()
+    payload = {"input": [{"role": "user", "content": [{"type": "input_text", "text": "locate"}]}]}
+
+    async def run():
+        request_task = asyncio.create_task(scheduler.request_template_fallback_pool(payload, request_key="page-1"))
+        for _ in range(100):
+            if bodies:
+                break
+            await asyncio.sleep(0.02)
+        in_flight = len(bodies)
+        await asyncio.sleep(0.3)
+        request_task.cancel()
+        with pytest.raises(asyncio.CancelledError):
+            await request_task
+        # A resend would start here if a cancelled request counted as a dead stream.
+        await asyncio.sleep(0.3)
+        return in_flight
+
+    assert asyncio.run(run()) == 1
+    assert len(bodies) == 1
 
 
 @pytest.mark.parametrize("failure,recorded", [
