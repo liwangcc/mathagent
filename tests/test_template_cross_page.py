@@ -1,4 +1,4 @@
-"""A question the page break cut in two is solved with the tail of the page before it.
+"""A question the page break cut in two is solved and transcribed with the tail of the page before it.
 
 The measured case (2024 college entrance exam, page 4, 2026-11-11): the page
 opens with a figure and two sub-questions of question 17 whose stem is at the
@@ -35,7 +35,7 @@ from tests.test_template_session import (  # noqa: F401 - autouse readiness fixt
     _template_png_bytes,
 )
 
-SOLVE = contract.SOLVE_PHASE
+SOLVE, TRANSCRIBE = contract.SOLVE_PHASE, contract.TRANSCRIBE_PHASE
 TAIL_NAME = "previous-page-tail.png"
 # The previous page is 300 x 400; its last question's printed number sits at 70% of the height.
 PREVIOUS_SIZE = (300, 400)
@@ -143,23 +143,26 @@ def manifest_of(hierarchy_wire) -> list[dict]:
     pytest.param(2, SOLVE + "#1", id="two_shards"),
     pytest.param(3, SOLVE + "#1", id="one_shard_per_question"),
 ])
-def test_only_the_solver_request_that_owns_the_carried_over_question_sees_the_previous_pages_tail(
+def test_only_the_solver_request_that_owns_the_carried_over_question_and_the_transcription_see_the_previous_pages_tail(
         tmp_path, monkeypatch, shards, owner):
     alone, before = recognize(tmp_path, monkeypatch, CONTINUED_PAGE, shards=shards)
     result, calls = recognize(tmp_path, monkeypatch, CONTINUED_PAGE, previous_page(tmp_path), shards=shards)
 
     assert "error" not in alone and "error" not in result
     assert set(calls) == set(before) and len([key for key in calls if key.startswith(SOLVE)]) == shards
-    # Every other request - both Flash hints, the locator, the transcription, the other shards - is unchanged.
-    assert {key: sent(call) for key, call in calls.items() if key != owner} == {
-        key: sent(call) for key, call in before.items() if key != owner}
-    # The owner keeps its page and crops, in order; the tail comes last, cut from the last question's number down.
-    assert calls[owner]["images"] == before[owner]["images"] + [(TAIL_NAME, (300, 132))]
-    assert calls[owner]["last_cut"] == TAIL
-    assert calls[owner]["options"] == before[owner]["options"]
-    assert "Q1" in calls[owner]["options"]["expected_ids"]
+    # Every other request - both Flash hints, the locator, the other shards - is unchanged.
+    bound = {owner, TRANSCRIBE}
+    assert {key: sent(call) for key, call in calls.items() if key not in bound} == {
+        key: sent(call) for key, call in before.items() if key not in bound}
+    assert len(calls) - len(bound) == 2 + 1 + shards - 1
+    # Both keep their page and crops, in order; the tail comes last, cut from the last question's number down.
+    for key in bound:
+        assert calls[key]["images"] == before[key]["images"] + [(TAIL_NAME, (300, 132))]
+        assert calls[key]["last_cut"] == TAIL
+        assert calls[key]["options"] == before[key]["options"]
+        assert "Q1" in calls[key]["options"]["expected_ids"]
     assert result["template_ocr_diagnostics"]["carried_over_question"] == {
-        "view": "上一页的尾部", "box_px": TAIL, "requests": [owner]}
+        "view": "上一页的尾部", "box_px": TAIL, "requests": sorted(bound)}
     assert "carried_over_question" not in alone["template_ocr_diagnostics"]
 
 
@@ -177,6 +180,23 @@ def test_the_owners_directory_row_says_where_the_stem_is_and_no_longer_says_this
     told = manifest_of(CONTINUED_PAGE)
     told[0]["note"] = note
     rebuilt, _ = owned.build_prompts(told, education_stage="senior")
+    assert new.startswith(rebuilt) and new[len(rebuilt):] == old[len(rebuilt) - len(note) + len(owned.CONTINUED_NOTE):]
+
+
+def test_the_transcriptions_directory_row_says_to_join_the_stem_with_this_pages_text(tmp_path, monkeypatch):
+    _, before = recognize(tmp_path, monkeypatch, CONTINUED_PAGE)
+    _, calls = recognize(tmp_path, monkeypatch, CONTINUED_PAGE, previous_page(tmp_path))
+    old, new = before[TRANSCRIBE]["prompt"], calls[TRANSCRIBE]["prompt"]
+
+    assert row_of(old)["note"] == owned.CONTINUED_NOTE and owned.CONTINUED_NOTE not in new
+    note = row_of(new)["note"]
+    assert "最后一张图是上一页的尾部" in note and "那张图中的最后一道题" in note
+    assert "先录那里的本题题干，再接本页上本题的正文" in note and "不转录" in note
+    # It is told how to transcribe, not how to answer; the solver's row is the other way round.
+    assert "answer留空" not in note and "转录" not in row_of(calls[SOLVE + "#1"]["prompt"])["note"]
+    told = manifest_of(CONTINUED_PAGE)
+    told[0]["note"] = note
+    _, rebuilt = owned.build_prompts(told, education_stage="senior")
     assert new.startswith(rebuilt) and new[len(rebuilt):] == old[len(rebuilt) - len(note) + len(owned.CONTINUED_NOTE):]
 
 
@@ -214,9 +234,10 @@ def test_a_previous_page_that_was_not_recognized_is_shown_whole(tmp_path, monkey
 
     assert owner["paths"][-1] == previous.image_path and owner["paths"][:-1] == calls[SOLVE + "#2"]["paths"]
     assert owner["images"] == before[SOLVE + "#1"]["images"] + [("previous.png", PREVIOUS_SIZE)]
-    assert "最后一张图是上一页整页" in row_of(owner["prompt"])["note"]
+    assert calls[TRANSCRIBE]["paths"] == owner["paths"]
+    assert all("最后一张图是上一页整页" in row_of(calls[key]["prompt"])["note"] for key in (SOLVE + "#1", TRANSCRIBE))
     assert result["template_ocr_diagnostics"]["carried_over_question"] == {
-        "view": "上一页整页", "requests": [SOLVE + "#1"]}
+        "view": "上一页整页", "requests": [TRANSCRIBE, SOLVE + "#1"]}
 
 
 def test_a_previous_page_that_cannot_be_read_leaves_the_page_as_it_was(tmp_path, monkeypatch, caplog):
@@ -299,8 +320,9 @@ def test_the_request_itself_comes_back_when_there_is_nothing_to_bind(tmp_path):
 @pytest.mark.parametrize("phase, expected_ids, prompt", [
     pytest.param(SOLVE, ("Q2", "Q3"), owned.CONTINUED_NOTE, id="a_shard_that_does_not_own_the_question"),
     pytest.param("template-directory-v1", ("Q1",), owned.CONTINUED_NOTE, id="the_locator"),
-    pytest.param(contract.TRANSCRIBE_PHASE, ("Q1", "Q2", "Q3"), owned.CONTINUED_NOTE, id="the_transcription"),
+    pytest.param("template-hierarchy-v1", ("Q1",), owned.CONTINUED_NOTE, id="a_flash_hint_request"),
     pytest.param(SOLVE, ("Q1",), "目录里没有那句说明", id="a_prompt_without_the_row_note"),
+    pytest.param(TRANSCRIBE, ("Q1", "Q2", "Q3"), "目录里没有那句说明", id="a_transcription_without_the_row_note"),
     pytest.param(SOLVE, ("Q1",), owned.CONTINUED_NOTE * 2, id="a_prompt_that_carries_the_note_twice"),
 ])
 def test_a_request_the_tail_is_not_meant_for_passes_through_untouched(tmp_path, phase, expected_ids, prompt):
@@ -321,6 +343,17 @@ def test_one_page_image_given_as_a_path_is_followed_by_the_tail(tmp_path):
     asyncio.run(ask("page.png", owned.CONTINUED_NOTE, SOLVE, lambda payload: payload, expected_ids=("Q1",)))
 
     assert wire[0]["images"] == ["page.png", str(tmp_path / TAIL_NAME)] and report["requests"] == [SOLVE]
+
+
+def test_the_transcription_carries_the_tail_and_keeps_its_own_validator(tmp_path):
+    _, ask, report, wire = bound_request(tmp_path, manifest_of(CONTINUED_PAGE), previous_page(tmp_path))
+    validator = object()
+
+    asyncio.run(ask(["page.png"], owned.CONTINUED_NOTE, TRANSCRIBE, validator, expected_ids=("Q1", "Q2", "Q3")))
+
+    assert wire[0]["images"] == ["page.png", str(tmp_path / TAIL_NAME)] and report["requests"] == [TRANSCRIBE]
+    # Review reasons belong to the solver's answers; a transcription has none to rewrite.
+    assert wire[0]["validator"] is validator
 
 
 def _carried_over_pipeline(calls, tmp_path):

@@ -748,7 +748,7 @@ async def recognize_directory_template(image_path: str, *, template_mode: str, l
         # additional visual evidence for the Max solver and Flash transcription.
         # Max remains the sole owner of final geometry and answer binding.
         detailed_images = [image_path] + coarse_paths
-        # A question carried over from the previous page is solved with that page's tail in view.
+        # A question carried over from the previous page is solved and transcribed with that page's tail in view.
         page_request, carried_over = cross_page.bind(_request, one_three.question_contract(hierarchy), temp)
         # Tiles are fixed from the coarse boxes before any Max call; without
         # a plan the single page request stays exactly as it was.
@@ -790,7 +790,7 @@ async def recognize_directory_template(image_path: str, *, template_mode: str, l
         # cached while Max is still solving; merge_branches later binds it to
         # Max's authoritative question types.
         async def transcribe_and_notify():
-            transcription = await _request(
+            transcription = await page_request(
                 detailed_images, transcription_prompt, one_three.TRANSCRIBE_PHASE,
                 lambda raw: one_three.receive_transcription(raw, hierarchy),
                 max_tokens=one_three.FLASH_TOKENS, reasoning_effort="high", pool_route="payg",

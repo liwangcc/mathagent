@@ -1,12 +1,13 @@
-"""A question the page break cut in two is solved with its beginning in view.
+"""A question the page break cut in two is solved and transcribed with its beginning in view.
 
 A page can open with the rest of the previous page's last question
 (``template_max_owned.CONTINUED_FROM_PREVIOUS_PAGE``). Its stem is on the other
 page, so a request that sees only this page can leave the answer blank or make
-the conditions up. Template pages are recognized in order: when the import
-names the page before this one (``after``), the one solver request that owns
-the question also gets the tail of that page, from the start of its last
-question down to the bottom, and is told what that image is (``bind``).
+the conditions up, and the transcribed question lacks its stem. Template pages
+are recognized in order: when the import names the page before this one
+(``after``), the one solver request that owns the question and the
+transcription also get the tail of that page, from the start of its last
+question down to the bottom, and are told what that image is (``bind``).
 
 No request is added. Every other request, and every request of a page without
 such a question, is sent exactly as before.
@@ -42,6 +43,9 @@ _NOTES = {
         "解题时把那里的题干与本页上本题的图形、小问合成同一道题；只依据这两处可见内容，"
         "两处都没有的已知条件不得自行补设或凭记忆补入，依赖这些条件的作答位answer留空，并在uncertain写明缺少的条件。"
         "那张图中的其他题目不属于本请求。"),
+    one_three.TRANSCRIBE_PHASE: _STEM + (
+        "转录时先录那里的本题题干，再接本页上本题的正文，合成同一道题的question_text；"
+        "只录印刷可见的文字，两处都没有的内容不补写。那张图中的其他题目不属于本请求，不转录。"),
 }
 # Its answer was derived from two pages: a teacher still checks it, and is told so.
 BOUND_REVIEW_REASON = "本题接上页：题干在上一页，标准答案由上一页的题干与本页内容共同得出，请对照上一页核对"
@@ -126,16 +130,17 @@ def _reviewed_with_stem(validator, owner: str):
 
 
 def bind(request, manifest, directory) -> tuple:
-    """``(request, report)`` for this page's solver.
+    """``(request, report)`` for this page's solver and transcription.
 
     The request is ``request`` itself, and the report empty, unless the page
     opens with a carried-over question and the import named the page before.
-    Then a request that owns the question is sent with the previous page's
-    tail as its last image, its directory row says where the stem is, and the
-    fixed review reason says what the answer was derived from; any other
-    request passes through untouched. ``report`` names the view and, once they
-    start, the requests that carried it. A previous page that cannot be read
-    is not worth failing this page for: the question is then solved as before.
+    Then a solver or transcription request that owns the question is sent
+    with the previous page's tail as its last image and its directory row says
+    where the stem is; the solver's fixed review reason says what the answer
+    was derived from. Any other request passes through untouched. ``report``
+    names the view and, once they start, the requests that carried it. A
+    previous page that cannot be read is not worth failing this page for: the
+    question is then handled as before.
     """
     previous = _previous_page.get()
     owner = next((row["q_id"] for row in manifest if max_owned.continues_previous_page(row)), None)
@@ -153,7 +158,8 @@ def bind(request, manifest, directory) -> tuple:
         if (note is None or owner not in options.get("expected_ids", ())
                 or prompt.count(max_owned.CONTINUED_NOTE) != 1):
             return await request(images, prompt, phase, validator, **options)
-        report["requests"].append(options.get("stage_key") or phase)
+        # Solver and transcription start in an order that depends on the shard count.
+        report["requests"] = sorted(report["requests"] + [options.get("stage_key") or phase])
         return await request(
             ([images] if isinstance(images, str) else list(images)) + [shown["path"]],
             prompt.replace(max_owned.CONTINUED_NOTE, note.format(view=shown["view"])), phase,
