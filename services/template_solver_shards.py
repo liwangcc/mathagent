@@ -121,13 +121,12 @@ def merge_shard_results(results, manifest) -> dict:
             "slot_source": max_owned.SHARED_SLOT_SOURCE, "max_flags": flags}
 
 
-async def solve_in_shards(request, images, prompt: str, manifest, plan, *,
-                          phase: str, max_tokens: int, report: list) -> dict:
-    """Run one ``request`` per shard concurrently and merge the answers.
+def start_shards(request, images, prompt: str, manifest, plan, *,
+                 phase: str, max_tokens: int, report: list) -> list:
+    """Start one ``request`` task per shard, in plan order.
 
     Images go before the prompt so every shard shares the same cacheable
-    prefix. One failed shard cancels the others and fails the solve, exactly
-    like a failed single request. ``report`` receives one entry per shard.
+    prefix. ``report`` receives one entry per shard.
     """
     report.extend({"q_ids": list(owned), "out_of_scope_answers": 0} for owned in plan)
 
@@ -138,11 +137,22 @@ async def solve_in_shards(request, images, prompt: str, manifest, plan, *,
             return result
         return validate
 
-    tasks = [asyncio.create_task(request(
+    return [asyncio.create_task(request(
         images, shard_prompt(prompt, owned), phase, validator_for(index, owned),
         max_tokens=max_tokens, reasoning_effort="high", expected_ids=tuple(owned),
         prompt_first=False, stage_key=f"{phase}#{index + 1}",
     ), name=f"template-qwen-max-fullsolve-{index + 1}") for index, owned in enumerate(plan)]
+
+
+async def solve_in_shards(request, images, prompt: str, manifest, plan, *,
+                          phase: str, max_tokens: int, report: list) -> dict:
+    """Run one ``request`` per shard concurrently and merge the answers.
+
+    One failed shard cancels the others and fails the solve, exactly like a
+    failed single request.
+    """
+    tasks = start_shards(request, images, prompt, manifest, plan,
+                         phase=phase, max_tokens=max_tokens, report=report)
     try:
         results = await asyncio.gather(*tasks)
     except BaseException:
