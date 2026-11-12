@@ -99,9 +99,9 @@ def run(scenario, *, timeout=30):
     return asyncio.run(asyncio.wait_for(scenario, timeout))
 
 
-def on_time(tmp_path, monkeypatch, *, shards=2, hierarchy_wire=SOLVE_PAGE_BY_POSITION) -> dict:
+def on_time(tmp_path, monkeypatch, *, shards=2, hierarchy_wire=SOLVE_PAGE_BY_POSITION, models=None) -> dict:
     """The same page with every answer in time."""
-    source = setup_page(tmp_path, monkeypatch, Models(hierarchy_wire), shards=shards)
+    source = setup_page(tmp_path, monkeypatch, models or Models(hierarchy_wire), shards=shards)
     result, _ = run(recognize(source, accept=False))
     assert "error" not in result
     return result
