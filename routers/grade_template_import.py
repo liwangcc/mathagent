@@ -74,6 +74,7 @@ from services.teaching_context import (
     require_teacher_stage,
     stream_teaching,
 )
+from services import template_cross_page as cross_page
 from services.template_anchor_crops import AnchorCropPlanError
 from services.template_column_layout import (
     TemplateCutError,
@@ -373,6 +374,8 @@ class _TemplatePageImport:
     model_output: dict | None = None
     recognized: _RecognizedTemplatePage | None = None
     artifact_questions: list[dict] | None = None
+    # The page uploaded before this one: a question it cut off continues here.
+    previous: cross_page.PreviousPage | None = None
 
 
 async def _correct_template_page_events(
@@ -516,7 +519,7 @@ async def _template_model_events(
         with template_import_context(
             deadline_at=_template_page_model_deadline(job.deadline_at, job.total - idx),
             progress=model_progress,
-        ):
+        ), cross_page.after(page.previous, role=page.role):
             steps.start(asyncio.create_task(
                 await_teaching(sess.teaching_context, operation)
             ))
@@ -686,12 +689,14 @@ async def _template_import_events(job: _TemplateImport):
             "teaching_context": copy.deepcopy(sess.teaching_context),
         })
         graded_pages: list[_TemplatePageImport] = []
+        previous = None
         for idx, path in enumerate(job.paths):
-            page = _TemplatePageImport(index=idx, path=path, role=job.page_roles[idx])
+            page = _TemplatePageImport(index=idx, path=path, role=job.page_roles[idx], previous=previous)
             async for event in _template_page_events(job, steps, page):
                 yield event
             if page.recognized is not None:
                 graded_pages.append(page)
+            previous = cross_page.PreviousPage(page.role, page.canonical.image_path, page.model_output)
         # Every import owns and freezes its geometry, after all pages are saved.
         for page in graded_pages:
             async for event in _freeze_template_page_events(job, steps, page):

@@ -24,6 +24,7 @@ from services.grading_contract import merge_directory_leaf_score_layer
 from services.ocr_service import call_gpt_vision, set_vision_phase_key, reset_vision_phase_key
 from services.processing_errors import describe_failure, processing_stage, report_failure
 from services.teaching_context import current_teaching_context
+from services import template_cross_page as cross_page
 from services import template_one_three as one_three
 from services import template_locator_tiles as locator_tiles
 from services import template_solver_shards as solver_shards
@@ -747,6 +748,8 @@ async def recognize_directory_template(image_path: str, *, template_mode: str, l
         # additional visual evidence for the Max solver and Flash transcription.
         # Max remains the sole owner of final geometry and answer binding.
         detailed_images = [image_path] + coarse_paths
+        # A question carried over from the previous page is solved with that page's tail in view.
+        page_request, carried_over = cross_page.bind(_request, one_three.question_contract(hierarchy), temp)
         # Tiles are fixed from the coarse boxes before any Max call; without
         # a plan the single page request stays exactly as it was.
         locator_plan = locator_tiles.plan_tiles(
@@ -771,9 +774,9 @@ async def recognize_directory_template(image_path: str, *, template_mode: str, l
                                                 solver_shards.configured_shard_count(hierarchy, len(locator_plan)))
         solver_report = []
         solver_call = (solver_shards.solve_in_shards(
-            _request, detailed_images, solver_prompt, one_three.question_contract(hierarchy), solver_plan,
+            page_request, detailed_images, solver_prompt, one_three.question_contract(hierarchy), solver_plan,
             phase=one_three.SOLVE_PHASE, max_tokens=one_three.MAX_TOKENS, report=solver_report,
-        ) if len(solver_plan) > 1 else _request(
+        ) if len(solver_plan) > 1 else page_request(
             detailed_images, solver_prompt, one_three.SOLVE_PHASE,
             lambda raw: (one_three.max_owned.receive_solver_candidates(raw, one_three.question_contract(hierarchy))
                          if hierarchy.get("question_identity_version") == 4
@@ -883,6 +886,7 @@ async def recognize_directory_template(image_path: str, *, template_mode: str, l
                    "elapsed_s": round(asyncio.get_running_loop().time() - started, 3),
                    "needs_review": bool(pending), "review_reasons": pending,
                    **({"coarse_locator_error_info": coarse_failure_info} if coarse_failure_info else {}),
+                   **({"carried_over_question": carried_over} if carried_over else {}),
                    **_stage_diagnostics()}
     return {"questions": questions, "question_directory": directory, "template_mode": template_mode,
             "layout_result": layout_result, "question_anchors": anchors,
