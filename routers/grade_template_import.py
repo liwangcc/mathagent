@@ -74,6 +74,9 @@ from services.teaching_context import (
     require_teacher_stage,
     stream_teaching,
 )
+from services import template_answer_ledger as answer_ledger
+from services import template_cross_page as cross_page
+from services import template_late_answers as late_answers
 from services.template_anchor_crops import AnchorCropPlanError
 from services.template_column_layout import (
     TemplateCutError,
@@ -193,6 +196,8 @@ def _template_recognition_status_payload(sess: TemplateSession) -> dict:
 
     ready = status in {"ocr_done", "confirmed", "frozen"}
     terminal = ready or status == "failed"
+    # A template is read with its late answers: pending ones marked, arrived ones filled in.
+    pages = answer_ledger.overlay(sess.template_dir, sess.pages) if ready else []
     return {
         "success": ready,
         "template_id": sess.template_id,
@@ -202,7 +207,9 @@ def _template_recognition_status_payload(sess: TemplateSession) -> dict:
         "status": status,
         "terminal": terminal,
         "page_count": len(sess.pages),
-        "pages": sess.pages if ready else [],
+        "pages": pages,
+        "answers_pending": sum(bool(question.get("answer_pending"))
+                               for page in pages for question in page.get("questions") or []),
         "category": sess.category,
         "exam_name": sess.exam_name,
         "error_code": error_code,
@@ -373,6 +380,10 @@ class _TemplatePageImport:
     model_output: dict | None = None
     recognized: _RecognizedTemplatePage | None = None
     artifact_questions: list[dict] | None = None
+    # The page uploaded before this one: a question it cut off continues here.
+    previous: cross_page.PreviousPage | None = None
+    # Where the page hands over solver requests it was delivered without.
+    late_offer: late_answers.Offer | None = None
 
 
 async def _correct_template_page_events(
@@ -516,7 +527,7 @@ async def _template_model_events(
         with template_import_context(
             deadline_at=_template_page_model_deadline(job.deadline_at, job.total - idx),
             progress=model_progress,
-        ):
+        ), cross_page.after(page.previous, role=page.role), late_answers.accepting() as page.late_offer:
             steps.start(asyncio.create_task(
                 await_teaching(sess.teaching_context, operation)
             ))
@@ -595,7 +606,16 @@ async def _template_page_events(
         yield event
     async for event in _template_model_events(job, steps, page):
         yield event
-    await _save_recognized_template_page(job, page)
+    late = page.late_offer.late if page.late_offer is not None else None
+    try:
+        await _save_recognized_template_page(job, page)
+        if late is not None:
+            # The page was delivered while some answers are still being solved: they follow.
+            await answer_ledger.follow_page(sess.template_dir, idx, page.recognized.questions, late)
+    except BaseException:
+        if late is not None:
+            late.cancel()
+        raise
     yield _sse("page", {"page_index": idx, "question_count": len(page.recognized.questions)})
 
 
@@ -686,12 +706,14 @@ async def _template_import_events(job: _TemplateImport):
             "teaching_context": copy.deepcopy(sess.teaching_context),
         })
         graded_pages: list[_TemplatePageImport] = []
+        previous = None
         for idx, path in enumerate(job.paths):
-            page = _TemplatePageImport(index=idx, path=path, role=job.page_roles[idx])
+            page = _TemplatePageImport(index=idx, path=path, role=job.page_roles[idx], previous=previous)
             async for event in _template_page_events(job, steps, page):
                 yield event
             if page.recognized is not None:
                 graded_pages.append(page)
+            previous = cross_page.PreviousPage(page.role, page.canonical.image_path, page.model_output)
         # Every import owns and freezes its geometry, after all pages are saved.
         for page in graded_pages:
             async for event in _freeze_template_page_events(job, steps, page):
@@ -703,7 +725,7 @@ async def _template_import_events(job: _TemplateImport):
             "page_count": len(sess.pages),
             "template_mode": sess.template_mode,
             "column_mode": getattr(sess, "column_mode", "double") or "double",
-            "pages": sess.pages,
+            "pages": await asyncio.to_thread(answer_ledger.overlay, sess.template_dir, sess.pages),
         })
     except _TemplateImportDeadlineExceeded:
         failure = _template_import_deadline_failure(job.deadline_s)
@@ -722,6 +744,9 @@ async def _template_import_events(job: _TemplateImport):
     finally:
         await steps.settle()
         shutil.rmtree(job.candidate_dir, ignore_errors=True)
+        if sess.status != "ocr_done":
+            # Nobody will review this template: its late answers are not waited for.
+            answer_ledger.forget(sess.template_dir)
         if sess.status not in {"ocr_done", "failed"}:
             sess.status = "failed"
             sess.error_code = "TEMPLATE_IMPORT_INTERRUPTED"

@@ -17,7 +17,10 @@ def test_flash_hierarchy_prompt_requests_direct_two_level_contract():
     # frozen AnswerSpec/evidence ceiling (previously receivers capped at 20 but
     # the prompt let the model emit up to 64). Add semantic pins so a future
     # edit cannot silently drop the cap again.
-    assert hashlib.sha256(pipeline._HIERARCHY_PROMPT.encode()).hexdigest() == "a6b21149085ed57d9fd4decbb629d497110aaae838d63aee73e1f6b2abee3df0"
+    # Snapshot moved 2026-11-11: question_number is stated as the position on the
+    # page (real exam pages made Flash write printed numbers), and a page may open
+    # with the unlabelled rest of the previous page's question.
+    assert hashlib.sha256(pipeline._HIERARCHY_PROMPT.encode()).hexdigest() == "ffcdb25d6d72a33892be576a93784a4b2daa778b43d614e11ae1e32d979ea561"
     assert "printed_path" in pipeline._HIERARCHY_PROMPT
     assert "每题1至20项" in pipeline._HIERARCHY_PROMPT
     assert "subquestions" not in pipeline._HIERARCHY_PROMPT
@@ -199,8 +202,8 @@ def test_parallel_pipeline_sends_all_columns_and_two_max_calls(tmp_path, monkeyp
     }
     assert phases.count(("template-hierarchy-v1", 2, 8000, "low")) == 1
     assert phases.count(("template-coarse-locator-v1", 2, 4096, "low")) == 1
-    assert phases.count(("template-directory-v1", 2, 32768, "high")) == 1
-    assert phases.count(("template-max-fullsolve-v1", 2, 32768, "high")) == 1
+    assert phases.count(("template-directory-v1", 2, 32768, "low")) == 1
+    assert phases.count(("template-max-fullsolve-v1", 2, 32768, "medium")) == 1
     assert phases.count(("template-flash-transcribe-v1", 2, 8000, "high")) == 1
     assert result["questions"][0]["question_text"] == ""
     assert result["template_ocr_diagnostics"]["request_count"] == 5
@@ -283,7 +286,8 @@ def test_key_handoff_through_transports_starts_solver_before_transcription_and_r
         async def max_call(images, prompt, **kwargs):
             assert kwargs["pool_route"] == "fallback"
             assert kwargs["max_tokens"] == 32768
-            assert kwargs["reasoning_effort"] == "high"
+            # Default tiers: the locator thinks at low, the solver at medium.
+            assert kwargs["reasoning_effort"] == ("low" if "normalized_1000_v1" in prompt else "medium")
             expected_count = 1 if "normalized_1000_v1" in prompt else 6
             assert len(images) == expected_count
             with Image.open(images[0]) as image:

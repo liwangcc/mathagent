@@ -1,0 +1,140 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 1200 700" width="1200" height="700" role="img" aria-labelledby="t d">
+<title id="t">按题分片与跨页尾块</title>
+<desc id="d">本页的解题请求按题拆成并行分片，每路带同一组图：整页原图加各题粗定位裁图，只负责自己的题。本页第一题接上页时，从上一页最后一题题号框上沿裁到页底的尾块，只追加给负责该题的解题分片和转录请求，作为最后一张图。</desc>
+<defs>
+  <marker id="ao" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#c2410c"/></marker>
+  <symbol id="ipage" viewBox="0 0 28 38">
+    <rect x="0.6" y="0.6" width="26.8" height="36.8" rx="2" fill="#ffffff" stroke="#57606a" stroke-width="1.2"/>
+    <path d="M5 8 H23 M5 13 H20 M5 18 H23 M5 23 H18 M5 28 H22" stroke="#c4c9cf" stroke-width="2"/>
+  </symbol>
+  <symbol id="icrops" viewBox="0 0 32 32">
+    <rect x="0.6" y="0.6" width="18" height="22" rx="1.5" fill="#ffffff" stroke="#2457a6" stroke-width="1.2"/>
+    <rect x="6.6" y="4.6" width="18" height="22" rx="1.5" fill="#ffffff" stroke="#2457a6" stroke-width="1.2"/>
+    <rect x="12.6" y="8.6" width="18" height="22" rx="1.5" fill="#ffffff" stroke="#2457a6" stroke-width="1.2"/>
+    <path d="M16 15 H27 M16 20 H25" stroke="#c4c9cf" stroke-width="2"/>
+  </symbol>
+  <symbol id="itail" viewBox="0 0 36 22">
+    <rect x="1" y="1" width="34" height="20" rx="2" fill="#fbe4d6" stroke="#c2410c" stroke-width="1.6"/>
+    <path d="M6 8 H30 M6 14 H24" stroke="#e3a283" stroke-width="2"/>
+  </symbol>
+</defs>
+<style>
+text{font-family:'PingFang SC','Hiragino Sans GB','Microsoft YaHei','Noto Sans CJK SC','Source Han Sans SC',sans-serif;fill:#1f2328}
+.t{font-size:22px;font-weight:700}
+.h{font-size:16px;font-weight:700}
+.bb{font-size:14px;font-weight:700}
+.b{font-size:14px}
+.n{font-size:13px}
+.s{font-size:12.5px;fill:#57606a}
+.o{font-size:12.5px;fill:#b43c0c}
+.ob{font-size:13px;font-weight:700;fill:#b43c0c}
+.pn{font-size:12px;fill:#57606a}
+.m{font-family:Consolas,'SFMono-Regular',Menlo,monospace}
+.bar{fill:#c4c9cf}
+.lane{fill:#f6f8fa;stroke:#d0d7de;stroke-width:1.2}
+</style>
+
+<rect x="0.5" y="0.5" width="1199" height="699" rx="14" fill="#ffffff" stroke="#d0d7de"/>
+<text x="40" y="50" class="t">按题分片 + 跨页尾块：每一路请求看到什么</text>
+<text x="40" y="76" class="s">示意：本页 4 道题、2 个解题分片，第一道题从上一页接过来。源码：<tspan class="m">services/template_solver_shards.py</tspan> · <tspan class="m">services/template_cross_page.py</tspan></text>
+
+<!-- ============ left: the page break ============ -->
+<text x="40" y="112" class="h">两页之间：被换页切开的题</text>
+
+<!-- previous page, lower half -->
+<path d="M60 126 V300 H360 V126" fill="#ffffff" stroke="#8c959f" stroke-width="1.2"/>
+<line x1="60" y1="126" x2="360" y2="126" stroke="#c4c9cf" stroke-dasharray="4 4"/>
+<text x="72" y="146" class="s">上一页 · 下半部分</text>
+<text x="72" y="172" class="pn">16.</text>
+<rect x="98" y="164" width="232" height="6" rx="1.5" class="bar"/>
+<rect x="98" y="182" width="200" height="6" rx="1.5" class="bar"/>
+<rect x="61" y="206" width="298" height="93" fill="#c2410c" fill-opacity="0.07" stroke="#c2410c" stroke-width="2" stroke-dasharray="6 4"/>
+<rect x="70" y="214" width="26" height="18" rx="2" fill="#ffffff" stroke="#2457a6" stroke-width="1.4"/>
+<text x="74" y="228" class="pn">17.</text>
+<rect x="104" y="220" width="236" height="6" rx="1.5" class="bar"/>
+<rect x="72" y="238" width="268" height="6" rx="1.5" class="bar"/>
+<rect x="72" y="256" width="250" height="6" rx="1.5" class="bar"/>
+<rect x="72" y="274" width="262" height="6" rx="1.5" class="bar"/>
+<rect x="72" y="290" width="170" height="5" rx="1.5" class="bar"/>
+
+<line x1="362" y1="207" x2="380" y2="207" stroke="#c2410c" stroke-width="1.4"/>
+<text x="386" y="211" class="ob">切点：最后一题</text>
+<text x="386" y="229" class="o">题号框的上沿</text>
+<text x="386" y="253" class="s">上、左、右留 1.5%</text>
+<text x="386" y="273" class="s">高度 ≥ 页高 10%</text>
+<line x1="362" y1="299" x2="380" y2="299" stroke="#c2410c" stroke-width="1.4"/>
+<text x="386" y="303" class="s">一直裁到页底</text>
+
+<!-- page break -->
+<line x1="60" y1="320" x2="360" y2="320" stroke="#aab1b8" stroke-dasharray="3 4"/>
+<rect x="186" y="310" width="48" height="20" fill="#ffffff"/>
+<text x="210" y="325" class="s" text-anchor="middle">换页</text>
+
+<!-- this page, upper half -->
+<path d="M60 530 V340 H360 V530" fill="#ffffff" stroke="#8c959f" stroke-width="1.2"/>
+<line x1="60" y1="530" x2="360" y2="530" stroke="#c4c9cf" stroke-dasharray="4 4"/>
+<text x="72" y="360" class="s">本页 · 上半部分</text>
+<rect x="68" y="370" width="284" height="94" rx="6" fill="#fdf0e8" stroke="#e3b9a3"/>
+<path d="M84 450 L134 450 L122 386 Z" fill="none" stroke="#57606a" stroke-width="1.4"/>
+<text x="150" y="400" class="pn">(1)</text>
+<rect x="174" y="393" width="160" height="6" rx="1.5" class="bar"/>
+<text x="150" y="426" class="pn">(2)</text>
+<rect x="174" y="419" width="140" height="6" rx="1.5" class="bar"/>
+<text x="150" y="453" class="o">无印刷题号，题干在上一页</text>
+<text x="72" y="494" class="pn">18.</text>
+<rect x="98" y="486" width="232" height="6" rx="1.5" class="bar"/>
+<rect x="98" y="504" width="190" height="6" rx="1.5" class="bar"/>
+
+<line x1="354" y1="404" x2="380" y2="404" stroke="#c2410c" stroke-width="1.4"/>
+<text x="386" y="408" class="ob">接上页的 17 题</text>
+<text x="386" y="428" class="s">本页只有图和小问</text>
+<text x="386" y="448" class="s">单看本页会自编条件</text>
+
+<!-- ============ right: the requests ============ -->
+<text x="560" y="112" class="h">本页同时发出的解题 / 转录请求</text>
+<use href="#ipage" xlink:href="#ipage" x="560" y="127" width="12" height="16"/>
+<text x="578" y="141" class="s">整页原图（第 1 张）</text>
+<use href="#icrops" xlink:href="#icrops" x="700" y="127" width="16" height="16"/>
+<text x="722" y="141" class="s">粗定位裁图（每题一张，≤11 张）</text>
+<use href="#itail" xlink:href="#itail" x="926" y="129" width="22" height="13"/>
+<text x="954" y="141" class="s">上一页尾块（最后一张）</text>
+
+<rect x="560" y="158" width="600" height="64" rx="8" class="lane"/>
+<text x="576" y="186" class="bb">解题分片 #1</text>
+<text x="576" y="207" class="s">Qwen Max</text>
+<use href="#ipage" xlink:href="#ipage" x="690" y="171" width="28" height="38"/>
+<use href="#icrops" xlink:href="#icrops" x="728" y="174" width="32" height="32"/>
+<use href="#itail" xlink:href="#itail" x="772" y="179" width="36" height="22"/>
+<text x="834" y="186" class="b">只负责：17 题（续）、20 题</text>
+<text x="834" y="207" class="o">多带一张上一页尾块，排在最后</text>
+
+<rect x="560" y="230" width="600" height="64" rx="8" class="lane"/>
+<text x="576" y="258" class="bb">解题分片 #2</text>
+<text x="576" y="279" class="s">Qwen Max</text>
+<use href="#ipage" xlink:href="#ipage" x="690" y="243" width="28" height="38"/>
+<use href="#icrops" xlink:href="#icrops" x="728" y="246" width="32" height="32"/>
+<text x="834" y="258" class="b">只负责：18、19 题</text>
+<text x="834" y="279" class="s">与没有上一页时完全相同</text>
+
+<rect x="560" y="302" width="600" height="64" rx="8" class="lane"/>
+<text x="576" y="330" class="bb">转录（1 路）</text>
+<text x="576" y="351" class="s">Qwen Flash</text>
+<use href="#ipage" xlink:href="#ipage" x="690" y="315" width="28" height="38"/>
+<use href="#icrops" xlink:href="#icrops" x="728" y="318" width="32" height="32"/>
+<use href="#itail" xlink:href="#itail" x="772" y="323" width="36" height="22"/>
+<text x="834" y="330" class="b">全部题目的印刷正文</text>
+<text x="834" y="351" class="o">17 题：先录上一页的题干，再接本页</text>
+
+<text x="560" y="400" class="n">• 每题恰好一个负责分片，分配在调用前定死；同一大题的小问不拆开</text>
+<text x="560" y="424" class="n">• 各路图片和提示词相同（共享可缓存前缀），末尾只差一句「本请求只负责……」</text>
+<text x="560" y="448" class="n">• 每路只写自己那几题的解答，整页的长解答不再挤进同一个请求</text>
+<text x="560" y="472" class="n">• 尾块只追加给负责接上页题的那一路解题和转录，不新增请求</text>
+<text x="560" y="496" class="n">• 定位请求照常发出，不带尾块</text>
+
+<!-- ============ bottom: fallbacks ============ -->
+<rect x="40" y="556" width="1120" height="122" rx="10" fill="#f6f8fa" stroke="#d0d7de"/>
+<text x="60" y="584" class="bb">退路与把关</text>
+<text x="60" y="610" class="s">最后一题不在最后一栏（可能折到下一栏）或上一页没有识别结果 → 改带上一页整页；上一页的图读不出 → 本页照原样识别。</text>
+<text x="60" y="634" class="s">接上页的题仍固定转教师复核，复核原因写明「标准答案由上一页的题干与本页内容共同得出，请对照上一页核对」。</text>
+<text x="60" y="658" class="s">余量最初 3%，测试图上把上一题最后一行整行带了进来，压到 1.5%；切线和余量直接画在试卷图上逐张目检。</text>
+</svg>

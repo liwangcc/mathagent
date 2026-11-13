@@ -124,12 +124,12 @@ if GRADING_PROVIDER != "qwen3.8-flash":
 # 全高栏学生卷固定先做视觉转录，再交给独立判分模型；旧的联合判分开关已移除。
 # 已验证的模板题号定位参数。活动 GPT 路由的 reasoning effort 在下方按
 # canonical 模板变量设置；学生卷转录仍单独使用 Qwen 合同。
+# 所有思考强度设置与模型请求共用的合法档位（Qwen 合同里 minimal 发送时记作 low）。
+REASONING_EFFORTS = ("none", "minimal", "low", "medium", "high", "xhigh", "max")
 OCR_TRANSCRIPTION_REASONING_EFFORT = os.environ.get(
     "OCR_TRANSCRIPTION_REASONING_EFFORT", "none"
 ).strip().lower()
-if OCR_TRANSCRIPTION_REASONING_EFFORT not in {
-    "none", "minimal", "low", "medium", "high", "xhigh", "max"
-}:
+if OCR_TRANSCRIPTION_REASONING_EFFORT not in REASONING_EFFORTS:
     raise RuntimeError(
         "OCR_TRANSCRIPTION_REASONING_EFFORT 必须为 none、minimal、low、medium、high、xhigh 或 max"
     )
@@ -240,14 +240,27 @@ OCR_TEMPLATE_GPT_FALLBACK_BASE_URL = os.environ.get(
 OCR_TEMPLATE_GPT_FALLBACK_API_KEY = os.environ.get(
     "OCR_TEMPLATE_GPT_FALLBACK_API_KEY", ""
 ).strip()
-# This route is an application dependency, not an operator-selectable model.
-# Existing deployments may still carry the retired model variable; it is
-# intentionally ignored so every request uses the current stable contract.
-OCR_TEMPLATE_GPT_FALLBACK_MODEL = "qwen3.8-max"
+# 模板 Max 路线（定位与解题）发给服务商的模型请求名，由部署决定，例如 qwen4-max-preview；
+# 不设时为 qwen3.8-max，设为空值则路线关闭。请求按 Qwen 的 Chat Completions 合同发
+# enable_thinking / reasoning_effort / response_format，所以只接受 qwen 开头的模型名。
+OCR_TEMPLATE_GPT_FALLBACK_MODEL = os.environ.get(
+    "OCR_TEMPLATE_GPT_FALLBACK_MODEL", "qwen3.8-max"
+).strip()
 OCR_TEMPLATE_GPT_FALLBACK_ENABLED = all((
     OCR_TEMPLATE_GPT_FALLBACK_BASE_URL,
     OCR_TEMPLATE_GPT_FALLBACK_API_KEY,
+    OCR_TEMPLATE_GPT_FALLBACK_MODEL,
 ))
+# 模板 Max 定位与解题各自的思考强度：定位含整页定位与各定位分块，解题含整页解题与各解题分片；
+# Flash 层级、粗定位与转录的强度不受这两项影响。默认值按 qwen4-max-preview 实测定为定位 low、
+# 解题 medium（2026-11-12）；哪一阶段不合格只调那一项。仍用 qwen3.8-max 的部署要把两项都设为
+# high：qwen3.8-max 的定位降档实测不可用，medium 解题也做错过压轴题。
+OCR_TEMPLATE_LOCATOR_REASONING_EFFORT = os.environ.get(
+    "OCR_TEMPLATE_LOCATOR_REASONING_EFFORT", "low"
+).strip().lower()
+OCR_TEMPLATE_SOLVER_REASONING_EFFORT = os.environ.get(
+    "OCR_TEMPLATE_SOLVER_REASONING_EFFORT", "medium"
+).strip().lower()
 # 备注（模板 Max 路线）：qwen3.8-max 走阿里云百炼 Token Plan 订阅（Standard 档），
 # 按 Credits 计费，没有 RPM/TPM 限额；唯一限制是档位并发（Lite 1–2、Essential 2–3、
 # Standard 3–4、Pro 6–8），且平台按整体负载动态下调，超出时返回
@@ -258,6 +271,20 @@ OCR_TEMPLATE_QWEN_FALLBACK_MAX_RPM = 0.0
 OCR_TEMPLATE_GPT_FALLBACK_HARD_IN_FLIGHT = int(
     os.environ.get("OCR_TEMPLATE_GPT_FALLBACK_HARD_IN_FLIGHT", "4")
 )
+# 模板 Max 整页解题按题组拆成几路并行（1 = 不拆，与拆分前相同）。每路带同一组图片和
+# 同一段目录提示（前缀可命中缓存），只输出自己负责的题；实际路数不超过题组数，
+# 也不超过上面的在途上限减去定位占用的路数（整页定位 1 路，分块定位每块 1 路），最少 1 路。
+OCR_TEMPLATE_SOLVER_SHARDS = int(os.environ.get("OCR_TEMPLATE_SOLVER_SHARDS", "2"))
+# 模板 Max 定位按题分块：每块最多几道题（0 = 不分块，整页一次请求，与分块前相同）。
+# 每块是一张带独立 0–1000 网格的裁图，模型报本图坐标，后端换算回整页后按题号拼接。
+# 各块并行占用上面的 Max 在途名额，块数多于名额时排队。
+OCR_TEMPLATE_LOCATOR_TILE_QUESTIONS = int(os.environ.get("OCR_TEMPLATE_LOCATOR_TILE_QUESTIONS", "0"))
+# 分块开启时，每块所含题目的粗定位框在整页 0–1000 高度上最多跨多少；0 表示不限高度，只按题数切。
+# 整体等待时间由最慢的一块决定，所以切块同时受题数和高度约束，并在块数最少的切法里取最均衡的一种。
+OCR_TEMPLATE_LOCATOR_TILE_SPAN = int(os.environ.get("OCR_TEMPLATE_LOCATOR_TILE_SPAN", "350"))
+# 分块开启时，一页最多切几块。各块并行、各占 1 路 Max 在途名额，剩下的名额留给解题；按上面两个限制算出来
+# 需要更多块时，在这个块数内取最均衡的切法，单块会超出题数或高度限制。每栏至少一块，栏数多于此值时以栏数为准。
+OCR_TEMPLATE_LOCATOR_TILES = int(os.environ.get("OCR_TEMPLATE_LOCATOR_TILES", "4"))
 OCR_TEMPLATE_GPT_FALLBACK_FIRST_EVENT_TIMEOUT_S = float(
     os.environ.get("OCR_TEMPLATE_GPT_FALLBACK_FIRST_EVENT_TIMEOUT_S", "60")
 )
@@ -365,14 +392,28 @@ if _invalid_ocr_float_settings:
         "OCR floating-point settings must be finite and positive: "
         + ", ".join(_invalid_ocr_float_settings)
     )
-if OCR_TEMPLATE_GPT_REASONING_EFFORT not in {
-    "none", "minimal", "low", "medium", "high", "xhigh", "max"
-}:
+if OCR_TEMPLATE_GPT_REASONING_EFFORT not in REASONING_EFFORTS:
     raise RuntimeError(
         "OCR_TEMPLATE_GPT_REASONING_EFFORT 必须为 none、minimal、low、medium、high、xhigh 或 max"
     )
+for _effort_setting, _effort in (
+    ("OCR_TEMPLATE_LOCATOR_REASONING_EFFORT", OCR_TEMPLATE_LOCATOR_REASONING_EFFORT),
+    ("OCR_TEMPLATE_SOLVER_REASONING_EFFORT", OCR_TEMPLATE_SOLVER_REASONING_EFFORT),
+):
+    if _effort not in REASONING_EFFORTS:
+        raise RuntimeError(f"{_effort_setting} 必须为 none、minimal、low、medium、high、xhigh 或 max")
+if OCR_TEMPLATE_GPT_FALLBACK_MODEL and not OCR_TEMPLATE_GPT_FALLBACK_MODEL.lower().startswith("qwen"):
+    raise RuntimeError("OCR_TEMPLATE_GPT_FALLBACK_MODEL 必须是 qwen 开头的模型名（该路线按 Qwen 合同发送思考参数）")
 if not 1 <= OCR_TEMPLATE_GPT_FALLBACK_HARD_IN_FLIGHT <= 8:
     raise RuntimeError("OCR_TEMPLATE_GPT_FALLBACK_HARD_IN_FLIGHT 必须在 1 到 8 之间（Token Plan 最高档 Pro 为 6–8）")
+if not 1 <= OCR_TEMPLATE_SOLVER_SHARDS <= 4:
+    raise RuntimeError("OCR_TEMPLATE_SOLVER_SHARDS 必须在 1 到 4 之间")
+if OCR_TEMPLATE_LOCATOR_TILE_QUESTIONS != 0 and not 2 <= OCR_TEMPLATE_LOCATOR_TILE_QUESTIONS <= 20:
+    raise RuntimeError("OCR_TEMPLATE_LOCATOR_TILE_QUESTIONS 必须为 0（不分块）或 2 到 20")
+if OCR_TEMPLATE_LOCATOR_TILE_SPAN != 0 and not 150 <= OCR_TEMPLATE_LOCATOR_TILE_SPAN <= 1000:
+    raise RuntimeError("OCR_TEMPLATE_LOCATOR_TILE_SPAN 必须为 0（不限高度）或 150 到 1000")
+if not 2 <= OCR_TEMPLATE_LOCATOR_TILES <= 8:
+    raise RuntimeError("OCR_TEMPLATE_LOCATOR_TILES 必须在 2 到 8 之间")
 if OCR_TEACHER_WAVE_SIZE < 1 or OCR_ACTIVE_TEACHER_LIMIT < 1:
     raise RuntimeError("OCR 教师波次与活跃教师上限必须为正数")
 if OCR_PER_TEACHER_LIMIT < 1:

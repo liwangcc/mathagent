@@ -10,7 +10,8 @@
   accelerator first (``_interactive_request``);
 - ``request_template_fallback_pool`` runs one template request directly on the
   qwen3.8-max Token Plan pool and records the route it used in the caller's
-  diagnostics (``_set_template_route_diagnostics``).
+  diagnostics (``_set_template_route_diagnostics``); a request whose stream
+  died before an answer (``_stream_died_before_an_answer``) is sent once more.
 
 Moved unchanged from services/ocr_pool_scheduler.py; OcrPoolScheduler inherits the methods.
 """
@@ -54,6 +55,25 @@ def _set_template_route_diagnostics(
         return
     diagnostics["actual_route"] = str(route)
     diagnostics["actual_reasoning_effort"] = str(reasoning_effort)
+
+
+def _stream_died_before_an_answer(error: OcrPoolError) -> bool:
+    """Tell whether a sent request failed in transport without the provider's verdict.
+
+    That is a response that never came, or a stream that ended, stalled or
+    broke before a complete answer. Everything else is left alone: an HTTP
+    status (throttling, authentication, a server error) is the provider's own
+    verdict and drives the pool circuit; an attempt that used its whole time
+    budget leaves nothing to resend in; an answer the provider cut at the
+    token limit, refused, or that the validator rejected is not a dead stream.
+    """
+    return (
+        error.transport_failure
+        and error.retryable
+        and error.status_code is None
+        and error.request_sent is not False
+        and error.code != "absolute_attempt_ttl"
+    )
 
 
 class _SchedulerRequestsMixin:
@@ -326,12 +346,16 @@ class _SchedulerRequestsMixin:
         """Run one template request on the qwen3.8-max Token Plan pool.
 
         This is intentionally a direct pool request: only the Token Plan
-        in-flight gate (and an optional rate budget) admits it.
+        in-flight gate (and an optional rate budget) admits it. A request
+        whose stream died before an answer is sent once more inside the same
+        in-flight slot; the caller's own deadline still bounds both sends.
         """
+        from config import REASONING_EFFORTS
+
         if not request_key:
             raise ValueError("request_key is required")
-        if reasoning_effort not in {"low", "high"}:
-            raise ValueError("template Qwen reasoning must be low or high")
+        if reasoning_effort not in REASONING_EFFORTS:
+            raise ValueError("template Qwen reasoning must be one of " + ", ".join(REASONING_EFFORTS))
         fallback_pool = self.template_fallback_pool
         if fallback_pool is None:
             raise OcrPoolError(
@@ -376,7 +400,23 @@ class _SchedulerRequestsMixin:
             if isinstance(route_diagnostics, dict):
                 route_diagnostics["_fallback_admission_pending"] = False
                 route_diagnostics["_fallback_request_started"] = True
-            return await self._execute(fallback_pool, fallback_payload, validator)
+            try:
+                return await self._execute(fallback_pool, fallback_payload, validator)
+            except OcrPoolError as first_error:
+                if not _stream_died_before_an_answer(first_error):
+                    raise
+                # The provider can cut a stream mid-reasoning (HTTP 200, no
+                # finish_reason, no [DONE]). Without this the whole template
+                # page fails on one lost stream. One resend only: a second
+                # failure is the request's failure.
+                logger.warning(
+                    "Template request is sent once more after %s pool=%s",
+                    first_error.code,
+                    fallback_pool.name,
+                )
+                if isinstance(route_diagnostics, dict):
+                    route_diagnostics["resent_after"] = first_error.code
+                return await self._execute(fallback_pool, fallback_payload, validator)
         finally:
             if isinstance(route_diagnostics, dict) and not route_diagnostics.get(
                 "_fallback_request_started"

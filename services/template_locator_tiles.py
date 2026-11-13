@@ -1,0 +1,392 @@
+"""Locate answer regions tile by tile and stitch them back into page space.
+
+One Max locator request for a whole page is slow, and a crop of a page-stamped
+grid loses the axis labels of the other edge. Here every request sees exactly
+one crop that carries its own complete 0..1000 grid, so the model reports the
+coordinates of the image it is looking at. Its prompt names that frame and no
+other: hints and columns are converted into it, and no pixel size or page
+coordinate appears beside it. The backend then maps each box back
+to the page with fixed arithmetic and joins the tiles by question number: the
+result has the shape and coordinate space of the single-request locator, so
+template saving and later grading read it unchanged.
+
+Tiles are planned from the Flash coarse boxes before any Max call, using
+only what Flash places well: the rough start of each printed question. Every
+question has exactly one owner; the merge never chooses between two boxes.
+"""
+from __future__ import annotations
+
+import asyncio
+import copy
+import json
+import math
+from pathlib import Path
+
+from services import template_max_owned as max_owned
+from services.template_solver_shards import question_groups
+
+# Page-normalized padding around the coarse boxes a tile owns. Coarse boxes are
+# hints and can be tight; handwriting also runs past the printed column.
+_PAD_X = 30.0
+_PAD_Y = 60.0
+# A tile's own grid has ten lines per side; below this share of the page the
+# lines and labels would crowd the print they are meant to measure.
+_MIN_SIDE = 250.0
+# A box this close (tile units) to an edge cut inside the page may be clipped.
+_EDGE = 2.0
+# Extra page-normalized room given to a clipped side before the single retry.
+_WIDEN = 80.0
+_SIDES = ("left", "top", "right", "bottom")
+_TILE_NOTE = "\n只定位目录所列题目；本图中露出的其他题目不属于本请求，不返回。"
+_COARSE_NOTE = ("\n以下是按量 Flash 的非权威粗定位提示（已换算为本图坐标），仅用于帮助你快速找到题目；"
+                "不得照抄其边界，必须重新核对本图、题号、作答框和作图区，并按本合同返回最终权威坐标：")
+
+
+def configured_limits(hierarchy: dict) -> dict:
+    """The tile limits as ``plan_tiles`` keywords; 0 questions keeps one page request."""
+    import config
+    shared = hierarchy.get("question_identity_version") == 4
+    return {"max_questions": config.OCR_TEMPLATE_LOCATOR_TILE_QUESTIONS if shared else 0,
+            "max_span": float(config.OCR_TEMPLATE_LOCATOR_TILE_SPAN),
+            "max_tiles": config.OCR_TEMPLATE_LOCATOR_TILES}
+
+
+def _reach_down(boxes: dict, order: list[str]) -> dict:
+    """One column's coarse boxes, each reaching down to where the next question starts.
+
+    Flash places the start of a printed question far better than the extent of
+    its answer area. Whatever lies between two starts belongs to the upper
+    question, so a box that stops short of the next start is extended to it;
+    the last question of the column keeps its own bottom.
+    """
+    reached = {}
+    for number, following in zip(order, order[1:] + [None]):
+        x1, y1, x2, y2 = boxes[number]
+        reached[number] = [x1, y1, x2, max(y2, boxes[following][1]) if following else y2]
+    return reached
+
+
+def _splits(units: list[list[str]], boxes: dict, limit: int, max_span: float) -> list[tuple[float, list]]:
+    """The most even split of a column into 1, 2, ... runs, up to the first that fits both limits.
+
+    Entry ``k - 1`` is ``(largest load, runs)`` for ``k`` consecutive runs of
+    units. A unit is one printed question (its sub-question leaves stay
+    together). A run's load is the larger of its share of ``limit`` questions
+    and its share of ``max_span`` page height (0 = no height limit). The
+    slowest tile sets the wait of the whole locate, so for every run count the
+    split with the smallest largest load wins. A single unit over a limit
+    cannot be split and keeps a run of its own.
+    """
+    def load(start: int, stop: int) -> float:
+        owned = [boxes[number] for unit in units[start:stop] for number in unit]
+        span = max(box[3] for box in owned) - min(box[1] for box in owned)
+        weight = max(len(owned) / limit, span / max_span if max_span else 0.0)
+        return min(weight, 1.0) if stop - start == 1 else weight
+
+    total = len(units)
+    # best[j]: (largest load, spread, negated cuts) over splits of the first j
+    # units. Negated cuts break exact ties towards the longer first run.
+    best: list = [(0.0, 0.0, ())] + [None] * total
+    found = []
+    for count in range(1, total + 1):
+        step: list = [None] * (total + 1)
+        for stop in range(count, total + 1):
+            step[stop] = min(
+                (max(best[start][0], weight), round(best[start][1] + weight * weight, 9),
+                 best[start][2] + (-stop,))
+                for start in range(count - 1, stop) if best[start] is not None
+                for weight in [load(start, stop)])
+        best = step
+        cuts = [0] + [-cut for cut in best[total][2]]
+        found.append((best[total][0], [units[start:stop] for start, stop in zip(cuts, cuts[1:])]))
+        if best[total][0] <= 1.0 + 1e-9:
+            break
+    return found
+
+
+def _tile_counts(loads: dict[int, list[float]], max_tiles: int) -> dict[int, int]:
+    """Tiles per column: what the limits ask for, or the most even use of ``max_tiles``.
+
+    ``loads[column][k - 1]`` is the largest load of that column cut into ``k``
+    tiles. Under the cap every column keeps one tile and each further tile
+    goes to the column whose heaviest tile is heaviest.
+    """
+    wanted = {column: len(options) for column, options in loads.items()}
+    if not max_tiles or sum(wanted.values()) <= max_tiles:
+        return wanted
+    counts = dict.fromkeys(loads, 1)
+    for _ in range(max_tiles - len(counts)):
+        open_columns = [column for column in sorted(loads) if counts[column] < wanted[column]]
+        heaviest = max(open_columns, key=lambda column: loads[column][counts[column] - 1])
+        counts[heaviest] += 1
+    return counts
+
+
+def _tile_box(boxes: list[list[float]], column: dict, *, width: int, height: int) -> list[int]:
+    """Pixel crop holding the whole column width around the owned coarse boxes."""
+    x1 = min([float(column["x1_1000"])] + [box[0] for box in boxes]) - _PAD_X
+    x2 = max([float(column["x2_1000"])] + [box[2] for box in boxes]) + _PAD_X
+    y1 = min(box[1] for box in boxes) - _PAD_Y
+    y2 = max(box[3] for box in boxes) + _PAD_Y
+    grow = max(0.0, _MIN_SIDE - (y2 - y1)) / 2
+    y1, y2 = y1 - grow, y2 + grow
+    # Keep the minimum height when one side is already at the page edge.
+    if y1 < 0:
+        y1, y2 = 0.0, min(1000.0, max(y2, _MIN_SIDE))
+    if y2 > 1000:
+        y1, y2 = max(0.0, min(y1, 1000.0 - _MIN_SIDE)), 1000.0
+    return [max(0, math.floor(x1 * width / 1000)), max(0, math.floor(y1 * height / 1000)),
+            min(width, math.ceil(x2 * width / 1000)), min(height, math.ceil(y2 * height / 1000))]
+
+
+def plan_tiles(manifest, coarse, columns, *, width: int, height: int, max_questions: int,
+               max_span: float = 0.0, max_tiles: int = 0) -> list[dict]:
+    """Assign every question to one tile: by column, then in reading-order runs.
+
+    A run holds at most ``max_questions`` questions and, when ``max_span`` is
+    set, at most that much page-normalized height. The page gets at most
+    ``max_tiles`` tiles (0 = no cap, and never fewer than one per column):
+    when the two limits ask for more, the tiles are spread as evenly as the
+    cap allows and a tile may then exceed them.
+
+    The coarse boxes are trusted only for what Flash does well, the rough
+    start of each printed question: the leaves of one printed question never
+    leave their tile, and a tile reaches down to the start of the next
+    question below it (``_reach_down``) whatever the boxes say about extents.
+
+    Returns ``[]`` (keep the single page request) when tiling is off, the
+    coarse boxes are missing or do not name exactly the directory questions,
+    or the page would become a single tile anyway.
+    """
+    numbers = [row["q_id"][1:] for row in manifest]
+    if max_questions < 1 or not coarse or len(numbers) < 2:
+        return []
+    boxes = {row["question_number"]: row["bbox"] for row in coarse["questions"]}
+    if len(boxes) != len(coarse["questions"]) or set(boxes) != set(numbers):
+        return []
+    by_column: dict[int, list[list[str]]] = {}
+    for group in question_groups(manifest):
+        unit = [q_id[1:] for q_id in group]
+        centre = (min(boxes[n][0] for n in unit) + max(boxes[n][2] for n in unit)) / 2
+        index = next((i for i, column in enumerate(columns)
+                      if float(column["x1_1000"]) <= centre < float(column["x2_1000"])), len(columns) - 1)
+        by_column.setdefault(index, []).append(unit)
+    reach = {index: _reach_down(boxes, [n for unit in units for n in unit]) for index, units in by_column.items()}
+    options = {index: _splits(units, reach[index], max_questions, max_span) for index, units in by_column.items()}
+    counts = _tile_counts({index: [load for load, _ in found] for index, found in options.items()}, max_tiles)
+    tiles = [{"numbers": owned,
+              "box": _tile_box([reach[index][n] for n in owned], columns[index], width=width, height=height)}
+             for index in sorted(by_column)
+             for run in options[index][counts[index] - 1][1]
+             for owned in [[n for unit in run for n in unit]]]
+    return tiles if len(tiles) > 1 else []
+
+
+def _to_tile(box, tile_box, *, width: int, height: int) -> list[int]:
+    """Page-normalized box -> integer coordinates of the tile, clipped to it."""
+    left, top, right, bottom = tile_box
+    xs = [(box[i] * width / 1000 - left) * 1000 / (right - left) for i in (0, 2)]
+    ys = [(box[i] * height / 1000 - top) * 1000 / (bottom - top) for i in (1, 3)]
+    clip = lambda value: int(round(min(1000.0, max(0.0, value))))  # noqa: E731
+    return [clip(xs[0]), clip(ys[0]), clip(xs[1]), clip(ys[1])]
+
+
+def _x_to_page(value: float, tile_box, width: int) -> float:
+    left, _, right, _ = tile_box
+    return round(min(1000.0, max(0.0, (left + value * (right - left) / 1000) * 1000 / width)), 3)
+
+
+def _y_to_page(value: float, tile_box, height: int) -> float:
+    _, top, _, bottom = tile_box
+    return round(min(1000.0, max(0.0, (top + value * (bottom - top) / 1000) * 1000 / height)), 3)
+
+
+def _box_to_page(box, tile_box, *, width: int, height: int):
+    """Tile box -> page-normalized box; unlocated placeholders stay as they are."""
+    if not box:
+        return box
+    return [_x_to_page(box[0], tile_box, width), _y_to_page(box[1], tile_box, height),
+            _x_to_page(box[2], tile_box, width), _y_to_page(box[3], tile_box, height)]
+
+
+def to_page(located: dict, tile_box, *, width: int, height: int) -> dict:
+    """Re-express one received tile result in page-normalized coordinates."""
+    result = copy.deepcopy(located)
+    convert = lambda box: _box_to_page(box, tile_box, width=width, height=height)  # noqa: E731
+    for question in result["questions"]:
+        question["question_number_bbox"] = convert(question["question_number_bbox"])
+        question["regions"] = [convert(box) for box in question["regions"]]
+        question["drawing_regions"] = [convert(box) for box in question["drawing_regions"]]
+        anchor = question["label_anchor"]
+        if anchor is not None:
+            question["label_anchor"] = [_x_to_page(anchor[0], tile_box, width),
+                                        _y_to_page(anchor[1], tile_box, height)]
+    return result
+
+
+def edge_contact(located: dict, tile_box, *, width: int, height: int) -> dict[str, list[str]]:
+    """Questions whose boxes reach a tile edge that was cut inside the page.
+
+    Such a box may continue beyond the crop. Edges that are the page's own
+    edges are exempt: nothing lies beyond them.
+    """
+    left, top, right, bottom = tile_box
+    cut = {"left": left > 0, "top": top > 0, "right": right < width, "bottom": bottom < height}
+    result: dict[str, list[str]] = {}
+    for question in located["questions"]:
+        boxes = [question["question_number_bbox"], *question["regions"], *question["drawing_regions"]]
+        for box in (box for box in boxes if box):
+            reached = {"left": box[0] <= _EDGE, "top": box[1] <= _EDGE,
+                       "right": box[2] >= 1000 - _EDGE, "bottom": box[3] >= 1000 - _EDGE}
+            for side in _SIDES:
+                if cut[side] and reached[side] and question["question_number"] not in result.setdefault(side, []):
+                    result[side].append(question["question_number"])
+    return {side: numbers for side, numbers in result.items() if numbers}
+
+
+def widen(tile_box, sides, *, width: int, height: int) -> list[int]:
+    """Give the clipped sides more of the page."""
+    left, top, right, bottom = tile_box
+    dx, dy = math.ceil(_WIDEN * width / 1000), math.ceil(_WIDEN * height / 1000)
+    return [max(0, left - dx) if "left" in sides else left, max(0, top - dy) if "top" in sides else top,
+            min(width, right + dx) if "right" in sides else right,
+            min(height, bottom + dy) if "bottom" in sides else bottom]
+
+
+def _frame(tile_box, *, width: int, height: int) -> max_owned.LocatorFrame:
+    """The one frame a tile request names: the crop's own 0..1000.
+
+    No pixel size is stated. A coordinate read off the grid is final; a width
+    in pixels beside it invites normalizing the reading once more, which is
+    how a whole tile's boxes came back shrunk towards its left edge. The
+    crop's place on the page is given in percent, a unit no coordinate uses.
+    """
+    left, top, right, bottom = tile_box
+    share = lambda value, size: round(value * 100 / size)  # noqa: E731
+    return max_owned.LocatorFrame(
+        image="本图", space="本图坐标", columns="分栏（本图坐标）",
+        definition=(
+            "坐标normalized_1000_v1，一律以本图为准：本图左上角为(0,0)，右下角为(1000,1000)，"
+            "x按本图宽度、y按本图高度归一；图上网格的刻度就是要返回的坐标，按刻度直接读数，不再做任何换算。"
+            f"本图是试卷整页的局部裁图，取自整页横向{share(left, width)}%–{share(right, width)}%、"
+            f"纵向{share(top, height)}%–{share(bottom, height)}%的部分；此位置只供了解版面，不参与坐标。"))
+
+
+def _columns_in_tile(columns, tile_box, *, width: int, height: int) -> list[dict]:
+    """The page columns that show in the tile, in the tile's own 0..1000."""
+    spans = [(column, _to_tile([float(column["x1_1000"]), 0.0, float(column["x2_1000"]), 1000.0],
+                               tile_box, width=width, height=height)) for column in columns]
+    return [{"column_index": column["column_index"], "x1_1000": span[0], "x2_1000": span[2]}
+            for column, span in spans if span[2] > span[0]]
+
+
+def tile_prompt(owned, coarse, tile_box, *, columns, width: int, height: int) -> str:
+    """The locator prompt for one tile; every coordinate it names is the tile's own."""
+    prompt = max_owned.framed_locator_prompt(
+        owned, _columns_in_tile(columns, tile_box, width=width, height=height),
+        _frame(tile_box, width=width, height=height)) + _TILE_NOTE
+    numbers = {row["q_id"][1:] for row in owned}
+    hints = [{"question_number": row["question_number"],
+              "bbox": _to_tile(row["bbox"], tile_box, width=width, height=height)}
+             for row in coarse["questions"] if row["question_number"] in numbers]
+    return prompt + _COARSE_NOTE + json.dumps(
+        {"coordinate_space": "normalized_1000_v1", "questions": hints}, ensure_ascii=False, separators=(",", ":"))
+
+
+def merge_tiles(parts, manifest) -> dict:
+    """Join page-space tile results by question number into the locator shape."""
+    by_number, flags, issues = {}, {}, []
+    for part in parts:
+        if part.get("slot_source") != max_owned.SHARED_SLOT_SOURCE:
+            raise ValueError("定位分块的作答位合同版本不一致")
+        for question in part["questions"]:
+            if question["question_number"] in by_number:
+                raise ValueError("定位分块返回了重复题目")
+            by_number[question["question_number"]] = question
+        for number, rows in (part.get("max_flags") or {}).items():
+            flags.setdefault(number, []).extend(copy.deepcopy(rows))
+        issues.extend(part["needs_review"])
+    order = [row["q_id"][1:] for row in manifest]
+    if set(by_number) != set(order):
+        raise ValueError("定位分块没有覆盖全部题目")
+    return {"coordinate_space": "normalized_1000_v1", "questions": [by_number[number] for number in order],
+            "needs_review": issues, "slot_source": max_owned.SHARED_SLOT_SOURCE, "max_flags": flags}
+
+
+def _save_tile(page, tile_box, directory, name: str) -> str:
+    """Crop first, then stamp: the grid and its labels belong to this image."""
+    from services.template_recognition import _render_coordinate_grid
+    path = Path(directory) / f"locator-tile-{name}.png"
+    crop = page.crop(tuple(tile_box))
+    try:
+        _render_coordinate_grid(crop).save(path, format="PNG")
+    finally:
+        crop.close()
+    return str(path)
+
+
+def open_report(plan, report: list) -> None:
+    """One report entry per planned tile, filled in as its requests return."""
+    report.extend({"question_numbers": list(tile["numbers"]), "box_px": list(tile["box"]),
+                   "attempts": 0, "edge_contact": {}} for tile in plan)
+
+
+async def locate_tile(request, page, directory, manifest, coarse, plan, index: int, *,
+                      columns, phase: str, max_tokens: int, reasoning_effort: str, report: list) -> dict:
+    """Locate tile ``index`` of ``plan`` in page space and update ``report[index]``.
+
+    A tile whose answer reaches a cut edge is asked once more with that side
+    widened; if it still does, the questions go to teacher review instead of
+    being saved as possibly clipped boxes.
+    """
+    width, height = page.size
+    tile = plan[index]
+    rows = {row["q_id"][1:]: row for row in manifest}
+    owned = [rows[number] for number in tile["numbers"]]
+    box = list(tile["box"])
+    for attempt in (1, 2):
+        path = _save_tile(page, box, directory, f"{index + 1}-{attempt}")
+        located = await request(
+            [path], tile_prompt(owned, coarse, box, columns=columns, width=width, height=height), phase,
+            lambda raw: max_owned.receive_locator_candidates(raw, owned),
+            max_tokens=max_tokens, reasoning_effort=reasoning_effort, expected_ids=tuple(tile["numbers"]),
+            stage_key=f"{phase}#{index + 1}" + ("" if attempt == 1 else "-wide"))
+        contact = edge_contact(located, box, width=width, height=height)
+        report[index].update(box_px=list(box), attempts=attempt, edge_contact=contact)
+        if not contact or attempt == 2:
+            break
+        box = widen(box, contact, width=width, height=height)
+    result = to_page(located, box, width=width, height=height)
+    for number in sorted({n for numbers in contact.values() for n in numbers}, key=tile["numbers"].index):
+        result["needs_review"].append(f"第{number}题的框贴近定位裁图边缘，可能未框全，请核对")
+    return result
+
+
+async def gather_tiles(tasks: list) -> list:
+    """Await per-tile tasks; one failure cancels the rest and is re-raised."""
+    try:
+        return await asyncio.gather(*tasks)
+    except BaseException:
+        for task in tasks:
+            if not task.done():
+                task.cancel()
+        await asyncio.gather(*tasks, return_exceptions=True)
+        raise
+
+
+async def locate_in_tiles(request, page, directory, manifest, coarse, plan, *,
+                          columns, phase: str, max_tokens: int, reasoning_effort: str, report: list) -> dict:
+    """Run one ``request`` per tile concurrently and stitch the page result.
+
+    One failed tile cancels the others and fails the locate, exactly like a
+    failed single request. ``report`` receives one entry per tile; ``columns``
+    are the page's, each tile is told the part of them it shows.
+    """
+    open_report(plan, report)
+    parts = await gather_tiles([
+        asyncio.create_task(locate_tile(request, page, directory, manifest, coarse, plan, index, columns=columns,
+                                        phase=phase, max_tokens=max_tokens, reasoning_effort=reasoning_effort,
+                                        report=report),
+                            name=f"template-qwen-max-locator-{index + 1}")
+        for index in range(len(plan))])
+    return merge_tiles(parts, manifest)

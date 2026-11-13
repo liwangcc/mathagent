@@ -86,7 +86,11 @@ def test_parallel_original_images_attachment_and_solver_status(tmp_path, monkeyp
     assert question["needs_review"] is (status == "needs_review")
     assert question["answer_slots"] == ["25.8℃", "24℃"]
     assert question["solve_visual_context"]["facts"] == ["原图事实"]
-    assert [kwargs["reasoning_effort"] for _, kwargs in calls] == ["low", "low", "high", "high", "high"]
+    # Flash hierarchy and coarse boxes low, Max locator low, Max solver medium, Flash transcription high.
+    assert {phase: kwargs["reasoning_effort"] for phase, kwargs in calls} == {
+        "template-hierarchy-v1": "low", "template-coarse-locator-v1": "low", "template-directory-v1": "low",
+        contract.SOLVE_PHASE: "medium", contract.TRANSCRIBE_PHASE: "high"}
+    assert len(calls) == 5
     assert result["template_ocr_diagnostics"]["transcription_reasoning_effort"] == "high"
     page = TemplateSession.make_page(0, result["questions"])
     restored = AnswerSpec.model_validate(page["questions"][0]).model_dump()
@@ -96,9 +100,12 @@ def test_parallel_original_images_attachment_and_solver_status(tmp_path, monkeyp
 
 @pytest.mark.parametrize("phase,requested,expected", [
     ("template-directory-v1", "high", "high"),
-    ("template-merged-v1", "low", "high"),
+    ("template-directory-v1", "low", "low"),
+    ("template-max-fullsolve-v1", "medium", "medium"),
+    ("template-merged-v1", "low", "low"),
 ])
-def test_qwen_effort_reaches_wire_without_weakening_fallback(tmp_path, monkeypatch, phase, requested, expected):
+def test_qwen_effort_reaches_wire_as_requested(tmp_path, monkeypatch, phase, requested, expected):
+    """The route used to send high whatever was asked; the caller's tier is now the one on the wire."""
     from dataclasses import replace
     from tests.test_ocr_pool_scheduler import _configure_template_scheduler_for_test, _install_chat_transport
     from services.ocr_pool_scheduler import OcrPoolScheduler

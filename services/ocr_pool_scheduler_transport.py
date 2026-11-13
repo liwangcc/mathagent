@@ -249,12 +249,12 @@ class _SchedulerTransportMixin:
         request_id: str,
     ) -> str:
         """Send the configured Chat Completions streaming request."""
-        from config import OCR_TEMPLATE_GPT_REASONING_EFFORT, OCR_TRANSCRIPTION_REASONING_EFFORT
+        from config import (
+            OCR_TEMPLATE_GPT_REASONING_EFFORT, OCR_TRANSCRIPTION_REASONING_EFFORT, REASONING_EFFORTS,
+        )
 
         requested_effort = str(payload.get("model_reasoning_effort") or "").strip().lower()
-        if requested_effort not in {
-            "none", "minimal", "low", "medium", "high", "xhigh", "max"
-        }:
+        if requested_effort not in REASONING_EFFORTS:
             requested_effort = (
                 OCR_TRANSCRIPTION_REASONING_EFFORT
                 if _is_student_transcription_payload(payload)
@@ -275,15 +275,15 @@ class _SchedulerTransportMixin:
                 # The internal Responses text.format is consumed here, at the
                 # real Qwen wire boundary, and never forwarded as-is.
                 body["response_format"] = {"type": "json_object"}
-            if pool.model.strip().lower().startswith("qwen3.8"):
-                # Keep the configured effort visible at the provider boundary.
-                # In particular, the production template pipeline requests
-                # ``high`` and must not silently become ``xhigh`` (which has a
-                # materially longer latency/timeout profile).  Only the
-                # provider's documented alias for minimal is normalized.
-                body["reasoning_effort"] = {
-                    "minimal": "low",
-                }.get(requested_effort, requested_effort)
+            # Keep the requested effort visible at the provider boundary for
+            # every Qwen model, whatever its generation: a renamed model (e.g.
+            # qwen4-max-preview) must not silently fall back to the provider's
+            # default tier, and ``high`` must not silently become ``xhigh``
+            # (which has a materially longer latency/timeout profile).  Only
+            # the provider's documented alias for minimal is normalized.
+            body["reasoning_effort"] = {
+                "minimal": "low",
+            }.get(requested_effort, requested_effort)
         else:
             # Preserve the separately verified legacy non-Qwen Chat gateway.
             # GPT Responses calls use the distinct adapter below.
@@ -456,10 +456,10 @@ class _SchedulerTransportMixin:
 
         body = dict(payload)
         body["model"] = pool.model
+        from config import REASONING_EFFORTS
+
         requested_effort = str(payload.get("model_reasoning_effort") or "").strip().lower()
-        if requested_effort in {
-            "none", "minimal", "low", "medium", "high", "xhigh", "max"
-        }:
+        if requested_effort in REASONING_EFFORTS:
             body["reasoning"] = {"effort": requested_effort}
         elif _is_student_transcription_payload(payload):
             from config import OCR_TRANSCRIPTION_REASONING_EFFORT

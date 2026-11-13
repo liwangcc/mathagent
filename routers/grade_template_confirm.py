@@ -47,6 +47,7 @@ from routers.grade_template_layout_runs import (
     _template_layout_review_pending_pages,
 )
 from routers.grade_template_models import TemplateConfirmReq, _contract_rejection_reason
+from services import template_answer_ledger as answer_ledger
 from services import template_knowledge
 from services.grading_contract import (
     AnswerSpec,
@@ -153,6 +154,21 @@ def _require_template_confirmable(sess: TemplateSession) -> None:
         raise HTTPException(409, detail="学生试卷已开始识别，本次模板已冻结，不能再编辑")
     if sess.status not in ("ocr_done", "confirmed") or not sess.pages:
         raise HTTPException(409, detail="模板尚未完成识别，不能确认")
+
+
+def _require_answers_generated(sess: TemplateSession) -> None:
+    """A draft is not confirmed while a standard answer is still being generated.
+
+    Answers that arrived after their page was delivered join the saved draft
+    here, so the checks that follow read them like any saved answer.
+    """
+    waiting = answer_ledger.pending(sess.template_dir, sess.pages)
+    if waiting:
+        page_index, number = waiting[0]
+        raise HTTPException(409, detail=(
+            f"还有 {len(waiting)} 道题的标准答案正在生成（第 {page_index + 1} 页第 {number} 题"
+            f"{'等' if len(waiting) > 1 else ''}），生成完成后才能保存模板"))
+    sess.pages = answer_ledger.overlay(sess.template_dir, sess.pages)
 
 
 def _merge_saved_question_fields(
@@ -443,6 +459,7 @@ def batch_grade_template_confirm(
 
     with _locked_owned_template_session(req.template_id, user.id) as sess:
         _require_template_confirmable(sess)
+        _require_answers_generated(sess)
         try:
             _merge_saved_question_fields(sess, req, new_pages)
         except ValueError as exc:
@@ -499,6 +516,8 @@ def batch_grade_template_confirm(
         # transaction has committed.  A 4xx must leave the on-disk session at
         # its previous authoritative state.
         sess.save_meta()
+        # The confirmed pages carry every answer; the draft's late-answer ledger has served.
+        answer_ledger.forget(sess.template_dir)
         confirmed_contract_hash = sess.confirmed_contract_hash
     if background_tasks is not None:
         background_tasks.add_task(

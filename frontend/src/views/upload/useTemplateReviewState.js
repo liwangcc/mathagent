@@ -34,7 +34,7 @@ import { isCustomFill } from '@/utils/answerSpecEditor'
 
 export function useTemplateReviewState(ctx) {
   const {
-    templatePages, templateCutResult, templateCutPreviewPages, form,
+    templatePages, templateCutResult, templateCutPreviewPages, form, templateAnswersPending,
   } = ctx
   // Defined by later parts of the page; looked up when called.
   const templateDrawingReferenceQuestions = (...args) => ctx.templateDrawingReferenceQuestions(...args)
@@ -361,6 +361,8 @@ export function useTemplateReviewState(ctx) {
     // before the preview-page merge has had a chance to run.
     const serverPendingPages = templateReviewPendingPageIndexes()
     return !!form.category && templatePages.value.length > 0
+      // The template is not saved while one of its standard answers is still being generated.
+      && !templateAnswersPending.value
       && !templateCutPreviewPages.value.some((page) => templateDrawingReferenceQuestions(page).length > 0 && !templateReferenceImagesReady(page))
       && templateChoiceConflictEntries(templatePages.value).length === 0
        && serverPendingPages.size === 0

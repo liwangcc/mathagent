@@ -19,12 +19,17 @@ from pathlib import Path
 
 from PIL import Image
 
+import config
 from services.analyzer import parse_llm_json
-from services.grading_contract import merge_directory_leaf_score_layer
 from services.ocr_service import call_gpt_vision, set_vision_phase_key, reset_vision_phase_key
 from services.processing_errors import describe_failure, processing_stage, report_failure
 from services.teaching_context import current_teaching_context
+from services import template_cross_page as cross_page
+from services import template_late_answers as late_answers
 from services import template_one_three as one_three
+from services import template_page_questions as page_questions
+from services import template_locator_tiles as locator_tiles
+from services import template_solver_shards as solver_shards
 
 
 logger = logging.getLogger(__name__)
@@ -64,12 +69,21 @@ async def _request(
     pool_route: str = "fallback",
     output_adapter=None,
     expected_ids=(),
+    prompt_first: bool = True,
+    stage_key: str | None = None,
 ):
-    """Keep transport admission and execution inside one shared import budget."""
+    """Keep transport admission and execution inside one shared import budget.
+
+    ``stage_key`` names the progress record when one phase runs as several
+    parallel requests (solver shards); it defaults to the phase.
+    """
     if phase not in _REQUEST_PHASES:
         raise ValueError("unknown template model phase")
     if output_adapter is not None and phase != one_three.TRANSCRIBE_PHASE:
         raise ValueError("template envelope adaptation is transcription-only")
+    if not prompt_first and phase != one_three.SOLVE_PHASE:
+        raise ValueError("image-first ordering is solver-only")
+    stage_key = stage_key or phase
     loop = asyncio.get_running_loop()
     started = loop.time()
     context = _import_context.get()
@@ -81,16 +95,16 @@ async def _request(
               "started_at": datetime.now(timezone.utc).isoformat(), "finished_at": None,
               "elapsed_s": 0.0, "remaining_s": max(0.0, deadline_at - started) if deadline_at is not None else None}
     if context is not None:
-        context[1]["stages"][phase] = record
+        context[1]["stages"][stage_key] = record
     logger.info("Template model stage started trace_id=%s phase=%s remaining_s=%s",
-                trace_id, phase, record["remaining_s"])
+                trace_id, stage_key, record["remaining_s"])
     token = set_vision_phase_key(phase)
     strict_phase = phase in {one_three.SOLVE_PHASE, one_three.TRANSCRIBE_PHASE, "template-hierarchy-v1", "template-coarse-locator-v1", "template-directory-v1"}
     parse_response = one_three.parse_json if strict_phase else parse_llm_json
     diagnostic_context = {
         "stage": "solve" if phase == one_three.SOLVE_PHASE else (
             "transcription" if phase == one_three.TRANSCRIBE_PHASE else "template"),
-        "model": "qwen3.8-flash" if phase in {"template-hierarchy-v1", "template-coarse-locator-v1", one_three.TRANSCRIBE_PHASE} else "qwen3.8-max",
+        "model": "qwen3.8-flash" if phase in {"template-hierarchy-v1", "template-coarse-locator-v1", one_three.TRANSCRIBE_PHASE} else config.OCR_TEMPLATE_GPT_FALLBACK_MODEL,
         "route": "payg" if phase in {"template-hierarchy-v1", "template-coarse-locator-v1", one_three.TRANSCRIBE_PHASE} else pool_route,
         "phase": phase, "reasoning_effort": reasoning_effort,
     }
@@ -155,15 +169,16 @@ async def _request(
                                   enable_thinking=flash_thinking, max_tokens=max_tokens, route="payg")
             else:
                 stage = "solve" if phase == one_three.SOLVE_PHASE else "template"
-                with processing_stage(stage, model="qwen3.8-max", route=pool_route, phase=phase):
+                with processing_stage(stage, model=config.OCR_TEMPLATE_GPT_FALLBACK_MODEL, route=pool_route, phase=phase):
                     raw = await call_gpt_vision(
                         images, prompt, max_tokens=max_tokens, pool_route=pool_route,
-                        reasoning_effort=reasoning_effort, prompt_first=True,
+                        reasoning_effort=reasoning_effort, prompt_first=prompt_first,
                         json_object=strict_phase,
                         response_validator=validate_output,
                         cancel_on_waiter_cancel=True,
                     )
-                record.update(model="qwen3.8-max", reasoning_effort=reasoning_effort, max_tokens=max_tokens)
+                record.update(model=config.OCR_TEMPLATE_GPT_FALLBACK_MODEL, reasoning_effort=reasoning_effort,
+                              max_tokens=max_tokens)
             parsed = parse_response(raw)
             result = validator(parsed)
         record["status"] = "completed"
@@ -192,19 +207,19 @@ async def _request(
         record.update(finished_at=datetime.now(timezone.utc).isoformat(), elapsed_s=round(finished - started, 3),
                       remaining_s=max(0.0, deadline_at - finished) if deadline_at is not None else None)
         logger.info("Template model stage finished trace_id=%s phase=%s status=%s elapsed_s=%s remaining_s=%s",
-                    trace_id, phase, record["status"], record["elapsed_s"], record["remaining_s"])
+                    trace_id, stage_key, record["status"], record["elapsed_s"], record["remaining_s"])
         reset_vision_phase_key(token)
 
 
 _HIERARCHY_PROMPT = """按试卷阅读顺序建立题目与作答位清单：分栏先左后右，栏内从上到下。
-每道独立题用question_number从1连续编号；printed_path记录已看见的所属分区与原题号，没有单独印刷题号时仅包含已看见的非空上级路径，路径项均为非空文字。同题多个作答位列在slots内：每个独立填空或计算式一项，连续演算区一项，需学生完成的作图位置也一项。
+每道独立题用question_number编号：它是本页内的顺序号，页面上第一道题为1，逐题加1，与印刷题号无关（本页第一道题印的是17，question_number仍是"1"，其作答位是"1[1]"）。printed_path记录已看见的所属分区与原题号，印刷题号只写在这里；没有单独印刷题号时仅包含已看见的非空上级路径，路径项均为非空文字。页面开头若是上一页某题的后续内容、本页看不到它的题号，也作为第1题列出，printed_path为空数组[]。同题多个作答位列在slots内：每个独立填空或计算式一项，连续演算区一项，需学生完成的作图位置也一项。
 印刷示意图、坐标图、几何图、统计图、观察图属于题干条件；“看图回答”不等于需要作图。只有题干明确要求学生新增画图、补画、作图、描点、连线、涂色、标注或补全图形，才建立作图槽位；不明确时不要猜成作图题。
-slot_id按题内阅读顺序编号为题号[序号]；cue引用该位置的印刷小问号、算式或简短位置说明，供后续模型认同一处。题数取questions长度，每题作答位数取slots长度，每题1至20项；超出时不截断、不合并或遗漏真实作答位，由系统拒收并报告。
-完整响应是单个JSON对象：{"contract_version":4,"questions":[{"question_number":"1","printed_path":["基础练习","1."],"slots":[{"slot_id":"1[1]","cue":"第一个填空"},{"slot_id":"1[2]","cue":"第二个填空"}]}]}"""
+slot_id按题内阅读顺序编号为question_number[序号]；cue引用该位置的印刷小问号、算式或简短位置说明，供后续模型认同一处。题数取questions长度，每题作答位数取slots长度，每题1至20项；超出时不截断、不合并或遗漏真实作答位，由系统拒收并报告。
+完整响应是单个JSON对象：{"contract_version":4,"questions":[{"question_number":"1","printed_path":["基础练习","5."],"slots":[{"slot_id":"1[1]","cue":"第一个填空"},{"slot_id":"1[2]","cue":"第二个填空"}]}]}"""
 
 _COARSE_LOCATOR_PROMPT = """按试卷阅读顺序粗定位每道独立题。只识别题目整体边界，不判断答案、题型或作图属性。
 坐标为整页 normalized_1000_v1；输入若为分栏图，各栏沿用整页坐标，不重新归一化。框必须同时覆盖完整题干、图形和该题作答区域，宁可适度留白，不可裁掉小刻度或印刷条件。
-只返回一个JSON对象，结构示例（坐标须按原图实测）：{"coordinate_space":"normalized_1000_v1","questions":[{"question_number":"1","bbox":[100,200,900,800]}]}。题号从1连续编号；有歧义时仍返回可见候选，后续由服务端校验，不能推测标准答案。"""
+只返回一个JSON对象，结构示例（坐标须按原图实测）：{"coordinate_space":"normalized_1000_v1","questions":[{"question_number":"1","bbox":[100,200,900,800]}]}。question_number是本页内的顺序号：页面上第一道题为1，逐题加1，与印刷题号无关（第一道题印的是17也写"1"）；页面开头若是上一页某题的后续内容，也作为第1题框出；有歧义时仍返回可见候选，后续由服务端校验，不能推测标准答案。"""
 
 
 # Must agree with the base rule (choice question_text is "") and merge_branches,
@@ -216,8 +231,12 @@ _PARALLEL_TRANSCRIPTION_NOTE = (
 )
 
 
-def _receive_coarse_locator(payload: object, *, width: int, height: int) -> dict:
-    """Receive independent Flash crop hints without making them authoritative."""
+def _receive_coarse_locator(payload: object, *, width: int, height: int, labels: list | None = None) -> dict:
+    """Receive independent Flash crop hints without making them authoritative.
+
+    Rows are renumbered by position. Flash may have written printed numbers
+    instead; ``labels`` receives what it wrote, for the check against the hierarchy.
+    """
     if (not isinstance(payload, dict) or set(payload) != {"coordinate_space", "questions"}
             or payload["coordinate_space"] != "normalized_1000_v1"
             or not isinstance(payload["questions"], list)
@@ -225,8 +244,9 @@ def _receive_coarse_locator(payload: object, *, width: int, height: int) -> dict
         raise ValueError("Flash 粗定位合同无效")
     rows = []
     for index, row in enumerate(payload["questions"], 1):
-        if (not isinstance(row, dict) or set(row) != {"question_number", "bbox"}
-                or row["question_number"] != str(index)):
+        label = row.get("question_number") if isinstance(row, dict) else None
+        if (not isinstance(row, dict) or set(row) != {"question_number", "bbox"} or not isinstance(label, str)
+                or not (label == str(index) or (label.isascii() and label.isdigit()))):
             raise ValueError("Flash 粗定位题号无效")
         bbox = _box_or_empty(row["bbox"], "Flash 粗定位 bbox", allow_empty=False)
         # Image dimensions are bound before transport so a syntactically valid
@@ -235,6 +255,11 @@ def _receive_coarse_locator(payload: object, *, width: int, height: int) -> dict
         if round(x2 * width / 1000) <= round(x1 * width / 1000) or round(y2 * height / 1000) <= round(y1 * height / 1000):
             raise ValueError("Flash 粗定位裁图为空")
         rows.append({"question_number": str(index), "bbox": bbox})
+    seen = [row["question_number"] for row in payload["questions"]]
+    if len(set(seen)) != len(seen):
+        raise ValueError("Flash 粗定位题号无效")
+    if labels is not None:
+        labels[:] = seen
     return {"coordinate_space": "normalized_1000_v1", "questions": rows}
 
 
@@ -639,9 +664,10 @@ async def recognize_directory_template(image_path: str, *, template_mode: str, l
             lambda raw: one_three.receive_hierarchy(raw, version=4),
             max_tokens=8000, reasoning_effort="low",
         ), name="template-flash-hierarchy")
+        coarse_labels: list[str] = []
         coarse_task = asyncio.create_task(_request(
             image_paths, _COARSE_LOCATOR_PROMPT, "template-coarse-locator-v1",
-            lambda raw: _receive_coarse_locator(raw, width=width, height=height),
+            lambda raw: _receive_coarse_locator(raw, width=width, height=height, labels=coarse_labels),
             max_tokens=_COARSE_LOCATOR_MAX_TOKENS, reasoning_effort="low", pool_route="payg",
         ), name="template-flash-coarse-locator")
         try:
@@ -681,8 +707,9 @@ async def recognize_directory_template(image_path: str, *, template_mode: str, l
                 phase="template-coarse-locator-v1",
             )
             logger.warning("Flash 粗定位失败，继续使用 Max 权威定位: %s", exc)
-        if coarse and len(coarse["questions"]) != len(hierarchy["leaf_ids"]):
-            exc = ValueError("Flash 粗定位题数与层级目录不一致")
+        if coarse and not one_three.coarse_follows_hierarchy(
+                coarse_labels or [row["question_number"] for row in coarse["questions"]], hierarchy):
+            exc = ValueError("Flash 粗定位题数或题号与层级目录不一致")
             coarse = None
             coarse_failure_info = describe_failure(
                 exc,
@@ -691,7 +718,7 @@ async def recognize_directory_template(image_path: str, *, template_mode: str, l
                 route="payg",
                 phase="template-coarse-locator-v1",
             )
-            logger.warning("Flash 粗定位题数与层级不一致，继续使用 Max 权威定位")
+            logger.warning("Flash 粗定位题数或题号与层级不一致，继续使用 Max 权威定位")
         coarse_paths = []
         if coarse:
             try:
@@ -724,28 +751,61 @@ async def recognize_directory_template(image_path: str, *, template_mode: str, l
         # additional visual evidence for the Max solver and Flash transcription.
         # Max remains the sole owner of final geometry and answer binding.
         detailed_images = [image_path] + coarse_paths
-        locator_task = asyncio.create_task(_request(
+        # A question carried over from the previous page is solved and transcribed with that page's tail in view.
+        page_request, carried_over = cross_page.bind(_request, one_three.question_contract(hierarchy), temp)
+        # Tiles are fixed from the coarse boxes before any Max call; without
+        # a plan the single page request stays exactly as it was.
+        locator_plan = locator_tiles.plan_tiles(
+            one_three.question_contract(hierarchy), coarse, columns, width=width, height=height,
+            **locator_tiles.configured_limits(hierarchy))
+        locator_report = []
+        # Each Max branch thinks at the deployment's tier for it, read once so every tile or shard and the diagnostics agree.
+        locator_effort, solver_effort = config.OCR_TEMPLATE_LOCATOR_REASONING_EFFORT, config.OCR_TEMPLATE_SOLVER_REASONING_EFFORT
+        locator_call = (locator_tiles.locate_in_tiles(
+            _request, page, temp, one_three.question_contract(hierarchy), coarse, locator_plan,
+            columns=columns, phase="template-directory-v1", max_tokens=one_three.MAX_TOKENS,
+            reasoning_effort=locator_effort, report=locator_report,
+        ) if locator_plan else _request(
             image_paths, locator_prompt, "template-directory-v1",
             lambda raw: (one_three.max_owned.receive_locator_candidates(raw, one_three.question_contract(hierarchy))
                          if hierarchy.get("question_identity_version") == 4
                          else _validate_one_three_locator(raw, hierarchy)),
-            max_tokens=one_three.MAX_TOKENS, reasoning_effort="high",
+            max_tokens=one_three.MAX_TOKENS, reasoning_effort=locator_effort,
             expected_ids=tuple(hierarchy["leaf_ids"]),
-        ), name="template-qwen-max-locator")
-        solver_task = asyncio.create_task(_request(
-            detailed_images, solver_prompt, one_three.SOLVE_PHASE,
-            lambda raw: (one_three.max_owned.receive_solver_candidates(raw, one_three.question_contract(hierarchy))
-                         if hierarchy.get("question_identity_version") == 4
-                         else one_three.receive_solver(raw, hierarchy)),
-            max_tokens=one_three.MAX_TOKENS, reasoning_effort="high",
-            expected_ids=tuple("Q" + number for number in hierarchy["leaf_ids"]),
-        ), name="template-qwen-max-fullsolve")
+        ))
+        locator_task = asyncio.create_task(locator_call, name="template-qwen-max-locator")
+        # One owner per question, fixed before any Max call; one shard keeps
+        # the single full-solve request unchanged. The solver takes the Max permits the locator's requests leave free.
+        solver_plan = solver_shards.plan_shards(one_three.question_contract(hierarchy),
+                                                solver_shards.configured_shard_count(hierarchy, len(locator_plan)))
+        solver_report = []
+        # A caller that takes late answers (shared slots only) lets a solver request outlast the page.
+        offer = late_answers.offered() if hierarchy.get("question_identity_version") == 4 else None
+        start = late_answers.starter(offer, _import_context, started)
+
+        async def start_solver():
+            """One task per shard, queued after the locator's requests as the solver always was."""
+            return (start(
+                solver_shards.start_shards, page_request, detailed_images, solver_prompt,
+                one_three.question_contract(hierarchy), solver_plan,
+                phase=one_three.SOLVE_PHASE, max_tokens=one_three.MAX_TOKENS, reasoning_effort=solver_effort,
+                report=solver_report,
+            ) if len(solver_plan) > 1 else [start(asyncio.create_task, page_request(
+                detailed_images, solver_prompt, one_three.SOLVE_PHASE,
+                lambda raw: (one_three.max_owned.receive_solver_candidates(raw, one_three.question_contract(hierarchy))
+                             if hierarchy.get("question_identity_version") == 4
+                             else one_three.receive_solver(raw, hierarchy)),
+                max_tokens=one_three.MAX_TOKENS, reasoning_effort=solver_effort,
+                expected_ids=tuple("Q" + number for number in hierarchy["leaf_ids"]),
+            ), name="template-qwen-max-fullsolve-1")])
+
+        solver_task = asyncio.create_task(start_solver(), name="template-qwen-max-fullsolve")
         # Transcription starts with the same immutable hierarchy and coarse
         # evidence instead of waiting for Max geometry. Its result can be
         # cached while Max is still solving; merge_branches later binds it to
         # Max's authoritative question types.
         async def transcribe_and_notify():
-            transcription = await _request(
+            transcription = await page_request(
                 detailed_images, transcription_prompt, one_three.TRANSCRIBE_PHASE,
                 lambda raw: one_three.receive_transcription(raw, hierarchy),
                 max_tokens=one_three.FLASH_TOKENS, reasoning_effort="high", pool_route="payg",
@@ -756,12 +816,21 @@ async def recognize_directory_template(image_path: str, *, template_mode: str, l
             return transcription
 
         transcription_task = asyncio.create_task(transcribe_and_notify(), name="template-flash-text-transcription")
-        tasks = (locator_task, solver_task, transcription_task)
+        tasks = [locator_task, solver_task, transcription_task]
         try:
-            locator, solver, transcription = await asyncio.gather(*tasks)
-            locator, solver = one_three.max_owned.reconcile_slot_candidates(
-                locator, solver, one_three.question_contract(hierarchy))
-            solver = one_three.merge_branches(locator, solver, transcription)
+            solver_tasks = await solver_task
+            tasks += solver_tasks
+            received, transcription = await late_answers.settle(
+                (locator_task, transcription_task), solver_tasks, started=started, late=offer is not None)
+
+            def bound(solver):
+                """Locator and solver reconciled, answers bound: for this delivery and for answers that arrive later."""
+                located, solved = one_three.max_owned.reconcile_slot_candidates(
+                    received, solver, one_three.question_contract(hierarchy))
+                return located, one_three.merge_branches(located, solved, transcription)
+
+            locator, solver = bound(late_answers.solved(
+                solver_tasks, solver_plan, one_three.question_contract(hierarchy), received))
         except asyncio.CancelledError:
             for task in tasks:
                 if not task.done():
@@ -776,71 +845,42 @@ async def recognize_directory_template(image_path: str, *, template_mode: str, l
             return {"error": f"模板定位/解题阶段失败：{exc}", "error_info": report_failure(exc, stage="template"),
                     "questions": [], "layout_result": layout_result,
                     "template_ocr_diagnostics": {"strategy": one_three.STRATEGY, "failed": True, "stage": "locate_transcribe_solve", **_stage_diagnostics()}}
-    directory = _directory_from_hierarchy(hierarchy, locator)
-    answers_by_id = {row["q_id"]: row for row in solver["answers"]}
-    questions = []
-    anchors, answer_regions, handwriting_regions = [], [], []
-    pending = []
-    for leaf in directory["leaves"]:
-        answer = answers_by_id[leaf["q_id"]]
-        review = bool(directory["needs_review"] or solver.get("directory_issues") or answer["answer_status"] == "needs_review")
-        question = merge_directory_leaf_score_layer({**copy.deepcopy(leaf), **answer, "question_no": leaf["question_number"], "directory_node_id": leaf["node_id"],
-                    "directory_parent_id": leaf["parent_id"],
-                    # The frozen directory leaf remains one printed question;
-                    # scoring expands it later from the persisted answer boxes.
-                    "blank_count": int(leaf.get("answer_slot_count") or len(leaf.get("regions") or []) or 1), "subquestion_count": 1,
-                    "answer_area_count": int(leaf["answer_area_count"]),
-                    "drawing_area_count": int(leaf.get("drawing_area_count") or 0),
-                    "region_kinds": list(leaf.get("region_kinds") or []),
-                    "answer_slots": list(answer.get("answer_slots") or []),
-                    "slot_ids": list(leaf.get("slot_ids") or []),
-                    "answer_bboxes": [[round(v) for v in box] for box in leaf.get("regions", [])],
-                    "directory_version": directory["version"], "directory_metadata": copy.deepcopy(leaf),
-                    "binding_source": "flash_hierarchy_qwen_parallel", "answer_status": "needs_review" if review else "ready",
-                    "needs_review": review, "directory_issues": copy.deepcopy(directory["needs_review"] + solver.get("directory_issues", [])
-                                                                                 + answer.get("answer_review_reasons", []))})
-        # Explicit Max extra/refused reports are draft-only blocking reviews;
-        # confirmation requires the teacher to delete or keep each position.
-        if locator.get("max_flags", {}).get(leaf["question_number"]):
-            question["max_flags"] = copy.deepcopy(locator["max_flags"][leaf["question_number"]])
-        questions.append(question)
-        anchors.append({"question_number": leaf["question_number"], **({"question_number_bbox": [round(v) for v in leaf["question_number_bbox"]]} if leaf.get("question_number_bbox") else {})})
-        # A solver-only slot has no trustworthy box. Keep its answer position
-        # in the draft, and expose only real boxes as editable candidates.
-        physical = [(sid, kind, box) for sid, kind, box in zip(
-            leaf["slot_ids"], leaf["region_kinds"], leaf["regions"]) if box]
-        answer_regions.append({"question_number": leaf["question_number"],
-                               "regions": [[round(v) for v in box] for _, _, box in physical],
-                               **({"region_kinds": [kind for _, kind, _ in physical],
-                                   "slot_ids": [sid for sid, _, _ in physical]} if physical else {})})
-        handwriting = [box for box in leaf.get("regions", []) if box]
-        handwriting += [box for box in leaf.get("drawing_regions", []) if box not in handwriting]
-        handwriting_regions.append({"question_number": leaf["question_number"],
-                                    "regions": [[round(v) for v in box] for box in handwriting]})
-        if review:
-            pending.append(leaf["question_number"])
-    diagnostics = {"strategy": one_three.STRATEGY, "education_stage": stage,
-                   "model": "qwen3.8-max", "hierarchy_model": "qwen3.8-flash",
-                   "coarse_locator_model": "qwen3.8-flash", "request_count": 5,
-                   "hierarchy_contract_version": hierarchy.get("question_identity_version"),
-                   "slot_source": locator.get("slot_source", "legacy"),
-                   "transcription_model": "qwen3.8-flash", "solver_model": "qwen3.8-max",
-                   "coarse_locator_tokens": _COARSE_LOCATOR_MAX_TOKENS,
-                   "max_locator_tokens": one_three.MAX_TOKENS, "max_transcription_tokens": one_three.FLASH_TOKENS,
-                   "max_solver_tokens": one_three.MAX_TOKENS,
-                   "max_reasoning_effort": "high", "transcription_reasoning_effort": "high", "solver_reasoning_effort": "high",
-                   "transcription_thinking": True, "transcription_route": "payg",
-                   "full_page_baseline": True, "separate_transcription_request": True,
-                   "hierarchy_thinking": True, "hierarchy_reasoning_effort": "low", "hierarchy_route": "payg",
-                   "coarse_locator_thinking": True, "coarse_locator_reasoning_effort": "low", "coarse_locator_route": "payg",
-                   "coarse_locator_available": bool(coarse), "coarse_crop_count": len(coarse_paths),
-                   "column_count": len(image_paths),
-                   "elapsed_s": round(asyncio.get_running_loop().time() - started, 3),
-                   "needs_review": bool(pending), "review_reasons": pending,
-                   **({"coarse_locator_error_info": coarse_failure_info} if coarse_failure_info else {}),
-                   **_stage_diagnostics()}
-    return {"questions": questions, "question_directory": directory, "template_mode": template_mode,
-            "layout_result": layout_result, "question_anchors": anchors,
-            "template_answer_regions": answer_regions, "template_handwriting_regions": handwriting_regions,
-            "requires_teacher_confirmation": pending, "template_ocr_diagnostics": diagnostics,
-            "anchor_diagnostics": {**diagnostics, "model_reasoning_effort": "high", "needs_review": bool(pending)}}
+
+    def assembled(locator, solver):
+        """The page result for these bound answers."""
+        directory = _directory_from_hierarchy(hierarchy, locator)
+        questions, anchors, answer_regions, handwriting_regions, pending = page_questions.assemble(directory, locator, solver)
+        diagnostics = {"strategy": one_three.STRATEGY, "education_stage": stage,
+                       "model": config.OCR_TEMPLATE_GPT_FALLBACK_MODEL, "hierarchy_model": "qwen3.8-flash",
+                       "coarse_locator_model": "qwen3.8-flash", "request_count": 3 + len(solver_plan) + (sum(tile["attempts"] for tile in locator_report) or 1),
+                       "locator_tiles": len(locator_plan), "locator_tile_report": locator_report,
+                       "solver_shards": len(solver_plan), "solver_shard_plan": solver_plan,
+                       "solver_shard_report": solver_report,
+                       "hierarchy_contract_version": hierarchy.get("question_identity_version"),
+                       "slot_source": locator.get("slot_source", "legacy"),
+                       "transcription_model": "qwen3.8-flash", "solver_model": config.OCR_TEMPLATE_GPT_FALLBACK_MODEL,
+                       "coarse_locator_tokens": _COARSE_LOCATOR_MAX_TOKENS,
+                       "max_locator_tokens": one_three.MAX_TOKENS, "max_transcription_tokens": one_three.FLASH_TOKENS,
+                       "max_solver_tokens": one_three.MAX_TOKENS,
+                       "max_reasoning_effort": locator_effort, "transcription_reasoning_effort": "high",
+                       "solver_reasoning_effort": solver_effort,
+                       "transcription_thinking": True, "transcription_route": "payg",
+                       "full_page_baseline": True, "separate_transcription_request": True,
+                       "hierarchy_thinking": True, "hierarchy_reasoning_effort": "low", "hierarchy_route": "payg",
+                       "coarse_locator_thinking": True, "coarse_locator_reasoning_effort": "low", "coarse_locator_route": "payg",
+                       "coarse_locator_available": bool(coarse), "coarse_crop_count": len(coarse_paths),
+                       "column_count": len(image_paths),
+                       "elapsed_s": round(asyncio.get_running_loop().time() - started, 3),
+                       "needs_review": bool(pending), "review_reasons": pending,
+                       **({"coarse_locator_error_info": coarse_failure_info} if coarse_failure_info else {}),
+                       **({"carried_over_question": carried_over} if carried_over else {}),
+                       **_stage_diagnostics()}
+        return {"questions": questions, "question_directory": directory, "template_mode": template_mode,
+                "layout_result": layout_result, "question_anchors": anchors,
+                "template_answer_regions": answer_regions, "template_handwriting_regions": handwriting_regions,
+                "requires_teacher_confirmation": pending, "template_ocr_diagnostics": diagnostics,
+                "anchor_diagnostics": {**diagnostics, "model_reasoning_effort": "high", "needs_review": bool(pending)}}
+
+    return late_answers.deliver(
+        offer, solver_tasks, solver_plan, one_three.question_contract(hierarchy), received,
+        assembled(locator, solver), lambda solver: assembled(*bound(solver)))

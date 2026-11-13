@@ -35,7 +35,7 @@ export function useTemplateRecognition(ctx) {
     templateDialogVisible, templateBankImported, templatePages, templateCutBusy, templateCutResult,
     templateCutProgress, templateCutActionId, templateCutPreviewError, pendingTemplateId, form,
     templateRecognizeController, templateCutController, templateCutCompletedRunToken,
-    templateCutRunToken, syncTemplateBatchScores, requireTemplateService,
+    templateCutRunToken, syncTemplateBatchScores, requireTemplateService, followTemplateAnswers,
   } = ctx
   // Defined by later parts of the page; looked up when called.
   const stopTemplateCutPolling = (...args) => ctx.stopTemplateCutPolling(...args)
@@ -227,6 +227,8 @@ export function useTemplateRecognition(ctx) {
       }),
     }))
     syncTemplateBatchScores()
+    // Questions delivered while still being solved get their answers as the server finishes them.
+    followTemplateAnswers()
     templateDialogVisible.value = true
     const existingCut = await api.grade.templateCutCandidatesState(tid).catch(() => null)
     if (tid !== pendingTemplateId.value || runToken !== templateCutRunToken.value) return

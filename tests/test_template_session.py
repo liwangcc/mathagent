@@ -3317,14 +3317,17 @@ def test_template_geometry_review_uses_explicit_flag_before_legacy_review(explic
     }) == (True, True)
 
 
-def test_current_one_three_import_confirm_and_reopen(monkeypatch, tmp_path):
+@pytest.mark.parametrize("solver_shards", [1, 2])
+def test_current_one_three_import_confirm_and_reopen(monkeypatch, tmp_path, solver_shards):
     """Current hierarchy plus three parallel calls contract reaches real import and confirmation routes."""
     from unittest.mock import AsyncMock
+    import config
     import httpx
     import routers.grade as grade
     from routers import grade_template
     from services import flash_grading, template_directory_pipeline as pipeline
 
+    monkeypatch.setattr(config, "OCR_TEMPLATE_SOLVER_SHARDS", solver_shards)
     _engine, session_factory = _make_app_and_session()
     set_grade_global(monkeypatch, "UPLOAD_DIR", str(tmp_path))
     monkeypatch.setattr(grade_recognition, "_check_limits_or_raise", lambda *_args: None)
@@ -3373,7 +3376,8 @@ def test_current_one_three_import_confirm_and_reopen(monkeypatch, tmp_path):
         return {"model": "qwen3.8-flash", "content": json.dumps(payload), "receipt": {}}
 
     async def max_call(images, prompt, **kwargs):
-        assert kwargs["reasoning_effort"] == "high" and kwargs["max_tokens"] == 32768
+        assert kwargs["max_tokens"] == 32768
+        assert kwargs["reasoning_effort"] == ("low" if "normalized_1000_v1" in prompt else "medium")
         if "normalized_1000_v1" in prompt:
             phases.append("locator")
             rows = [
@@ -3413,7 +3417,7 @@ def test_current_one_three_import_confirm_and_reopen(monkeypatch, tmp_path):
     assert not [value for event, value in events if event == "error"], (events, artifact_errors)
     done = next(value for event, value in events if event == "done")
     saved = TemplateSession.load_meta(done["template_id"], str(tmp_path))
-    assert sorted(phases) == ["coarse", "hierarchy", "locator", "solve", "transcribe"]
+    assert sorted(phases) == sorted(["coarse", "hierarchy", "locator", "transcribe"] + ["solve"] * solver_shards)
     assert [q["question_no"] for q in saved.pages[0]["questions"]] == ["1", "2"]
     first = saved.pages[0]["questions"][0]
     assert first["question_text"] == "印刷题干1"

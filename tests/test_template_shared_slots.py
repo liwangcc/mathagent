@@ -1068,8 +1068,11 @@ def test_wire_versions_do_not_cross_receive_boundaries():
 # ---------------------------------------------------------------------------
 # 7. Synthetic real pipeline: 1 freeze -> 3 concurrent branches
 # ---------------------------------------------------------------------------
+@pytest.mark.parametrize("solver_shards", [1, 2])
 @pytest.mark.parametrize("reverse_branches", [False, True])
-def test_v4_pipeline_freezes_inventory_then_runs_one_to_three(tmp_path, monkeypatch, reverse_branches):
+def test_v4_pipeline_freezes_inventory_then_runs_one_to_three(tmp_path, monkeypatch, reverse_branches, solver_shards):
+    import config
+    monkeypatch.setattr(config, "OCR_TEMPLATE_SOLVER_SHARDS", solver_shards)
     source = tmp_path / "paper.png"
     Image.new("RGB", (600, 800), "white").save(source)
     wire_payload = paper_b_wire()
@@ -1108,12 +1111,15 @@ def test_v4_pipeline_freezes_inventory_then_runs_one_to_three(tmp_path, monkeypa
     result = run_pipeline(source)
 
     assert "error" not in result
-    assert len(calls) == 5
+    # The solve branch may run as one request per shard; the other four stay single.
+    assert len(calls) == 4 + solver_shards
+    assert [phase for phase, *_ in calls].count(one_three.SOLVE_PHASE) == solver_shards
     efforts = {phase: effort for phase, effort, _, _ in calls}
     assert efforts[HIERARCHY_PHASE] == "low"
     assert efforts["template-coarse-locator-v1"] == "low"
-    assert efforts[LOCATOR_PHASE] == "high"
-    assert efforts[one_three.SOLVE_PHASE] == "high"
+    # Default Max tiers: the locator thinks at low, the solver at medium.
+    assert efforts[LOCATOR_PHASE] == "low"
+    assert efforts[one_three.SOLVE_PHASE] == "medium"
     assert efforts[one_three.TRANSCRIBE_PHASE] == "high"
     tokens = {phase: budget for phase, _, budget, _ in calls}
     assert tokens[LOCATOR_PHASE] == one_three.MAX_TOKENS

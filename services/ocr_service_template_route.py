@@ -304,13 +304,11 @@ async def _call_multi_pool_vision_request(
         if prompt_first
         else [*image_content, text_content]
     )
-    from config import OCR_TEMPLATE_GPT_REASONING_EFFORT
+    from config import OCR_TEMPLATE_GPT_REASONING_EFFORT, REASONING_EFFORTS
     selected_reasoning_effort = str(
         reasoning_effort or OCR_TEMPLATE_GPT_REASONING_EFFORT
     ).strip().lower()
-    if selected_reasoning_effort not in {
-        "none", "minimal", "low", "medium", "high", "xhigh", "max"
-    }:
+    if selected_reasoning_effort not in REASONING_EFFORTS:
         raise ValueError(
             "reasoning_effort must be none, minimal, low, medium, high, xhigh, or max"
         )
@@ -361,11 +359,14 @@ async def _call_multi_pool_vision_request(
     validator = _multi_pool_response_validator(
         prompt, response_validator=response_validator,
     )
+    # The caller's effort is the one sent: the scheduler writes this argument
+    # over the payload's, so a fixed value here would turn every template
+    # request into that tier whatever the pipeline asked for.
     fallback_kwargs = {
         "request_key": paper_key,
         "validator": validator,
+        "reasoning_effort": selected_reasoning_effort,
     }
-    fallback_effort = "high"
     if route_diagnostics is not None and _accepts_keyword(
         scheduler.request_template_fallback_pool, "route_diagnostics"
     ):
@@ -373,7 +374,7 @@ async def _call_multi_pool_vision_request(
     _set_template_route_diagnostics(
         route_diagnostics,
         route="qwen3.8max",
-        reasoning_effort=fallback_effort,
+        reasoning_effort=selected_reasoning_effort,
     )
     return await scheduler.request_template_fallback_pool(
         payload,

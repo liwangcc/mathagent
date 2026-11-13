@@ -10,6 +10,7 @@ import json
 import math
 import re
 import unicodedata
+from typing import NamedTuple
 
 SLOT_SOURCE = "max_locator_v3"
 SHARED_SLOT_SOURCE = "flash_slots_v4"
@@ -35,6 +36,22 @@ def _shared_mode(manifest):
     if any(flags) and not all(flags):
         raise ValueError("题目与作答位目录版本混用")
     return bool(flags) and all(flags)
+
+
+# A page can open with the rest of the previous page's last question. That
+# question has no printed number here and its stem is on the other page; its
+# directory row says so and carries the handling every model must follow.
+CONTINUED_FROM_PREVIOUS_PAGE = "接上页（本页未印题号）"
+CONTINUED_NOTE = (
+    "本题接上页：题干在上一页，本页没有它的印刷题号。定位时question_number_bbox返回null，regions照常按本页内容定位；"
+    "解题时只依据本页可见内容，本页看不到的已知条件不得自行补设或凭记忆补入，"
+    "依赖这些条件的作答位answer留空，并在uncertain写明缺少的条件。")
+CONTINUED_REVIEW_REASON = "本题接上页，题干不在本页，标准答案只依据本页内容得出，请对照上一页核对"
+
+
+def continues_previous_page(row) -> bool:
+    """Whether this directory row is the unlabelled rest of the previous page's question."""
+    return row.get("printed_path") == [CONTINUED_FROM_PREVIOUS_PAGE]
 
 
 KEY_GUIDE = (
@@ -102,25 +119,40 @@ def _box(raw):
     return [float(v) for v in raw]
 
 
+class LocatorFrame(NamedTuple):
+    """How one locator request names the picture it carries and that picture's coordinates."""
+    image: str       # what the contract calls the picture
+    space: str       # what it calls a coordinate of that picture
+    columns: str     # label of the column list
+    definition: str  # the sentence that fixes origin, extent and grid
+
+
 def locator_prompt(manifest, *, width, height, columns):
+    """The whole-page prompt: one grid stamped on the page, page coordinates throughout."""
+    return framed_locator_prompt(manifest, columns, LocatorFrame(
+        image="原图", space="整页坐标", columns="分栏",
+        definition=f"整页{width}×{height}，坐标normalized_1000_v1，网格使用整页坐标。"))
+
+
+def framed_locator_prompt(manifest, columns, frame):
+    """The locator contract worded for ``frame``; what must be returned does not depend on it."""
     shared = _shared_mode(manifest)
     placement = ("每个slots项对应一个regions项，slot_id沿用目录，区域包含该项完整作答位置及已有笔迹。"
                  if shared else "每个独立填写位置一个框；一题中并列的多道计算式逐式框选；连续演算区一个框。框包含完整作答位置及其中已有笔迹。")
     binding = (SHARED_GUIDE if shared else KEY_GUIDE + "drawing区域的answer_key为null。")
     region_example = ('{"slot_id":"1[1]","kind":"answer","bbox":[100,200,400,300]}'
                       if shared else '{"kind":"answer","bbox":[100,200,400,300],"answer_key":{"part":"","anchor":"","blank_index":0}}')
-    return (
-        f"按目录在原图中定位学生需要完成的作答区域。整页{width}×{height}，坐标normalized_1000_v1，网格使用整页坐标。"
+    rules = (
+        "按目录在原图中定位学生需要完成的作答区域。" + frame.definition +
         "按目录逐项返回整题：question_number取q_id去掉Q后的编号；原图中该题号下的作答位置列在regions内。"
         "每题完整返回题型、印刷题号框、choice_mode和按阅读顺序排列的regions。"
         "question_type取choice、fill、solve或drawing，choice_mode取single、multiple或unknown。每题regions为1至20项，逐项沿用作答位，不截断。"
         "kind=answer表示文字、数字或选项填写区域，kind=drawing表示学生需新增绘制、涂色或标注的区域。"
         + placement +
         "结合题目目标和底图已有内容确定学生还需新增笔迹的作图任务；已表达题意的印刷示意属于题干条件。"
-        "作图框保留完成判定所需的底图和参照。label_anchor为作图题的题号标记点[x,y]，必须是有效整页坐标，且x不得大于第一个作图框的左边界；允许贴左边界，不允许落入作图区内部。涂色和图文混合题也遵守此规则；无作图时为null。不得移动或缩小作图框来迎合锚点要求；无法确定时列入needs_review。"
-        + binding +
-        f"\n分栏：{json.dumps(columns, ensure_ascii=False, separators=(',', ':'))}"
-        f"\n目录：{json.dumps(manifest, ensure_ascii=False, separators=(',', ':'))}"
+        "作图框保留完成判定所需的底图和参照。label_anchor为作图题的题号标记点[x,y]，必须是有效" + frame.space + "，且x不得大于第一个作图框的左边界；允许贴左边界，不允许落入作图区内部。涂色和图文混合题也遵守此规则；无作图时为null。不得移动或缩小作图框来迎合锚点要求；无法确定时列入needs_review。"
+        + binding)
+    reply = (
         '\n返回一个JSON对象，结构示例（坐标须按原图实测）：{"coordinate_space":"normalized_1000_v1","questions":['
         '{"question_number":"1","question_number_bbox":[50,180,80,210],'
         '"question_type":"fill","choice_mode":"unknown",'
@@ -133,6 +165,13 @@ def locator_prompt(manifest, *, width, height, columns):
            + UNMARKED_POSITION_GUIDE
            if shared else "")
     )
+    # The contract text says 原图 for the request's picture; a frame may call it otherwise.
+    # Only the wording is renamed, never the directory or the column list.
+    rules, reply = (part.replace("原图", frame.image) for part in (rules, reply))
+    return (rules
+            + f"\n{frame.columns}：{json.dumps(columns, ensure_ascii=False, separators=(',', ':'))}"
+            + f"\n目录：{json.dumps(manifest, ensure_ascii=False, separators=(',', ':'))}"
+            + reply)
 
 
 def build_prompts(manifest, *, education_stage, locator=None):
@@ -270,7 +309,10 @@ def receive_locator(payload, manifest):
                     and question_type in {"choice", "fill"})
         normalized.append({"question_number": number,
                            **({"answer_position": "unmarked"} if unmarked else {}),
-                           "question_number_bbox": _box(row["question_number_bbox"]),
+                           # Nothing is printed to box for a question carried over from the previous page.
+                           "question_number_bbox": (None if row["question_number_bbox"] is None
+                                                    and continues_previous_page(identities[number])
+                                                    else _box(row["question_number_bbox"])),
                            "question_type": question_type, "choice_mode": row["choice_mode"],
                            "regions": boxes, "region_kinds": kinds, "region_keys": keys,
                            "drawing_regions": drawing, "label_anchor": copy.deepcopy(anchor),
@@ -323,7 +365,10 @@ def receive_solver(payload, manifest):
         answers.append({"q_id": qid, "standard_answer": _text(row["standard_answer"], empty=shared),
                         "answer_items": parsed, **({"slot_ids": expected_ids} if shared else {}),
                         "solution_steps": _strings(row["solution_steps"]),
-                        "answer_variants": [], "answer_review_reasons": _strings(row["uncertain"]),
+                        "answer_variants": [],
+                        # Its stem is on another page: whatever the model says, a teacher checks it.
+                        "answer_review_reasons": ([CONTINUED_REVIEW_REASON] if continues_previous_page(identities[qid])
+                                                  else []) + _strings(row["uncertain"]),
                         "solve_visual_context": {"facts": _strings(row["visual_facts"]), "relations": [],
                                                  "uncertain": _strings(row["uncertain"])}})
     return {"answers": answers, "directory_issues": [],
@@ -561,6 +606,27 @@ def _merged_flags(*sources):
     return merged
 
 
+# A printed question number is one text line high. Measured on real worksheets,
+# the answer areas of solve questions were 3.2 to 6.3 such lines; on an exam
+# page with no answer space the locator returned strips of 1.6 to 2.4.
+SOLVE_AREA_MIN_LINES = 2.8
+
+
+def solve_area_too_low(geometry) -> bool:
+    """Whether a solve question's every answer area is too low to work in.
+
+    Heights are compared with the question's own printed number box. Both are
+    fractions of the page height, so the ratio needs no page size. A question
+    without a number box or without a located answer area is not judged.
+    """
+    label = geometry.get("question_number_bbox")
+    areas = [box for box, kind in zip(geometry["regions"], geometry["region_kinds"]) if kind == "answer" and box]
+    if geometry["question_type"] != "solve" or not label or not areas:
+        return False
+    line = label[3] - label[1]
+    return all(box[3] - box[1] < SOLVE_AREA_MIN_LINES * line for box in areas)
+
+
 def reconcile_slot_candidates(locator, solver, manifest):
     """Merge parallel proposals by identity, preserving disagreement for review.
 
@@ -621,6 +687,10 @@ def reconcile_slot_candidates(locator, solver, manifest):
             geometry["label_anchor"] = None
         geometry["answer_area_count"] = kinds.count("answer")
         geometry["answer_kind"] = ("mixed" if "answer" in kinds else "drawing") if "drawing" in kinds else "non_graphic"
+        if solve_area_too_low(geometry):
+            # The model had to return a box; a strip is what it returns where the page leaves no room.
+            answer["answer_review_reasons"].append(
+                f"第 {number} 题是解答题，但作答区不足三行高，可能没有框到完整的作答空白，请核对或重画")
         answer["answer_items"] = [by_id.get(sid, {"slot_id": sid, "answer": ""}) for sid in ids]
         # Preserve explicit answers outside the selected inventory for the
         # existing unbound-items review record. Never shift them into blanks.
