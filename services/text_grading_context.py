@@ -21,7 +21,10 @@ def build_teacher_material(answer_map: dict, units: list[dict]) -> list[dict]:
     text grading. Legacy units supply their existing IDs without inventing or
     renumbering slots. Geometry, images and student evidence stay out of this
     projection. The original whole-question answer and shared steps remain
-    available alongside the exact per-unit references.
+    available alongside the exact per-unit references, except the whole-question
+    answer of a fill item with a slot contract: its expected responses are the
+    references by slot ID, and that free text may restate the stem, which the
+    grader could read as something the student must write.
     """
     from services.scoring_engine import llm_payload_for_unit
 
@@ -42,6 +45,8 @@ def build_teacher_material(answer_map: dict, units: list[dict]) -> list[dict]:
             value = entry.get(field) or first.get(field) or []
             if value:
                 item[field] = deepcopy(value)
+        slot_fill = item["question_type"] == "fill" and "slot_ids" in entry
+        whole_answer = item.pop("standard_answer") if slot_fill else item["standard_answer"]
 
         references = {}
         if "slot_ids" in entry:
@@ -66,7 +71,7 @@ def build_teacher_material(answer_map: dict, units: list[dict]) -> list[dict]:
                 ref["scope_hint"] = "text_only"
             references[number] = ref
         if not references:
-            references[parent] = {"standard_answer": item["standard_answer"]}
+            references[parent] = {"standard_answer": whole_answer}
         item["answers"] = references
         material.append(item)
     return material

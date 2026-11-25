@@ -9,7 +9,9 @@
 - ``_send_stream`` is the default transport: a streamed Responses request, or
   for a ``chat_completions`` pool ``_send_chat_completion_stream``, whose
   messages come from ``_chat_messages_from_payload`` and whose answer must not
-  stop mid-generation (``_TRUNCATED_FINISH_REASONS``).
+  stop mid-generation (``_TRUNCATED_FINISH_REASONS``); what the provider sends
+  after ``finish_reason`` is read by ``_read_chat_stream_tail`` and the
+  request's token counts (``_usage_counts``) are logged.
 
 ``_classify_http_failure`` (``_SHARED_RETRYABLE_HTTP_STATUSES``),
 ``_template_failure_category_from_message`` and
@@ -44,6 +46,58 @@ logger = logging.getLogger("services.ocr_pool_scheduler")
 _TRUNCATED_FINISH_REASONS = {"length", "max_tokens", "max_output_tokens"}
 _SHARED_RETRYABLE_HTTP_STATUSES = frozenset({401, 403, 404, 408, 429})
 _STUDENT_TRANSCRIPTION_MARKER = "[task=student_transcription_only]"
+# After finish_reason a Chat Completions provider still sends a usage-only event
+# and [DONE]. They are read for at most this long: the answer is complete, and a
+# gateway that sends neither must not hold it (and its pool permit) any longer.
+_CHAT_STREAM_TAIL_GRACE_S = 2.0
+
+
+def _usage_counts(usage: object) -> dict[str, int]:
+    """Return the token counts of a provider usage object, and nothing else from it."""
+    if not isinstance(usage, dict):
+        return {}
+    sources = (
+        ("prompt_tokens", usage),
+        ("completion_tokens", usage),
+        ("total_tokens", usage),
+        ("reasoning_tokens", usage.get("completion_tokens_details")),
+        ("cached_tokens", usage.get("prompt_tokens_details")),
+    )
+    counts: dict[str, int] = {}
+    for name, source in sources:
+        value = source.get(name) if isinstance(source, dict) else None
+        if isinstance(value, int) and not isinstance(value, bool) and value >= 0:
+            counts[name] = value
+    return counts
+
+
+async def _read_chat_stream_tail(iterator, usage: object, *, budget_s: float) -> object:
+    """Read what follows finish_reason and return the last usage object seen.
+
+    The answer is already complete, so nothing here may fail the request: the
+    tail ends at [DONE], at the end of the stream, at any read or decode
+    problem, or when ``budget_s`` runs out.
+    """
+    deadline = time.monotonic() + budget_s
+    while True:
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            return usage
+        try:
+            line = await asyncio.wait_for(anext(iterator), timeout=remaining)
+        except (StopAsyncIteration, asyncio.TimeoutError, httpx.HTTPError, httpx.StreamError):
+            return usage
+        data = line[5:].strip() if line.startswith("data:") else ""
+        if data == "[DONE]":
+            return usage
+        if not data:
+            continue
+        try:
+            event = json.loads(data)
+        except json.JSONDecodeError:
+            return usage
+        if isinstance(event, dict) and isinstance(event.get("usage"), dict):
+            usage = event["usage"]
 
 
 def _template_failure_category_from_message(message: object) -> str:
@@ -311,7 +365,7 @@ class _SchedulerTransportMixin:
         response: httpx.Response | None = None
         started = time.monotonic()
         try:
-            async with asyncio.timeout(pool.attempt_ttl_s):
+            async with asyncio.timeout(pool.attempt_ttl_s) as attempt:
                 async with httpx.AsyncClient(
                     timeout=timeout,
                     trust_env=False,
@@ -347,6 +401,7 @@ class _SchedulerTransportMixin:
                     data_seen = False
                     ended: set[str] = set()
                     done_seen = False
+                    usage: object = None
                     while True:
                         timeout_s = (
                             max(
@@ -393,6 +448,8 @@ class _SchedulerTransportMixin:
                                 retryable=True,
                                 transport_failure=True,
                             )
+                        if isinstance(event.get("usage"), dict):
+                            usage = event["usage"]
                         for choice in event.get("choices") or []:
                             if not isinstance(choice, dict):
                                 continue
@@ -413,6 +470,28 @@ class _SchedulerTransportMixin:
                             # never accept a stream the provider cut short.
                             break
 
+                    if ended:
+                        # The usage event and [DONE] come after finish_reason;
+                        # reading them is bounded and cannot fail the answer.
+                        # Near the attempt deadline the read takes at most half
+                        # of what is left, so the deadline cannot turn the
+                        # finished answer into ``absolute_attempt_ttl``.
+                        usage = await _read_chat_stream_tail(
+                            iterator,
+                            usage,
+                            budget_s=min(
+                                _CHAT_STREAM_TAIL_GRACE_S,
+                                (attempt.when() - asyncio.get_running_loop().time()) / 2,
+                            ),
+                        )
+                    counts = _usage_counts(usage)
+                    if counts:
+                        logger.info(
+                            "OCR pool request usage pool=%s request_id=%s %s",
+                            pool.name,
+                            request_id,
+                            " ".join(f"{name}={value}" for name, value in counts.items()),
+                        )
                     if ended & _TRUNCATED_FINISH_REASONS:
                         raise OcrPoolError(
                             "truncated_stream", retryable=True

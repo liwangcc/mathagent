@@ -65,6 +65,6 @@ def test_locator_prompt_declares_the_accepted_drawing_word():
     # placeholder `choice|fill|solve|drawing` (models copied that pipe-joined
     # string as a literal value and it failed the enum); the vocabulary is now
     # declared in prose and the example shows one concrete valid value.
-    prompt = owned.locator_prompt(contract.question_contract(hierarchy()), width=1000, height=1000, columns=[])
+    prompt = owned.locator_prompt(contract.question_contract(hierarchy()), columns=[])
     assert "question_type取choice、fill、solve或drawing" in prompt
     assert '"question_type":"choice|fill|solve|drawing"' not in prompt
