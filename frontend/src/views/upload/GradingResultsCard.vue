@@ -37,7 +37,7 @@
         <span role="columnheader">#</span>
         <span role="columnheader">{{ anonymous ? '页面' : '学生姓名' }}</span>
         <span role="columnheader">判定构成</span>
-        <span role="columnheader">{{ form.category === 'exam' ? '得分' : '正确率' }}</span>
+        <span role="columnheader">{{ form.category === 'exam' ? '得分' : '答题框正确率' }}</span>
         <span v-if="summary" role="columnheader">处理</span>
       </div>
       <TransitionGroup id="grading-start-anchor" name="list" tag="div" class="review-board__body">
@@ -74,8 +74,8 @@
             <span v-else-if="row.category === 'exam' && row.score != null && Number.isFinite(Number(row.score))" class="review-score">
               {{ Number(row.score).toFixed(Number(row.score) % 1 ? 1 : 0) }}<small> / {{ Number(row.max_score || 0).toFixed(Number(row.max_score || 0) % 1 ? 1 : 0) }} 分</small>
             </span>
-            <span v-else-if="row.correct_rate != null && Number.isFinite(Number(row.correct_rate))" class="review-score" :class="{ 'is-low': Number(row.correct_rate) < 0.6 }">
-              {{ (Number(row.correct_rate) * 100).toFixed(0) }}<small>%</small>
+            <span v-else-if="rowAccuracy(row) != null" class="review-score" :class="{ 'is-low': rowAccuracy(row) < 0.6 }">
+              {{ percentNumber(rowAccuracy(row)) }}<small>%</small>
             </span>
             <span v-else>—</span>
           </span>
@@ -98,7 +98,7 @@
         <span>总计 <strong>{{ summary.total }}</strong> {{ anonymous ? '页' : '张' }}</span>
         <span v-if="summary.grading_elapsed_seconds != null" class="tag-muted grading-clock">批阅用时 {{ formatGradingDuration(summary.grading_elapsed_seconds) }}</span>
         <span v-if="form.category === 'exam' && summary.avg_score != null" class="tag-ok">已判平均分 {{ Number(summary.avg_score).toFixed(1) }}</span>
-        <span v-else-if="form.category !== 'exam' && dailyAverageCorrectRate != null" class="tag-ok">平均正确率 {{ (dailyAverageCorrectRate * 100).toFixed(0) }}%</span>
+        <span v-else-if="form.category !== 'exam' && dailyAnswerBoxAccuracy" class="tag-ok">答题框正确率 {{ percentNumber(dailyAnswerBoxAccuracy.rate) }}%（正确 {{ dailyAnswerBoxAccuracy.correct }} · 错误 {{ dailyAnswerBoxAccuracy.wrong }}<template v-if="dailyAnswerBoxAccuracy.partial"> · 部分正确 {{ dailyAnswerBoxAccuracy.partial }}</template>）</span>
         <span v-else class="tag-pending">待复核，暂不显示统计</span>
         <span v-if="pendingReviewCount" class="tag-pending">待复核 {{ pendingReviewCount }} 题</span>
         <span v-if="!anonymous && resolvedActiveReviewCount" class="tag-ok">可入档 {{ resolvedActiveReviewCount }} 人</span>
@@ -319,14 +319,22 @@ import {
   reportKnowledgeChapter,
   reportDistributionPercent,
 } from '@/utils/batchReportView'
+import { answerBoxRate, answerBoxTally, percentNumber } from '@/utils/answerBoxAccuracy'
 import HelpButton from '@/components/HelpButton.vue'
 import { UPLOAD_PAGE } from './uploadPage.js'
+
+// Daily rows show answer-box accuracy; an exam row without a score keeps its whole-question rate.
+function rowAccuracy(row) {
+  if ((row.category || form.category) !== 'exam') return answerBoxRate(answerBoxTally(row))
+  const rate = Number(row.correct_rate)
+  return row.correct_rate != null && Number.isFinite(rate) ? rate : null
+}
 
 const {
   progressCardVisible, summary, reviewArchived, anonymous, gradeError, form, grading,
   reviewRestoredLabel, gradingPhaseState, progressList, gradeTotal, gradingElapsedSeconds,
   currentMessage, openManualDecision, reviewBusy, voidOneReview, downloadStudentErrors,
-  downloadReviewImage, dailyAverageCorrectRate, pendingReviewCount, resolvedActiveReviewCount,
+  downloadReviewImage, dailyAnswerBoxAccuracy, pendingReviewCount, resolvedActiveReviewCount,
   hasActiveReviewRows, reviewImagesDownloading, hasReviewImageRows, downloadAllReviewImages,
   voidAllReviews, downloadReviewSummary, downloadAllErrors, archiveAllReviews, batchReport,
   batchReportStats, batchReportOutcomeSegments, batchReportNeedsReviewCount,

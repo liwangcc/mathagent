@@ -20,7 +20,7 @@ from database import get_db
 from services.quick_grader import QuickBatch
 from services.grading_persistence import persist_grading_result, write_deferred_filesystem_archives
 from services.generated_files import register_and_respond
-from services.scoring_engine import recalculate_result_from_details
+from services.scoring_engine import apply_teacher_verdict, recalculate_result_from_details
 from services.student_service import canonical_student_no
 from models import GradingCorrection, Student
 from models_rate_limit import TeacherClass
@@ -419,11 +419,7 @@ def batch_grade_save_manual_review_decision(
             new_result = decision.result
             if old_result == new_result:
                 continue
-            detail["result"] = new_result
-            if isinstance(detail.get("grading_units"), list):
-                for unit in detail["grading_units"]:
-                    if isinstance(unit, dict):
-                        unit["result"] = new_result
+            apply_teacher_verdict(detail, new_result)
             corrections.append({
                 "question_no": question_no,
                 "old_result": old_result,

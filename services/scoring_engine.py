@@ -578,17 +578,20 @@ def _base_detail(unit: dict, judged: dict, category: str) -> dict:
     return detail
 
 
+def _folded_verdict(results: list[str]) -> str:
+    """The whole-question verdict of a multi-blank question from its blanks' verdicts."""
+    if any(result == "needs_review" for result in results):
+        return "needs_review"
+    if all(result == "correct" for result in results):
+        return "correct"
+    if all(result == "wrong" for result in results):
+        return "wrong"
+    return "partial"
+
+
 def _fold_fill_blanks(units: list[dict], judgments: dict[str, dict], category: str) -> dict:
     slot_details = [_base_detail(unit, judgments[unit["key"]], category) for unit in units]
-    results = [slot["result"] for slot in slot_details]
-    if any(result == "needs_review" for result in results):
-        aggregate = "needs_review"
-    elif all(result == "correct" for result in results):
-        aggregate = "correct"
-    elif all(result == "wrong" for result in results):
-        aggregate = "wrong"
-    else:
-        aggregate = "partial"
+    aggregate = _folded_verdict([slot["result"] for slot in slot_details])
     first = slot_details[0]
     parent_fields = dict(first)
     if "slot_id" in first:
@@ -728,6 +731,31 @@ def aggregate_grading_result(
         "total": total,
         "details": details,
     }
+
+
+def apply_teacher_verdict(detail: dict, verdict: str) -> None:
+    """Set a teacher's whole-question verdict and the per-box marks under it.
+
+    Folded fill details keep one verdict per physical answer box in
+    ``grading_units`` (the review marks and answer-box accuracy read them).
+    "correct" and "wrong" hold for every box. "partial" does not say which
+    box is wrong, so the boxes take the grader's own per-blank verdicts
+    (``blank_results``, never edited) when those fold to partial, exactly as
+    exam points are re-allocated for a teacher's partial; otherwise every box
+    takes "partial".
+    """
+    detail["result"] = verdict
+    units = detail.get("grading_units")
+    if not isinstance(units, list):
+        return
+    graded = [str(item.get("result") or "") if isinstance(item, dict) else ""
+              for item in detail.get("blank_results") or []]
+    keep_graded = (verdict == "partial" and len(graded) == len(units)
+                   and set(graded) <= {"correct", "partial", "wrong"}
+                   and _folded_verdict(graded) == "partial")
+    for unit, unit_verdict in zip(units, graded if keep_graded else [verdict] * len(units)):
+        if isinstance(unit, dict):
+            unit["result"] = unit_verdict
 
 
 def _recalculated_detail_points(detail: dict, verdict: str, max_score: float) -> float | None:

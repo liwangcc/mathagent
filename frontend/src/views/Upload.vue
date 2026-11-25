@@ -30,9 +30,9 @@
             <span class="hero-metric__value">{{ resolvedActiveReviewCount }}<small>人</small></span>
             <span class="hero-metric__label">可入档</span>
           </div>
-          <div v-if="form.category !== 'exam' && dailyAverageCorrectRate != null" class="hero-metric is-accent">
-            <span class="hero-metric__value">{{ (dailyAverageCorrectRate * 100).toFixed(0) }}<small>%</small></span>
-            <span class="hero-metric__label">平均正确率</span>
+          <div v-if="form.category !== 'exam' && dailyAnswerBoxAccuracy" class="hero-metric is-accent">
+            <span class="hero-metric__value">{{ percentNumber(dailyAnswerBoxAccuracy.rate) }}<small>%</small></span>
+            <span class="hero-metric__label">答题框正确率</span>
           </div>
         </div>
         <div v-else-if="dailyUsage && !dailyUsage.unlimited" class="monthly-quota" role="status">
@@ -245,6 +245,7 @@
 <script setup>
 import { provide } from 'vue'
 import InkSpinner from '@/components/InkSpinner.vue'
+import { percentNumber } from '@/utils/answerBoxAccuracy'
 import ManualDecisionDialog from './upload/ManualDecisionDialog.vue'
 import TemplateEditorDialog from './upload/TemplateEditorDialog.vue'
 import GradingResultsCard from './upload/GradingResultsCard.vue'
@@ -325,7 +326,7 @@ const {
   importStudentSubmissions, resetOrientationReview, rotateOrientationPreview, applyOrientationState,
   confirmOrientationAndRetry, continueAfterRecognition, startNewBatch, onStartRecognize,
   onBatchConfirm, runRecognize, onConfirmIdentitiesAndGrade, onConfirmGrade,
-  dailyAverageCorrectRate, pendingReviewCount, resolvedActiveReviewCount,
+  dailyAnswerBoxAccuracy, pendingReviewCount, resolvedActiveReviewCount,
 } = ctx
 </script>
 
