@@ -692,17 +692,24 @@ def test_v4_drawing_status_is_advisory_and_never_rebuys_the_response():
     assert any("作图区 1[1] 生成了文字答案" in reason for reason in answer["answer_review_reasons"])
 
 
-def test_v4_blank_whole_answer_on_text_question_requires_teacher():
+@pytest.mark.parametrize("question_type", ["solve", "fill"])
+def test_v4_blank_whole_answer_requires_teacher_unless_fill_slots_are_the_answer(question_type):
     hierarchy = paper_b_hierarchy()
     manifest = one_three.question_contract(hierarchy)
     raw_solver = solver_payload(hierarchy)
     raw_solver["answers"][0]["standard_answer"] = ""
     located, solved = max_owned.reconcile_slot_candidates(
-        max_owned.receive_locator_candidates(locator_payload(hierarchy, kinds=PAPER_B_KINDS), manifest),
+        max_owned.receive_locator_candidates(
+            locator_payload(hierarchy, kinds=PAPER_B_KINDS, question_type=question_type), manifest),
         max_owned.receive_solver_candidates(raw_solver, manifest), manifest)
     answer = max_owned.bind_answers(located, solved)["answers"][0]
-    assert answer["answer_status"] == "needs_review"
-    assert "缺少整题标准答案，需教师补充" in answer["answer_review_reasons"]
+    if question_type == "solve":
+        assert answer["answer_status"] == "needs_review"
+        assert "缺少整题标准答案，需教师补充" in answer["answer_review_reasons"]
+    else:
+        # A text-only fill question's whole answer is its slot answers.
+        assert answer["answer_status"] == "ready"
+        assert answer["standard_answer"] == "12; 8; 20"
 
 
 def test_v4_pure_drawing_empty_answer_is_ready_and_never_needs_text_reference():

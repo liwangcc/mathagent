@@ -86,7 +86,11 @@ def test_confirmed_stems_and_answers_survive_reopen_to_actual_wire(monkeypatch, 
     for reference in refs:
         entry = answer_map[reference["question_no"]]
         assert reference["question_text"] == entry["question_text"]
-        assert reference["standard_answer"] == entry["standard_answer"]
+        if entry["question_type"] == "fill":
+            # A fill item is judged by its per-ID answers only.
+            assert "standard_answer" not in reference
+        else:
+            assert reference["standard_answer"] == entry["standard_answer"]
         assert reference["solution_steps"] == entry["solution_steps"]
         assert reference["answer_variants"] == entry["answer_variants"]
         assert reference["grading_method"] == entry["grading_method"]

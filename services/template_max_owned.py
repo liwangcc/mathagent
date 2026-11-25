@@ -740,10 +740,12 @@ def bind_answers(locator, solver):
                   for i, item in enumerate(items)}
         used, values, mapping = set(), [], []
         issues = answer["answer_review_reasons"]
+        text_fill = geometry["question_type"] == "fill" and geometry["answer_kind"] == "non_graphic"
         if (shared and geometry["answer_kind"] != "drawing" and geometry["question_type"] != "choice"
-                and not answer["standard_answer"].strip()):
+                and not text_fill and not answer["standard_answer"].strip()):
             # The shared contract accepts a blank so a pure graphic can bind;
-            # a text-bearing question still needs its whole-question answer.
+            # a text-bearing question still needs its whole-question answer,
+            # except a text-only fill, whose slot answers are that answer.
             issues.append("缺少整题标准答案，需教师补充")
         for sid, kind, key in zip(geometry["slot_ids"], geometry["region_kinds"], geometry["region_keys"]):
             if kind == "drawing":
@@ -770,6 +772,12 @@ def bind_answers(locator, solver):
         unbound = [copy.deepcopy(item) for i, item in enumerate(items) if i not in used]
         if unbound:
             issues.append("解题存在未绑定的答案项，请核对作答框和答案")
+        if text_fill:
+            # A fill item's expected responses are its slot answers; the solver's
+            # whole-question text may restate the stem. Joined as the editor joins
+            # them, and blank while nothing is answered so a late answer can fill it.
+            answer["standard_answer"] = ("; ".join(value.strip() for value in values)
+                                         if any(value.strip() for value in values) else "")
         answer.update(answer_slots=values, slot_ids=list(geometry["slot_ids"]),
                       answer_slot_count=len(values),
                       answer_status="needs_review" if issues else "ready",
