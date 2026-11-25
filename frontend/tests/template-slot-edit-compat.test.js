@@ -7,6 +7,7 @@ import {
   addTemplateSlot, removeTemplateSlot, serializeTemplateSlots,
   prepareTemplateSlots, templateSlotBoxes,
 } from '../src/utils/templateSlots.js'
+import { serializeTemplateDrawingReview } from '../src/utils/templateReview.js'
 
 function slotQuestion(extra = {}) {
   return {
@@ -130,4 +131,39 @@ test('drawing boxes stay in sync with answer boxes across add and delete', () =>
   assert.equal(pg.drawingBoxes.length, 1)
   assert.equal(pg.drawingBoxes[0].slot_id, box.slot_id)
   wireOf(pg, q)
+})
+
+test('deleting a fill question\'s one drawing region keeps its six text slots and saves it non-graphic', () => {
+  // A printed grid marked as a drawing region: the teacher deletes that region only.
+  const ids = ['1[1]', '1[2]', '1[3]', '1[4]', '1[5]', '1[6]', '1[7]']
+  const kinds = [...Array(6).fill('answer'), 'drawing']
+  const answers = ['2/5', '2/5', '4/5', '2/5', '2', '4/5']
+  const grid = [100, 500, 700, 800]
+  const q = {
+    question_no: '1', question_type: 'fill', answer_kind: 'mixed', slot_ids: [...ids],
+    region_kinds: [...kinds], answer_slots_text: [...answers, ''], blank_count: 7,
+  }
+  const boxes = ids.map((slot_id, i) => ({
+    question_number: '1', slot_id, region_kind: kinds[i],
+    bbox: i < 6 ? [60 + 150 * i, 300, 180 + 150 * i, 360] : [...grid],
+  }))
+  const pg = {
+    pageIndex: 0, dirty: false, answerBoxes: boxes, drawingBoxes: [{ ...boxes[6], bbox: [...grid] }],
+    drawingLabels: [{ question_number: '1', label_anchor: [60, 650] }],
+    questionSchema: [{ question_no: '1', question_number: '1', slot_ids: [...ids], blank_count: 7,
+      answer_kind: 'mixed', region_kinds: [...kinds], drawing_regions: [[...grid]], label_anchor: [60, 650] }],
+  }
+  removeTemplateSlot(pg, q, '1[7]')
+  assert.deepEqual(q.slot_ids, ids.slice(0, 6))
+  assert.deepEqual(q.answer_slots_text, answers)
+  assert.equal(q.answer_kind, 'non_graphic')
+  assert.equal(pg.drawingBoxes.length + pg.drawingLabels.length, 0)
+  const [wire] = serializeTemplateSlots(pg, [q], serializeTemplateDrawingReview(pg.questionSchema, pg.drawingBoxes, pg.drawingLabels))
+  assert.deepEqual(wire.slot_ids, ids.slice(0, 6))
+  assert.deepEqual(wire.region_kinds, Array(6).fill('answer'))
+  assert.deepEqual(wire.answer_slots, answers)
+  assert.equal(wire.regions.length, 6)
+  assert.equal(wire.answer_kind, 'non_graphic')
+  assert.deepEqual(wire.drawing_regions, [])
+  assert.equal(wire.label_anchor, null)
 })
