@@ -18,7 +18,7 @@ from models import GradingCorrection, KnowledgeEvent, QuestionBank, GradingResul
 from models_user import User
 from routers.auth import _require_user
 from services.bank_scope import visible_filter, owned_filter
-from services.scoring_engine import recalculate_result_from_details
+from services.scoring_engine import apply_teacher_verdict, recalculate_result_from_details
 from services.math_curriculum import catalog_version, get_knowledge_point, get_math_catalog
 from services.practice import filter_bank_stage
 from services.teaching_context import require_teacher_stage
@@ -263,7 +263,7 @@ def confirm_judgment(
 
     # Left side: judgment
     if action in ("correct", "partial", "wrong"):
-        d["result"] = action
+        apply_teacher_verdict(d, action)
         d["confirmed"] = True
         d["teacher_modified"] = True
     elif action == "void":

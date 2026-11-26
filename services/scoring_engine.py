@@ -16,7 +16,7 @@ from collections import OrderedDict
 from typing import Any
 
 from services.review_marks import normalize_review_boxes
-from models import sanitize_error_type_fields
+from models import answer_box_results, sanitize_error_type_fields
 
 
 _DEFAULT_SOLVE_SCORES = (5.0, 7.0, 8.0)
@@ -679,10 +679,22 @@ def _fold_fill_blanks(units: list[dict], judgments: dict[str, dict], category: s
     }
 
 
+def _answer_box_counts(details: list[dict]) -> dict[str, int]:
+    """Verdict counts by answer box: a multi-blank question with one wrong box is
+    that many correct boxes and one wrong box, not one partial question."""
+    counts = {"correct": 0, "partial": 0, "wrong": 0, "needs_review": 0}
+    for verdict in answer_box_results(details):
+        counts[verdict if verdict in counts else "needs_review"] += 1
+    return counts
+
+
 def aggregate_grading_result(
     units: list[dict], judgments: dict[str, dict], category: str, student_name: str,
 ) -> dict:
-    """Fold judgments into persisted details and category-specific aggregates."""
+    """Fold judgments into persisted details and category-specific aggregates.
+
+    Details stay one per question; counts, total and correct_rate count answer boxes.
+    """
     grouped: OrderedDict[str, list[dict]] = OrderedDict()
     for unit in units:
         if unit["key"] not in judgments:
@@ -704,11 +716,8 @@ def aggregate_grading_result(
             unit = group_units[0]
             details.append(_base_detail(unit, judgments[unit["key"]], category))
 
-    counts = {"correct": 0, "partial": 0, "wrong": 0, "needs_review": 0}
-    for detail in details:
-        verdict = detail.get("result")
-        counts[verdict if verdict in counts else "needs_review"] += 1
-    total = len(details)
+    counts = _answer_box_counts(details)
+    total = sum(counts.values())
     pending = counts["needs_review"]
     correct_rate = None if pending else round(counts["correct"] / max(total, 1), 4)
     if category == "exam":
@@ -793,17 +802,17 @@ def recalculate_result_from_details(result: dict, category: str) -> None:
 
     v2 exam details carry immutable ``max_score`` snapshots.  Daily
     records deliberately never expose a numeric score; partial is diagnostic
-    and counts as not fully correct in ``correct_rate``.
+    and counts as not fully correct in ``correct_rate``.  Points follow each
+    question's verdict; counts and ``correct_rate`` count answer boxes.
     """
     details = [
         detail for detail in (result.get("details") or [])
         if isinstance(detail, dict) and detail.get("result") != "void"
     ]
-    counts = {"correct": 0, "partial": 0, "wrong": 0, "needs_review": 0}
+    counts = _answer_box_counts(details)
     for detail in details:
         verdict = str(detail.get("result") or "needs_review")
         verdict = verdict if verdict in counts else "needs_review"
-        counts[verdict] += 1
         max_score = detail.get("max_score")
         if category == "exam" and max_score is not None:
             try:
@@ -817,7 +826,7 @@ def recalculate_result_from_details(result: dict, category: str) -> None:
             detail["max_score"] = None
             detail["awarded_score"] = None
 
-    total = len(details)
+    total = sum(counts.values())
     pending = counts["needs_review"]
     result.update({
         "total": total,

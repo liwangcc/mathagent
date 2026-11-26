@@ -22,7 +22,7 @@ from services.grading_persistence import persist_grading_result, write_deferred_
 from services.generated_files import register_and_respond
 from services.scoring_engine import apply_teacher_verdict, recalculate_result_from_details
 from services.student_service import canonical_student_no
-from models import GradingCorrection, Student
+from models import GradingCorrection, Student, answer_box_results
 from models_rate_limit import TeacherClass
 from models_user import User
 from routers.auth import _require_user
@@ -206,7 +206,7 @@ def _review_group_archive_payload(batch: QuickBatch, group: list[dict]) -> dict:
         page_contract = page_contracts.get(paper_id) or {"page_index": 0}
         page_result = page_review.get("result") or {}
         page_details = page_result.get("details") or []
-        if len(ordered) > 1 and int(page_result.get("total") or 0) != len(page_details):
+        if len(ordered) > 1 and int(page_result.get("total") or 0) > len(answer_box_results(page_details)):
             raise HTTPException(409, detail="同一学生多页试卷缺少逐题明细，不能合并入档")
         corrected_questions = {
             str(item.get("question_no") or "")

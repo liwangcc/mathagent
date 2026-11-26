@@ -512,6 +512,22 @@ def sanitize_error_type_fields(value):
     return value
 
 
+def answer_box_results(details) -> list[str]:
+    """One verdict per answer box, the unit every count and correct rate uses.
+
+    A folded multi-blank question keeps one verdict per box in its detail's
+    ``grading_units``; any other detail is one box. Voided details count nowhere.
+    """
+    results = []
+    for detail in details or []:
+        if not isinstance(detail, dict) or detail.get("result") == "void":
+            continue
+        units = detail.get("grading_units")
+        for box in units if isinstance(units, list) and units else [detail]:
+            results.append(str(box.get("result") or "needs_review") if isinstance(box, dict) else "needs_review")
+    return results
+
+
 class KnowledgeEvent(TeachingStageMixin, Base):
     """逐题知识点事件 — 学生在某时刻、某知识点上的一次作答结果。
 

@@ -89,7 +89,7 @@ def test_invalid_slot_identity_cannot_be_overridden_by_correct_model(fault):
     assert all(u.get("slot_identity_error") for u in units)
     result = aggregate_grading_result(units, {u["key"]: {"result": "correct"} for u in units}, "exam", "test")
     assert result["score"] is None
-    assert result["needs_review_count"] == 1
+    assert result["needs_review_count"] == 3  # every answer box of the question waits for review
     assert result["details"][0]["slot_identity_error"]
     assert all(s["result"] == "needs_review" for s in result["details"][0]["blank_results"])
 
@@ -144,7 +144,7 @@ def test_unified_identity_error_never_dispatches_even_with_valid_visible_slots(m
     question = row()
     question["slot_identity_error"] = "upstream ownership rejected"
     result = asyncio.run(grader.grade_paper_unified({"questions": [question]}, contract(), "test", 1, category="exam"))
-    assert result["needs_review_count"] == 1
+    assert result["needs_review_count"] == 3  # every answer box of the question waits for review
     assert result["score"] is None
 
 

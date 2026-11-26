@@ -8,6 +8,7 @@ import logging
 import re
 from collections import Counter
 
+from models import answer_box_results
 from services.analyzer import generate_report_text
 
 logger = logging.getLogger(__name__)
@@ -114,7 +115,12 @@ def build_batch_report_payload(batch) -> dict:
             verdict = str(detail.get("result") or "needs_review").strip().lower()
             if verdict not in counts:
                 verdict = "needs_review"
-            counts[verdict] += 1
+            # Verdict counts and rates count answer boxes (one per blank of a
+            # folded multi-blank question); the question and knowledge-point
+            # lists below rank whole questions.
+            boxes = [box.strip().lower() for box in answer_box_results([detail])]
+            boxes = [box if box in counts else "needs_review" for box in boxes]
+            counts.update(boxes)
             question_no = str(
                 detail.get("parent_question_no")
                 or detail.get("question_no")
@@ -129,11 +135,9 @@ def build_batch_report_payload(batch) -> dict:
                 if verdict in {"wrong", "partial"}:
                     choice_wrong += 1
             else:
-                diagnostic_total += 1
-                if verdict != "needs_review":
-                    diagnostic_judged += 1
-                if verdict in {"wrong", "partial"}:
-                    diagnostic_errors += 1
+                diagnostic_total += len(boxes)
+                diagnostic_judged += sum(box != "needs_review" for box in boxes)
+                diagnostic_errors += sum(box in {"wrong", "partial"} for box in boxes)
 
             question_attempts[question_no] += 1
             question_judged[question_no] += verdict != "needs_review"
@@ -259,7 +263,7 @@ def _fallback_report(stats: dict) -> str:
     error_total = int(stats.get("wrong_count", 0)) + int(stats.get("partial_count", 0))
     needs_review = int(stats.get("needs_review_count", 0))
     unit = "页" if stats.get("identity_mode") == "anonymous" else "份试卷"
-    lines = [f"本批次共 {paper_count} {unit}、{total} 道题，错题（含部分正确）{error_total} 道。"]
+    lines = [f"本批次共 {paper_count} {unit}、{total} 个作答框，错误（含部分正确）{error_total} 个。"]
     points = [item for item in (stats.get("knowledge_points") or []) if item.get("error_count")]
     if points:
         lines.append("错题涉及知识点：" + "、".join(
@@ -275,7 +279,7 @@ def _fallback_report(stats: dict) -> str:
     else:
         lines.append("建议先讲清高频知识点，再安排同类型变式题练习，并要求学生写出关键步骤。")
     if needs_review:
-        lines.append(f"另有 {needs_review} 道题待人工复核，复核前不要把它们作为确定性结论。")
+        lines.append(f"另有 {needs_review} 个作答框待人工复核，复核前不要把它们作为确定性结论。")
     return "\n".join(lines)
 
 
@@ -313,6 +317,8 @@ def _build_prompt(stats: dict) -> str:
         "你是一位中国高中数学老师。请根据下面已经确定的批改统计，生成一份给任课老师看的本批教学建议。\n"
         "只按知识点分析和展示，不输出、推测或展示错因、错误类型。\n"
         "只能使用统计中的数字和已标注知识点，不得修改数字，不得猜测未标注的知识点。\n"
+        "question_count 和正确、部分正确、错误、待复核数都按作答框统计（多空题的每个作答框各算一次），"
+        "提到这些数字时称“个作答框”，不要称“道题”；top_errors 和 knowledge_points 按题目统计。\n"
         "选择题只能作为答题结果统计，不能据此断言学生掌握或不会某个知识点。\n"
         "报告控制在300字以内，使用四段：总体情况、主要问题、优先复习、课堂练习建议。\n"
         "如果没有非选择题证据，明确说明无法进行知识点诊断。\n\n"

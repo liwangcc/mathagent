@@ -16,7 +16,7 @@ from sqlalchemy.orm import Session
 from services.teaching_context import current_teaching_context, make_teaching_context, validate_teaching_context
 from services.math_curriculum import get_knowledge_point
 
-from models import GradingResult, KnowledgeEvent, Student, sanitize_error_type
+from models import GradingResult, KnowledgeEvent, Student, answer_box_results, sanitize_error_type
 from models_correction import (
     CorrectionEvidence,
     QuestionAttemptEvent,
@@ -562,7 +562,7 @@ def audit_grading_result_projection(
     details = grading_result.get_details()
     groups, detail_error = _projection_groups(details, strict=True)
     declared_total = int(getattr(grading_result, "total_questions", 0) or 0)
-    if detail_error is None and declared_total and len(details) < declared_total:
+    if detail_error is None and declared_total and len(answer_box_results(details)) < declared_total:
         detail_error = "incomplete_details"
     attempts = db.query(QuestionAttemptEvent).filter(
         QuestionAttemptEvent.grading_result_id == grading_result.id,
