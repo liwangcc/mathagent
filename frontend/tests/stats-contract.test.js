@@ -57,11 +57,11 @@ function shown(page) {
   const legend = page.root.byClass('outcome-donut__legend').byTag('li').map(item => [item.byTag('span')[0].text, item.byTag('strong')[0].text])
   return {
     gradings: ledger['批阅份数'],
-    questions: ledger['统计题数'],
+    questions: ledger['统计作答框'],
     accuracy: page.root.byClass('outcome-donut__center').byTag('strong')[0].text,
-    correct: ledger['正确题数'],
+    correct: ledger['正确'],
     partial: ledger['部分正确'],
-    wrong: ledger['错误题数'],
+    wrong: ledger['错误'],
     legend,
   }
 }

@@ -62,7 +62,7 @@ export function useBatchReport(ctx) {
     return batchReportAccuracy.value == null ? '—' : `${Math.round(batchReportAccuracy.value * 100)}%`
   })
   const batchReportPrimaryLabel = computed(() => (
-    form.category === 'exam' && summary.value?.avg_score != null ? '平均得分' : '整题正确率'
+    form.category === 'exam' && summary.value?.avg_score != null ? '平均得分' : '作答框正确率'
   ))
   const batchReportErrorRatePercent = computed(() => {
     const rate = batchReportStats.value.error_rate

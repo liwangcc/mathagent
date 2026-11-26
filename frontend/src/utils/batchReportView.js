@@ -1,22 +1,19 @@
 // The batch report as the grading page (views/Upload.vue) displays it: status
 // text and tone, percentages and knowledge-point distribution rows, and the
 // statistics fallback built in the browser when the server report is missing.
+import { answerBoxTally } from './answerBoxAccuracy.js'
 import { CLASSIFICATION_LABELS } from './knowledgeClassification.js'
 
+// Counts answer boxes, as the server report does.
 export function buildClientBatchReportFallback(rows) {
   const totals = { paper_count: 0, question_count: 0, correct_count: 0, partial_count: 0, wrong_count: 0, needs_review_count: 0 }
   for (const row of rows || []) {
     if (!row || row.disposition === 'voided' || row.error) continue
-    const details = Array.isArray(row.details) ? row.details : []
-    const detailTotal = details.length
-    const total = Math.max(0, Number(row.total) || detailTotal)
-    if (!total && !detailTotal) continue
+    const tally = answerBoxTally(row)
+    if (!tally.total) continue
     totals.paper_count += 1
-    totals.question_count += total
-    for (const key of ['correct', 'partial', 'wrong', 'needs_review']) {
-      const value = Math.max(0, Number(row[key]) || details.filter((detail) => detail?.result === key).length)
-      totals[`${key}_count`] += value
-    }
+    totals.question_count += tally.total
+    for (const key of ['correct', 'partial', 'wrong', 'needs_review']) totals[`${key}_count`] += tally[key]
   }
   const judged = totals.question_count - totals.needs_review_count
   const errors = totals.partial_count + totals.wrong_count

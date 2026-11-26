@@ -50,17 +50,17 @@ test('report overview is scoped by current class and period', async (t) => {
   const summaries = () => client.requests.filter(config => route(config) === 'post /reports/summary').map(bodyOf)
 
   assert.deepEqual(summaries(), [{ education_stage: 'junior', period: 'week', class_id: 7, type: 'all' }])
-  assert.equal(metric(page, '作答题数'), '37题', 'the overview shows how many questions were answered')
+  assert.equal(metric(page, '作答框数'), '37个', 'the overview shows how many answer boxes were judged')
 
   await choose(page.root.byClass('ink-segmented'), 'month')
   await flush()
   assert.deepEqual(summaries().at(-1), { education_stage: 'junior', period: 'month', class_id: 7, type: 'all' })
-  assert.equal(metric(page, '作答题数'), '127题')
+  assert.equal(metric(page, '作答框数'), '127个')
 
   auth.currentClassId = 8
   await flush()
   assert.deepEqual(summaries().at(-1), { education_stage: 'junior', period: 'month', class_id: 8, type: 'all' })
-  assert.equal(metric(page, '作答题数'), '128题')
+  assert.equal(metric(page, '作答框数'), '128个')
   assert.match(page.root.byClass('summary-text').text, /8 班 month/)
 
   // Parent letters are per student: there is no class-wide parent entry.
