@@ -767,6 +767,16 @@ def apply_teacher_verdict(detail: dict, verdict: str) -> None:
             unit["result"] = unit_verdict
 
 
+def apply_teacher_box_verdict(detail: dict, box: int, verdict: str) -> None:
+    """Set a teacher's verdict on one answer box of a folded question; the
+    question's own verdict is refolded from its boxes, as grading folds it."""
+    units = detail["grading_units"]
+    units[box]["result"] = verdict
+    detail["result"] = _folded_verdict([
+        str(unit.get("result") or "needs_review") for unit in units if isinstance(unit, dict)
+    ])
+
+
 def _recalculated_detail_points(detail: dict, verdict: str, max_score: float) -> float | None:
     """Apply fill-specific rules when a teacher review rebuilds totals."""
     if str(detail.get("question_type") or "") == "fill":
@@ -777,8 +787,11 @@ def _recalculated_detail_points(detail: dict, verdict: str, max_score: float) ->
             return max_score if verdict == "correct" else 0.0
         if mode in {"custom", "equal"} and verdict == "partial":
             slots = detail.get("blank_results") or []
+            # Each blank's points follow its box's current verdict: the
+            # grader's, or the teacher's when the box was decided by hand.
+            units = detail["grading_units"] if isinstance(detail.get("grading_units"), list) else []
             allocated = 0.0
-            for slot in slots:
+            for index, slot in enumerate(slots):
                 if not isinstance(slot, dict):
                     continue
                 slot_max = slot.get("max_score")
@@ -788,7 +801,8 @@ def _recalculated_detail_points(detail: dict, verdict: str, max_score: float) ->
                     score = float(slot_max)
                 except (TypeError, ValueError):
                     continue
-                slot_points = _points_for_result(str(slot.get("result") or "needs_review"), score)
+                box = units[index] if index < len(units) and isinstance(units[index], dict) else slot
+                slot_points = _points_for_result(str(box.get("result") or "needs_review"), score)
                 allocated += float(slot_points or 0)
             # A teacher may newly select "partial" on an old all-wrong record
             # without per-blank edits; retain the conventional half-score then.

@@ -55,7 +55,7 @@ from services.review_marks import (
     render_review_marks,
     review_cache_name,
 )
-from services.scoring_engine import apply_teacher_verdict
+from services.review_decisions import apply_review_decisions
 from services.student_service import canonical_student_no
 from services.teaching_context import await_teaching
 
@@ -731,15 +731,12 @@ def _batch_review_image_path(batch: QuickBatch, paper_id: str, user: User, decis
         if isinstance(item, dict)
     ])
     number_of = lambda item: str(item.get("question_no") or item.get("question_number") or "")
-    by_number = {number_of(item): item for item in details}
-    for decision in decisions or []:
-        if decision.question_no not in by_number:
-            raise HTTPException(400, detail="预览判定包含不属于本页的题号")
-        detail = by_number[decision.question_no]
-        # A teacher decision targets the parent question; a changed verdict
-        # must also reach the per-box marks the renderer draws.
-        if str(detail.get("result") or "needs_review") != decision.result:
-            apply_teacher_verdict(detail, decision.result)
+    if decisions:
+        # Unsaved verdicts reach the marks box by box, exactly as saving would apply them.
+        try:
+            apply_review_decisions(details, {item.question_no: item.result for item in decisions}, complete=False)
+        except ValueError as exc:
+            raise HTTPException(400, detail="预览判定包含不属于本页的题号") from exc
 
     # Older saved results can lack boxes even though OCR/template geometry exists.
     ocr_by_number = {number_of(item): item for item in paper.get("questions") or []}

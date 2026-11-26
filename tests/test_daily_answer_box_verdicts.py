@@ -51,6 +51,11 @@ def counts(result: dict) -> tuple:
         "correct_count", "partial_count", "wrong_count", "needs_review_count", "total", "correct_rate"))
 
 
+def box_decisions(verdicts: list[str]) -> list[dict]:
+    """A teacher's review decisions for the eight boxes, by their ids 1[1] … 1[8]."""
+    return [{"question_no": f"1[{index}]", "result": verdict, "note": ""} for index, verdict in enumerate(verdicts, 1)]
+
+
 def test_counts_and_rate_follow_the_answer_boxes_while_the_question_folds():
     result = graded("daily")
     detail, = result["details"]
@@ -104,11 +109,11 @@ def test_reopened_review_keeps_seven_right_boxes_after_teacher_edits(monkeypatch
     batch.review_results[0]["result"] = graded("daily")
     batch.save_meta()
 
-    # A teacher first marks the whole question wrong, then changes it back to partial.
-    for revision, verdict in enumerate(["wrong", "partial"]):
+    # A teacher first marks every box wrong, then gives seven boxes back their right verdict.
+    for revision, verdicts in enumerate([["wrong"] * 8, SEVEN_RIGHT_ONE_WRONG]):
         saved = client.post("/api/batch-grade/review/decision", json={
             "batch_id": "review-batch", "paper_id": "p1", "review_revision": revision,
-            "decisions": [{"question_no": "1", "result": verdict, "note": ""}],
+            "decisions": box_decisions(verdicts),
         })
         assert saved.status_code == 200, saved.text
     assert box_verdicts(saved.json()["review"]["result"]["details"][0]) == SEVEN_RIGHT_ONE_WRONG

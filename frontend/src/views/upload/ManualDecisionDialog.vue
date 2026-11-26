@@ -33,7 +33,7 @@
         <div class="manual-review-list-toolbar">
           <div>
             <strong>批阅详情</strong>
-            <span>{{ manualDecisionDrafts.length }} 题 · 答题卡式核对</span>
+            <span>{{ manualDecisionDrafts.length }} 个作答框 · 答题卡式核对</span>
           </div>
           <div class="manual-review-legend" aria-label="判定符号说明">
             <span><b class="manual-review-legend-symbol is-unread">·</b>未识别</span>
@@ -59,7 +59,7 @@
                 type="button"
                 class="manual-review-sheet-cell manual-review-sheet-number"
                 @click="jumpToManualDecisionPage(item.page_index)"
-              >{{ item.question_no }}</button>
+              >{{ item.label }}</button>
 
               <div class="manual-review-sheet-label">学生答案</div>
               <button
@@ -87,7 +87,7 @@
                 class="manual-review-sheet-cell manual-review-sheet-verdict"
                 :class="[{ 'is-pending': !item.result }, item.result ? `is-verdict-${item.result}` : '']"
               >
-                <select v-model="item.result" :aria-label="`第${item.question_no}题最终判定`" :disabled="!item.editable" @change="jumpToManualDecisionPage(item.page_index, true)" @click.stop>
+                <select v-model="item.result" :aria-label="`第${item.label}题最终判定`" :disabled="!item.editable" @change="jumpToManualDecisionPage(item.page_index, true)" @click.stop>
                   <option value="">·</option>
                   <option value="correct">✓</option>
                   <option value="partial">△</option>

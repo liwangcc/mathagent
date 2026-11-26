@@ -9,7 +9,7 @@
   "frontend/src/views/StudentDetail.vue": 1082,
   "routers/grade_pipeline.py": 1267,
   "routers/grade_recognition.py": 1423,
-  "routers/grade_review.py": 964,
+  "routers/grade_review.py": 956,
   "services/accelerator_artifacts.py": 1483,
   "services/accelerator_business.py": 1637,
   "services/accelerator_validation.py": 1314,

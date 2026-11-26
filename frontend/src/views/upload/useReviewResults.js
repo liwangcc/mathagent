@@ -184,34 +184,63 @@ export function useReviewResults(ctx) {
       manualDecisionPages.value.length - 1,
       Math.max(0, Number(row.page_index || 0)),
     )
-    manualDecisionDrafts.value = details.map((detail) => {
-      const verdict = ['correct', 'partial', 'wrong'].includes(detail.result) ? detail.result : ''
-      return {
-        question_no: String(detail.question_no || detail.question_number || ''),
-        paper_id: String(detail.paper_id || ''),
-        page_index: Number(detail.page_index || 0),
-        editable: detail.editable !== false,
-        question: detail.question || detail.question_text || '',
-        question_type: detail.question_type || 'solve',
-        student_answer: detail.student_answer || '',
-        error_type: detail.error_type || '',
-        answer_state: detail.answer_state || '',
-        slot_identity_error: detail.slot_identity_error || '',
-        answer_kind: detail.answer_kind || 'non_graphic',
-        correct_answer: detail.correct_answer || detail.standard_answer || '',
-        drawing_assessment: detail.drawing_assessment || null,
-        text_assessment: detail.text_assessment || null,
-        answer_bboxes: detail.answer_bboxes || detail.answer_bbox || detail.student_answer_bbox || null,
-        model_result: detail.result || 'needs_review',
-        max_score: detail.max_score ?? null,
-        awarded_score: detail.awarded_score ?? null,
-        result: verdict,
-        note: '',
-      }
-    })
+    manualDecisionDrafts.value = details.flatMap(manualDecisionDraftsFor)
     manualDecisionShowPaper.value = true
     manualDecisionDialogVisible.value = true
     void loadManualDecisionImage()
+  }
+
+  // One draft per answer box: a folded multi-blank question is decided box by
+  // box (its grading_units, labelled 1.1, 1.2 … as on the review image), so the
+  // teacher's verdicts are the per-box verdicts the statistics count.
+  function manualDecisionDraftsFor(detail) {
+    const number = String(detail.question_no || detail.question_number || '')
+    const verdictOf = (result) => (['correct', 'partial', 'wrong'].includes(result) ? result : '')
+    const draft = {
+      question_no: number,
+      label: number,
+      paper_id: String(detail.paper_id || ''),
+      page_index: Number(detail.page_index || 0),
+      editable: detail.editable !== false,
+      question: detail.question || detail.question_text || '',
+      question_type: detail.question_type || 'solve',
+      student_answer: detail.student_answer || '',
+      error_type: detail.error_type || '',
+      answer_state: detail.answer_state || '',
+      slot_identity_error: detail.slot_identity_error || '',
+      answer_kind: detail.answer_kind || 'non_graphic',
+      correct_answer: detail.correct_answer || detail.standard_answer || '',
+      drawing_assessment: detail.drawing_assessment || null,
+      text_assessment: detail.text_assessment || null,
+      answer_bboxes: detail.answer_bboxes || detail.answer_bbox || detail.student_answer_bbox || null,
+      model_result: detail.result || 'needs_review',
+      max_score: detail.max_score ?? null,
+      awarded_score: detail.awarded_score ?? null,
+      result: verdictOf(detail.result),
+      note: '',
+    }
+    const units = Array.isArray(detail.grading_units) ? detail.grading_units : []
+    const blanks = Array.isArray(detail.blank_results) ? detail.blank_results : []
+    const boxes = units.flatMap((unit, index) => {
+      if (!unit || typeof unit !== 'object') return []
+      const id = String(unit.question_no || `${number}[${index + 1}]`)
+      // The box's own number, as the review image labels it: "1[3]" is 1.3.
+      const slot = /\[(\d+)\]$/.exec(id)?.[1] ?? (unit.blank_index || index + 1)
+      return [{
+        ...draft,
+        question_no: id,
+        label: `${number}.${slot}`,
+        student_answer: blanks[index]?.student_answer || '',
+        answer_state: blanks[index]?.answer_state || draft.answer_state,
+        correct_answer: blanks[index]?.standard_answer || '',
+        answer_bboxes: unit.answer_bboxes || null,
+        model_result: unit.result || 'needs_review',
+        max_score: blanks[index]?.max_score ?? null,
+        awarded_score: blanks[index]?.awarded_score ?? null,
+        result: verdictOf(unit.result),
+      }]
+    })
+    return boxes.length ? boxes : [draft]
   }
 
   function resetManualDecisionImage() {
@@ -288,7 +317,7 @@ export function useReviewResults(ctx) {
 
   async function saveManualDecision() {
     if (!manualDecisionRow.value || !manualDecisionComplete.value) {
-      ElMessage.warning('请为每一道题选择最终判定')
+      ElMessage.warning('请为每个作答框选择最终判定')
       return
     }
     manualDecisionSaving.value = true
