@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 from dataclasses import replace
+from types import SimpleNamespace
 
 import pytest
 
+from mathagent_worker import gpu_backend, vksift_resident
 from mathagent_worker.gpu_backend import (
     CPU_BACKEND,
     GPU_BACKEND,
@@ -32,6 +34,35 @@ def _self_test(*, enabled: bool = True, reason: str | None = None) -> GpuSelfTes
         fallback_reason=reason,
     )
 
+
+@pytest.mark.parametrize("tampered", [False, True], ids=["bundled", "tampered"])
+def test_gpu_known_answer_fixture_matches_the_shared_calibration_constant(
+    monkeypatch, tmp_path, tampered
+) -> None:
+    # Exercise the fixture gate without requiring NVIDIA hardware in CI.
+    monkeypatch.setattr(gpu_backend, "os", SimpleNamespace(name="nt", environ={}))
+    if tampered:
+        source = gpu_backend._fixture_path()
+        fixture = tmp_path / source.name
+        fixture.write_bytes(source.read_bytes() + b"\x00")
+        monkeypatch.setattr(gpu_backend, "_fixture_path", lambda: fixture)
+
+    probes = []
+
+    def probe_without_nvidia():
+        probes.append(True)
+        return {"vendor_id": 0}
+
+    monkeypatch.setattr(vksift_resident, "probe_resident", probe_without_nvidia)
+    result = gpu_backend.run_gpu_self_test()
+
+    assert result.enabled is False
+    if tampered:
+        assert result.fallback_reason == "gpu_known_answer_fixture_mismatch"
+        assert probes == []
+    else:
+        assert result.fallback_reason == "nvidia_device_unavailable"
+        assert probes == [True]
 
 def test_conservative_gpu_geometry_uses_qualified_usac_contract() -> None:
     calls = []

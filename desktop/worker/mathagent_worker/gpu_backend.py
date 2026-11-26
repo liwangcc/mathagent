@@ -10,11 +10,12 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable
 
+from .capacity import CPU_BENCHMARK_FIXTURE_SHA256
+
 GPU_BACKEND = "windows_nvidia_gpu"
 CPU_BACKEND = "windows_cpu_opencv"
 GPU_BACKEND_VERSION = "vulkansift-04245a5e-usac-accurate-v1"
 GPU_CONTRACT_MAX_PROJECTION_PX = 6.0
-_KNOWN_ANSWER_FIXTURE_SHA256 = "12d12c9607e5b33292ddda7b9a593c1fb7537c0e96e6903c5740b45ccef15fbd"
 _MIN_KNOWN_ANSWER_FEATURES = 100
 
 
@@ -166,7 +167,8 @@ def run_gpu_self_test(
         return _unavailable("unsupported_operating_system")
     if not fixture.is_file():
         return _unavailable("gpu_runtime_missing")
-    if hashlib.sha256(fixture.read_bytes()).hexdigest() != _KNOWN_ANSWER_FIXTURE_SHA256:
+    # CPU benchmarking and GPU qualification use the same bundled calibration image.
+    if hashlib.sha256(fixture.read_bytes()).hexdigest() != CPU_BENCHMARK_FIXTURE_SHA256:
         return _unavailable("gpu_known_answer_fixture_mismatch")
     device_name: str | None = None
     driver_version: str | None = None

@@ -3,10 +3,28 @@ from __future__ import annotations
 import argparse
 import json
 import multiprocessing
+import os
 import sys
 
 from . import __version__
 from .protocol import capacity_json, health_json, serve
+
+
+def _pin_ca_bundle() -> None:
+    """Trust the CA bundle that ships with the sidecar.
+
+    Windows' certificate store can miss the root the server chain needs
+    (ZeroSSL -> Sectigo E46); without this the node stops at startup with
+    server_tls_certificate_error.
+    """
+
+    try:
+        import certifi
+    except ImportError:
+        return
+    bundle = certifi.where()
+    os.environ.setdefault("SSL_CERT_FILE", bundle)
+    os.environ.setdefault("SSL_CERT_DIR", os.path.dirname(bundle))
 
 
 def _configure_stdio() -> None:
@@ -50,6 +68,7 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main(argv: list[str] | None = None) -> int:
+    _pin_ca_bundle()
     multiprocessing.freeze_support()
     _configure_stdio()
     args = build_parser().parse_args(argv)
