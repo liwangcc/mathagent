@@ -20,9 +20,10 @@ from database import get_db
 from services.quick_grader import QuickBatch
 from services.grading_persistence import persist_grading_result, write_deferred_filesystem_archives
 from services.generated_files import register_and_respond
+from services.review_decisions import apply_review_decisions
 from services.scoring_engine import recalculate_result_from_details
 from services.student_service import canonical_student_no
-from models import GradingCorrection, Student
+from models import GradingCorrection, Student, answer_box_results
 from models_rate_limit import TeacherClass
 from models_user import User
 from routers.auth import _require_user
@@ -206,10 +207,11 @@ def _review_group_archive_payload(batch: QuickBatch, group: list[dict]) -> dict:
         page_contract = page_contracts.get(paper_id) or {"page_index": 0}
         page_result = page_review.get("result") or {}
         page_details = page_result.get("details") or []
-        if len(ordered) > 1 and int(page_result.get("total") or 0) != len(page_details):
+        if len(ordered) > 1 and int(page_result.get("total") or 0) > len(answer_box_results(page_details)):
             raise HTTPException(409, detail="同一学生多页试卷缺少逐题明细，不能合并入档")
+        # A correction of one answer box ("1[3]") marks its question ("1").
         corrected_questions = {
-            str(item.get("question_no") or "")
+            str(item.get("question_no") or "").split("[", 1)[0]
             for item in (page_review.get("manual_corrections") or [])
         }
         for detail in page_details:
@@ -393,47 +395,33 @@ def batch_grade_save_manual_review_decision(
             raise HTTPException(409, detail="该学生试卷已作废或已入档，不能再修改")
 
         result = review.get("result") or {}
-        details = result.get("details") or []
-        by_question = {}
-        for detail in details:
-            question_no = str(detail.get("question_no") or detail.get("question_number") or "").strip()
-            if not question_no or question_no in by_question:
-                raise HTTPException(400, detail="暂存题目编号无效，不能保存人工判定")
-            by_question[question_no] = detail
-
         submitted = {}
         for decision in req.decisions:
             question_no = str(decision.question_no or "").strip()
             if not question_no or question_no in submitted:
                 raise HTTPException(400, detail="人工判定题号不能为空且不得重复")
             submitted[question_no] = decision
-        if set(submitted) != set(by_question):
-            raise HTTPException(400, detail="人工判定必须完整覆盖该学生的全部题目")
+        try:
+            # Multi-blank questions are decided answer box by answer box.
+            changes = apply_review_decisions(
+                result.get("details") or [], {key: item.result for key, item in submitted.items()}, complete=True,
+            )
+        except ValueError as exc:
+            raise HTTPException(400, detail=str(exc)) from exc
 
         corrections = review.setdefault("manual_corrections", [])
-        changed = 0
         timestamp = _review_timestamp()
-        for question_no, decision in submitted.items():
-            detail = by_question[question_no]
-            old_result = str(detail.get("result") or "needs_review")
-            new_result = decision.result
-            if old_result == new_result:
-                continue
-            detail["result"] = new_result
-            if isinstance(detail.get("grading_units"), list):
-                for unit in detail["grading_units"]:
-                    if isinstance(unit, dict):
-                        unit["result"] = new_result
+        for question_no, old_result, new_result in changes:
             corrections.append({
                 "question_no": question_no,
                 "old_result": old_result,
                 "new_result": new_result,
-                "note": str(decision.note or "").strip()[:500],
+                "note": str(submitted[question_no].note or "").strip()[:500],
                 "teacher_id": user.id,
                 "created_at": timestamp,
                 "audit_key": uuid.uuid4().hex,
             })
-            changed += 1
+        changed = len(changes)
 
         # Rebuild the category-specific aggregates from the changed verdicts.
         recalculate_result_from_details(result, str(review.get("category") or "daily"))

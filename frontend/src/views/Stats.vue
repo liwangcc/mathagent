@@ -36,7 +36,7 @@
           </el-select>
           <HelpButton
             title="学生统计"
-            content="选择学生后查看其批阅份数、累计题数、正确率和知识点错题分布。统计只使用已完成且纳入统计的批阅数据。"
+            content="选择学生后查看其批阅份数、累计作答框数、正确率和知识点错题分布。统计只使用已完成且纳入统计的批阅数据。"
           />
         </div>
       </div>
@@ -46,8 +46,8 @@
           <span class="hero-metric__label">批改总数</span>
         </div>
         <div class="hero-metric">
-          <span class="hero-metric__value"><AnimatedNumber :value="metric.questions" /><small>题</small></span>
-          <span class="hero-metric__label">统计题数</span>
+          <span class="hero-metric__value"><AnimatedNumber :value="metric.questions" /><small>个</small></span>
+          <span class="hero-metric__label">统计作答框</span>
         </div>
         <div class="hero-metric" :class="accuracyTone">
           <span class="hero-metric__value"><AnimatedNumber :value="metric.accuracy" :decimals="1" /><small>%</small></span>
@@ -74,7 +74,7 @@
               <span class="insight-card__kicker">判定结果</span>
               <h2 class="insight-card__title">正确率</h2>
             </div>
-            <HelpButton title="正确率" content="正确率按已记录的作答题数计算；待复核或无有效作答的题目不会冒充正确结果。" />
+            <HelpButton title="正确率" content="正确率按已记录的作答框计算（多空题的每个作答框各算一次）；待复核或无有效作答的作答框不会冒充正确结果。" />
           </div>
           <OutcomeDonut
             :segments="outcomeSegments"
@@ -97,10 +97,10 @@
             <div><dt>学号</dt><dd>{{ currentStudent?.student_no || '-' }}</dd></div>
             <div><dt>班级</dt><dd>{{ currentStudent?.class_name || '-' }}</dd></div>
             <div><dt>批阅份数</dt><dd>{{ metric.total }}</dd></div>
-            <div><dt>统计题数</dt><dd>{{ metric.questions }}</dd></div>
-            <div><dt>正确题数</dt><dd>{{ stats.correct_count ?? stats.right_count ?? '-' }}</dd></div>
+            <div><dt>统计作答框</dt><dd>{{ metric.questions }}</dd></div>
+            <div><dt>正确</dt><dd>{{ stats.correct_count ?? stats.right_count ?? '-' }}</dd></div>
             <div><dt>部分正确</dt><dd>{{ stats.partial_count ?? '-' }}</dd></div>
-            <div><dt>错误题数</dt><dd>{{ stats.wrong_count ?? stats.error_count ?? '-' }}</dd></div>
+            <div><dt>错误</dt><dd>{{ stats.wrong_count ?? stats.error_count ?? '-' }}</dd></div>
           </dl>
         </article>
       </div>

@@ -2,7 +2,7 @@
  * The 批改 page's batch report (本批洞察) and the courseware recommended for it.
  *
  * - The report's figures and charts, derived from the graded rows and the server's report: accuracy,
- *   outcome segments, top errors, knowledge points, the batch's average correct rate.
+ *   outcome segments, top errors, knowledge points, the batch's daily answer-box accuracy.
  * - Polling the server until the report is ready (startBatchReportPolling, pollBatchReport) and applying it.
  * - Courseware recommended for the batch's errors (loadCoursewareRecommendations, openCourseware).
  *
@@ -11,6 +11,7 @@
 import { computed } from 'vue'
 import api from '@/api'
 import { buildClientBatchReportFallback, reportPercent, nonNegativeReportCount } from '@/utils/batchReportView'
+import { answerBoxRate, answerBoxTally } from '@/utils/answerBoxAccuracy'
 
 export function useBatchReport(ctx) {
   const {
@@ -22,12 +23,16 @@ export function useBatchReport(ctx) {
   let batchReportPollTimer = null
   let batchReportPollGeneration = 0
 
-  const dailyAverageCorrectRate = computed(() => {
-    const rates = progressList.value
-      .filter((row) => row.disposition === 'active' && Number(row.needs_review || 0) === 0)
-      .map((row) => Number(row.correct_rate))
-      .filter((value) => Number.isFinite(value))
-    return rates.length ? rates.reduce((sum, value) => sum + value, 0) / rates.length : null
+  // Settled active rows only, pooled box by box (see utils/answerBoxAccuracy).
+  const dailyAnswerBoxAccuracy = computed(() => {
+    const total = { correct: 0, partial: 0, wrong: 0, needs_review: 0 }
+    for (const row of progressList.value) {
+      if (row.disposition !== 'active' || Number(row.needs_review || 0) !== 0) continue
+      const tally = answerBoxTally(row)
+      for (const key of Object.keys(total)) total[key] += tally[key]
+    }
+    const rate = answerBoxRate(total)
+    return rate == null ? null : { ...total, rate }
   })
   const batchReportStats = computed(() => {
     const stats = batchReport.value?.stats
@@ -57,7 +62,7 @@ export function useBatchReport(ctx) {
     return batchReportAccuracy.value == null ? '—' : `${Math.round(batchReportAccuracy.value * 100)}%`
   })
   const batchReportPrimaryLabel = computed(() => (
-    form.category === 'exam' && summary.value?.avg_score != null ? '平均得分' : '已判正确率'
+    form.category === 'exam' && summary.value?.avg_score != null ? '平均得分' : '作答框正确率'
   ))
   const batchReportErrorRatePercent = computed(() => {
     const rate = batchReportStats.value.error_rate
@@ -213,7 +218,7 @@ export function useBatchReport(ctx) {
   }
 
   return {
-    batchReportPollTimer, batchReportPollGeneration, dailyAverageCorrectRate, batchReportStats,
+    batchReportPollTimer, batchReportPollGeneration, dailyAnswerBoxAccuracy, batchReportStats,
     batchReportTotalQuestions, batchReportCorrectCount, batchReportPartialCount,
     batchReportWrongCount, batchReportNeedsReviewCount, batchReportJudgedCount,
     batchReportErrorTotal, batchReportAccuracy, batchReportPrimaryValue, batchReportPrimaryLabel,

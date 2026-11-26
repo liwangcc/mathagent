@@ -282,7 +282,7 @@ def generate_summary(
     error_distribution = []
     summary = (
         f"{period_label}共完成 {len(profiles)} 份正式批改，覆盖 {len(student_rows)} 名学生、"
-        f"{total_q} 道作答；正确 {total_c} 道，部分正确 {total_p} 道，错误 {total_w} 道，"
+        f"{total_q} 个作答框；正确 {total_c} 个，部分正确 {total_p} 个，错误 {total_w} 个，"
         f"整体正确率 {correct_rate:.1%}。"
     )
     stats = {

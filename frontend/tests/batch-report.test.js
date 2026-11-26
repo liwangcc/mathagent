@@ -114,10 +114,10 @@ test('the full error distribution appears only when the report lists every error
 
 test('without server statistics the report counts the graded rows and says knowledge labels are missing', async (t) => {
   const { panel } = await restoredReport(t, { report: { status: 'ready', text: '', stats: {} } })
-  // Two papers of five questions: 7 correct, 1 partial, 2 wrong, none pending.
+  // Two papers of five answer boxes: 7 correct, 1 partial, 2 wrong, none pending.
   assert.deepEqual(ringLegend(panel), [['正确', '7'], ['部分正确', '1'], ['错误', '2'], ['待复核', '0']])
-  assert.ok(panel.byClass('batch-report-stats').text.includes('共 10 道题'))
-  assert.equal(panel.byClass('batch-report-distribution-card').byClass('batch-report-empty').text, '当前没有知识点标签；上方题目判定统计仍然有效')
+  assert.ok(panel.byClass('batch-report-stats').text.includes('共 10 个作答框'))
+  assert.equal(panel.byClass('batch-report-distribution-card').byClass('batch-report-empty').text, '当前没有知识点标签；上方判定统计仍然有效')
   assert.equal(panel.byClass('batch-report-top-errors-card').byClass('batch-report-empty').text, '暂未形成可用的错题分布')
   assert.equal(textOf(panel.byClass('batch-report-details')), null)
   assert.equal(textOf(panel.byClass('batch-report-empty-state')), null)

@@ -754,11 +754,12 @@ def test_exam_multi_blank_fill_is_one_question_with_proportional_points(monkeypa
         category="exam",
     ))
 
-    assert result["total"] == 1
-    assert result["partial_count"] == 1
+    # One question scored as a whole; its counts and rate are per answer box.
+    assert len(result["details"]) == 1
+    assert (result["total"], result["correct_count"], result["partial_count"], result["wrong_count"]) == (2, 1, 0, 1)
     assert result["score"] == 2.5
     assert result["max_score"] == 5.0
-    assert result["correct_rate"] == 0.0
+    assert result["correct_rate"] == 0.5
     detail = result["details"][0]
     assert detail["question_no"] == "8"
     assert detail["result"] == "partial"
@@ -793,8 +794,7 @@ def test_exam_multi_blank_fill_honors_confirmed_scoring_mode(monkeypatch, mode, 
         student_name="学生", teacher_id=1, category="exam",
     ))
 
-    detail = result["details"][0]
-    assert result["total"] == 1
+    detail, = result["details"]
     assert result["score"] == expected_score
     assert result["max_score"] == 5.0
     assert detail["fill_scoring_mode"] == mode
@@ -878,7 +878,7 @@ def test_daily_has_no_score_and_counts_each_solve_subquestion(monkeypatch):
     assert all(d["max_score"] is None and d["awarded_score"] is None for d in result["details"])
 
 
-def test_daily_multi_blank_fill_counts_as_one_question_and_partial_is_not_correct(monkeypatch):
+def test_daily_multi_blank_fill_is_one_question_counted_box_by_box(monkeypatch):
     from services import grader
 
     async def fake_judge(questions, detail_level="detailed", *, teacher_material=None):
@@ -905,10 +905,10 @@ def test_daily_multi_blank_fill_counts_as_one_question_and_partial_is_not_correc
     ))
 
     assert result["score"] is None
-    assert result["correct_rate"] == 0.0
-    assert result["total"] == 1
-    assert result["partial_count"] == 1
-    assert result["details"][0]["blank_count"] == 2
+    detail, = result["details"]
+    assert (detail["result"], detail["blank_count"]) == ("partial", 2)
+    assert (result["total"], result["correct_count"], result["partial_count"], result["wrong_count"]) == (2, 1, 0, 1)
+    assert result["correct_rate"] == 0.5
 
 
 def test_duplicate_ocr_rows_for_same_fill_are_merged_before_scoring(monkeypatch):
@@ -935,7 +935,7 @@ def test_duplicate_ocr_rows_for_same_fill_are_merged_before_scoring(monkeypatch)
         student_name="学生", teacher_id=1, category="exam",
     ))
 
-    assert result["total"] == 1
+    assert len(result["details"]) == 1
     assert result["score"] == 2.5
     assert result["max_score"] == 5.0
 
@@ -964,7 +964,7 @@ def test_numbered_fill_rows_are_sorted_by_blank_index_before_scoring(monkeypatch
         student_name="学生", teacher_id=1, category="exam",
     ))
 
-    assert result["total"] == 1
+    assert len(result["details"]) == 1
     assert result["score"] == 5.0
 
 
@@ -990,7 +990,7 @@ def test_missing_fill_slots_are_scored_as_blank_not_copied_answer(monkeypatch):
         student_name="学生", teacher_id=1, category="exam",
     ))
 
-    assert result["total"] == 1
+    assert len(result["details"]) == 1
     assert result["score"] == 2.5
 
 
@@ -1016,7 +1016,7 @@ def test_only_later_numbered_fill_row_keeps_its_original_blank_position(monkeypa
         student_name="学生", teacher_id=1, category="exam",
     ))
 
-    assert result["total"] == 1
+    assert len(result["details"]) == 1
     assert result["score"] == 2.5
 
 

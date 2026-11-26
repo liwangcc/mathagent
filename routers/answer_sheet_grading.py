@@ -61,7 +61,7 @@ from services.bounded_dispatch import bounded_completion_map
 from services.flash_grading import FLASH_LOCAL_MAX_CONCURRENT
 from services.grading_contract import AnswerSpec
 from services.paper_orientation import orientation_is_ready
-from services.scoring_engine import recalculate_result_from_details
+from services.scoring_engine import apply_teacher_verdict, recalculate_result_from_details
 from services.teaching_context import (
     await_teaching,
     current_teaching_context,
@@ -561,7 +561,7 @@ def save_grading_decision(
             old_result = str(detail.get("result") or "needs_review")
             if old_result == decision.result:
                 continue
-            detail["result"] = decision.result
+            apply_teacher_verdict(detail, decision.result)
             detail["teacher_regraded"] = True
             if decision.result == "correct":
                 detail["error_type"] = ""

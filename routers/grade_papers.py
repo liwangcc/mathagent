@@ -55,6 +55,7 @@ from services.review_marks import (
     render_review_marks,
     review_cache_name,
 )
+from services.review_decisions import apply_review_decisions
 from services.student_service import canonical_student_no
 from services.teaching_context import await_teaching
 
@@ -730,20 +731,12 @@ def _batch_review_image_path(batch: QuickBatch, paper_id: str, user: User, decis
         if isinstance(item, dict)
     ])
     number_of = lambda item: str(item.get("question_no") or item.get("question_number") or "")
-    by_number = {number_of(item): item for item in details}
-    for decision in decisions or []:
-        if decision.question_no not in by_number:
-            raise HTTPException(400, detail="预览判定包含不属于本页的题号")
-        detail = by_number[decision.question_no]
-        previous_result = str(detail.get("result") or "needs_review")
-        detail["result"] = decision.result
-        # Folded fill details retain one verdict per physical answer box.  A
-        # teacher decision targets the parent question, so a changed parent
-        # verdict must update every nested mark used by the renderer as well.
-        if previous_result != decision.result and isinstance(detail.get("grading_units"), list):
-            for unit in detail["grading_units"]:
-                if isinstance(unit, dict):
-                    unit["result"] = decision.result
+    if decisions:
+        # Unsaved verdicts reach the marks box by box, exactly as saving would apply them.
+        try:
+            apply_review_decisions(details, {item.question_no: item.result for item in decisions}, complete=False)
+        except ValueError as exc:
+            raise HTTPException(400, detail="预览判定包含不属于本页的题号") from exc
 
     # Older saved results can lack boxes even though OCR/template geometry exists.
     ocr_by_number = {number_of(item): item for item in paper.get("questions") or []}

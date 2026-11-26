@@ -37,7 +37,7 @@
         <span role="columnheader">#</span>
         <span role="columnheader">{{ anonymous ? '页面' : '学生姓名' }}</span>
         <span role="columnheader">判定构成</span>
-        <span role="columnheader">{{ form.category === 'exam' ? '得分' : '正确率' }}</span>
+        <span role="columnheader">{{ form.category === 'exam' ? '得分' : '作答框正确率' }}</span>
         <span v-if="summary" role="columnheader">处理</span>
       </div>
       <TransitionGroup id="grading-start-anchor" name="list" tag="div" class="review-board__body">
@@ -61,21 +61,21 @@
             </span>
           </span>
           <span class="review-row__outcome" role="cell">
-            <span class="outcome-mini" :title="`正确 ${Number(row.correct || 0)} · 部分正确 ${Number(row.partial || 0)} · 错误 ${Number(row.wrong || 0)} · 待复核 ${Number(row.needs_review || 0)}`">
-              <i v-if="Number(row.correct || 0)" class="is-correct" :style="{ flexGrow: Number(row.correct || 0) }" />
-              <i v-if="Number(row.partial || 0)" class="is-partial" :style="{ flexGrow: Number(row.partial || 0) }" />
-              <i v-if="Number(row.wrong || 0)" class="is-wrong" :style="{ flexGrow: Number(row.wrong || 0) }" />
-              <i v-if="Number(row.needs_review || 0)" class="is-pending" :style="{ flexGrow: Number(row.needs_review || 0) }" />
+            <span class="outcome-mini" :title="`按作答框：正确 ${answerBoxTally(row).correct} · 部分正确 ${answerBoxTally(row).partial} · 错误 ${answerBoxTally(row).wrong} · 待复核 ${answerBoxTally(row).needs_review}`">
+              <i v-if="answerBoxTally(row).correct" class="is-correct" :style="{ flexGrow: answerBoxTally(row).correct }" />
+              <i v-if="answerBoxTally(row).partial" class="is-partial" :style="{ flexGrow: answerBoxTally(row).partial }" />
+              <i v-if="answerBoxTally(row).wrong" class="is-wrong" :style="{ flexGrow: answerBoxTally(row).wrong }" />
+              <i v-if="answerBoxTally(row).needs_review" class="is-pending" :style="{ flexGrow: answerBoxTally(row).needs_review }" />
             </span>
-            <small>正确 {{ row.correct }} / {{ row.total }}<template v-if="Number(row.wrong || 0)"> · 错 {{ row.wrong }}</template><template v-if="Number(row.partial || 0)"> · 半对 {{ row.partial }}</template></small>
+            <small>正确 {{ answerBoxTally(row).correct }} / {{ answerBoxTally(row).total }}<template v-if="answerBoxTally(row).wrong"> · 错 {{ answerBoxTally(row).wrong }}</template><template v-if="answerBoxTally(row).partial"> · 半对 {{ answerBoxTally(row).partial }}</template></small>
           </span>
           <span class="review-row__metric" role="cell">
-            <span v-if="Number(row.needs_review || 0) > 0" class="status-chip is-warn">待复核 {{ row.needs_review }} 题</span>
+            <span v-if="answerBoxTally(row).needs_review" class="status-chip is-warn">待复核 {{ answerBoxTally(row).needs_review }} 处</span>
             <span v-else-if="row.category === 'exam' && row.score != null && Number.isFinite(Number(row.score))" class="review-score">
               {{ Number(row.score).toFixed(Number(row.score) % 1 ? 1 : 0) }}<small> / {{ Number(row.max_score || 0).toFixed(Number(row.max_score || 0) % 1 ? 1 : 0) }} 分</small>
             </span>
-            <span v-else-if="row.correct_rate != null && Number.isFinite(Number(row.correct_rate))" class="review-score" :class="{ 'is-low': Number(row.correct_rate) < 0.6 }">
-              {{ (Number(row.correct_rate) * 100).toFixed(0) }}<small>%</small>
+            <span v-else-if="rowAccuracy(row) != null" class="review-score" :class="{ 'is-low': rowAccuracy(row) < 0.6 }">
+              {{ percentNumber(rowAccuracy(row)) }}<small>%</small>
             </span>
             <span v-else>—</span>
           </span>
@@ -98,9 +98,9 @@
         <span>总计 <strong>{{ summary.total }}</strong> {{ anonymous ? '页' : '张' }}</span>
         <span v-if="summary.grading_elapsed_seconds != null" class="tag-muted grading-clock">批阅用时 {{ formatGradingDuration(summary.grading_elapsed_seconds) }}</span>
         <span v-if="form.category === 'exam' && summary.avg_score != null" class="tag-ok">已判平均分 {{ Number(summary.avg_score).toFixed(1) }}</span>
-        <span v-else-if="form.category !== 'exam' && dailyAverageCorrectRate != null" class="tag-ok">平均正确率 {{ (dailyAverageCorrectRate * 100).toFixed(0) }}%</span>
+        <span v-else-if="form.category !== 'exam' && dailyAnswerBoxAccuracy" class="tag-ok">作答框正确率 {{ percentNumber(dailyAnswerBoxAccuracy.rate) }}%（正确 {{ dailyAnswerBoxAccuracy.correct }} · 错误 {{ dailyAnswerBoxAccuracy.wrong }}<template v-if="dailyAnswerBoxAccuracy.partial"> · 部分正确 {{ dailyAnswerBoxAccuracy.partial }}</template>）</span>
         <span v-else class="tag-pending">待复核，暂不显示统计</span>
-        <span v-if="pendingReviewCount" class="tag-pending">待复核 {{ pendingReviewCount }} 题</span>
+        <span v-if="pendingReviewCount" class="tag-pending">待复核 {{ pendingReviewCount }} 处</span>
         <span v-if="!anonymous && resolvedActiveReviewCount" class="tag-ok">可入档 {{ resolvedActiveReviewCount }} 人</span>
         <span v-if="!anonymous && hasActiveReviewRows && !reviewArchived" class="review-hint">待复核学生不会写入正式档案；可先归档已完成学生。</span>
       </div>
@@ -131,7 +131,7 @@
             <span class="status-chip" :class="batchReportStatusTone(batchReport.status)">
               {{ batchReportStatusText(batchReport.status) }}
             </span>
-            <HelpButton title="本批批阅报告" content="报告按题目判定结果统计正确、部分正确、错误和待复核；已有知识点标注时再展示知识点分布，不使用错因分类。待复核记录不会被当作已确定的对错结论。" />
+            <HelpButton title="本批批阅报告" content="报告按作答框统计正确、部分正确、错误和待复核（多空题的每个作答框各算一次），高频错题按题目排列；已有知识点标注时再展示知识点分布，不使用错因分类。待复核记录不会被当作已确定的对错结论。" />
           </div>
         </div>
 
@@ -150,25 +150,25 @@
               <article class="stat-tile">
                 <span class="stat-tile__label">批阅范围</span>
                 <strong class="stat-tile__value"><AnimatedNumber :value="Number(batchReportStats.paper_count || 0)" /><small class="stat-tile__unit">{{ anonymous ? '页' : '份' }}</small></strong>
-                <span class="stat-tile__meta">共 {{ batchReportTotalQuestions }} 道题</span>
+                <span class="stat-tile__meta">共 {{ batchReportTotalQuestions }} 个作答框</span>
               </article>
               <article class="stat-tile">
                 <span class="stat-tile__label">判定覆盖</span>
                 <strong class="stat-tile__value"><AnimatedNumber :value="batchReportJudgedCount" /><small class="stat-tile__unit"> / {{ batchReportTotalQuestions }}</small></strong>
-                <span class="stat-tile__meta">待复核 {{ batchReportNeedsReviewCount }} 题</span>
+                <span class="stat-tile__meta">待复核 {{ batchReportNeedsReviewCount }} 处</span>
               </article>
               <article class="stat-tile is-warm">
-                <span class="stat-tile__label">错题总量</span>
-                <strong class="stat-tile__value"><AnimatedNumber :value="batchReportErrorTotal" /><small class="stat-tile__unit">题</small></strong>
+                <span class="stat-tile__label">错误作答框</span>
+                <strong class="stat-tile__value"><AnimatedNumber :value="batchReportErrorTotal" /><small class="stat-tile__unit">个</small></strong>
                 <span class="stat-tile__meta">错误 + 部分正确</span>
               </article>
               <article class="stat-tile">
-                <span class="stat-tile__label">全题错题率</span>
+                <span class="stat-tile__label">作答框错误率</span>
                 <strong class="stat-tile__value"><AnimatedNumber :value="batchReportErrorRatePercent" :decimals="1" /><small v-if="batchReportErrorRatePercent != null" class="stat-tile__unit">%</small></strong>
                 <span v-if="batchReportStats.choice_only" class="stat-tile__meta">选择题错 {{ Number(batchReportStats.choice_wrong_count || 0) }} 题 · 仅作统计</span>
                 <span v-else-if="batchReportStats.choice_count" class="stat-tile__meta">选择题错 {{ Number(batchReportStats.choice_wrong_count || 0) }} 题 · 非选择题诊断 {{ batchReportDiagnosticErrorRateText }}</span>
                 <span v-else-if="batchReportStats.diagnostic_judged_count" class="stat-tile__meta">非选择题诊断 {{ batchReportDiagnosticErrorRateText }}</span>
-                <span v-else class="stat-tile__meta">以已判题目为统计范围</span>
+                <span v-else class="stat-tile__meta">以已判作答框为统计范围</span>
               </article>
             </div>
           </div>
@@ -219,7 +219,7 @@
                   </ul>
                 </div>
               </div>
-              <div v-else class="batch-report-empty">当前没有知识点标签；上方题目判定统计仍然有效</div>
+              <div v-else class="batch-report-empty">当前没有知识点标签；上方判定统计仍然有效</div>
             </section>
           </div>
 
@@ -319,14 +319,24 @@ import {
   reportKnowledgeChapter,
   reportDistributionPercent,
 } from '@/utils/batchReportView'
+import { answerBoxRate, answerBoxTally, percentNumber } from '@/utils/answerBoxAccuracy'
 import HelpButton from '@/components/HelpButton.vue'
 import { UPLOAD_PAGE } from './uploadPage.js'
+
+// 判定构成 and the accuracy column count answer boxes from each row's details,
+// so a review saved before the server counted boxes reads like a new one.
+// Daily rows show answer-box accuracy; an exam row without a score shows its correct_rate.
+function rowAccuracy(row) {
+  if ((row.category || form.category) !== 'exam') return answerBoxRate(answerBoxTally(row))
+  const rate = Number(row.correct_rate)
+  return row.correct_rate != null && Number.isFinite(rate) ? rate : null
+}
 
 const {
   progressCardVisible, summary, reviewArchived, anonymous, gradeError, form, grading,
   reviewRestoredLabel, gradingPhaseState, progressList, gradeTotal, gradingElapsedSeconds,
   currentMessage, openManualDecision, reviewBusy, voidOneReview, downloadStudentErrors,
-  downloadReviewImage, dailyAverageCorrectRate, pendingReviewCount, resolvedActiveReviewCount,
+  downloadReviewImage, dailyAnswerBoxAccuracy, pendingReviewCount, resolvedActiveReviewCount,
   hasActiveReviewRows, reviewImagesDownloading, hasReviewImageRows, downloadAllReviewImages,
   voidAllReviews, downloadReviewSummary, downloadAllErrors, archiveAllReviews, batchReport,
   batchReportStats, batchReportOutcomeSegments, batchReportNeedsReviewCount,

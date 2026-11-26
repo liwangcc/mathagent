@@ -34,8 +34,8 @@
           <span class="hero-metric__label">批阅记录 · {{ periodLabel }}</span>
         </div>
         <div class="hero-metric">
-          <span class="hero-metric__value">{{ metrics.questions }}<small>题</small></span>
-          <span class="hero-metric__label">作答题数</span>
+          <span class="hero-metric__value">{{ metrics.questions }}<small>个</small></span>
+          <span class="hero-metric__label">作答框数</span>
         </div>
         <div class="hero-metric" :class="heroAccuracyTone">
           <span class="hero-metric__value">{{ Number(metrics.accuracy || 0).toFixed(1) }}<small>%</small></span>
@@ -65,7 +65,7 @@
                       <span class="rank-row__avatar" aria-hidden="true">{{ String(s.name || '?').slice(0, 1) }}</span>
                       <span class="rank-row__who">
                         <strong>{{ s.name }}</strong>
-                        <small>{{ s.student_no || '—' }} · {{ s.profile_count }} 份 · {{ s.total_questions }} 题</small>
+                        <small>{{ s.student_no || '—' }} · {{ s.profile_count }} 份 · {{ s.total_questions }} 个作答框</small>
                       </span>
                       <span class="rank-row__bar" aria-hidden="true"><i :style="{ width: `${Math.min(100, Math.max(0, Number(s.accuracy) || 0))}%` }" /></span>
                       <span class="rank-row__value">{{ s.accuracy }}<small>%</small></span>

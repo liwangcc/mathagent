@@ -28,7 +28,7 @@
       </svg>
       <div class="outcome-donut__center" aria-hidden="true">
         <strong>{{ focused ? `${Math.round(focused.share)}%` : centerValue }}</strong>
-        <span>{{ focused ? `${focused.label} · ${focused.value} 题` : centerLabel }}</span>
+        <span>{{ focused ? `${focused.label} · ${focused.value} 个` : centerLabel }}</span>
       </div>
     </div>
 
@@ -93,9 +93,9 @@ const arcs = computed(() => donutArcs(props.segments, props.total))
 const counted = computed(() => arcs.value.some((arc) => arc.value > 0))
 const focused = computed(() => arcs.value.find((arc) => arc.key === focus.value && arc.value > 0) || null)
 const ariaLabel = computed(() => {
-  const parts = arcs.value.map((arc) => `${arc.label} ${arc.value} 题`).join('，')
-  const pending = props.pending ? `；待复核 ${props.pending} 题未计入` : ''
-  return `判定结果分布：${counted.value ? parts : '暂无已判题目'}${pending}`
+  const parts = arcs.value.map((arc) => `${arc.label} ${arc.value} 个作答框`).join('，')
+  const pending = props.pending ? `；待复核 ${props.pending} 处未计入` : ''
+  return `判定结果分布：${counted.value ? parts : '暂无已判作答框'}${pending}`
 })
 
 // Arcs ink in once after the first paint, as the showcase's report does on reveal.

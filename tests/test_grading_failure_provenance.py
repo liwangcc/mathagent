@@ -34,7 +34,7 @@ def test_local_evidence_gate_is_not_attributed_to_flash_or_handwriting(kind, mon
         ))
     # Exercise the same JSON persistence boundary as a review snapshot.
     detail = json.loads(json.dumps(result))["details"][0]
-    assert result["needs_review_count"] == 1
+    assert result["needs_review_count"] == 3  # every answer box of the question waits for review
     assert result["score"] is None
     assert detail["error_type"] == ("ocr_failed" if kind == "ocr_failed" else "ocr_slot_identity_invalid")
     assert detail["match_method"] == "evidence_gate"

@@ -16,7 +16,7 @@ from collections import OrderedDict
 from typing import Any
 
 from services.review_marks import normalize_review_boxes
-from models import sanitize_error_type_fields
+from models import answer_box_results, sanitize_error_type_fields
 
 
 _DEFAULT_SOLVE_SCORES = (5.0, 7.0, 8.0)
@@ -578,17 +578,20 @@ def _base_detail(unit: dict, judged: dict, category: str) -> dict:
     return detail
 
 
+def _folded_verdict(results: list[str]) -> str:
+    """The whole-question verdict of a multi-blank question from its blanks' verdicts."""
+    if any(result == "needs_review" for result in results):
+        return "needs_review"
+    if all(result == "correct" for result in results):
+        return "correct"
+    if all(result == "wrong" for result in results):
+        return "wrong"
+    return "partial"
+
+
 def _fold_fill_blanks(units: list[dict], judgments: dict[str, dict], category: str) -> dict:
     slot_details = [_base_detail(unit, judgments[unit["key"]], category) for unit in units]
-    results = [slot["result"] for slot in slot_details]
-    if any(result == "needs_review" for result in results):
-        aggregate = "needs_review"
-    elif all(result == "correct" for result in results):
-        aggregate = "correct"
-    elif all(result == "wrong" for result in results):
-        aggregate = "wrong"
-    else:
-        aggregate = "partial"
+    aggregate = _folded_verdict([slot["result"] for slot in slot_details])
     first = slot_details[0]
     parent_fields = dict(first)
     if "slot_id" in first:
@@ -676,10 +679,22 @@ def _fold_fill_blanks(units: list[dict], judgments: dict[str, dict], category: s
     }
 
 
+def _answer_box_counts(details: list[dict]) -> dict[str, int]:
+    """Verdict counts by answer box: a multi-blank question with one wrong box is
+    that many correct boxes and one wrong box, not one partial question."""
+    counts = {"correct": 0, "partial": 0, "wrong": 0, "needs_review": 0}
+    for verdict in answer_box_results(details):
+        counts[verdict if verdict in counts else "needs_review"] += 1
+    return counts
+
+
 def aggregate_grading_result(
     units: list[dict], judgments: dict[str, dict], category: str, student_name: str,
 ) -> dict:
-    """Fold judgments into persisted details and category-specific aggregates."""
+    """Fold judgments into persisted details and category-specific aggregates.
+
+    Details stay one per question; counts, total and correct_rate count answer boxes.
+    """
     grouped: OrderedDict[str, list[dict]] = OrderedDict()
     for unit in units:
         if unit["key"] not in judgments:
@@ -701,11 +716,8 @@ def aggregate_grading_result(
             unit = group_units[0]
             details.append(_base_detail(unit, judgments[unit["key"]], category))
 
-    counts = {"correct": 0, "partial": 0, "wrong": 0, "needs_review": 0}
-    for detail in details:
-        verdict = detail.get("result")
-        counts[verdict if verdict in counts else "needs_review"] += 1
-    total = len(details)
+    counts = _answer_box_counts(details)
+    total = sum(counts.values())
     pending = counts["needs_review"]
     correct_rate = None if pending else round(counts["correct"] / max(total, 1), 4)
     if category == "exam":
@@ -730,6 +742,41 @@ def aggregate_grading_result(
     }
 
 
+def apply_teacher_verdict(detail: dict, verdict: str) -> None:
+    """Set a teacher's whole-question verdict and the per-box marks under it.
+
+    Folded fill details keep one verdict per physical answer box in
+    ``grading_units`` (the review marks and answer-box accuracy read them).
+    "correct" and "wrong" hold for every box. "partial" does not say which
+    box is wrong, so the boxes take the grader's own per-blank verdicts
+    (``blank_results``, never edited) when those fold to partial, exactly as
+    exam points are re-allocated for a teacher's partial; otherwise every box
+    takes "partial".
+    """
+    detail["result"] = verdict
+    units = detail.get("grading_units")
+    if not isinstance(units, list):
+        return
+    graded = [str(item.get("result") or "") if isinstance(item, dict) else ""
+              for item in detail.get("blank_results") or []]
+    keep_graded = (verdict == "partial" and len(graded) == len(units)
+                   and set(graded) <= {"correct", "partial", "wrong"}
+                   and _folded_verdict(graded) == "partial")
+    for unit, unit_verdict in zip(units, graded if keep_graded else [verdict] * len(units)):
+        if isinstance(unit, dict):
+            unit["result"] = unit_verdict
+
+
+def apply_teacher_box_verdict(detail: dict, box: int, verdict: str) -> None:
+    """Set a teacher's verdict on one answer box of a folded question; the
+    question's own verdict is refolded from its boxes, as grading folds it."""
+    units = detail["grading_units"]
+    units[box]["result"] = verdict
+    detail["result"] = _folded_verdict([
+        str(unit.get("result") or "needs_review") for unit in units if isinstance(unit, dict)
+    ])
+
+
 def _recalculated_detail_points(detail: dict, verdict: str, max_score: float) -> float | None:
     """Apply fill-specific rules when a teacher review rebuilds totals."""
     if str(detail.get("question_type") or "") == "fill":
@@ -740,8 +787,11 @@ def _recalculated_detail_points(detail: dict, verdict: str, max_score: float) ->
             return max_score if verdict == "correct" else 0.0
         if mode in {"custom", "equal"} and verdict == "partial":
             slots = detail.get("blank_results") or []
+            # Each blank's points follow its box's current verdict: the
+            # grader's, or the teacher's when the box was decided by hand.
+            units = detail["grading_units"] if isinstance(detail.get("grading_units"), list) else []
             allocated = 0.0
-            for slot in slots:
+            for index, slot in enumerate(slots):
                 if not isinstance(slot, dict):
                     continue
                 slot_max = slot.get("max_score")
@@ -751,7 +801,8 @@ def _recalculated_detail_points(detail: dict, verdict: str, max_score: float) ->
                     score = float(slot_max)
                 except (TypeError, ValueError):
                     continue
-                slot_points = _points_for_result(str(slot.get("result") or "needs_review"), score)
+                box = units[index] if index < len(units) and isinstance(units[index], dict) else slot
+                slot_points = _points_for_result(str(box.get("result") or "needs_review"), score)
                 allocated += float(slot_points or 0)
             # A teacher may newly select "partial" on an old all-wrong record
             # without per-blank edits; retain the conventional half-score then.
@@ -765,17 +816,17 @@ def recalculate_result_from_details(result: dict, category: str) -> None:
 
     v2 exam details carry immutable ``max_score`` snapshots.  Daily
     records deliberately never expose a numeric score; partial is diagnostic
-    and counts as not fully correct in ``correct_rate``.
+    and counts as not fully correct in ``correct_rate``.  Points follow each
+    question's verdict; counts and ``correct_rate`` count answer boxes.
     """
     details = [
         detail for detail in (result.get("details") or [])
         if isinstance(detail, dict) and detail.get("result") != "void"
     ]
-    counts = {"correct": 0, "partial": 0, "wrong": 0, "needs_review": 0}
+    counts = _answer_box_counts(details)
     for detail in details:
         verdict = str(detail.get("result") or "needs_review")
         verdict = verdict if verdict in counts else "needs_review"
-        counts[verdict] += 1
         max_score = detail.get("max_score")
         if category == "exam" and max_score is not None:
             try:
@@ -789,7 +840,7 @@ def recalculate_result_from_details(result: dict, category: str) -> None:
             detail["max_score"] = None
             detail["awarded_score"] = None
 
-    total = len(details)
+    total = sum(counts.values())
     pending = counts["needs_review"]
     result.update({
         "total": total,
